@@ -1,0 +1,260 @@
+/* --- CORE STYLES --- */
+.pay-container {
+  padding: 1.5rem;
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+/* --- HEADER SECTION --- */
+.pay-header {
+  background-color: #fff;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  /* border: 1px solid #e5e7eb; */
+}
+
+.pay-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pay-title {
+  font-size: 1.810rem; /* 30px */
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.pay-sub-title{
+   font-size: 1.10rem; /* 30px */
+  font-weight: 500;
+  color: #111827;
+  margin: 0;
+}
+
+.pay-options {
+  position: relative;
+}
+
+.pay-options-btn {
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.pay-options-btn svg { width: 1.25rem; height: 1.25rem; color: #6b7280; }
+
+.pay-options-dropdown {
+  position: absolute;
+  right: 0;
+  top: 110%;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  z-index: 10;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  width: 160px;
+  overflow: hidden;
+}
+.pay-dropdown-item {
+  padding: 0.75rem 1rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.pay-dropdown-item:hover { background-color: #f9fafb; }
+
+.pay-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.pay-search {
+  position: relative;
+  flex-grow: 1;
+  min-width: 250px;
+}
+.pay-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  width: 1.25rem; height: 1.25rem;
+}
+.pay-search-input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.pay-filters {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pay-filter-btn {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+.pay-filter-btn svg { width: 1.25rem; height: 1.25rem; color: #6b7280; }
+
+/* --- TABLE CONTAINER --- */
+.pay-table-container {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.pay-table-wrapper {
+  overflow-x: auto; /* Enables horizontal scrolling on smaller viewports */
+}
+
+.pay-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pay-th {
+  text-align: left;
+  padding: 0.75rem 1.5rem;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.pay-sort-btn {
+  background: none; border: none; display: flex; align-items: center;
+  gap: 0.5rem; font-size: inherit; font-weight: 600; color: inherit; cursor: pointer; padding: 0;
+}
+.pay-sort-btn svg { width: 1rem; height: 1rem; }
+
+.pay-row:hover { background-color: #f9fafb; }
+.pay-td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+.pay-td-bold { font-weight: 600; color: #111827; }
+.pay-link { color: #2563eb; cursor: pointer; font-weight: 500; }
+.pay-link:hover { text-decoration: underline; }
+
+/* Table Footer */
+.pay-table tfoot {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+.pay-total-row td {
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.status-completed { background-color: #d1fae5; color: #065f46; }
+.status-pending { background-color: #feefc7; color: #92400e; }
+.status-failed { background-color: #fee2e2; color: #991b1b; }
+
+/* --- MOBILE & RESPONSIVE STYLES --- */
+.pay-mobile-table { display: none; } /* Hide mobile cards on desktop */
+
+@media (max-width: 1024px) {
+  .pay-desktop-table { display: block; } /* Show desktop table on tablet */
+  .pay-mobile-table { display: none; }
+}
+
+@media (max-width: 768px) {
+  .pay-container { padding: 1rem; }
+  .pay-header-top { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .pay-options { position: static; }
+  .pay-controls { flex-direction: column; align-items: stretch; }
+  
+  .pay-desktop-table { display: none; } /* Hide desktop table on mobile */
+  .pay-mobile-table { display: block; } /* Show mobile cards */
+}
+
+/* Mobile Card Styles */
+.pay-card {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.pay-card:last-child { border-bottom: none; }
+
+.pay-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.pay-card-user { font-weight: 600; color: #111827; }
+.pay-card-amount { font-weight: 600; color: #111827; }
+
+.pay-card-body {
+  font-size: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.pay-card-row {
+  display: flex;
+  justify-content: space-between;
+}
+.pay-card-row span:first-child { color: #6b7280; }
+.pay-card-row span:last-child { font-weight: 500; }
+
+.pay-card-footer {
+  text-align: right;
+}
+
+.pay-total-card {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  background-color: #f9fafb;
+  font-weight: 600;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* --- UTILITY & MESSAGES --- */
+.spinner-container { min-height: 200px; display: flex; align-items: center; justify-content: center; }
+.spinner { border: 5px solid #f3f3f3; border-top: 5px solid #5B2EFF; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.error-message, .no-results-message { text-align: center; padding: 2rem; color: #6b7280; }

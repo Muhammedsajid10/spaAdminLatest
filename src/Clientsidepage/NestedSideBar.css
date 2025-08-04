@@ -1,0 +1,42 @@
+.nested-sidebar-container {
+  background-color: #ffffff;
+  height: 100%;
+  border-right: 1px solid #f0f0f0;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.nested-sidebar-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.nested-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nested-menu-item {
+  display: block;
+  padding: 10px 12px;
+  color: #374151;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nested-menu-item:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.nested-menu-item.active {
+  background-color: #e9e6f9;
+  color: #5d3ebc;
+  font-weight: 500;
+}

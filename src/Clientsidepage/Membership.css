@@ -1,0 +1,195 @@
+/* --- CORE & LAYOUT STYLES --- */
+.mem-container {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #ffffff;
+  min-height: 100vh;
+  padding: 1.5rem; /* Use padding for spacing, not margin */
+  width: 100%;
+}
+
+.mem-max-width {
+  max-width: 1668px; /* Standard max-width for content */
+  margin: 0 auto;
+}
+
+/* --- HEADER STYLES --- */
+.mem-header {
+  display: flex;
+  align-items: flex-start; /* Aligns items to the top */
+  gap: 2rem; /* Adds space between title and button */
+  margin-bottom: 2rem;
+}
+
+.mem-header-content {
+  flex-grow: 1; /* Makes the title block take all available space */
+}
+
+.mem-title {
+  font-size: 2.25rem; /* 36px */
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.mem-subtitle {
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 600px; /* Prevents text from becoming too wide */
+}
+
+.mem-learn-more {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.mem-learn-more:hover { text-decoration: underline; }
+
+/* --- EXPORT BUTTON STYLES --- */
+.mem-export-container {
+  position: relative;
+  flex-shrink: 0; /* Prevents the button from shrinking */
+}
+
+.mem-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #111827;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mem-export-btn:hover { background-color: #374151; }
+
+.mem-export-dropdown {
+  position: absolute;
+  top: 100%;
+  /* right: 0; */
+  left: 0;
+  margin-top: 4px;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  min-width: 160px;
+}
+.mem-export-option {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.mem-export-option:hover { background-color: #f9fafb; }
+
+
+/* --- SEARCH & TABLE STYLES --- */
+.mem-search-container { margin-bottom: 1.5rem; }
+.mem-search-wrapper { position: relative; max-width: 400px; }
+.mem-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.mem-search-icon {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%); color: #9ca3af;
+}
+
+.mem-table-container {
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow-x: auto; /* Ensures table is scrollable if needed */
+}
+.mem-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px; /* Prevents table content from squishing too much */
+}
+.mem-table-header th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+.mem-table-row:hover { background-color: #f9fafb; }
+.mem-table-cell {
+  padding: 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.9rem;
+}
+.mem-table tbody tr:last-child .mem-table-cell { border-bottom: none; }
+.mem-link-text { color: #3b82f6; text-decoration: none; font-weight: 500; }
+.mem-link-text:hover { text-decoration: underline; }
+.mem-total-amount { font-weight: 500; color: #1f2937; }
+
+.mem-status-badge {
+  padding: 4px 12px; border-radius: 99px;
+  font-size: 0.75rem; font-weight: 500;
+}
+.mem-status-active { background-color: #dcfce7; color: #166534; }
+.mem-status-used { background-color: #fef3c7; color: #92400e; }
+
+/* --- CARD STYLES (MOBILE) --- */
+.mem-cards-container { display: none; }
+.mem-card {
+  background-color: white; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 1rem;
+}
+.mem-card-header {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; margin-bottom: 1rem;
+}
+.mem-card-title {
+  color: #3b82f6; text-decoration: none; font-weight: 600;
+  font-size: 1rem; display: block; margin-bottom: 4px;
+}
+.mem-card-client { color: #6b7280; font-size: 0.9rem; }
+.mem-card-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;
+}
+.mem-card-label {
+  font-size: 0.75rem; color: #6b7280; margin-bottom: 2px;
+  text-transform: uppercase;
+}
+.mem-card-value { font-size: 0.9rem; color: #1f2937; font-weight: 500; }
+
+/* --- RESPONSIVE DESIGN --- */
+@media (max-width: 768px) {
+  .mem-container { padding: 1rem; }
+  
+  .mem-header { flex-direction: column; gap: 1rem; }
+  
+  .mem-title { font-size: 1.8rem; }
+  
+  .mem-search-wrapper { max-width: 100%; }
+  
+  .mem-table-container { display: none; }
+  
+  .mem-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}

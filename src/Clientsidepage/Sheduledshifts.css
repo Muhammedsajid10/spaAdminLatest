@@ -1,0 +1,495 @@
+/* --- CORE LAYOUT --- */
+.shift-scheduler {
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+/* Find and REPLACE this rule in your Sheduledshifts.css */
+
+.week-navigation {
+  display: flex;
+  justify-content: space-between; /* Pushes items to the edges */
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Add a wrapper for the arrow buttons */
+.week-navigation .nav-arrow-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.week-info {
+  text-align: center;
+  flex-grow: 1; /* Allows the date to take up available space */
+}
+
+.week-date {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.today-btn {
+    padding: 10px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: white;
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap; /* Prevents the button text from wrapping */
+}
+/* --- HEADER --- */
+.scheduler-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  /* flex-wrap: wrap;
+  gap: 1rem; */
+}
+.scheduler-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+}
+.header-controls { display: flex; gap: 0.75rem; }
+.options-btn, .add-btn, .today-btn {
+  display: flex; align-items: center; gap: 0.5rem; padding: 10px 16px;
+  border: 1px solid #d1d5db; border-radius: 8px; background-color: white;
+  color: #374151; font-size: 0.9rem; font-weight: 500; cursor: pointer;
+  transition: background-color 0.2s;
+}
+.options-btn:hover, .today-btn:hover { background-color: #f3f4f6; }
+.add-btn { background-color: #111827; color: white; border-color: #111827; }
+.add-btn:hover { background-color: #374151; }
+
+/* --- WEEK NAVIGATION --- */
+.week-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.nav-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%;
+  background-color: white; border: 1px solid #d1d5db;
+  color: #6b7280; cursor: pointer; transition: all 0.2s;
+}
+.nav-btn:hover { background-color: #f3f4f6; border-color: #9ca3af; }
+.week-info { text-align: center; }
+.week-date { font-size: 1.1rem; font-weight: 600; color: #111827; }
+
+/* --- RESPONSIVE TABLE CONTAINER --- */
+.schedule-table-container {
+  width: 100%;
+  overflow-x: auto; /* This is the key: makes the container scroll horizontally */
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* Set a minimum width to ensure columns don't get too squished */
+  min-width: 900px; 
+}
+
+/* --- TABLE HEADER --- */
+.table-header {
+    display: grid
+;
+    grid-template-columns: 250px repeat(7, 1fr);
+    border-bottom: 1px solid #000000;    background-color: #ffffff;
+}
+.member-column-header {
+     padding: 1rem 1.5rem;
+    font-weight: 600;
+    color: #4b5563;
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background-color: #ffffff;
+    z-index: 10;
+}
+.day-header {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  border-left: 1px solid #e5e7eb;
+  display: flex; /* --- FIX: Use flexbox for single-line alignment --- */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.day-name { font-size: 0.8rem; font-weight: 600; color: #6b7280; }
+.day-date { font-size: 1.25rem; font-weight: 700; color: #111827; }
+
+/* --- TABLE BODY --- */
+.table-body { display: block; }
+.member-row {
+  display: grid;
+  grid-template-columns: 250px repeat(7, 1fr);
+  border-bottom: 1px solid #e5e7eb;
+}
+.member-row:last-child { border-bottom: none; }
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  /* --- FIX: Make the member name column sticky --- */
+  position: sticky;
+  left: 0;
+  background-color: white; /* Crucial for hiding content that scrolls underneath */
+  z-index: 5;
+  border-right: 1px solid #e5e7eb;
+}
+.member-avatar {
+  width: 40px; height: 40px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-weight: 600;
+  font-size: 1rem; color: #4b5563; flex-shrink: 0;
+}
+.member-name { font-size: 1rem; font-weight: 500; color: #111827; }
+
+/* --- SHIFT CELLS --- */
+.shift-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border-left: 1px solid #e5e7eb;
+}
+.shift-block {
+  padding: 8px 12px;
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.shift-block:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.shift-empty {
+  background: transparent;
+  color: #9ca3af;
+  border: 2px dashed #e5e7eb;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+.shift-empty:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* --- RESPONSIVE ADJUSTMENTS --- */
+@media (max-width: 768px) {
+  .shift-scheduler { padding: 1rem; }
+  .scheduler-header { flex-direction: column; align-items: stretch; }
+  .week-navigation {
+    justify-content: space-between; /* Space out nav buttons on mobile */
+  }
+  .week-info { flex-grow: 1; } /* Allow date to take up space */
+}
+.shift-editor-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+@media (max-width: 480px) {
+  .shift-editor-modal {
+    width: 95%;
+    margin: 10px;
+    max-width: 98vw;
+    min-width: 0;
+    max-height: 98vh;
+    padding: 12px 6px;
+  }
+  
+  .modal-header,
+  .modal-content,
+  .modal-actions {
+    padding: 16px;
+  }
+  
+  .quick-shift-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .cancel-btn,
+  .save-btn {
+    width: 100%;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .delete-btn {
+    width: 100%;
+  }
+}
+.shift-info {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #6c5ce7;
+}
+
+.shift-member {
+  font-size: 16px;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.shift-date {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.shift-input-group {
+  margin-bottom: 24px;
+}
+
+.shift-input-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.shift-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.shift-input:focus {
+  outline: none;
+  border-color: #6c5ce7;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.shift-examples {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+}
+.quick-shifts {
+  margin-bottom: 24px;
+}
+
+.quick-shifts label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 12px;
+}
+
+.quick-shift-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.quick-btn {
+  padding: 10px 16px;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-btn:hover {
+  border-color: #6c5ce7;
+  color: #6c5ce7;
+  background: #f8f7ff;
+}
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.delete-btn {
+  padding: 10px 20px;
+  border: 2px solid #dc3545;
+  border-radius: 6px;
+  background: white;
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  border: 2px solid #6c757d;
+  border-radius: 6px;
+  background: white;
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #6c757d;
+  color: white;
+}
+
+.save-btn {
+  padding: 10px 20px;
+  border: 2px solid #28a745;
+  border-radius: 6px;
+  background: #28a745;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-btn:hover {
+  background: #218838;
+  border-color: #218838;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}

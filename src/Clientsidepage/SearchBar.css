@@ -1,0 +1,391 @@
+/* Ensure HTML and Body take full viewport height and have no default margins */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  /* Crucial: Prevent the overall page from scrolling */
+  overflow: hidden; 
+}
+
+/* Root container for the entire search page */
+.search-page {
+  padding: 20px; /* Overall page padding */
+  font-family: "Segoe UI", sans-serif;
+  background: #fafafa;
+  box-sizing: border-box; /* Include padding in element's total width and height */
+  display: flex; /* Make it a flex container */
+  flex-direction: column; /* Stack children vertically */
+  height: 100%; /* Make it take 100% height of html/body (which is 100vh) */
+}
+
+/* Search input bar */
+.search-bar {
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 18px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0; /* Ensures the search bar doesn't shrink vertically */
+}
+
+.search-bar:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* Subheading text below the input */
+.search-subtext {
+  margin-bottom: 25px; /* Space below the subtext */
+  color: #666;
+  font-size: 15px;
+  text-align: center;
+  flex-shrink: 0; /* Ensures the subtext doesn't shrink vertically */
+}
+
+/* Flex wrapper for the two main content columns (appointments and clients) */
+.content {
+  display: flex;
+  flex-wrap: wrap; /* Allows columns to wrap to a new line on smaller screens */
+  gap: 25px; /* Horizontal and vertical gap between the columns */
+  flex-grow: 1; /* **CRITICAL**: This makes .content take up all available vertical space */
+  min-height: 0; /* Essential for flex items when overflow is applied to children */
+  padding-top: 0; /* Ensure no extra top padding here that creates unwanted space */
+}
+
+/* Styles for the individual column containers (Appointments and Clients) */
+.appointments,
+.clients {
+  flex: 1; /* Allows columns to grow and share horizontal space */
+  min-width: 320px; /* Minimum width for columns before they wrap */
+  background: #ffffff; /* Solid white background for the columns */
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 20px; /* Padding *inside* the scrollable column area */
+  display: flex; /* Make columns flex containers themselves */
+  flex-direction: column; /* Stack header and content vertically within the column */
+  position: relative; /* Provides a positioning context for the sticky header */
+
+  /* **CRITICAL**: These two properties enable vertical scrolling ONLY within these columns */
+  height: 100%; /* Make them take 100% of their parent's (.content) height */
+  overflow-y: auto; /* Enable vertical scrolling when content overflows */
+  -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS devices */
+}
+
+/* **FIX FOR STICKY HEADER**: Ensures it stays at the very top and content doesn't go underneath */
+.appointments h2,
+.clients h2 {
+  flex-shrink: 0; /* Prevents the heading from shrinking */
+  font-size: 22px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  /* **CRITICAL MARGIN/PADDING**:
+     - Negative margins counteract the parent's (column's) 20px padding.
+       This pulls the h2 up and out, making it visually flush with the top edge.
+     - The bottom margin creates space between the heading and the scrolling content.
+  */
+  margin: -20px -20px 20px -20px; /* top, right, bottom, left */
+  /* Padding applied directly to the h2 for its content's spacing */
+  padding: 20px 20px 10px 20px; 
+  background: #ffffff; /* **CRITICAL**: Ensures the header is fully opaque and content doesn't show through */
+  position: sticky; /* Makes the heading sticky */
+  top: 0; /* Sticks to the very top of its scrolling container */
+  z-index: 100; /* **CRITICAL**: High z-index ensures it always overlays scrolling content */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for a "floating" effect */
+}
+
+/* Styles for the actual list items (appointment-card, client-card, no-results-message) */
+/* These will naturally flow after the h2 and scroll within the column */
+.appointments > div:not(h2), /* Selects all direct children of .appointments except h2 */
+.clients > div:not(h2) { /* Selects all direct children of .clients except h2 */
+  /* No specific overflow here; their parent (.appointments/.clients) handles it */
+}
+
+
+/* --- General Appointment Card Styles (mostly unchanged) --- */
+.appointment-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  background: #fff;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.appointment-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+  border-color: #cce5ff;
+}
+
+.appointment-card .date {
+  font-weight: bold;
+  font-size: 18px;
+  margin-right: 15px;
+  min-width: 60px;
+  color: #007bff;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.appointment-card .info {
+  flex: 1;
+}
+
+.appointment-card .time {
+  font-size: 14px;
+  color: #6a6a6a;
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.appointment-card .status {
+  background: #e6f7ff;
+  color: #0056b3;
+  padding: 3px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.appointment-card h3 {
+  margin: 8px 0 4px;
+  font-size: 17px;
+  color: #333;
+}
+
+.appointment-card p {
+  margin: 0;
+  font-size: 14px;
+  color: #5a5a5a;
+  line-height: 1.4;
+}
+
+.appointment-card .price {
+  font-weight: bold;
+  margin-left: 15px;
+  white-space: nowrap;
+  color: #28a745;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+/* --- General Client Card Styles (mostly unchanged) --- */
+.client-card {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.client-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+  border-color: #cce5ff;
+}
+
+.client-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background-color: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-right: 15px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.client-name {
+  font-weight: 600;
+  font-size: 17px;
+  color: #333;
+}
+
+.client-phone {
+  color: #7a7a7a;
+  font-size: 14px;
+}
+
+/* --- Responsive Layout for Smaller Screens --- */
+@media (max-width: 768px) {
+  .content {
+    flex-direction: column; /* Stack columns vertically on mobile */
+    padding-top: 0; /* No extra padding if subtext margin-bottom handles the gap */
+    gap: 15px; /* Slightly reduced gap between stacked columns on mobile */
+  }
+
+  .appointments,
+  .clients {
+    min-width: unset; /* Allow columns to take full width */
+    width: 100%;
+    /* On small screens, use a fixed viewport height for each column */
+    max-height: 45vh; /* Each section takes up to 45% of viewport height */
+  }
+
+  .search-page {
+    padding: 15px; /* Slightly reduced page padding on mobile */
+  }
+
+  /* --- APPOINTMENT CARD SPECIFIC ADJUSTMENTS FOR SMALL SCREENS --- */
+  .appointment-card {
+    flex-direction: column; /* Stack date, info, and price vertically */
+    align-items: flex-start; /* Align all content to the left */
+    padding: 10px; /* Reduced padding */
+    gap: 5px; /* Add small gap between stacked items */
+  }
+
+  .appointment-card .date {
+    width: 100%; /* Make date take full width */
+    text-align: left; /* Align date text to the left */
+    margin-right: 0; /* Remove right margin */
+    margin-bottom: 5px; /* Add bottom margin */
+  }
+
+  .appointment-card .info {
+    width: 100%; /* Make info take full width */
+    flex: none; /* Remove flex-grow behavior for simplified layout */
+    min-width: unset; /* Remove min-width */
+  }
+
+  .appointment-card .time-status-wrapper {
+    /* This requires the HTML change as previously discussed */
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between time and status */
+    margin-bottom: 4px; /* Space below this row */
+  }
+
+  .appointment-card .time {
+    font-size: 13px;
+    margin-right: 0;
+  }
+
+  .appointment-card .status {
+    font-size: 11px;
+    padding: 2px 7px;
+  }
+
+  .appointment-card h3 {
+    font-size: 15px;
+    margin: 4px 0;
+  }
+
+  .appointment-card p {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .appointment-card .price {
+    width: 100%;
+    text-align: right; /* Push price to the right edge of the card */
+    margin-left: 0;
+    margin-top: 5px;
+    font-size: 16px;
+    order: -1; /* Move price to the very top in small screens to be prominent */
+    color: #007bff; /* Make price standout on small screens */
+  }
+
+  .client-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}
+
+/* --- Loading and Error UI Styles --- */
+
+.search-page.loading-state,
+.search-page.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+  text-align: center;
+  background: #fdfdfd;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  margin: 40px auto;
+  max-width: 500px;
+  padding: 30px;
+  height: auto;
+  overflow: visible;
+}
+
+.loading-spinner {
+  border: 5px solid rgba(0, 123, 255, 0.2);
+  border-left-color: #007bff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 25px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.search-page.loading-state .search-subtext {
+  font-size: 1.2em;
+  color: #4a4a4a;
+  font-weight: 500;
+}
+
+.error-state .error-title {
+  color: #dc3545;
+  margin-bottom: 15px;
+  font-size: 24px;
+}
+
+.error-state .error-message {
+  color: #6c757d;
+  font-size: 1em;
+  margin-bottom: 10px;
+  max-width: 80%;
+}
+
+.error-state .error-tip {
+  color: #888;
+  font-size: 0.9em;
+  margin-top: 15px;
+}
+
+.no-results-message {
+  color: #777;
+  font-style: italic;
+  padding: 15px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  margin-top: 20px;
+  text-align: center;
+  width: calc(100% - 30px);
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px dashed #ccc;
+}

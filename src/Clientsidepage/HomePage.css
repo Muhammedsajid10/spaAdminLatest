@@ -1,0 +1,490 @@
+/* General Body and Container Styles */
+body {
+    font-family: "Segoe UI", sans-serif;
+}
+
+.graph-upcoming-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem; /* 24px */
+    padding: 1rem;
+    justify-content: center;
+    /* margin-left: 21px; */
+    width: 100%;
+    align-items: stretch;
+}
+
+.top-stats-container,
+.appointments-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem; /* 16px */
+    padding: 1rem;
+    justify-content: center;
+    /* margin-left: 21px; */
+    width: 100%;
+}
+
+/* Card Styles */
+.card,
+.stats-card,
+.appointments-left-section,
+.appointments-right-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem; /* 24px */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    flex: 1 1 450px;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.card {
+    min-height: 350px;
+    border: 1px solid #f0f0f0;
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.stats-card {
+    min-width: 280px;
+}
+
+/* Card Headers and Titles */
+.card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.card-header h3 {
+    font-size: 1.3rem; /* 20.8px */
+    margin: 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.card-header span {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+}
+
+.card-header h1 {
+    font-size: 2.4rem; /* 38.4px */
+    margin: 0.5rem 0;
+    color: #111;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: left;
+    word-break: break-word;
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.card-header p {
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.4;
+}
+
+.card-header p strong {
+    font-weight: 600;
+    color: #333;
+}
+
+.stats-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    color: #333;
+}
+
+/* Graph Card Content Alignment */
+.card-header .appointments-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.card-header .appointments-count {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.card-header .appointments-count span:first-child {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.card-header .appointments-count span {
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.card-header .appointments-count strong {
+    color: #1f2937;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Chart Wrapper */
+.chart-wrapper {
+    margin-top: 1rem;
+    width: 100%;
+    height: 250px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin-top: auto;
+}
+
+/* Stats Table */
+.stats-table {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.stats-header {
+    font-weight: bold;
+    color: #555;
+    border-bottom: 2px solid #ddd;
+}
+
+.stats-cell {
+    flex: 1;
+    text-align: left;
+    font-size: 17px;
+    padding: 0 8px;
+}
+
+.stats-cell:last-child {
+    border-right: none;
+}
+
+/* Appointments Section */
+.appointments-left-section .activity-container h2 {
+    margin: 20px 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activity-card {
+    display: flex;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.activity-date {
+    font-size: 18px;
+    font-weight: bold;
+    color: #444;
+    min-width: 60px;
+}
+
+.activity-details {
+    flex-grow: 1;
+    min-width: 200px;
+}
+
+.activity-time-status {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.activity-time {
+    color: #666;
+    font-size: 14px;
+}
+
+.activity-status {
+    background-color: #e3d8fd;
+    color: #6c47dc;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.activity-status.completed {
+    background-color: #d9f3db;
+    color: #2e7d32;
+}
+
+.activity-title {
+    font-weight: 600;
+    font-size: 16px;
+    margin: 5px 0;
+}
+
+.activity-type {
+    font-size: 14px;
+    color: #666;
+}
+
+.activity-payment {
+    font-size: 14px;
+    color: #888;
+    margin-top: 4px;
+}
+
+.activity-price {
+    font-weight: bold;
+    font-size: 16px;
+    color: #222;
+}
+
+/* Next Appointment Section */
+.next-appointment-container {
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 20px;
+    background-color: #fff;
+}
+
+.next-appointment-heading {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.next-appointment-box {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.next-date-box {
+    text-align: center;
+    min-width: 60px;
+}
+
+.next-date {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.next-month {
+    font-size: 14px;
+    color: gray;
+}
+
+.next-details {
+    flex-grow: 1;
+    min-width: 200px;
+}
+
+.next-time-status {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.next-time {
+    font-size: 14px;
+    color: #666;
+}
+
+.next-status {
+    background-color: #e3d8fd;
+    color: #6c47dc;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.next-title {
+    font-weight: 600;
+    font-size: 16px;
+    margin: 4px 0;
+}
+
+.next-info {
+    font-size: 14px;
+    color: #666;
+}
+
+.next-location {
+    font-size: 13px;
+    font-style: italic;
+    color: #3333cc;
+    margin-top: 4px;
+}
+
+.next-price {
+    font-weight: bold;
+    font-size: 16px;
+    color: #222;
+    margin-top: 6px;
+}
+
+/* Scrollbar Styles */
+.activity-scroll-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.activity-scroll-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.activity-scroll-wrapper::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
+}
+
+/* Status indicators alignment */
+.card .status-indicators {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.status-indicators .status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.status-indicators .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #5B2EFF;
+}
+
+.status-indicators .status-dot.confirmed {
+    background-color: #00C49F;
+}
+
+.status-indicators .status-dot.cancelled {
+    background-color: #FF6B6B;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .dashboard-container,
+    .top-stats-container,
+    .appointments-layout {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .top-stats-container,
+    .appointments-layout {
+        align-items: center;
+    }
+
+    .activity-card,
+    .next-appointment-box {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .activity-price,
+    .next-price {
+        margin-left: auto;
+        font-size: 14px;
+    }
+
+    .graph-upcoming-container {
+        flex-direction: column;
+        margin-left: 0;
+        padding: 0.5rem;
+        gap: 1rem;
+    }
+    
+    .card {
+        min-height: auto;
+        max-width: 100%;
+        flex: 1 1 auto;
+    }
+    
+    .card-header h1 {
+        font-size: 2rem;
+    }
+    
+    .card-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .chart-wrapper {
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .activity-title,
+    .next-title {
+        font-size: 14px;
+    }
+
+    .activity-type,
+    .next-info,
+    .next-location {
+        font-size: 13px;
+    }
+
+    .activity-time,
+    .next-time {
+        font-size: 12px;
+    }
+
+    .activity-price,
+    .next-price {
+        font-size: 14px;
+    }
+
+    .card-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .card-header p {
+        font-size: 0.9rem;
+    }
+    
+    .chart-wrapper {
+        height: 180px;
+    }
+}

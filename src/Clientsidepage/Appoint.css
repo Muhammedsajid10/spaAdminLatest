@@ -1,0 +1,193 @@
+/* --- CORE STYLES --- */
+.schedule-main-wrapper {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  /* padding: 1.5rem; */
+}
+.schedule-content-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+.export-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  min-width: 160px;
+}
+.dropdown-menu-inner {
+  padding: 8px;
+}
+.dropdown-menu-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.dropdown-menu-item:hover {
+  background: #f1f5f9;
+}
+/* --- HEADER --- */
+.page-header-section { padding: 2rem; border-bottom: 1px solid #e2e8f0; }
+.header-flex-container { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.page-primary-title { font-size: 2rem; font-weight: 700; color: #1a202c; margin: 0 0 8px 0; }
+.page-description-text { color: #64748b; font-size: 1rem; margin: 0; }
+.export-controls-wrapper { position: relative; }
+.export-trigger-button {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  background-color: #4f46e5; color: white; border: none; border-radius: 8px;
+  font-weight: 500; cursor: pointer; transition: background-color 0.2s;
+}
+.export-trigger-button:hover { background-color: #4338ca; }
+
+/* --- FILTER CONTROLS --- */
+.filter-controls-section {
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search-input-wrapper { position: relative; flex: 11 1 17px; }
+.search-field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+.search-text-input {
+  width: 100%; padding: 10px 14px 10px 44px;
+  border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem;
+}
+.filter-button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap; /* Allows buttons to wrap on medium screens */
+}
+.filter-control-button {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+  cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+}
+.filter-control-button:hover { border-color: #3b82f6; background: #f8fafc; }
+
+/* --- DESKTOP TABLE --- */
+.data-table-container { display: block; overflow-x: auto; }
+.schedule-data-table { width: 100%; border-collapse: collapse; }
+.schedule-data-table th {
+  padding: 12px 16px; text-align: left; font-weight: 600; color: #64748b;
+  background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.8rem;
+  text-transform: uppercase; cursor: pointer; white-space: nowrap;
+}
+.schedule-data-table td {
+  padding: 14px 16px; font-size: 0.9rem; color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+}
+.schedule-data-table tbody tr:hover { background-color: #f8fafc; }
+.reference-link-text { color: #3b82f6; font-weight: 500; }
+.emphasized-text { font-weight: 500; color: #1a202c; }
+
+.schedule-data-table tfoot .table-summary-row {
+    background-color: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+}
+.schedule-data-table tfoot td {
+    padding: 14px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* --- MOBILE CARD LAYOUT --- */
+.mobile-card-layout { display: none; padding: 1.5rem; }
+
+.mobile-summary-card {
+    display: flex;
+    justify-content: space-around;
+    background-color: #f1f5f9;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.summary-value { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+.summary-label { font-size: 0.8rem; color: #64748b; }
+
+.schedule-card-item {
+  background: white; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 1rem; margin-bottom: 1rem;
+}
+.card-top-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+.card-reference-number { color: #3b82f6; font-weight: 600; font-size: 1rem; }
+
+/* --- FIX: Use CSS Grid for perfect alignment in mobile cards --- */
+.card-details-section { 
+  display: grid;
+  grid-template-columns: auto 1fr; /* Label column sized to content, value column takes rest */
+  gap: 10px 12px; /* 10px row gap, 12px column gap */
+  align-items: center;
+}
+.card-info-row {
+  /* This class is now a grid item, not a flex container */
+  display: contents; /* Makes the div act like a passthrough for grid layout */
+}
+.card-info-row span:first-child { 
+  color: #64748b;
+  font-size: 0.9rem;
+}
+.card-info-row span:last-child { 
+  font-weight: 500; 
+  text-align: right;
+  font-size: 0.9rem;
+}
+.card-footer-section { padding-top: 1rem; margin-top: 1rem; border-top: 1px solid #f1f5f9; text-align: right; }
+
+/* --- SHARED & UTILITY --- */
+.status-indicator-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 16px;
+  font-size: 0.75rem; font-weight: 500; text-transform: capitalize;
+}
+.status-indicator-badge.completed { background: #dcfce7; color: #16a34a; }
+.status-indicator-badge.confirmed { background: #dbeafe; color: #1d4ed8; }
+.status-indicator-badge.pending { background-color: #feefc7; color: #92400e; }
+.status-indicator-badge.cancelled { background-color: #fee2e2; color: #991b1b; }
+.spinner-container { min-height: 200px; display: flex; align-items: center; justify-content: center; }
+.spinner { border: 5px solid #f3f3f3; border-top: 5px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.error-message { text-align: center; padding: 2rem; color: #991b1b; }
+
+/* --- RESPONSIVE BREAKPOINTS --- */
+@media (max-width: 768px) {
+  .schedule-main-wrapper { padding: 0; }
+  .schedule-content-container { border-radius: 0; }
+  .page-header-section { padding: 1.5rem; }
+  .page-primary-title { font-size: 1.5rem; }
+  .header-flex-container { flex-direction: column; gap: 1rem; align-items: stretch; }
+  
+  .filter-controls-section { 
+    padding: 1rem; 
+    flex-direction: column; 
+    align-items: stretch; 
+  }
+  
+  /* --- FIX: Use Grid for a clean button layout on mobile --- */
+  .filter-button-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Creates a clean 2x2 grid if needed */
+    gap: 0.75rem;
+  }
+  /* If there's an odd number of buttons, make the last one span full width */
+  .filter-button-group > button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+  
+  .data-table-container { display: none; }
+  .mobile-card-layout { display: block; }
+}

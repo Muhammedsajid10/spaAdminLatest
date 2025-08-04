@@ -1,0 +1,740 @@
+/* --- CORE LAYOUT --- */
+/* Basic layout for the overall page structure, starting mobile-first */
+.client-directory-container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  padding: 1rem; /* Smaller padding for mobile */
+}
+
+/* Wrapper to constrain content width on larger screens */
+.client-directory-wrapper {
+  max-width: 1280px; /* Max width for desktop content */
+  margin: 0 auto; /* Center the wrapper */
+  width: 100%;
+}
+
+/* Spinner Styles */
+.spinner-container {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #6366f1;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- DIRECTORY HEADER --- */
+/* Enhanced styles for the client directory header for proper UI and alignment */
+.directory-header {
+  display: flex;
+  flex-direction: column; /* Default: stack header blocks on small screens */
+  justify-content: space-between; /* Distribute space between blocks on wider screens */
+  align-items: flex-start; /* Align content to the left (start) */
+  margin-bottom: 1.5rem; /* Space below the entire header section */
+  gap: 1rem; /* Gap between header-main and any subsequent elements */
+  flex-wrap: wrap; /* Allow elements to wrap if content is too wide */
+}
+
+/* Container for the title block and action block (used to manage their layout) */
+.header-main {
+  display: flex;
+  flex-direction: column; /* Default: stack title block and action block */
+  gap: 1rem; /* Space between title block and actions block when stacked */
+  width: 100%; /* Occupy full width on small screens */
+}
+
+/* Styling for the block containing the main title and subtitle */
+.header-title-block {
+  flex: 1; /* Allows this block to grow and take available space */
+  display: flex; /* Use flex to align title and count */
+  flex-direction: column; /* Stack title and subtitle */
+  align-items: flex-start; /* Align title and subtitle to the left */
+}
+
+.directory-title {
+  font-size: 1.5rem; /* Smaller title for mobile */
+  font-weight: 700;
+  color: #111827;
+  display: flex; /* Use flex for "Clients list" text and count */
+  align-items: center; /* Vertically align text and count */
+  gap: 0.5rem; /* Space between title text and count */
+  margin-bottom: 0.5rem; /* Proper vertical spacing between title and subtitle */
+}
+
+.directory-count {
+  background-color: #eef2ff;
+  color: #4338ca;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px; /* Pill shape */
+  font-size: 0.8rem;
+  font-weight: 500;
+  flex-shrink: 0; /* Prevent the count badge from shrinking */
+}
+
+.directory-subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0; /* Remove any default top margin that might push it away */
+}
+
+.learn-more {
+  color: #2563eb;
+  cursor: pointer;
+  margin-left: 0.25rem;
+}
+
+.learn-more:hover {
+  color: #1d4ed8;
+}
+
+/* Styling for the block containing action buttons (like "Add Client") */
+.header-actions-block {
+  display: flex;
+  align-items: center; /* Vertically align buttons */
+  gap: 0.75rem; /* Space between action buttons */
+  width: 100%; /* Take full width on small screens */
+  justify-content: flex-end; /* **Align actions to the right on all screens** */
+  padding-top: 0.5rem; /* Small padding top if stacked below title block */
+}
+
+/* Refined "Add Client" button styling */
+.btn-add-client {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center icon and text */
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem; /* More generous padding for better touch targets */
+  background: #4f46e5; /* Professional purple */
+  color: white;
+  border: none;
+  border-radius: 0.5rem; /* Rounded corners */
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; /* Smooth transitions */
+  flex-shrink: 0; /* Prevent button from shrinking */
+  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.2); /* Subtle shadow */
+}
+
+.btn-add-client:hover {
+  background: #4338ca; /* Darker on hover */
+  transform: translateY(-2px); /* Slight lift effect */
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); /* Enhanced shadow on hover */
+}
+.btn-add-client:active {
+  transform: translateY(0); /* Return to normal on click */
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.2); /* Smaller shadow on click */
+}
+
+.btn-text {
+  display: inline;
+  white-space: nowrap; /* Prevent text from wrapping */
+}
+
+/* --- SEARCH & FILTERS --- */
+.directory-search-filters {
+  display: flex;
+  flex-direction: column; /* Default: stack on small screens */
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input-box {
+  position: relative;
+  flex-grow: 1;
+  width: 100%;
+}
+
+.icon-search {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.input-search {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input-search:focus {
+  outline: 2px solid #3b82f6;
+  border-color: transparent;
+}
+
+/* Sort Dropdown Styles */
+.sort-dropdown {
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.sort-toggle-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+.sort-toggle-button:hover {
+  background-color: #f9fafb;
+}
+
+.sort-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 10;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 180px;
+  padding: 0.5rem;
+}
+
+.sort-option {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.sort-option:hover {
+  background-color: #f3f4f6;
+}
+
+/* --- RESPONSIVE TABLE CONTAINER --- */
+.client-table-container {
+  background-color: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  overflow-x: auto;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.client-table-container table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.client-table-container th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.client-table-container td {
+  padding: 14px 16px;
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.client-table-container tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.client-table-container tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Table Column Specific Adjustments */
+.client-table-container th:nth-child(1),
+.client-table-container td:nth-child(1) {
+  width: 3rem;
+  text-align: center;
+}
+
+.client-table-container th:nth-child(2),
+.client-table-container td:nth-child(2) {
+  min-width: 180px;
+}
+
+.client-table-container th:nth-child(3),
+.client-table-container td:nth-child(3) { min-width: 120px; }
+.client-table-container th:nth-child(4),
+.client-table-container td:nth-child(4) { min-width: 150px; }
+.client-table-container th:nth-child(5),
+.client-table-container td:nth-child(5) { min-width: 100px; }
+.client-table-container th:nth-child(6),
+.client-table-container td:nth-child(6) { min-width: 120px; }
+.client-table-container th:nth-child(7),
+.client-table-container td:nth-child(7) { width: 100px; text-align: right; }
+
+
+.client-avatar-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar-color {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+
+/* Avatar colors */
+.avatar-purple { background-color: #8b5cf6; }
+.avatar-blue { background-color: #3b82f6; }
+.avatar-indigo { background-color: #6366f1; }
+.avatar-green { background-color: #10b981; }
+.avatar-red { background-color: #ef4444; }
+.avatar-yellow { background-color: #f59e0b; }
+.avatar-pink { background-color: #ec4899; }
+.avatar-teal { background-color: #14b8a6; }
+.avatar-cyan { background-color: #06b6d4; }
+.avatar-orange { background-color: #f97316; }
+
+.client-full-name {
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.client-secondary-phone {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- ACTION BUTTONS --- */
+.table-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  min-width: 6rem;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.btn-edit { background-color: #fef3c7; }
+.btn-edit:hover { background-color: #fde68a; color: #924000; }
+.btn-delete { background-color: #fee2e2; }
+.btn-delete:hover { background-color: #fecaca; color: #dc2626; }
+
+.client-no-results {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+/* --- MODAL STYLES --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: modalFadeIn 0.3s ease-out;
+  padding: 0.5rem;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: calc(100% - 2rem);
+  max-width: 350px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+.modal-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.modal-close:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+  transform: scale(1.05);
+}
+
+.client-form {
+  padding: 0 1rem 1rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-group input:hover,
+.form-group select:hover {
+  border-color: #9ca3af;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-primary {
+  background-color: #000000;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+/* Animations */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Error States */
+.form-group input.error,
+.form-group select.error {
+  border-color: #dc2626;
+  box-shadow: 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.form-group .error-message {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* Success Animation */
+.form-group input.success,
+.form-group select.success {
+  border-color: #10b981;
+  box-shadow: 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+
+/* --- MEDIA QUERIES FOR RESPONSIVENESS --- */
+
+/* Smallest Screens (up to 479px - very small phones) */
+@media (max-width: 479px) {
+  .modal-content {
+    width: calc(100% - 1rem);
+    max-width: 280px;
+    max-height: 85vh;
+  }
+  .modal-header h2 {
+    font-size: 0.9rem;
+  }
+  .modal-close {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .form-group input,
+  .form-group select,
+  .btn-primary,
+  .btn-secondary {
+    font-size: 0.75rem;
+    padding: 0.4rem;
+  }
+  .form-group label {
+      font-size: 0.7rem;
+  }
+}
+
+
+/* Medium Screens (640px to 1023px - tablets and larger phones) */
+@media (min-width: 640px) {
+  .client-directory-container {
+    padding: 1.5rem;
+  }
+
+  /* Header adjustments for medium screens */
+  .directory-header {
+    flex-direction: row; /* Main header blocks align horizontally */
+    align-items: center; /* Centers items vertically within the header */
+    justify-content: space-between; /* Pushes content to the left and right edges */
+    gap: 2rem; /* **Increased gap between title block and actions block** */
+  }
+  
+  .header-main {
+    flex-direction: row; /* Title block and actions align horizontally within header-main */
+    align-items: center;
+    justify-content: space-between;
+    width: auto; /* Allow header-main to size based on content */
+    flex-grow: 1; /* **Allow header-main to grow to push actions to the right** */
+  }
+
+  .header-title-block {
+      /* flex-direction: column is already set on header-title-block for vertical stacking */
+      margin-bottom: 0; /* No extra margin when horizontal */
+  }
+  
+  .directory-title {
+    font-size: 1.875rem;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem; /* Maintain vertical space for subtitle */
+  }
+
+  .directory-count {
+    font-size: 0.875rem;
+  }
+
+  .header-actions-block {
+    justify-content: flex-end; /* Push action buttons to the right */
+    width: auto; /* Allow actions block to shrink */
+    padding-top: 0; /* No extra padding when horizontal */
+  }
+
+  .btn-add-client {
+    padding: 0.75rem 1.25rem;
+  }
+
+
+  .directory-search-filters {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .search-input-box {
+    max-width: 24rem;
+  }
+
+  .input-search {
+    font-size: 1rem;
+  }
+
+  .sort-dropdown {
+    width: auto;
+  }
+
+  .sort-toggle-button {
+    font-size: 1rem;
+  }
+
+  .sort-dropdown-menu {
+    width: 180px;
+  }
+
+  /* Table column adjustments for medium screens */
+  .client-table-container table {
+    min-width: 800px;
+  }
+  .client-table-container th,
+  .client-table-container td {
+    font-size: 0.9rem;
+  }
+
+  /* Modal adjustments for medium screens */
+  .modal-content {
+    max-width: 32rem;
+    max-height: 90vh;
+    width: 90%;
+    margin: auto;
+  }
+  .modal-header {
+    padding: 1rem 1.5rem;
+  }
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+  .client-form {
+    padding: 0 1.5rem 1.5rem;
+  }
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .modal-actions {
+    flex-direction: row;
+  }
+  .btn-primary,
+  .btn-secondary {
+    width: auto;
+  }
+}
+
+/* Large Screens (1024px and up - desktops) */
+@media (min-width: 1024px) {
+  /* The 640px breakpoint styles should handle desktop well */
+}
