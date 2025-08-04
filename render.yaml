@@ -8,7 +8,5 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-    disk:
-      name: spa-admin-data
-      mountPath: /opt/render/project/src
-      sizeGB: 1
+      - key: PORT
+        value: 10000
