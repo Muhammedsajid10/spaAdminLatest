@@ -12,5 +12,21 @@ export default defineConfig({
         secure: false
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['lucide-react', '@mui/material'],
+          utils: ['axios', 'date-fns']
+        }
+      }
+    }
+  },
+  preview: {
+    port: process.env.PORT || 5173,
+    host: '0.0.0.0'
   }
 })
