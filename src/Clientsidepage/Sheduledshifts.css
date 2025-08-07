@@ -240,7 +240,7 @@
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  overflow: hidden;
+  /* overflow: hidden; */
   animation: modalSlideIn 0.3s ease-out;
 }
 

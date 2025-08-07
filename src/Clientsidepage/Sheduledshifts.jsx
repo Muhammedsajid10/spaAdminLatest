@@ -115,6 +115,8 @@ const ShiftEditorModal = ({
     { label: 'Evening Shift', value: '14:00 - 22:00' },
     { label: 'Night Shift', value: '22:00 - 06:00' },
     { label: 'Full Day', value: '00:00 - 23:59' },
+    { label: 'Split Shift', value: '09:00 - 13:00, 14:00 - 18:00' },
+    { label: 'Morning + Evening', value: '06:00 - 12:00, 18:00 - 22:00' },
   ];
 
   return (
@@ -141,11 +143,11 @@ const ShiftEditorModal = ({
               type="text"
               value={editingShift.newShift}
               onChange={(e) => setEditingShift(prev => ({ ...prev, newShift: e.target.value }))}
-              placeholder="e.g., 09:00 - 17:00"
+              placeholder="e.g., 09:00 - 17:00 or 09:00 - 13:00, 14:00 - 18:00"
               className="shift-input"
             />
             <div className="shift-examples">
-              <span>Examples: 09:00 - 17:00, 14:00 - 22:00, 00:00 - 08:00</span>
+              <span>Examples: 09:00 - 17:00, 14:00 - 22:00, 09:00 - 13:00, 14:00 - 18:00</span>
             </div>
           </div>
 
@@ -596,17 +598,22 @@ const ShiftScheduler = () => {
       const data = await response.json();
       const employees = data.data.employees || [];
 
-      const transformedMembers = employees.map(emp => ({
-        id: emp._id,
-        name: emp.user?.firstName && emp.user?.lastName
-          ? `${emp.user.firstName} ${emp.user.lastName}`
-          : emp.user?.firstName || emp.user?.email || 'N/A',
-        avatar: emp.user?.firstName?.[0] || (emp.user?.email?.[0] || 'E').toUpperCase(),
-        avatarColor: getAvatarColor(emp._id),
-        workSchedule: emp.workSchedule || {}, // Ensure workSchedule exists
-        position: emp.position || '',
-        department: emp.department || ''
-      }));
+      console.log('Raw employee data from backend:', employees); // Debug log
+
+      const transformedMembers = employees.map(emp => {
+        console.log('Processing employee workSchedule:', emp.workSchedule); // Debug log
+        return {
+          id: emp._id,
+          name: emp.user?.firstName && emp.user?.lastName
+            ? `${emp.user.firstName} ${emp.user.lastName}`
+            : emp.user?.firstName || emp.user?.email || 'N/A',
+          avatar: emp.user?.firstName?.[0] || (emp.user?.email?.[0] || 'E').toUpperCase(),
+          avatarColor: getAvatarColor(emp._id),
+          workSchedule: emp.workSchedule || {}, // Keep the full workSchedule structure including shifts field
+          position: emp.position || '',
+          department: emp.department || ''
+        };
+      });
 
       setTeamMembers(transformedMembers);
     } catch (err) {
@@ -662,9 +669,22 @@ const ShiftScheduler = () => {
 
     const dayName = getDayName(day);
     const schedule = member.workSchedule[dayName];
-    const currentShift = (schedule && schedule.isWorking && schedule.startTime && schedule.endTime)
-      ? `${schedule.startTime} - ${schedule.endTime}`
-      : '';
+    
+    console.log(`Shift click for ${member.name} on ${dayName}:`, schedule); // Debug log
+    
+    // Get current shift - prioritize the full shifts string if available
+    let currentShift = '';
+    if (schedule && schedule.isWorking) {
+      if (schedule.shifts) {
+        currentShift = schedule.shifts; // Multiple shifts format
+        console.log('Using shifts field:', currentShift); // Debug log
+      } else if (schedule.startTime && schedule.endTime) {
+        currentShift = `${schedule.startTime} - ${schedule.endTime}`; // Single shift fallback
+        console.log('Using startTime/endTime fallback:', currentShift); // Debug log
+      }
+    }
+
+    console.log('Final currentShift value:', currentShift); // Debug log
 
     setEditingShift({
       memberId,
@@ -685,23 +705,55 @@ const ShiftScheduler = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const [startTime, endTime] = editingShift.newShift.split(' - ');
+      
+      // Parse multiple shifts - supports both single and multiple shift formats
+      const parseMultipleShifts = (shiftString) => {
+        // Remove extra spaces and split by comma for multiple shifts
+        const shifts = shiftString.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        const parsedShifts = [];
+        
+        for (const shift of shifts) {
+          // Split each shift by " - " to get start and end times
+          const parts = shift.split(' - ');
+          if (parts.length !== 2) {
+            throw new Error(`Invalid shift format: "${shift}". Use format like "09:00 - 17:00" or "09:00 - 13:00, 14:00 - 18:00"`);
+          }
+          
+          const [startTime, endTime] = parts.map(t => t.trim());
+          
+          // Validate time format (HH:MM)
+          const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+          if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+            throw new Error(`Invalid time format in "${shift}". Use HH:MM format (e.g., 09:00)`);
+          }
+          
+          parsedShifts.push({ startTime, endTime });
+        }
+        
+        return parsedShifts;
+      };
 
-      // Basic Validation
-      if (!startTime || !endTime) {
+      // Validate input
+      if (!editingShift.newShift || !editingShift.newShift.trim()) {
         throw new Error('Shift time is required (e.g., 09:00 - 17:00)');
       }
-      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-      if (!timeRegex.test(startTime.trim()) || !timeRegex.test(endTime.trim())) {
-        throw new Error('Invalid time format. Use HH:MM (e.g., 09:00)');
-      }
+
+      const shifts = parseMultipleShifts(editingShift.newShift);
+
+      // For backend compatibility, we'll store multiple shifts as a comma-separated string
+      // The backend can be updated later to handle array format
+      const shiftString = shifts.map(s => `${s.startTime} - ${s.endTime}`).join(', ');
+      
+      // For now, use the first shift for startTime/endTime fields (backward compatibility)
+      const primaryShift = shifts[0];
 
       const updateData = {
         workSchedule: {
           [editingShift.dayName]: {
             isWorking: true,
-            startTime: startTime.trim(),
-            endTime: endTime.trim()
+            startTime: primaryShift.startTime,
+            endTime: primaryShift.endTime,
+            shifts: shiftString // Store full shift string for multiple shifts
           }
         }
       };
@@ -721,19 +773,21 @@ const ShiftScheduler = () => {
       }
 
       // Update local state directly to reflect change
-      setTeamMembers(prevMembers =>
-        prevMembers.map(member =>
+      setTeamMembers(prevMembers => {
+        const updatedMembers = prevMembers.map(member =>
           member.id === editingShift.memberId
             ? {
                 ...member,
                 workSchedule: {
-                  ...member.workSchedule,
+                  ...member.workSchedule, // Preserve existing workSchedule for other days
                   [editingShift.dayName]: updateData.workSchedule[editingShift.dayName]
                 }
               }
             : member
-        )
-      );
+        );
+        console.log('Local state updated after shift save:', updatedMembers.find(m => m.id === editingShift.memberId)?.workSchedule); // Debug log
+        return updatedMembers;
+      });
       setShowShiftEditor(false);
     } catch (err) {
       setShiftEditorError(err.message); // Set error for modal
@@ -778,19 +832,21 @@ const ShiftScheduler = () => {
       }
 
       // Update local state
-      setTeamMembers(prevMembers =>
-        prevMembers.map(member =>
+      setTeamMembers(prevMembers => {
+        const updatedMembers = prevMembers.map(member =>
           member.id === editingShift.memberId
             ? {
                 ...member,
                 workSchedule: {
-                  ...member.workSchedule,
+                  ...member.workSchedule, // Preserve existing workSchedule for other days
                   [editingShift.dayName]: updateData.workSchedule[editingShift.dayName]
                 }
               }
             : member
-        )
-      );
+        );
+        console.log('Local state updated after shift delete:', updatedMembers.find(m => m.id === editingShift.memberId)?.workSchedule); // Debug log
+        return updatedMembers;
+      });
       setShowShiftEditor(false);
     } catch (err) {
       setShiftEditorError(err.message);
@@ -841,10 +897,16 @@ const ShiftScheduler = () => {
     setTeamMembers(prevMembers => {
       const updatedMembers = prevMembers.map(member =>
         member.id === employeeId
-          ? { ...member, workSchedule: newSchedule }
+          ? { 
+              ...member, 
+              workSchedule: {
+                ...member.workSchedule, // Preserve existing schedule
+                ...newSchedule // Merge with new schedule
+              }
+            }
           : member
       );
-      console.log('Local state updated:', updatedMembers);
+      console.log('Local state updated:', updatedMembers.find(m => m.id === employeeId)?.workSchedule);
       return updatedMembers;
     });
   };
@@ -855,15 +917,36 @@ const ShiftScheduler = () => {
     weekDays.forEach(day => {
       const dayName = getDayName(day);
       const schedule = member.workSchedule[dayName];
-      if (schedule && schedule.isWorking && schedule.startTime && schedule.endTime) {
-        let startMinutes = timeToMinutes(schedule.startTime);
-        let endMinutes = timeToMinutes(schedule.endTime);
-        
-        // Handle overnight shifts
-        if (endMinutes < startMinutes) {
-            endMinutes += 24 * 60; // Add 24 hours (1440 minutes) to end time
+      if (schedule && schedule.isWorking) {
+        // Handle multiple shifts if available
+        if (schedule.shifts) {
+          // Parse multiple shifts from the shifts string
+          const shifts = schedule.shifts.split(',').map(s => s.trim());
+          shifts.forEach(shift => {
+            const parts = shift.split(' - ');
+            if (parts.length === 2) {
+              const [startTime, endTime] = parts.map(t => t.trim());
+              let startMinutes = timeToMinutes(startTime);
+              let endMinutes = timeToMinutes(endTime);
+              
+              // Handle overnight shifts
+              if (endMinutes < startMinutes) {
+                endMinutes += 24 * 60;
+              }
+              totalMinutes += endMinutes - startMinutes;
+            }
+          });
+        } else if (schedule.startTime && schedule.endTime) {
+          // Fallback to single shift calculation
+          let startMinutes = timeToMinutes(schedule.startTime);
+          let endMinutes = timeToMinutes(schedule.endTime);
+          
+          // Handle overnight shifts
+          if (endMinutes < startMinutes) {
+            endMinutes += 24 * 60;
+          }
+          totalMinutes += endMinutes - startMinutes;
         }
-        totalMinutes += endMinutes - startMinutes;
       }
     });
 
@@ -881,15 +964,36 @@ const ShiftScheduler = () => {
     const dayName = getDayName(day);
     allMembers.forEach(member => {
       const schedule = member.workSchedule[dayName];
-      if (schedule && schedule.isWorking && schedule.startTime && schedule.endTime) {
-        let startMinutes = timeToMinutes(schedule.startTime);
-        let endMinutes = timeToMinutes(schedule.endTime);
-        
-        // Handle overnight shifts
-        if (endMinutes < startMinutes) {
+      if (schedule && schedule.isWorking) {
+        // Handle multiple shifts if available
+        if (schedule.shifts) {
+          // Parse multiple shifts from the shifts string
+          const shifts = schedule.shifts.split(',').map(s => s.trim());
+          shifts.forEach(shift => {
+            const parts = shift.split(' - ');
+            if (parts.length === 2) {
+              const [startTime, endTime] = parts.map(t => t.trim());
+              let startMinutes = timeToMinutes(startTime);
+              let endMinutes = timeToMinutes(endTime);
+              
+              // Handle overnight shifts
+              if (endMinutes < startMinutes) {
+                endMinutes += 24 * 60;
+              }
+              totalMinutes += endMinutes - startMinutes;
+            }
+          });
+        } else if (schedule.startTime && schedule.endTime) {
+          // Fallback to single shift calculation
+          let startMinutes = timeToMinutes(schedule.startTime);
+          let endMinutes = timeToMinutes(schedule.endTime);
+          
+          // Handle overnight shifts
+          if (endMinutes < startMinutes) {
             endMinutes += 24 * 60;
+          }
+          totalMinutes += endMinutes - startMinutes;
         }
-        totalMinutes += endMinutes - startMinutes;
       }
     });
 
@@ -905,9 +1009,28 @@ const ShiftScheduler = () => {
   const getShiftDisplay = (member, day) => {
     const dayName = getDayName(day);
     const schedule = member.workSchedule[dayName];
-    if (schedule && schedule.isWorking && schedule.startTime && schedule.endTime) {
-      return `${schedule.startTime} - ${schedule.endTime}`;
+    
+    console.log(`Getting shift display for ${member.name} on ${dayName}:`, {
+      schedule,
+      fullWorkSchedule: member.workSchedule,
+      hasShifts: schedule?.shifts,
+      hasStartEnd: schedule?.startTime && schedule?.endTime,
+      isWorking: schedule?.isWorking
+    }); // Enhanced debug log
+    
+    if (schedule && schedule.isWorking) {
+      // Check if we have multiple shifts stored
+      if (schedule.shifts) {
+        console.log(`Found shifts field: ${schedule.shifts}`); // Debug log
+        return schedule.shifts; // Return the full shift string (e.g., "09:00 - 13:00, 14:00 - 18:00")
+      }
+      // Fallback to single shift format for backward compatibility
+      if (schedule.startTime && schedule.endTime) {
+        console.log(`Using fallback: ${schedule.startTime} - ${schedule.endTime}`); // Debug log
+        return `${schedule.startTime} - ${schedule.endTime}`;
+      }
     }
+    console.log('No shift found for this day'); // Debug log
     return null;
   };
 

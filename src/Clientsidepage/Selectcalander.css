@@ -330,6 +330,63 @@
   pointer-events: none; /* Ensure clicks pass through to parent .time-slot */
 }
 
+/* === NO SHIFT STYLES (Grey shading for absent employees) === */
+.staff-absent {
+  opacity: 0.7;
+}
+
+.staff-absent .staff-name,
+.staff-absent .staff-position {
+  color: var(--text-muted);
+}
+
+.staff-status {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.time-slot.no-shift {
+  background-color: #f3f4f6; /* Light grey background */
+  cursor: not-allowed;
+  opacity: 0.6;
+  position: relative;
+}
+
+.time-slot.no-shift:hover {
+  background-color: #f3f4f6;
+  opacity: 0.6;
+}
+
+.week-day-cell.no-shift {
+  background-color: #f3f4f6;
+  opacity: 0.7;
+}
+
+.week-no-shift {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 60px;
+}
+
+.no-shift-text {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.week-empty-cell[style*="cursor: not-allowed"] {
+  background-color: #f3f4f6;
+  opacity: 0.7;
+}
+
+.week-empty-cell[style*="cursor: not-allowed"]:hover {
+  background-color: #f3f4f6;
+}
+
 /* === CURRENT TIME INDICATOR LINE === */
 .current-time-line {
     position: absolute;
@@ -2036,15 +2093,32 @@
 }
 
 /* Clean Modal Box */
-.booking-modal {
+/* .booking-modal {
   position: relative;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-width: 500px;
-  width: 100%;
-  max-height: 85vh;
+  max-width: 750px;
+  width: 95%;
+  max-height: 90vh;
   overflow-y: auto;
+  height: 380px;
+} */
+
+.booking-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 750px;
+    width: 95%;
+    max-height: 90vh;
+    /* overflow-y: auto; */
+    height: 480px;
+    z-index: 999;
 }
 
 /* Simple Header */
@@ -2298,7 +2372,7 @@
   border: 1px solid var(--border-color);
   border-radius: 0 0 6px 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  max-height: 150px;
+  max-height: 200px;
   overflow-y: auto;
   z-index: 100;
 }
@@ -2878,4 +2952,89 @@
   .booking-modal-actions {
     flex-direction: column;
   }
+}
+
+/* === BOOKING TOOLTIP STYLES === */
+.booking-tooltip {
+  position: fixed;
+  z-index: 10000;
+  background: linear-gradient(135deg, #333 0%, #444 100%);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  max-width: 250px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.12);
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+.booking-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+  z-index: 1;
+}
+
+.booking-tooltip .tooltip-client {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.booking-tooltip .tooltip-service {
+  color: #e2e8f0;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.booking-tooltip .tooltip-details {
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.booking-tooltip .tooltip-notes {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-style: italic;
+  color: #a1a1aa;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+/* Hover effect improvements for appointment elements */
+.appointment:hover,
+.week-appointment-block:hover,
+.week-appointment-entry:hover,
+.month-appointment-entry:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.appointment:hover .appointment-text,
+.week-appointment-block:hover .appointment-client,
+.week-appointment-block:hover .appointment-service {
+  font-weight: 600;
 }

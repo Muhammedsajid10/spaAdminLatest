@@ -55,6 +55,21 @@ const getRandomAppointmentColor = () => {
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
+// Helper function to check if an employee has a shift on a specific day
+const getDayName = (date) => {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getDay()];
+};
+
+const hasShiftOnDate = (employee, date) => {
+  if (!employee.workSchedule) return false;
+  
+  const dayName = getDayName(date);
+  const schedule = employee.workSchedule[dayName];
+  
+  return schedule && schedule.isWorking;
+};
+
 const MOCK_SUCCESS_DATA = {
   employees: [
     { id: 'e1', name: 'Alice', position: 'Stylist', avatar: 'https://i.pravatar.cc/150?img=1', avatarColor: '#f97316', unavailablePeriods: [] },
@@ -149,6 +164,11 @@ const SelectCalendar = () => {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [dropdownPositionedAbove, setDropdownPositionedAbove] = useState(false);
 
+  // Booking Hover Tooltip States
+  const [showBookingTooltip, setShowBookingTooltip] = useState(false);
+  const [tooltipData, setTooltipData] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+
   const [bookingForm, setBookingForm] = useState({
     clientName: '',
     clientEmail: '',
@@ -163,11 +183,20 @@ const SelectCalendar = () => {
   const handleTimeSlotClick = (employeeId, slotTime, day) => {
     // This function is for clicking a slot on the calendar grid
     // Now it behaves the same as the "Add" button - full booking flow
+    const employee = employees.find(emp => emp.id === employeeId);
+    
+    // Check if employee has a shift on this day
+    if (!hasShiftOnDate(employee, day || currentDate)) {
+      setUnavailableMessage(`${employee?.name || 'Employee'} has no shift scheduled on this day`);
+      setShowUnavailablePopup(true);
+      return;
+    }
+    
     const unavailableReason = isTimeSlotUnavailable(employeeId, slotTime);
-    if (unavailableReason) {
+    if (unavailableReason && unavailableReason !== "No shift scheduled") {
       setUnavailableMessage(`This time slot is unavailable: ${unavailableReason}`);
       setShowUnavailablePopup(true);
-    } else {
+    } else if (unavailableReason !== "No shift scheduled") {
       // Store the clicked employee and time slot as defaults for pre-selection
       const staff = employees.find(emp => emp.id === employeeId);
       const [hour, minute] = slotTime.split(':').map(Number);
@@ -227,20 +256,29 @@ const SelectCalendar = () => {
 
   const isTimeSlotUnavailable = (employeeId, slotTime) => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee || !employee.unavailablePeriods) return false;
+    if (!employee) return false;
 
-    const slotDate = new Date(currentDate);
-    const [hours, minutes] = slotTime.split(':').map(Number);
-    slotDate.setHours(hours, minutes, 0, 0);
+    // Check if employee has a shift on this day
+    if (!hasShiftOnDate(employee, currentDate)) {
+      return "No shift scheduled";
+    }
 
-    for (const period of employee.unavailablePeriods) {
-      const periodStart = new Date(period.start);
-      const periodEnd = new Date(period.end);
+    // Check for existing unavailable periods
+    if (employee.unavailablePeriods) {
+      const slotDate = new Date(currentDate);
+      const [hours, minutes] = slotTime.split(':').map(Number);
+      slotDate.setHours(hours, minutes, 0, 0);
 
-      if (slotDate >= periodStart && slotDate < periodEnd) {
-        return period.reason || "Unavailable";
+      for (const period of employee.unavailablePeriods) {
+        const periodStart = new Date(period.start);
+        const periodEnd = new Date(period.end);
+
+        if (slotDate >= periodStart && slotDate < periodEnd) {
+          return period.reason || "Unavailable";
+        }
       }
     }
+    
     return false;
   };
 
@@ -284,7 +322,61 @@ const SelectCalendar = () => {
       console.log('Professionals API response:', data);
       
       if (res.ok && data.success) {
-        setAvailableProfessionals(data.data?.professionals || []);
+        const allProfessionals = data.data?.professionals || [];
+        console.log('Total professionals received:', allProfessionals.length);
+        
+        // Debug: Log each professional's status
+        allProfessionals.forEach((prof, index) => {
+          const isActive = prof.user?.isActive !== false;
+          const workScheduleForCheck = {
+            workSchedule: prof.workSchedule || {}
+          };
+          const hasShift = hasShiftOnDate(workScheduleForCheck, date);
+          
+          console.log(`Professional ${index + 1}:`, {
+            name: `${prof.user?.firstName} ${prof.user?.lastName}`,
+            isActive,
+            hasShift,
+            workSchedule: prof.workSchedule,
+            selectedDate: date.toISOString().split('T')[0],
+            dayName: getDayName(date),
+            scheduleForDay: prof.workSchedule?.[getDayName(date)]
+          });
+        });
+        
+        // Filter out inactive employees and those without shifts on the selected date
+        const activeProfessionals = allProfessionals.filter(prof => {
+          const isActive = prof.user?.isActive !== false;
+          const workScheduleForCheck = {
+            workSchedule: prof.workSchedule || {}
+          };
+          const hasShift = hasShiftOnDate(workScheduleForCheck, date);
+          
+          // For booking purposes, show all active professionals regardless of shift
+          // The backend should handle availability checking
+          console.log(`Filtering Professional: ${prof.user?.firstName} - Active: ${isActive}, HasShift: ${hasShift}`);
+          
+          return isActive; // Only filter by active status for now
+        });
+        
+        console.log('Active professionals with shifts:', activeProfessionals.length);
+        
+        setAvailableProfessionals(activeProfessionals);
+        
+        if (activeProfessionals.length === 0 && (data.data?.professionals || []).length > 0) {
+          const totalProfessionals = data.data?.professionals || [];
+          const inactiveProfessionals = totalProfessionals.filter(prof => prof.user?.isActive === false);
+          
+          let errorMessage = 'No professionals are available for this service at the selected date.';
+          if (inactiveProfessionals.length > 0) {
+            errorMessage += ` ${inactiveProfessionals.length} staff members are currently inactive.`;
+          }
+          if (totalProfessionals.length === inactiveProfessionals.length) {
+            errorMessage = 'All professionals for this service are currently inactive.';
+          }
+          
+          setBookingError(errorMessage);
+        }
       } else {
         throw new Error(data.message || 'Failed to fetch professionals');
       }
@@ -462,6 +554,47 @@ const SelectCalendar = () => {
     setSelectedDayAppointments([]);
     setSelectedDayDate(null);
     setDropdownPositionedAbove(false);
+  };
+
+  // Booking Tooltip Functions
+  const showBookingTooltipHandler = (appointment, event) => {
+    const rect = event.target.getBoundingClientRect();
+    const tooltipWidth = 280;
+    const tooltipHeight = 200;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+    
+    // Calculate position
+    let top = rect.top + scrollY - tooltipHeight - 10; // Position above by default
+    let left = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2); // Center horizontally
+    
+    // Adjust if tooltip goes off screen
+    if (top < scrollY + 10) {
+      top = rect.bottom + scrollY + 10; // Position below if not enough space above
+    }
+    
+    if (left < scrollX + 10) {
+      left = scrollX + 10; // Ensure minimum left margin
+    } else if (left + tooltipWidth > scrollX + viewportWidth - 10) {
+      left = scrollX + viewportWidth - tooltipWidth - 10; // Ensure minimum right margin
+    }
+    
+    setTooltipPosition({ top, left });
+    setTooltipData(appointment);
+    setShowBookingTooltip(true);
+  };
+
+  const hideBookingTooltip = () => {
+    setShowBookingTooltip(false);
+    setTooltipData(null);
+  };
+
+  const formatTooltipTime = (timeString) => {
+    if (!timeString) return 'Time TBD';
+    const [hours, minutes] = timeString.split(':');
+    return `${hours}:${minutes}`;
   };
 
   // Close dropdown when clicking outside or on escape key
@@ -690,13 +823,18 @@ const SelectCalendar = () => {
           setAvailableServices(servicesResponse.data.data.services || []);
         }
 
-        const transformedEmployees = employees.map(emp => ({
+        // Filter out inactive employees from calendar display and booking interfaces
+        const activeEmployees = employees.filter(emp => emp.user?.isActive !== false);
+        
+        const transformedEmployees = activeEmployees.map(emp => ({
           id: emp._id || emp.id,
           name: `${emp.user?.firstName || emp.firstName || ''} ${emp.user?.lastName || emp.lastName || ''}`.trim(),
           position: emp.position || emp.department || 'Staff',
           avatar: emp.user?.avatar || emp.avatar,
           avatarColor: getRandomColor(),
-          unavailablePeriods: emp.unavailablePeriods || []
+          unavailablePeriods: emp.unavailablePeriods || [],
+          isActive: emp.user?.isActive !== false, // Ensure we track active status
+          workSchedule: emp.workSchedule || {} // Include work schedule for shift checking
         }));
 
         const transformedAppointments = {};
@@ -919,7 +1057,18 @@ const SelectCalendar = () => {
                   {dayAppointments.length > 0 ? (
                     <>
                       {dayAppointments.slice(0, 3).map((app, index) => (
-                        <div key={index} className="month-appointment-entry" style={{ backgroundColor: app.color }}>
+                        <div key={index} 
+                             className="month-appointment-entry" 
+                             style={{ backgroundColor: app.color }}
+                             onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                               client: app.client,
+                               service: app.service,
+                               time: app.time,
+                               professional: app.employeeName,
+                               status: app.status || 'Confirmed',
+                               notes: app.notes
+                             })}
+                             onMouseLeave={hideBookingTooltip}>
                             <span className="appointment-client-name">{app.client}</span>
                             <span className="appointment-service-name">{app.service}</span>
                         </div>
@@ -994,7 +1143,7 @@ const SelectCalendar = () => {
           
           <div className="staff-grid">
             {currentView === 'Day' && displayEmployees.map(employee => (
-                <StaffColumn key={employee.id} employee={employee} timeSlots={timeSlots} appointments={appointments} currentDate={currentDate} isTimeSlotUnavailable={isTimeSlotUnavailable} handleTimeSlotClick={handleTimeSlotClick} />
+                <StaffColumn key={employee.id} employee={employee} timeSlots={timeSlots} appointments={appointments} currentDate={currentDate} isTimeSlotUnavailable={isTimeSlotUnavailable} handleTimeSlotClick={handleTimeSlotClick} showBookingTooltipHandler={showBookingTooltipHandler} hideBookingTooltip={hideBookingTooltip} />
             ))}
             {currentView === 'Week' && (
                 <div className="week-view-container">
@@ -1028,6 +1177,7 @@ const SelectCalendar = () => {
                       {/* Daily appointment cells for this employee */}
                       {calendarDays.map(day => {
                         const dayKey = day.toISOString().split('T')[0];
+                        const hasShift = hasShiftOnDate(employee, day);
                         
                         // Get appointments for this employee on this day
                         const dayAppointments = [];
@@ -1039,15 +1189,20 @@ const SelectCalendar = () => {
                                 ...appointment,
                                 time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
                                 slotKey,
-                                timeSlot: timeFromKey
+                                timeSlot: timeFromKey,
+                                
                               });
                             }
                           });
                         }
                         
                         return (
-                          <div key={`${employee.id}-${dayKey}`} className="week-day-cell">
-                            {dayAppointments.length > 0 ? (
+                          <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
+                            {!hasShift ? (
+                              <div className="week-no-shift">
+                                <span className="no-shift-text">No shift</span>
+                              </div>
+                            ) : dayAppointments.length > 0 ? (
                               <div className="week-appointments-container">
                                 {dayAppointments.slice(0, 3).map((app, index) => (
                                   <div 
@@ -1055,6 +1210,15 @@ const SelectCalendar = () => {
                                     className="week-appointment-block" 
                                     style={{ backgroundColor: app.color }}
                                     onClick={() => app.timeSlot && handleTimeSlotClick(employee.id, app.timeSlot, day)}
+                                    onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                                      client: app.client,
+                                      service: app.service,
+                                      time: app.time,
+                                      professional: employee.name,
+                                      status: app.status || 'Confirmed',
+                                      notes: app.notes
+                                    })}
+                                    onMouseLeave={hideBookingTooltip}
                                   >
                                     <div className="appointment-client">{app.client}</div>
                                     <div className="appointment-service">{app.service}</div>
@@ -1072,12 +1236,13 @@ const SelectCalendar = () => {
                             ) : (
                               <div 
                                 className="week-empty-cell"
-                                onClick={() => {
+                                onClick={hasShift ? () => {
                                   const defaultTime = "09:00";
                                   handleTimeSlotClick(employee.id, defaultTime, day);
-                                }}
+                                } : undefined}
+                                style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
                               >
-                                <span className="add-appointment-plus">+</span>
+                                <span className="add-appointment-plus">{hasShift ? '+' : ''}</span>
                               </div>
                             )}
                           </div>
@@ -1530,24 +1695,60 @@ const SelectCalendar = () => {
           </div>
         </>
       )}
+      
+      {/* Booking Tooltip */}
+      {showBookingTooltip && tooltipData && (
+        <div 
+          className="booking-tooltip"
+          style={{
+            position: 'fixed',
+            top: tooltipPosition.y,
+            left: tooltipPosition.x,
+            zIndex: 10000,
+            backgroundColor: '#333',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            maxWidth: '200px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            pointerEvents: 'none',
+            transform: 'translate(-50%, -100%)',
+            marginTop: '-8px'
+          }}
+        >
+          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{tooltipData.client}</div>
+          <div style={{ marginBottom: '2px' }}>{tooltipData.service}</div>
+          <div style={{ marginBottom: '2px' }}>Time: {formatTooltipTime(tooltipData.time)}</div>
+          <div style={{ marginBottom: '2px' }}>Professional: {tooltipData.professional}</div>
+          <div style={{ fontSize: '11px', color: '#ccc' }}>Status: {tooltipData.status}</div>
+          {tooltipData.notes && (
+            <div style={{ fontSize: '11px', color: '#ccc', marginTop: '4px' }}>
+              Notes: {tooltipData.notes}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 // Reusable components for cleaner rendering
-const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlotUnavailable, handleTimeSlotClick }) => {
+const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlotUnavailable, handleTimeSlotClick, showBookingTooltipHandler, hideBookingTooltip }) => {
     const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
     const dayKey = currentDate.toISOString().split('T')[0];
+    const hasShift = hasShiftOnDate(employee, currentDate);
 
     return (
-        <div key={employee.id} className="staff-column">
+        <div key={employee.id} className={`staff-column ${!hasShift ? 'staff-absent' : ''}`}>
             <div className="staff-header">
-                <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
+                <div className="staff-avatar" style={{ backgroundColor: hasShift ? employee.avatarColor : '#9ca3af' }}>
                     {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
                 </div>
                 <div className="staff-info">
                     <div className="staff-name">{employee.name}</div>
                     <div className="staff-position">{employee.position}</div>
+                    {!hasShift && <div className="staff-status">No shift</div>}
                 </div>
             </div>
             <div className="time-slots-column">
@@ -1558,9 +1759,25 @@ const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlo
 
                     return (
                         <div key={slot} className="time-slot-wrapper" style={{ height: `${timeSlotHeightPx}px` }}>
-                            <div className={`time-slot ${appointment ? 'appointment' : (unavailableReason ? 'unavailable' : 'empty')}`}
-                                 style={appointment ? { backgroundColor: appointment.color } : {}}
-                                 onClick={() => handleTimeSlotClick(employee.id, slot, currentDate)}>
+                            <div className={`time-slot ${
+                                appointment ? 'appointment' : 
+                                (!hasShift ? 'no-shift' : 
+                                (unavailableReason ? 'unavailable' : 'empty'))
+                            }`}
+                                 onClick={hasShift ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
+                                 onMouseEnter={appointment ? (e) => showBookingTooltipHandler(e, {
+                                     client: appointment.client,
+                                     service: appointment.service,
+                                     time: slot,
+                                     professional: employee.name,
+                                     status: appointment.status || 'Confirmed',
+                                     notes: appointment.notes
+                                 }) : null}
+                                 onMouseLeave={appointment ? hideBookingTooltip : null}
+                                 style={{
+                                     ...(appointment ? { backgroundColor: appointment.color } : {}),
+                                     cursor: hasShift ? 'pointer' : 'not-allowed'
+                                 }}>
                                 {appointment && <div className="appointment-text">{appointment.client} - {appointment.service}</div>}
                                 {unavailableReason && !appointment && (
                                     <div className="unavailable-text">
@@ -1576,7 +1793,7 @@ const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlo
     );
 };
 
-const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnavailable, handleTimeSlotClick, onShowMoreAppointments }) => {
+const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnavailable, handleTimeSlotClick, onShowMoreAppointments, showBookingTooltipHandler, hideBookingTooltip }) => {
     const dayKey = day.toISOString().split('T')[0];
     const isToday = day.toDateString() === new Date().toDateString();
 
@@ -1612,7 +1829,18 @@ const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnav
                 {dayAppointments.length > 0 ? (
                     <>
                         {dayAppointments.slice(0, 3).map((app, index) => (
-                            <div key={index} className="week-appointment-entry" style={{ backgroundColor: app.color }}>
+                            <div key={index} 
+                                 className="week-appointment-entry" 
+                                 style={{ backgroundColor: app.color }}
+                                 onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                                     client: app.client,
+                                     service: app.service,
+                                     time: app.time,
+                                     professional: app.employeeName,
+                                     status: app.status || 'Confirmed',
+                                     notes: app.notes
+                                 })}
+                                 onMouseLeave={hideBookingTooltip}>
                                 <span className="appointment-client-name">{app.client}</span>
                                 <span className="appointment-service-name">{app.service}</span>
                                 <span className="appointment-time">{app.time}</span>

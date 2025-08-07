@@ -70,6 +70,83 @@
   background-color: #f9fafb;
 }
 
+/* Options Dropdown */
+.team-options-container {
+  position: relative;
+  display: inline-block;
+}
+
+.team-options-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  min-width: 200px;
+  overflow: hidden;
+  animation: dropdown-fade-in 0.2s ease-out;
+}
+
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.team-options-header {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.team-option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  color: #374151;
+  background: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.team-option-item:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.team-option-item:active {
+  background-color: #e5e7eb;
+}
+
+.team-option-item svg {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.team-option-item:hover svg {
+  color: #374151;
+}
+
 .team-add-btn {
       background: black;
   color: white;
@@ -877,6 +954,140 @@
   outline-offset: 2px;
 }
 
+/* Team Member Action Buttons */
+.team-action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-toggle-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  text-align: center;
+}
+
+.team-btn-activate {
+  background-color: #10b981;
+  color: white;
+  border: 1px solid #10b981;
+}
+
+.team-btn-activate:hover:not(:disabled) {
+  background-color: #059669;
+  border-color: #059669;
+  transform: translateY(-1px);
+}
+
+.team-btn-deactivate {
+  background-color: #ef4444;
+  color: white;
+  border: 1px solid #ef4444;
+}
+
+.team-btn-deactivate:hover:not(:disabled) {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.team-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Status Change Modal Specific Styles */
+.professional-btn-confirm.btn-activate {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.professional-btn-confirm.btn-activate:hover:not(:disabled) {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.professional-btn-confirm.btn-deactivate {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: white;
+}
+
+.professional-btn-confirm.btn-deactivate:hover:not(:disabled) {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.professional-modal-subtext {
+  color: #6b7280;
+  font-size: 14px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* Actions column width */
+.team-th-actions,
+.team-td-actions {
+  width: 120px;
+  text-align: center;
+}
+
+/* Status column styles */
+.team-th-status,
+.team-td-status {
+  width: 100px;
+  text-align: center;
+}
+
+.team-status-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.team-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.team-status-indicator.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.team-status-indicator.status-active .team-status-dot {
+  background-color: #16a34a;
+}
+
+.team-status-indicator.status-inactive {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.team-status-indicator.status-inactive .team-status-dot {
+  background-color: #dc2626;
+}
+
+.team-status-indicator .team-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
 /* Print styles */
 @media print {
   .team-members-container {
@@ -895,6 +1106,191 @@
 
   .professional-modal-overlay {
     display: none;
+  }
+}
+
+/* ===== SWEETALERT2 CUSTOM STYLES ===== */
+
+/* Custom SweetAlert popup styling */
+.swal2-popup {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  padding: 2rem !important;
+}
+
+.swal2-title {
+  color: #111827 !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 1rem !important;
+}
+
+.swal2-html-container {
+  color: #374151 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+/* Success popup styling */
+.swal2-popup.swal2-icon-success {
+  border-left: 4px solid #10b981;
+}
+
+.swal2-icon.swal2-success {
+  color: #10b981 !important;
+  border-color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: #10b981 !important;
+}
+
+/* Warning popup styling */
+.swal2-popup.swal2-icon-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.swal2-icon.swal2-warning {
+  color: #f59e0b !important;
+  border-color: #f59e0b !important;
+}
+
+/* Error popup styling */
+.swal2-popup.swal2-icon-error {
+  border-left: 4px solid #ef4444;
+}
+
+.swal2-icon.swal2-error {
+  color: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+.swal2-icon.swal2-error .swal2-x-mark {
+  background-color: #ef4444 !important;
+}
+
+/* Question popup styling */
+.swal2-popup.swal2-icon-question {
+  border-left: 4px solid #3b82f6;
+}
+
+.swal2-icon.swal2-question {
+  color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Button styling */
+.swal2-styled.swal2-confirm {
+  background-color: #3b82f6 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+  background-color: #2563eb !important;
+  transform: translateY(-1px) !important;
+}
+
+.swal2-styled.swal2-cancel {
+  background-color: #6b7280 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.swal2-styled.swal2-cancel:hover {
+  background-color: #4b5563 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Danger confirm button (for deactivation) */
+.swal2-styled.swal2-confirm.swal2-danger {
+  background-color: #ef4444 !important;
+}
+
+.swal2-styled.swal2-confirm.swal2-danger:hover {
+  background-color: #dc2626 !important;
+}
+
+/* Success confirm button */
+.swal2-styled.swal2-confirm.swal2-success {
+  background-color: #10b981 !important;
+}
+
+.swal2-styled.swal2-confirm.swal2-success:hover {
+  background-color: #059669 !important;
+}
+
+/* Timer progress bar */
+.swal2-timer-progress-bar {
+  background-color: #3b82f6 !important;
+}
+
+/* Backdrop styling */
+.swal2-backdrop-show {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Loading animation */
+.swal2-popup.swal2-loading .swal2-icon {
+  border-color: #3b82f6 !important;
+}
+
+/* Custom class for status confirmation modals */
+.status-confirm-modal .swal2-popup {
+  min-width: 500px !important;
+}
+
+.status-confirm-modal .swal2-html-container ul {
+  text-align: left !important;
+  margin: 1rem 0 !important;
+}
+
+.status-confirm-modal .swal2-html-container li {
+  margin-bottom: 0.5rem !important;
+}
+
+/* Animation improvements */
+.swal2-show {
+  animation: swal2-show 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.swal2-hide {
+  animation: swal2-hide 0.15s ease-out forwards !important;
+}
+
+@keyframes swal2-show {
+  0% {
+    transform: scale(0.7) translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes swal2-hide {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.5) translateY(-30px);
+    opacity: 0;
   }
 }
 
