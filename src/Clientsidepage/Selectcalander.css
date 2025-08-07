@@ -2110,14 +2110,13 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    background: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px #00000026;
     max-width: 750px;
     width: 95%;
-    max-height: 90vh;
-    /* overflow-y: auto; */
-    height: 480px;
+    max-height: 100vh;
+    height: 849px;
     z-index: 999;
 }
 
