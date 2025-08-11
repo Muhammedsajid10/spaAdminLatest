@@ -1,0 +1,1266 @@
+/* ========================================================== */
+/* General & Utility Styles */
+/* ========================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #0ea5e9;
+  --primary-dark: #0284c7;
+  --secondary-color: #475569;
+  --bg-color: #f1f5f9;
+  --surface-color: #ffffff;
+  --border-color: #e2e8f0;
+  --text-color: #1e293b;
+  --text-light: #64748b;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  line-height: 1.5;
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.primary-btn:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.action-btn {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #e2e8f0;
+}
+
+/* ========================================================== */
+/* Main Scheduler Layout */
+/* ========================================================== */
+.scheduler-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-header-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbar-left, .toolbar-center, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-btn-today {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.action-btn-today:hover {
+  background-color: var(--bg-color);
+}
+
+.nav-arrow-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text-color);
+}
+
+.nav-arrow-btn:hover {
+  background-color: var(--bg-color);
+}
+
+.date-display-wrapper {
+  position: relative;
+}
+
+.date-display-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.tool-icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.tool-icon-btn:hover, .tool-icon-btn.active {
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+}
+
+.day-view-selector-btn {
+  background-color: #f1f5f9;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.day-view-selector-btn:hover {
+  background-color: #e2e8f0;
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.add-booking-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ========================================================== */
+/* Main Calendar View Container */
+/* ========================================================== */
+.scheduler-content-wrapper {
+  flex-grow: 1;
+  position: relative;
+  padding: 1.5rem;
+  overflow: auto;
+}
+
+.content-loading-overlay,
+.content-error-message-overlay,
+.content-empty-state {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 10;
+}
+
+.loading-message p,
+.error-message p,
+.empty-state-content p {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+/* Day & Week View Grid Layout */
+.calendar-grid-container {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  height: 100%;
+  overflow-y: hidden;
+}
+
+.time-column {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  background-color: var(--surface-color);
+  border-right: 1px solid var(--border-color);
+}
+
+.time-header-space {
+  height: 60px; /* Adjust to match the staff header height */
+}
+
+.time-slots-only {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 60px);
+}
+
+.time-slot-label-new {
+  height: 48px; /* 15min slot height * 4 */
+  position: relative;
+  top: -10px; /* Adjust to center label */
+  font-size: 0.75rem;
+  color: var(--text-light);
+  text-align: right;
+  padding-right: 0.5rem;
+}
+
+.main-calendar-scroll-wrapper {
+  overflow-x: auto;
+  flex: 1;
+}
+
+.staff-grid-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 15;
+}
+
+.staff-header {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  gap: 0.5rem;
+  border-right: 1px solid var(--border-color);
+}
+
+.staff-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.staff-avatar .avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.staff-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-name {
+  font-weight: 600;
+}
+
+.main-calendar-grid {
+  display: flex;
+  position: relative;
+  border-left: 1px solid var(--border-color);
+}
+
+.employee-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 150px;
+  border-right: 1px solid var(--border-color);
+}
+
+.appointment-slot-cell {
+  height: 12px; /* 10-minute slot height */
+  border-bottom: 1px dashed #f1f5f9;
+  position: relative;
+}
+
+.appointment-slot-cell:hover {
+  background-color: #e2e8f0;
+}
+
+.appointment-slot-cell.is-unavailable {
+  background-color: #fecaca;
+  cursor: not-allowed;
+}
+
+.appointment-block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 0;
+  padding: 4px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  z-index: 2;
+}
+
+.appointment-client-name,
+.appointment-service-name {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hover-time-indicator {
+  position: absolute;
+  left: -50px;
+  top: -5px;
+  font-size: 0.75rem;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+.current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #ef4444;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.current-time-marker {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 0.5rem;
+  background-color: #ef4444;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+/* ========================================================== */
+/* Month View Styles */
+/* ========================================================== */
+.month-view-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.month-day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-light);
+  padding: 0.5rem 0;
+}
+
+.month-day-name {
+  text-transform: uppercase;
+  font-size: 0.875rem;
+}
+
+.month-view-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-top: 1px solid var(--border-color);
+}
+
+.month-day-cell {
+  min-height: 120px;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.5rem;
+  position: relative;
+}
+
+.month-day-header {
+  font-weight: 600;
+  text-align: right;
+  margin-bottom: 0.5rem;
+}
+
+.month-appointments {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.month-appointment-entry {
+  padding: 4px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.month-more-appointments {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+/* ========================================================== */
+/* Dropdown Popups and Modals */
+/* ========================================================== */
+.calendar-popup,
+.team-popup,
+.view-dropdown,
+.status-popup {
+  position: absolute;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  top: calc(100% + 8px);
+}
+
+.calendar-popup {
+  width: 320px;
+  padding: 1rem;
+  right: 0;
+}
+
+.team-popup {
+  width: 280px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 0;
+}
+
+.view-dropdown {
+  width: 150px;
+  right: 0;
+}
+
+.status-popup {
+  width: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem;
+}
+
+.calendar-picker-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.calendar-popup-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.week-shortcut-btn {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: none;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.team-status-options {
+  display: flex;
+  justify-content: space-around;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.5rem 0;
+}
+
+.team-status-btn {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+.team-status-btn.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.team-members-list-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.team-members-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.team-member-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.team-member-item:hover {
+  background-color: var(--bg-color);
+}
+
+.team-member-item.selected {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.team-member-item.selected input[type="checkbox"] {
+  accent-color: white;
+}
+
+.view-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-option:hover {
+  background-color: var(--bg-color);
+}
+
+.view-option.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Day Picker Styles */
+.rdp {
+  --rdp-cell-size: 32px;
+  --rdp-background-color: var(--surface-color);
+  --rdp-border-color: var(--border-color);
+  --rdp-text-color: var(--text-color);
+  --rdp-accent-color: var(--primary-color);
+  font-family: inherit;
+}
+
+.rdp-button:hover:not([disabled]) {
+  background-color: var(--bg-color);
+}
+
+.rdp-button:focus-visible:not([disabled]) {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.rdp-day_selected {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.rdp-day_selected:hover {
+  background-color: var(--primary-dark) !important;
+}
+
+/* Booking Modals & Popups */
+.modern-booking-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.booking-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.booking-modal {
+  background-color: var(--surface-color);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-lg);
+  max-width: 600px;
+  width: 90%;
+  padding: 2rem;
+  position: relative;
+}
+
+.booking-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-light);
+}
+
+.booking-modal h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.booking-modal h3 {
+  font-size: 1.2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  transition: all 0.3s;
+}
+
+.step-dot.active {
+  background-color: var(--primary-color);
+}
+
+.step-dot.completed {
+  background-color: #22c55e;
+}
+
+.step-connector {
+  height: 2px;
+  width: 50px;
+  background-color: #d1d5db;
+  transition: all 0.3s;
+}
+
+.step-connector.active {
+  background-color: var(--primary-color);
+}
+
+.booking-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.booking-modal-list-item {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.booking-modal-list-item:hover {
+  border-color: var(--primary-color);
+  background-color: #e0f2fe;
+}
+
+.booking-modal-list-item.selected {
+  background-color: #e0f2fe;
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.booking-modal-item-name {
+  font-weight: 600;
+}
+
+.booking-modal-list-desc {
+  font-size: 0.875rem;
+  color: var(--text-light);
+}
+
+.booking-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+.booking-modal-back {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.booking-modal-next,
+.booking-modal-confirm {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.booking-modal-error {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.booking-modal-success {
+  background-color: #dcfce7;
+  color: #16a34a;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.client-search-section {
+  margin-bottom: 1rem;
+}
+
+.client-search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.client-search-input-wrapper {
+  position: relative;
+}
+
+.client-search-input-wrapper input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.client-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.client-search-result {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.client-search-result:hover {
+  background-color: var(--bg-color);
+}
+
+.client-result-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.client-result-name {
+  font-weight: 600;
+}
+
+.selected-client-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #e0f2fe;
+  border: 1px solid var(--primary-color);
+  border-radius: 0.5rem;
+}
+
+.selected-client-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+}
+
+.selected-client-name {
+  font-weight: 600;
+}
+
+.selected-client-contact {
+  font-size: 0.875rem;
+  color: var(--text-light);
+}
+
+.booking-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: var(--bg-color);
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+}
+
+.summary-item span:first-child {
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+.summary-item span:last-child {
+  font-weight: 600;
+}
+/* ========================================================== */
+/* Month View Appointment Entry and Tooltip Styles */
+/* ========================================================== */
+
+/* The main container for a single appointment in the month view grid. */
+.month-appointment-entry {
+  /* Dynamic color is applied via inline style, so we focus on layout and text. */
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 4px;
+}
+
+.month-appointment-entry:hover {
+  transform: scale(1.03);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Style for the client's name and service within the appointment block. */
+.appointment-client-name,
+.appointment-service-name {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Styles for the Booking Tooltip when it is shown on hover */
+.booking-tooltip {
+  position: absolute;
+  background-color: #2d3748; /* Dark background for good contrast */
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  pointer-events: none; /* Allows clicks to pass through to elements behind the tooltip */
+  max-width: 250px;
+  transform: translate(-50%, -110%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-size: 0.9rem;
+  opacity: 1;
+}
+
+.booking-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #2d3748;
+}
+
+/* Styles for the "More Appointments" Dropdown in Month View */
+.more-appointments-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 99;
+}
+
+.more-appointments-dropdown {
+  position: absolute;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  width: 300px;
+  overflow: hidden;
+}
+
+.more-appointments-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  background-color: var(--bg-color);
+}
+
+.more-appointments-date {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.more-appointments-dropdown-list {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.more-appointment-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.more-appointment-dropdown-item:hover {
+  background-color: var(--bg-color);
+}
+
+.more-appointment-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.more-appointment-details {
+  flex-grow: 1;
+}
+
+.more-appointment-client {
+  font-weight: 600;
+}
+
+.more-appointment-service {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.more-appointment-time {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-light);
+}
+/* src/components/WeekCalendarGrid.css */
+
+/* ========================================================== */
+/* Final Grid Layout */
+/* ========================================================== */
+
+:root {
+    --primary-color: #0ea5e9;
+    --primary-dark: #0284c7;
+    --secondary-color: #475569;
+    --bg-color: #f1f5f9;
+    --surface-color: #ffffff;
+    --border-color: #e2e8f0;
+    --text-color: #1e293b;
+    --text-light: #64748b;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.calendar-grid-container-final {
+    display: grid;
+    grid-template-columns: 250px repeat(7, minmax(150px, 1fr));
+    font-family: 'Inter', sans-serif;
+    color: var(--text-color);
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    overflow: auto;
+    min-height: 100vh;
+}
+
+/* Common grid cell styling */
+.grid-cell-header-space{
+   border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+.grid-cell-day-header{
+   border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+.grid-cell-employee-info{
+  height: 30px;
+   border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+.grid-cell-schedule-day {
+  height: 30px;
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Header Cells (Top Row) */
+.grid-cell-header-space {
+    height: 60px;
+    background-color: var(--surface-color);
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 3;
+}
+
+.grid-cell-day-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0;
+    font-weight: 500;
+    text-align: center;
+    background-color: var(--bg-color);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.week-day-date {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.week-day-name {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--text-light);
+}
+
+/* Employee Info Cells (Left Column) */
+.grid-cell-employee-info {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    gap: 0.75rem;
+    background-color: var(--surface-color);
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-height: 200px; /* A reasonable default height, but will expand with content */
+}
+
+.week-employee-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.week-employee-avatar .avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.week-employee-text {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.875rem;
+}
+
+.week-employee-name {
+    font-weight: 600;
+}
+
+.week-employee-position {
+    color: var(--text-light);
+    font-weight: 400;
+}
+
+/* Schedule Day Cells */
+.grid-cell-schedule-day {
+    position: relative;
+    /* Removed fixed height here for dynamic sizing */
+    background-color: var(--surface-color);
+}
+
+/* Appointment block styling */
+.week-appointment-block-final {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    padding: 4px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    z-index: 2;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.week-appointment-block-final .appointment-time {
+    font-size: 0.65rem;
+    opacity: 0.8;
+}
+
+.week-appointment-block-final:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+.week-appointment-client-name,
+.week-appointment-service-name {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Appointment Hover Tooltip */
+.week-appointment-tooltip-final {
+    position: absolute;
+    transform: translateX(-50%) translateY(-110%);
+    background-color: #2d3748;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 250px;
+    font-size: 0.9rem;
+    white-space: normal;
+}
+
+.week-appointment-tooltip-final::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #2d3748;
+}
+
+.tooltip-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.tooltip-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #ccc;
+}

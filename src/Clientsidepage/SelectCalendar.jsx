@@ -2,15 +2,22 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
-import './Selectcalander.css';
+import './SelectCalendar.css';
 import {
   ChevronLeft,
   ChevronRight,
-  Users,
-  CalendarDays,
   Plus,
-  Calendar,
+  Users,
+  Calendar as CalendarIcon,
+  LayoutGrid,
+  ListTodo,
 } from "lucide-react";
+import dayjs from 'dayjs';
+import weekOfYear from 'dayjs/plugin/weekOfYear';
+import 'react-day-picker/dist/style.css';
+import { DayPicker } from 'react-day-picker';
+
+dayjs.extend(weekOfYear);
 
 // --- API ENDPOINTS ---
 const BOOKING_API_URL = `${Base_url}/bookings`;
@@ -41,7 +48,6 @@ const generateTimeSlots = (startTime, endTime, intervalMinutes) => {
 };
 
 const formatTime = (time) => {
-  // Return 24-hour format directly
   return time;
 };
 
@@ -55,7 +61,6 @@ const getRandomAppointmentColor = () => {
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
-// Helper function to check if an employee has a shift on a specific day
 const getDayName = (date) => {
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   return days[date.getDay()];
@@ -63,26 +68,37 @@ const getDayName = (date) => {
 
 const hasShiftOnDate = (employee, date) => {
   if (!employee.workSchedule) return false;
-  
   const dayName = getDayName(date);
   const schedule = employee.workSchedule[dayName];
-  
   return schedule && schedule.isWorking;
 };
 
 const MOCK_SUCCESS_DATA = {
   employees: [
-    { id: 'e1', name: 'Alice', position: 'Stylist', avatar: 'https://i.pravatar.cc/150?img=1', avatarColor: '#f97316', unavailablePeriods: [] },
-    { id: 'e2', name: 'Bob', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=2', avatarColor: '#22c55e', unavailablePeriods: [] },
+    { id: 'e1', name: 'margaritta Balute', position: 'Stylist', avatar: 'https://i.pravatar.cc/150?img=1', avatarColor: '#f97316', unavailablePeriods: [] },
+    { id: 'e2', name: 'Icha Faradisa', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=2', avatarColor: '#22c55e', unavailablePeriods: [] },
+    { id: 'e3', name: 'Nining Niken', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=3', avatarColor: '#8b5cf6', unavailablePeriods: [] },
+    { id: 'e4', name: 'Onni', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=4', avatarColor: '#0ea5e9', unavailablePeriods: [] },
+    { id: 'e5', name: 'Putri Dahlia', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=5', avatarColor: '#ec4899', unavailablePeriods: [] },
+    { id: 'e6', name: 'Employee', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=6', avatarColor: '#ef4444', unavailablePeriods: [] },
+    { id: 'e7', name: 'sarita Lamsal', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=7', avatarColor: '#f59e0b', unavailablePeriods: [] },
+    { id: 'e8', name: 'Intan Arnella', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=8', avatarColor: '#10b981', unavailablePeriods: [] },
+    { id: 'e9', name: 'Dayu Eka', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=9', avatarColor: '#f97316', unavailablePeriods: [] },
   ],
   timeSlots: generateTimeSlots('00:00', '23:50', 10),
   appointments: {
     'e1': {
-      '2025-08-02_09:00': { client: 'Client A', service: 'Haircut', duration: 30, color: '#f97316' },
+      '2025-07-29_09:00': { client: 'Client A', service: 'Haircut', duration: 30, color: '#f97316', status: 'upcoming' },
+      '2025-07-29_10:30': { client: 'Client B', service: 'Color', duration: 60, color: '#0ea5e9', status: 'in-progress' },
     },
     'e2': {
-      '2025-08-02_09:30': { client: 'Client C', service: 'Shave', duration: 15, color: '#0ea5e9' },
-    }
+      '2025-07-29_09:30': { client: 'Client C', service: 'Shave', duration: 15, color: '#22c55e', status: 'completed' },
+      '2025-07-29_11:30': { client: 'Client D', service: 'Massage', duration: 45, color: '#8b5cf6', status: 'upcoming' },
+    },
+    'e7': {
+      '2025-07-29_12:30': { client: 'Client E', service: 'Haircut', duration: 30, color: '#ef4444', status: 'in-progress' },
+      '2025-07-29_14:00': { client: 'Client F', service: 'Color', duration: 60, color: '#ec4899', status: 'upcoming' },
+    },
   },
 };
 
@@ -94,8 +110,8 @@ const MOCK_SERVICES_DATA = [
 ];
 
 const MOCK_CLIENTS_DATA = [
-    { _id: 'c1', firstName: 'Aswin', lastName: 'P', email: 'aswinp04@gmail.com', phone: '7736018588' },
-    { _id: 'c2', firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '123-456-7890' },
+  { _id: 'c1', firstName: 'Aswin', lastName: 'P', email: 'aswinp04@gmail.com', phone: '7736018588' },
+  { _id: 'c2', firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '123-456-7890' },
 ];
 
 const MOCK_PROFESSIONALS_DATA = [
@@ -111,11 +127,12 @@ const MOCK_TIME_SLOTS_DATA = [
 ];
 
 const paymentMethods = [
-  { value: 'cash', label: 'Cash' }, 
+  { value: 'cash', label: 'Cash' },
   { value: 'card', label: 'Card' },
   { value: 'online', label: 'Online' }
 ];
 
+// --- MAIN COMPONENT ---
 const SelectCalendar = () => {
   const [employees, setEmployees] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
@@ -124,8 +141,23 @@ const SelectCalendar = () => {
   const [error, setError] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('Day');
-  const [selectedStaff, setSelectedStaff] = useState('All');
+  const [selectedStaff, setSelectedStaff] = useState([]); // Array for multi-select
   
+  // New States for Header Functionality
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
+  const [showTeamPopup, setShowTeamPopup] = useState(false);
+  const [showViewDropdown, setShowViewDropdown] = useState(false);
+  const [showStatusPopup, setShowStatusPopup] = useState(false);
+  
+  const calendarPickerRef = useRef(null);
+  const teamPopupRef = useRef(null);
+  const viewDropdownRef = useRef(null);
+  const statusPopupRef = useRef(null);
+  const dateButtonRef = useRef(null);
+  const teamButtonRef = useRef(null);
+  const viewButtonRef = useRef(null);
+  const statusButtonRef = useRef(null);
+
   // Enhanced Booking Flow States
   const [availableServices, setAvailableServices] = useState([]);
   const [bookingStep, setBookingStep] = useState(1);
@@ -168,6 +200,7 @@ const SelectCalendar = () => {
   const [showBookingTooltip, setShowBookingTooltip] = useState(false);
   const [tooltipData, setTooltipData] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [hoveredSlot, setHoveredSlot] = useState({ employeeId: null, slotTime: null });
 
   const [bookingForm, setBookingForm] = useState({
     clientName: '',
@@ -181,11 +214,8 @@ const SelectCalendar = () => {
 
   // --- HELPER FUNCTIONS ---
   const handleTimeSlotClick = (employeeId, slotTime, day) => {
-    // This function is for clicking a slot on the calendar grid
-    // Now it behaves the same as the "Add" button - full booking flow
     const employee = employees.find(emp => emp.id === employeeId);
     
-    // Check if employee has a shift on this day
     if (!hasShiftOnDate(employee, day || currentDate)) {
       setUnavailableMessage(`${employee?.name || 'Employee'} has no shift scheduled on this day`);
       setShowUnavailablePopup(true);
@@ -197,12 +227,11 @@ const SelectCalendar = () => {
       setUnavailableMessage(`This time slot is unavailable: ${unavailableReason}`);
       setShowUnavailablePopup(true);
     } else if (unavailableReason !== "No shift scheduled") {
-      // Store the clicked employee and time slot as defaults for pre-selection
       const staff = employees.find(emp => emp.id === employeeId);
       const [hour, minute] = slotTime.split(':').map(Number);
       const startTime = new Date(currentDate);
       startTime.setHours(hour, minute, 0, 0);
-      const endTime = new Date(startTime.getTime() + 30 * 60000); // Default 30 minutes
+      const endTime = new Date(startTime.getTime() + 30 * 60000);
       
       const timeSlot = {
         startTime: startTime.toISOString(),
@@ -217,7 +246,7 @@ const SelectCalendar = () => {
         time: slotTime
       });
       
-      setIsNewAppointment(true); // Now behaves like "Add" button - full booking flow
+      setIsNewAppointment(true);
       setShowAddBookingModal(true);
     }
   };
@@ -230,7 +259,7 @@ const SelectCalendar = () => {
 
   const handleAddAppointment = () => {
     setBookingDefaults(null);
-    setIsNewAppointment(true); // This is a new appointment
+    setIsNewAppointment(true);
     setShowAddBookingModal(true);
   };
 
@@ -240,7 +269,7 @@ const SelectCalendar = () => {
 
   const goToPrevious = () => {
     const newDate = new Date(currentDate);
-    if (currentView === 'Day') newDate.setDate(newDate.getDate() - 1);
+    if (currentView === 'Day' || currentView === '3 Day') newDate.setDate(newDate.getDate() - 1);
     if (currentView === 'Week') newDate.setDate(newDate.getDate() - 7);
     if (currentView === 'Month') newDate.setMonth(newDate.getMonth() - 1);
     setCurrentDate(newDate);
@@ -248,7 +277,7 @@ const SelectCalendar = () => {
 
   const goToNext = () => {
     const newDate = new Date(currentDate);
-    if (currentView === 'Day') newDate.setDate(newDate.getDate() + 1);
+    if (currentView === 'Day' || currentView === '3 Day') newDate.setDate(newDate.getDate() + 1);
     if (currentView === 'Week') newDate.setDate(newDate.getDate() + 7);
     if (currentView === 'Month') newDate.setMonth(newDate.getMonth() + 1);
     setCurrentDate(newDate);
@@ -258,12 +287,10 @@ const SelectCalendar = () => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (!employee) return false;
 
-    // Check if employee has a shift on this day
     if (!hasShiftOnDate(employee, currentDate)) {
       return "No shift scheduled";
     }
 
-    // Check for existing unavailable periods
     if (employee.unavailablePeriods) {
       const slotDate = new Date(currentDate);
       const [hours, minutes] = slotTime.split(':').map(Number);
@@ -282,16 +309,12 @@ const SelectCalendar = () => {
     return false;
   };
 
-  // --- ENHANCED BOOKING FLOW FUNCTIONS ---
   const fetchBookingServices = useCallback(async () => {
     setBookingLoading(true);
     setBookingError(null);
     try {
-      console.log('Fetching services from:', `${Base_url}/bookings/services`);
       const res = await fetch(`${Base_url}/bookings/services`);
       const data = await res.json();
-      
-      console.log('Services API response:', data);
       
       if (res.ok && data.success) {
         setAvailableServices(data.data?.services || []);
@@ -299,9 +322,7 @@ const SelectCalendar = () => {
         throw new Error(data.message || 'Failed to fetch services');
       }
     } catch (err) {
-      console.error('Error fetching services:', err);
       setBookingError('Failed to fetch services: ' + err.message);
-      // Fallback to mock data
       setAvailableServices(MOCK_SERVICES_DATA);
     } finally {
       setBookingLoading(false);
@@ -314,52 +335,16 @@ const SelectCalendar = () => {
     try {
       const dateStr = date.toISOString().slice(0, 10);
       const url = `${Base_url}/bookings/professionals?service=${serviceId}&date=${dateStr}`;
-      console.log('Fetching professionals from:', url);
       
       const res = await fetch(url);
       const data = await res.json();
       
-      console.log('Professionals API response:', data);
-      
       if (res.ok && data.success) {
         const allProfessionals = data.data?.professionals || [];
-        console.log('Total professionals received:', allProfessionals.length);
-        
-        // Debug: Log each professional's status
-        allProfessionals.forEach((prof, index) => {
-          const isActive = prof.user?.isActive !== false;
-          const workScheduleForCheck = {
-            workSchedule: prof.workSchedule || {}
-          };
-          const hasShift = hasShiftOnDate(workScheduleForCheck, date);
-          
-          console.log(`Professional ${index + 1}:`, {
-            name: `${prof.user?.firstName} ${prof.user?.lastName}`,
-            isActive,
-            hasShift,
-            workSchedule: prof.workSchedule,
-            selectedDate: date.toISOString().split('T')[0],
-            dayName: getDayName(date),
-            scheduleForDay: prof.workSchedule?.[getDayName(date)]
-          });
-        });
-        
-        // Filter out inactive employees and those without shifts on the selected date
         const activeProfessionals = allProfessionals.filter(prof => {
           const isActive = prof.user?.isActive !== false;
-          const workScheduleForCheck = {
-            workSchedule: prof.workSchedule || {}
-          };
-          const hasShift = hasShiftOnDate(workScheduleForCheck, date);
-          
-          // For booking purposes, show all active professionals regardless of shift
-          // The backend should handle availability checking
-          console.log(`Filtering Professional: ${prof.user?.firstName} - Active: ${isActive}, HasShift: ${hasShift}`);
-          
-          return isActive; // Only filter by active status for now
+          return isActive;
         });
-        
-        console.log('Active professionals with shifts:', activeProfessionals.length);
         
         setAvailableProfessionals(activeProfessionals);
         
@@ -381,9 +366,7 @@ const SelectCalendar = () => {
         throw new Error(data.message || 'Failed to fetch professionals');
       }
     } catch (err) {
-      console.error('Error fetching professionals:', err);
       setBookingError('Failed to fetch professionals: ' + err.message);
-      // Fallback to mock data
       setAvailableProfessionals(MOCK_PROFESSIONALS_DATA);
     } finally {
       setBookingLoading(false);
@@ -396,12 +379,9 @@ const SelectCalendar = () => {
     try {
       const dateStr = date.toISOString().slice(0, 10);
       const url = `${Base_url}/bookings/time-slots?employeeId=${employeeId}&serviceId=${serviceId}&date=${dateStr}`;
-      console.log('Fetching time slots from:', url);
       
       const res = await fetch(url);
       const data = await res.json();
-      
-      console.log('Time slots API response:', data);
       
       if (res.ok && data.success) {
         setAvailableTimeSlots(data.data?.timeSlots || []);
@@ -409,9 +389,7 @@ const SelectCalendar = () => {
         throw new Error(data.message || 'Failed to fetch time slots');
       }
     } catch (err) {
-      console.error('Error fetching time slots:', err);
       setBookingError('Failed to fetch time slots: ' + err.message);
-      // Fallback to mock data
       const mockTimeSlots = MOCK_TIME_SLOTS_DATA.map(slot => ({
         startTime: `${date.toISOString().slice(0, 10)}T${slot.time}:00.000Z`,
         endTime: `${date.toISOString().slice(0, 10)}T${slot.time.split(':')[0]}:${(parseInt(slot.time.split(':')[1]) + 30).toString().padStart(2, '0')}:00.000Z`,
@@ -427,12 +405,10 @@ const SelectCalendar = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        console.warn('No token found, using mock clients');
         setExistingClients(MOCK_CLIENTS_DATA);
         return;
       }
       
-      console.log('Fetching clients from:', `${Base_url}/admin/clients`);
       const res = await fetch(`${Base_url}/admin/clients`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -440,16 +416,12 @@ const SelectCalendar = () => {
       });
       const data = await res.json();
       
-      console.log('Clients API response:', data);
-      
       if (res.ok && data.success) {
         setExistingClients(data.data?.clients || []);
       } else {
-        console.error('Failed to fetch clients:', data.message);
         setExistingClients(MOCK_CLIENTS_DATA);
       }
     } catch (error) {
-      console.error('Error fetching clients:', error);
       setExistingClients(MOCK_CLIENTS_DATA);
     }
   }, []);
@@ -506,40 +478,33 @@ const SelectCalendar = () => {
 
   const handleShowMoreAppointments = (dayAppointments, dayDate, event) => {
     const rect = event.target.getBoundingClientRect();
-    const dropdownHeight = 280; // Estimated dropdown height
-    const dropdownWidth = 320; // Estimated dropdown width
+    const dropdownHeight = 280;
+    const dropdownWidth = 320;
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
     const scrollY = window.scrollY;
     const scrollX = window.scrollX;
     
-    // Calculate initial position
-    let top = rect.bottom + scrollY + 8; // 8px gap below
+    let top = rect.bottom + scrollY + 8;
     let left = rect.left + scrollX;
     let positionedAbove = false;
     
-    // Check if dropdown would overflow bottom of viewport
     if (rect.bottom + dropdownHeight > viewportHeight) {
-      // Position above the element instead
-      top = rect.top + scrollY - dropdownHeight - 8; // 8px gap above
+      top = rect.top + scrollY - dropdownHeight - 8;
       positionedAbove = true;
     }
     
-    // Check if dropdown would overflow right side of viewport
     if (rect.left + dropdownWidth > viewportWidth) {
-      // Align to the right edge of the trigger element
       left = rect.right + scrollX - dropdownWidth;
     }
     
-    // Ensure dropdown doesn't go off the left edge
-    if (left < scrollX + 16) { // 16px minimum margin
+    if (left < scrollX + 16) {
       left = scrollX + 16;
     }
     
-    // Ensure dropdown doesn't go off the top edge
-    if (top < scrollY + 16) { // 16px minimum margin
+    if (top < scrollY + 16) {
       top = scrollY + 16;
-      positionedAbove = false; // Reset if we had to move it down
+      positionedAbove = false;
     }
     
     setDropdownPosition({ top, left });
@@ -556,33 +521,10 @@ const SelectCalendar = () => {
     setDropdownPositionedAbove(false);
   };
 
-  // Booking Tooltip Functions
-  const showBookingTooltipHandler = (appointment, event) => {
+  const showBookingTooltipHandler = (event, data) => {
     const rect = event.target.getBoundingClientRect();
-    const tooltipWidth = 280;
-    const tooltipHeight = 200;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const scrollY = window.scrollY;
-    const scrollX = window.scrollX;
-    
-    // Calculate position
-    let top = rect.top + scrollY - tooltipHeight - 10; // Position above by default
-    let left = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2); // Center horizontally
-    
-    // Adjust if tooltip goes off screen
-    if (top < scrollY + 10) {
-      top = rect.bottom + scrollY + 10; // Position below if not enough space above
-    }
-    
-    if (left < scrollX + 10) {
-      left = scrollX + 10; // Ensure minimum left margin
-    } else if (left + tooltipWidth > scrollX + viewportWidth - 10) {
-      left = scrollX + viewportWidth - tooltipWidth - 10; // Ensure minimum right margin
-    }
-    
-    setTooltipPosition({ top, left });
-    setTooltipData(appointment);
+    setTooltipPosition({ x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY });
+    setTooltipData(data);
     setShowBookingTooltip(true);
   };
 
@@ -597,47 +539,28 @@ const SelectCalendar = () => {
     return `${hours}:${minutes}`;
   };
 
-  // Close dropdown when clicking outside or on escape key
+  // Close dropdowns and popups when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showMoreAppointments && !event.target.closest('.more-appointments-dropdown') && !event.target.closest('.month-more-appointments') && !event.target.closest('.week-more-appointments')) {
         closeMoreAppointmentsDropdown();
       }
-    };
-
-    const handleEscapeKey = (event) => {
-      if (event.key === 'Escape' && showMoreAppointments) {
-        closeMoreAppointmentsDropdown();
+      if (showCalendarPicker && calendarPickerRef.current && !calendarPickerRef.current.contains(event.target) && !dateButtonRef.current.contains(event.target)) {
+        setShowCalendarPicker(false);
+      }
+      if (showTeamPopup && teamPopupRef.current && !teamPopupRef.current.contains(event.target) && !teamButtonRef.current.contains(event.target)) {
+        setShowTeamPopup(false);
+      }
+      if (showViewDropdown && viewDropdownRef.current && !viewDropdownRef.current.contains(event.target) && !viewButtonRef.current.contains(event.target)) {
+        setShowViewDropdown(false);
+      }
+      if (showStatusPopup && statusPopupRef.current && !statusPopupRef.current.contains(event.target) && !statusButtonRef.current.contains(event.target)) {
+        setShowStatusPopup(false);
       }
     };
-
-    if (showMoreAppointments) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscapeKey);
-      
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('keydown', handleEscapeKey);
-      };
-    }
-  }, [showMoreAppointments]);
-
-  // Handle ESC key for booking modal
-  useEffect(() => {
-    const handleEscapeKey = (event) => {
-      if (event.key === 'Escape' && showAddBookingModal) {
-        closeBookingModal();
-      }
-    };
-
-    if (showAddBookingModal) {
-      document.addEventListener('keydown', handleEscapeKey);
-      
-      return () => {
-        document.removeEventListener('keydown', handleEscapeKey);
-      };
-    }
-  }, [showAddBookingModal]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMoreAppointments, showCalendarPicker, showTeamPopup, showViewDropdown, showStatusPopup]);
 
   const handleCreateBooking = async () => {
     setBookingLoading(true);
@@ -679,7 +602,6 @@ const SelectCalendar = () => {
         };
       }
 
-      // Validate required fields
       if (!selectedService || !selectedProfessional || !selectedTimeSlot) {
         setBookingError('Please complete all booking steps: Service, Professional, and Time selection.');
         setBookingLoading(false);
@@ -692,7 +614,6 @@ const SelectCalendar = () => {
         return;
       }
 
-      // Create the booking payload according to backend model
       const bookingPayload = {
         services: [
           {
@@ -707,14 +628,12 @@ const SelectCalendar = () => {
         appointmentDate: selectedTimeSlot.startTime,
         totalDuration: selectedService.duration,
         totalAmount: selectedService.price,
-        finalAmount: selectedService.price, // Add finalAmount as required by backend
+        finalAmount: selectedService.price,
         paymentMethod: paymentMethod,
         client: clientData,
-        notes: '', // Add notes field
-        bookingSource: 'admin' // Specify this is admin-created booking
+        notes: '',
+        bookingSource: 'admin'
       };
-
-      console.log('Booking payload:', JSON.stringify(bookingPayload, null, 2));
       
       const res = await fetch(`${Base_url}/bookings`, {
         method: 'POST',
@@ -726,7 +645,6 @@ const SelectCalendar = () => {
       });
       
       const responseData = await res.json();
-      console.log('Booking creation response:', responseData);
 
       if (!res.ok) {
         throw new Error(responseData.message || `HTTP ${res.status}: ${res.statusText}`);
@@ -736,20 +654,18 @@ const SelectCalendar = () => {
         throw new Error(responseData.message || 'Booking creation failed');
       }
       
-      const clientName = selectedExistingClient 
+      const clientName = selectedExistingClient
         ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
         : clientData.firstName;
       
       setBookingSuccess(`✨ Booking created successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
       
-      // Refresh calendar data after successful booking
       setTimeout(() => {
         closeBookingModal();
-        fetchCalendarData(); // Refresh the calendar
+        fetchCalendarData();
       }, 2500);
       
     } catch (err) {
-      console.error('Booking creation error:', err);
       setBookingError(`Failed to create booking: ${err.message}`);
     } finally {
       setBookingLoading(false);
@@ -801,19 +717,11 @@ const SelectCalendar = () => {
       const startDateParam = startDate.toISOString().split('T')[0];
       const endDateParam = endDate.toISOString().split('T')[0];
 
-      console.log('Fetching calendar data for:', { startDateParam, endDateParam, currentView });
-
       const [employeesResponse, bookingsResponse, servicesResponse] = await Promise.all([
         api.get(EMPLOYEES_API_URL),
         api.get(`${BOOKING_API_URL}/admin/all?startDate=${startDateParam}&endDate=${endDateParam}`),
         api.get(SERVICES_API_URL)
       ]);
-
-      console.log('API Responses:', {
-        employees: employeesResponse.data,
-        bookings: bookingsResponse.data,
-        services: servicesResponse.data
-      });
 
       if (bookingsResponse.data.success && employeesResponse.data.success) {
         const allBookings = bookingsResponse.data.data.bookings || [];
@@ -823,7 +731,6 @@ const SelectCalendar = () => {
           setAvailableServices(servicesResponse.data.data.services || []);
         }
 
-        // Filter out inactive employees from calendar display and booking interfaces
         const activeEmployees = employees.filter(emp => emp.user?.isActive !== false);
         
         const transformedEmployees = activeEmployees.map(emp => ({
@@ -833,8 +740,8 @@ const SelectCalendar = () => {
           avatar: emp.user?.avatar || emp.avatar,
           avatarColor: getRandomColor(),
           unavailablePeriods: emp.unavailablePeriods || [],
-          isActive: emp.user?.isActive !== false, // Ensure we track active status
-          workSchedule: emp.workSchedule || {} // Include work schedule for shift checking
+          isActive: emp.user?.isActive !== false,
+          workSchedule: emp.workSchedule || {}
         }));
 
         const transformedAppointments = {};
@@ -872,23 +779,16 @@ const SelectCalendar = () => {
           });
         });
         
-        console.log('Transformed data:', {
-          employees: transformedEmployees.length,
-          appointments: Object.keys(transformedAppointments).length
-        });
-        
         setEmployees(transformedEmployees);
         setTimeSlots(generateTimeSlots('00:00', '23:50', 10));
         setAppointments(transformedAppointments);
-        setExistingClients(MOCK_CLIENTS_DATA); // Use mock clients as fallback
+        setExistingClients(MOCK_CLIENTS_DATA);
       } else {
         throw new Error('Failed to fetch calendar data');
       }
     } catch (err) {
-      console.error("Error fetching calendar data:", err);
       setError(`Failed to load calendar data: ${err.message}`);
       
-      // Use mock data for development/demo
       setEmployees(MOCK_SUCCESS_DATA.employees);
       setTimeSlots(generateTimeSlots('00:00', '23:50', 10));
       setAppointments(MOCK_SUCCESS_DATA.appointments);
@@ -903,17 +803,14 @@ const SelectCalendar = () => {
     fetchCalendarData();
   }, [currentDate, currentView]);
 
-  // Initialize booking modal when opened
   useEffect(() => {
     if (showAddBookingModal) {
-      // Both Add button and time slot clicks now start from service selection
-      setBookingStep(1); // Always start with service selection
+      setBookingStep(1);
       fetchBookingServices();
       fetchExistingClients();
     }
   }, [showAddBookingModal, fetchBookingServices, fetchExistingClients]);
 
-  // Auto-selection effects for booking modal (when defaults are available)
   useEffect(() => {
     if (bookingStep === 2 && bookingDefaults?.staffId && availableProfessionals.length > 0) {
       const defaultProf = availableProfessionals.find(p => p._id === bookingDefaults.staffId);
@@ -935,7 +832,7 @@ const SelectCalendar = () => {
       if (defaultSlot) {
         setSelectedTimeSlot(defaultSlot);
         setBookingStep(4);
-        setBookingDefaults(null); // Clear defaults after use
+        setBookingDefaults(null);
       }
     }
   }, [bookingStep, bookingDefaults, availableTimeSlots]);
@@ -954,8 +851,8 @@ const SelectCalendar = () => {
         return;
     }
 
-    const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
-    const firstSlotTimeMinutes = (parseFloat(timeSlots[0]?.split(':')[0]) * 60) + parseFloat(timeSlots[0]?.split(':')[1]);
+    const timeSlotHeightPx = 12; // Height of each 15-minute slot
+    const firstSlotTimeMinutes = 0; // Starts at 00:00
     const currentTimeMinutes = (now.getHours() * 60) + now.getMinutes();
     const minutesIntoSchedule = currentTimeMinutes - firstSlotTimeMinutes;
 
@@ -964,7 +861,7 @@ const SelectCalendar = () => {
       return;
     }
 
-    const minutesPerSlot = 10;
+    const minutesPerSlot = 15;
     const topPosition = (minutesIntoSchedule / minutesPerSlot) * timeSlotHeightPx;
 
     setCurrentTimeLineTop(topPosition);
@@ -975,7 +872,7 @@ const SelectCalendar = () => {
     updateCurrentTimeLine();
     const interval = setInterval(updateCurrentTimeLine, 60 * 1000);
     return () => clearInterval(interval);
-  }, [timeSlots, currentDate, currentView]);
+  }, [currentDate, currentView]);
 
   useEffect(() => {
     const headerTimeTimer = setInterval(() => {
@@ -984,15 +881,18 @@ const SelectCalendar = () => {
     return () => clearInterval(headerTimeTimer);
   }, []);
 
-  const displayEmployees = employees.filter(emp => selectedStaff === 'All' || emp.id === selectedStaff);
+  const displayEmployees = employees.filter(emp => selectedStaff.length === 0 || selectedStaff.includes(emp.id));
 
   const getCalendarDays = () => {
     if (currentView === 'Day') {
       return [currentDate];
-    } else if (currentView === 'Week') {
+    } else if (currentView === 'Week' || currentView === '3 Day') {
       const startOfWeek = new Date(currentDate);
       startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
-      return Array.from({ length: 7 }, (_, i) => {
+      
+      const numDays = currentView === '3 Day' ? 3 : 7;
+      
+      return Array.from({ length: numDays }, (_, i) => {
         const day = new Date(startOfWeek);
         day.setDate(startOfWeek.getDate() + i);
         return day;
@@ -1011,6 +911,7 @@ const SelectCalendar = () => {
   };
 
   const calendarDays = getCalendarDays();
+  const getSelectedMonth = () => currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
 
   const renderMonthView = () => {
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -1028,13 +929,10 @@ const SelectCalendar = () => {
             const dayKey = day.toISOString().split('T')[0];
             const dayAppointments = [];
             
-            // Get appointments for this day from all employees
-            displayEmployees.forEach(emp => {
+            employees.forEach(emp => {
               if (appointments[emp.id]) {
                 Object.entries(appointments[emp.id]).forEach(([slotKey, appointment]) => {
-                  // Check if the appointment is for this day
                   if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                    // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
                     const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
                     dayAppointments.push({
                       ...appointment,
@@ -1057,8 +955,8 @@ const SelectCalendar = () => {
                   {dayAppointments.length > 0 ? (
                     <>
                       {dayAppointments.slice(0, 3).map((app, index) => (
-                        <div key={index} 
-                             className="month-appointment-entry" 
+                        <div key={index}
+                             className="month-appointment-entry"
                              style={{ backgroundColor: app.color }}
                              onMouseEnter={(e) => showBookingTooltipHandler(e, {
                                client: app.client,
@@ -1074,7 +972,7 @@ const SelectCalendar = () => {
                         </div>
                       ))}
                       {dayAppointments.length > 3 && (
-                        <div 
+                        <div
                           className="month-more-appointments"
                           onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
                         >
@@ -1091,7 +989,129 @@ const SelectCalendar = () => {
       </div>
     );
   };
-  
+  dayjs.extend(weekOfYear);
+
+// const formatTime = (time) => time; 
+
+// dayjs.extend(weekOfYear);
+
+
+
+const WeekCalendarGrid = ({ employees, appointments, currentDate }) => {
+    const [hoveredAppointment, setHoveredAppointment] = useState(null);
+    const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+
+    const startOfWeek = dayjs(currentDate).startOf('week').toDate();
+    const weekDays = Array.from({ length: 7 }, (_, i) => dayjs(startOfWeek).add(i, 'day').toDate());
+
+    const handleMouseEnter = (event, appointment) => {
+        setHoveredAppointment(appointment);
+        const rect = event.currentTarget.getBoundingClientRect();
+        setTooltipPosition({
+            top: rect.top + window.scrollY - 10,
+            left: rect.left + window.scrollX + rect.width / 2,
+        });
+    };
+
+    const handleMouseLeave = () => {
+        setHoveredAppointment(null);
+    };
+
+    const getDayName = (date) => {
+        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        return days[date.getDay()];
+    };
+
+    return (
+        <div className="calendar-grid-container-final">
+            {/* Top-left corner space */}
+            <div className="grid-cell-header-space"></div>
+            
+            {/* Day headers */}
+            {weekDays.map(day => (
+                <div key={day.toISOString()} className="grid-cell-day-header">
+                    <div className="week-day-date">{day.getDate()}</div>
+                    <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                </div>
+            ))}
+
+            {/* Employee rows and appointment slots */}
+            {employees.map(employee => (
+                <React.Fragment key={employee.id}>
+                    {/* Employee info panel */}
+                    <div className="grid-cell-employee-info">
+                        <div className="week-employee-avatar" style={{ backgroundColor: employee.avatarColor }}>
+                            {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
+                        </div>
+                        <div className="week-employee-text">
+                            <div className="week-employee-name">{employee.name}</div>
+                            <div className="week-employee-position">{employee.position}</div>
+                        </div>
+                    </div>
+
+                    {/* Schedule slots for each day */}
+                    {weekDays.map(day => {
+                        const dayKey = day.toISOString().split('T')[0];
+                        const dailyAppointments = Object.entries(appointments[employee.id] || {})
+                            .filter(([key]) => key.startsWith(dayKey))
+                            .map(([key, app]) => ({ ...app, time: key.split('_')[1] }));
+
+                        // Calculate the maximum height for this employee's row
+                        let maxRowHeight = 0;
+                        dailyAppointments.forEach(appointment => {
+                             const [hours, minutes] = appointment.time.split(':').map(Number);
+                             const endMinutes = hours * 60 + minutes + appointment.duration;
+                             if (endMinutes > maxRowHeight) {
+                                 maxRowHeight = endMinutes;
+                             }
+                        });
+
+                        return (
+                            <div key={dayKey} className="grid-cell-schedule-day">
+                                {dailyAppointments.map(appointment => {
+                                    const [hours, minutes] = appointment.time.split(':').map(Number);
+                                    const topPosition = (hours * 60 + minutes); // 1px per minute
+
+                                    return (
+                                        <div
+                                            key={appointment.bookingId || `${dayKey}_${appointment.time}`}
+                                            className="week-appointment-block-final"
+                                            style={{
+                                                backgroundColor: appointment.color,
+                                                height: `${appointment.duration}px`,
+                                                top: `${topPosition}px`,
+                                            }}
+                                            onMouseEnter={(e) => handleMouseEnter(e, appointment)}
+                                            onMouseLeave={handleMouseLeave}
+                                        >
+                                            <span className="appointment-time">{appointment.time}</span>
+                                            <span className="week-appointment-client-name">{appointment.client}</span>
+                                            <span className="week-appointment-service-name">{appointment.service}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })}
+                </React.Fragment>
+            ))}
+
+            {/* Hover tooltip for appointment details */}
+            {hoveredAppointment && (
+                <div
+                    className="week-appointment-tooltip-final"
+                    style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
+                >
+                    <div className="tooltip-title">{hoveredAppointment.client}</div>
+                    <div className="tooltip-details">
+                        <span className="tooltip-service">{hoveredAppointment.service}</span>
+                        <span className="tooltip-time">{hoveredAppointment.time}</span>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
   const renderCalendarContent = () => {
     if (loading) {
       return (
@@ -1126,183 +1146,309 @@ const SelectCalendar = () => {
 
     if (currentView === 'Month') {
         return renderMonthView();
+    }else if(currentView === 'Week' ) {
+        return <WeekCalendarGrid employees={employees} appointments={appointments} currentDate={currentDate} onTimeSlotClick={handleTimeSlotClick} />;
     }
 
+
+    // New Grid Layout
     return (
         <div className="calendar-grid-container">
-          <div className="time-column">
-            <div className="time-header">Time</div>
-            <div className="time-slots">
-              {timeSlots.map(slot => (
-                <div key={slot} className={`time-slot-label ${slot.endsWith(':00') ? 'hour-start' : ''}`}>
-                  {slot.endsWith(':00') ? <span>{formatTime(slot)}</span> : slot}
+            <div className="time-column">
+                <div className="time-header-space"></div>
+                <div className="time-slots-only">
+                    {generateTimeSlots('00:00', '23:00', 60).map(slot => (
+                        <div key={slot} className="time-slot-label-new">
+                            {slot}
+                        </div>
+                    ))}
                 </div>
-              ))}
             </div>
-          </div>
-          
-          <div className="staff-grid">
-            {currentView === 'Day' && displayEmployees.map(employee => (
-                <StaffColumn key={employee.id} employee={employee} timeSlots={timeSlots} appointments={appointments} currentDate={currentDate} isTimeSlotUnavailable={isTimeSlotUnavailable} handleTimeSlotClick={handleTimeSlotClick} showBookingTooltipHandler={showBookingTooltipHandler} hideBookingTooltip={hideBookingTooltip} />
-            ))}
-            {currentView === 'Week' && (
-                <div className="week-view-container">
-                  {/* Week Day Headers */}
-                  <div className="week-headers-row">
-                    <div className="week-staff-header-cell">Staff</div>
-                    {calendarDays.map(day => {
-                      const isToday = day.toDateString() === new Date().toDateString();
-                      return (
-                        <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
-                          <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                          <div className="week-day-number">{day.getDate()}</div>
+            
+            <div className="main-calendar-scroll-wrapper">
+                <div className="staff-grid-header">
+                    {displayEmployees.map(employee => (
+                        <div key={employee.id} className="staff-header">
+                            <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
+                                {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
+                            </div>
+                            <div className="staff-info">
+                                <div className="staff-name">{employee.name}</div>
+                            </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Employee Rows with Daily Appointments */}
-                  {displayEmployees.map(employee => (
-                    <div key={employee.id} className="week-employee-row">
-                      <div className="week-staff-cell">
-                        <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
-                          {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
-                        </div>
-                        <div className="staff-info">
-                          <div className="staff-name">{employee.name}</div>
-                          <div className="staff-position">{employee.position}</div>
-                        </div>
-                      </div>
-                      
-                      {/* Daily appointment cells for this employee */}
-                      {calendarDays.map(day => {
-                        const dayKey = day.toISOString().split('T')[0];
-                        const hasShift = hasShiftOnDate(employee, day);
-                        
-                        // Get appointments for this employee on this day
-                        const dayAppointments = [];
-                        if (appointments[employee.id]) {
-                          Object.entries(appointments[employee.id]).forEach(([slotKey, appointment]) => {
-                            if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                              const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                              dayAppointments.push({
-                                ...appointment,
-                                time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
-                                slotKey,
-                                timeSlot: timeFromKey,
-                                
-                              });
-                            }
-                          });
-                        }
-                        
-                        return (
-                          <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
-                            {!hasShift ? (
-                              <div className="week-no-shift">
-                                <span className="no-shift-text">No shift</span>
-                              </div>
-                            ) : dayAppointments.length > 0 ? (
-                              <div className="week-appointments-container">
-                                {dayAppointments.slice(0, 3).map((app, index) => (
-                                  <div 
-                                    key={index} 
-                                    className="week-appointment-block" 
-                                    style={{ backgroundColor: app.color }}
-                                    onClick={() => app.timeSlot && handleTimeSlotClick(employee.id, app.timeSlot, day)}
-                                    onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                                      client: app.client,
-                                      service: app.service,
-                                      time: app.time,
-                                      professional: employee.name,
-                                      status: app.status || 'Confirmed',
-                                      notes: app.notes
-                                    })}
-                                    onMouseLeave={hideBookingTooltip}
-                                  >
-                                    <div className="appointment-client">{app.client}</div>
-                                    <div className="appointment-service">{app.service}</div>
-                                  </div>
-                                ))}
-                                {dayAppointments.length > 3 && (
-                                  <div 
-                                    className="week-more-appointments"
-                                    onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
-                                  >
-                                    +{dayAppointments.length - 3} more
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <div 
-                                className="week-empty-cell"
-                                onClick={hasShift ? () => {
-                                  const defaultTime = "09:00";
-                                  handleTimeSlotClick(employee.id, defaultTime, day);
-                                } : undefined}
-                                style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
-                              >
-                                <span className="add-appointment-plus">{hasShift ? '+' : ''}</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                    ))}
                 </div>
-            )}
-          </div>
+                
+                <div className="main-calendar-grid">
+                    {displayEmployees.map(employee => (
+                        <div key={employee.id} className="employee-column">
+                            {generateTimeSlots('00:00', '23:45', 15).map(slot => {
+                                const slotKey = `${currentDate.toISOString().split('T')[0]}_${slot}`;
+                                const appointment = appointments[employee.id]?.[slotKey];
+                                const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
+
+                                return (
+                                    <div key={slot}
+                                        className={`appointment-slot-cell ${appointment ? 'has-appointment' : ''} ${unavailableReason ? 'is-unavailable' : ''}`}
+                                        onClick={hasShiftOnDate(employee, currentDate) ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
+                                        onMouseEnter={() => setHoveredSlot({ employeeId: employee.id, slotTime: slot })}
+                                        onMouseLeave={() => setHoveredSlot({ employeeId: null, slotTime: null })}
+                                        style={{
+                                          cursor: hasShiftOnDate(employee, currentDate) ? 'pointer' : 'not-allowed',
+                                        }}
+                                    >
+                                        {appointment && <div className="appointment-block" style={{ backgroundColor: appointment.color }} >
+                                            <span className="appointment-client-name">{appointment.client}</span>
+                                            <span className="appointment-service-name">{appointment.service}</span>
+                                        </div>}
+                                        {hoveredSlot.employeeId === employee.id && hoveredSlot.slotTime === slot && <span className="hover-time-indicator">{slot}</span>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ))}
+                    {currentView === 'Day' && <div className="current-time-line" style={{ top: `${currentTimeLineTop}px` }}>
+                        <span className="current-time-marker">{currentTimeText}</span>
+                    </div>}
+                </div>
+            </div>
         </div>
     );
   };
+  
+  // New components for header logic
+  const CalendarDatePopup = ({ date, setDate, onClose }) => {
+    const handleInXWeeks = (weeks) => {
+        const newDate = dayjs(date).add(weeks, 'week').toDate();
+        setDate(newDate);
+        onClose();
+    };
 
+    return (
+      <div className="calendar-popup" ref={calendarPickerRef}>
+        <div className="calendar-picker-header">
+            <div className="month-nav">
+                <button onClick={() => setDate(dayjs(date).subtract(1, 'month').toDate())}><ChevronLeft size={16} /></button>
+                <div className="current-month-year">
+                    <span>{dayjs(date).format('MMMM')}</span>
+                    <span>{dayjs(date).format('YYYY')}</span>
+                </div>
+                <button onClick={() => setDate(dayjs(date).add(1, 'month').toDate())}><ChevronRight size={16} /></button>
+            </div>
+        </div>
+        <DayPicker
+          mode="single"
+          selected={date}
+          onSelect={day => {
+            if (day) {
+              setDate(day);
+              onClose();
+            }
+          }}
+          modifiersClassNames={{ selected: 'selected-day' }}
+        />
+        <div className="calendar-popup-footer">
+            <button className="week-shortcut-btn" onClick={() => handleInXWeeks(1)}>In 1 week</button>
+            <button className="week-shortcut-btn" onClick={() => handleInXWeeks(2)}>In 2 weeks</button>
+            <button className="week-shortcut-btn" onClick={() => handleInXWeeks(3)}>In 3 weeks</button>
+            <button className="week-shortcut-btn" onClick={() => handleInXWeeks(4)}>In 4 weeks</button>
+            <button className="week-shortcut-btn" onClick={() => handleInXWeeks(5)}>In 5 weeks</button>
+        </div>
+      </div>
+    );
+  };
+
+  const TeamMemberPopup = ({ employees, selectedStaff, setSelectedStaff, onClose }) => {
+    const handleToggleStaff = (employeeId) => {
+      setSelectedStaff(prev => {
+        const newSelection = prev.includes(employeeId)
+          ? prev.filter(id => id !== employeeId)
+          : [...prev, employeeId];
+        return newSelection;
+      });
+    };
+
+    const handleClearAll = () => {
+      setSelectedStaff([]);
+    };
+    
+    return (
+      <div className="team-popup" ref={teamPopupRef}>
+        <div className="team-popup-header">
+            <div className="team-status-options">
+                <div className="team-status-btn active">Scheduled team</div>
+                <div className="team-status-btn">All team</div>
+            </div>
+        </div>
+        <div className="team-members-list-wrapper">
+            <div className="popup-subtitle">Team members</div>
+            <button className="clear-all-btn" onClick={handleClearAll}>Clear all</button>
+        </div>
+        <div className="team-members-list">
+          {employees.map(emp => (
+            <div
+              key={emp.id}
+              className={`team-member-item ${selectedStaff.includes(emp.id) ? 'selected' : ''}`}
+              onClick={() => handleToggleStaff(emp.id)}
+            >
+              <input type="checkbox" checked={selectedStaff.includes(emp.id)} readOnly />
+              <div className="team-member-avatar" style={{ backgroundColor: emp.avatarColor }}>
+                {emp.avatar ? <img src={emp.avatar} alt={emp.name} className="avatar-image" /> : emp.name.charAt(0)}
+              </div>
+              <span className="team-member-name">{emp.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const AppointmentStatusPopup = ({ onClose }) => {
+    const statuses = [
+      { id: 'upcoming', label: 'Upcoming', color: '#0ea5e9' },
+      { id: 'in-progress', label: 'In Progress', color: '#f59e0b' },
+      { id: 'completed', label: 'Completed', color: '#22c55e' },
+      { id: 'cancelled', label: 'Cancelled', color: '#ef4444' },
+    ];
+    
+    const [activeStatuses, setActiveStatuses] = useState([]);
+    
+    const handleStatusToggle = (statusId) => {
+        setActiveStatuses(prev => prev.includes(statusId) ? prev.filter(id => id !== statusId) : [...prev, statusId]);
+    };
+
+    return (
+      <div className="status-popup" ref={statusPopupRef}>
+        <div className="status-options-list">
+            {statuses.map(status => (
+                <div key={status.id}
+                     className={`status-item ${activeStatuses.includes(status.id) ? 'active' : ''}`}
+                     onClick={() => handleStatusToggle(status.id)}>
+                    <div className="status-indicator" style={{ backgroundColor: status.color }}></div>
+                    <span className="status-label">{status.label}</span>
+                </div>
+            ))}
+        </div>
+      </div>
+    );
+  };
+  
+  const ViewDropdown = ({ currentView, setCurrentView, onClose }) => {
+    const viewOptions = [
+      { id: 'Day', label: 'Day', icon: <CalendarIcon size={16} /> },
+    //   { id: '3 Day', label: '3 Day', icon: <ListTodo size={16} /> },
+      { id: 'Week', label: 'Week', icon: <LayoutGrid size={16} /> },
+      { id: 'Month', label: 'Month', icon: <CalendarIcon size={16} /> },
+    ];
+
+    return (
+      <div className="view-dropdown" ref={viewDropdownRef}>
+        {viewOptions.map(option => (
+            <div key={option.id}
+                 className={`view-option ${currentView === option.id ? 'active' : ''}`}
+                 onClick={() => { setCurrentView(option.id); onClose(); }}>
+              {option.icon} {option.label}
+            </div>
+        ))}
+      </div>
+    );
+  };
+
+  const getDayOrWeekDisplay = (view) => {
+    const today = dayjs(currentDate);
+    if (view === 'Day') {
+        return today.format('ddd DD MMM');
+    }
+    const startOfWeek = today.startOf('week');
+    const endOfWeek = today.endOf('week');
+    return `${startOfWeek.format('D MMM')} - ${endOfWeek.format('D MMM')}`;
+  };
+  
+  const getMonthDisplay = () => currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  
+  const handleViewChange = (view) => {
+      setCurrentView(view);
+      setShowViewDropdown(false);
+  };
+  
   return (
     <div className="scheduler-root">
-      {/* Application-level Header */}
-      <div className="scheduler-header">
-        <div className="header-left">
-          <h1>Scheduler Overview</h1>
-          <p className="current-time-display">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</p>
+      <div className="main-header-toolbar">
+        <div className="toolbar-left">
+          <button className="action-btn-today" onClick={goToToday}>Today</button>
         </div>
-        <div className="header-actions">
-          <button className="action-btn" onClick={goToToday}>Today</button>
-          <button className="action-btn" onClick={goToPrevious}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+        <div className="toolbar-center">
+          <button className="nav-arrow-btn" onClick={goToPrevious} aria-label="Previous Day/Week">
+            <ChevronLeft size={16} />
           </button>
-          <span className="date-display">
-            {currentView === 'Day' && currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            {currentView === 'Week' && `${calendarDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${calendarDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-            {currentView === 'Month' && currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-          </span>
-          <button className="action-btn" onClick={goToNext}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+          
+          <div className="date-display-wrapper">
+            <button
+              className="date-display-btn"
+              onClick={() => setShowCalendarPicker(prev => !prev)}
+              ref={dateButtonRef}
+            >
+                {currentView === 'Month' ? getMonthDisplay() : getDayOrWeekDisplay(currentView)}
+            </button>
+            {showCalendarPicker && (
+              <CalendarDatePopup date={currentDate} setDate={setCurrentDate} onClose={() => setShowCalendarPicker(false)} />
+            )}
+          </div>
+          
+          <button className="nav-arrow-btn" onClick={goToNext} aria-label="Next Day/Week">
+            <ChevronRight size={16} />
           </button>
-          <select value={currentView} onChange={(e) => setCurrentView(e.target.value)} className="action-btn">
-            <option value="Day">Day</option>
-            <option value="Week">Week</option>
-            <option value="Month">Month</option>
-          </select>
-          <select value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)} className="action-btn">
-            <option value="All">All Staff</option>
-            {employees.map(emp => (<option key={emp.id} value={emp.id}>{emp.name}</option>))}
-          </select>
-          <button className="action-btn primary-btn" onClick={handleAddAppointment}>
+          
+          <button
+            className={`tool-icon-btn ${showTeamPopup ? 'active' : ''}`}
+            onClick={() => setShowTeamPopup(prev => !prev)}
+            ref={teamButtonRef}
+          >
+            <Users size={18} />
+          </button>
+          {showTeamPopup && (
+            <TeamMemberPopup
+                employees={employees}
+                selectedStaff={selectedStaff}
+                setSelectedStaff={setSelectedStaff}
+                onClose={() => setShowTeamPopup(false)}
+            />
+          )}
+
+          <button
+            className={`tool-icon-btn ${showStatusPopup ? 'active' : ''}`}
+            onClick={() => setShowStatusPopup(prev => !prev)}
+            ref={statusButtonRef}
+          >
+            <CalendarIcon size={18} />
+          </button>
+          {showStatusPopup && (
+            <AppointmentStatusPopup onClose={() => setShowStatusPopup(false)} />
+          )}
+          
+        </div>
+        <div className="toolbar-right">
+          <button className={`day-view-selector-btn ${showViewDropdown ? 'active' : ''}`}
+            onClick={() => setShowViewDropdown(prev => !prev)}
+            ref={viewButtonRef}
+          >
+            {currentView}
+            <ChevronRight size={16} className="rotate-90" />
+          </button>
+          {showViewDropdown && (
+            <ViewDropdown currentView={currentView} setCurrentView={handleViewChange} onClose={() => setShowViewDropdown(false)} />
+          )}
+          <button className="add-booking-btn primary-btn" onClick={handleAddAppointment}>
             <Plus size={16} />
             Add
           </button>
         </div>
       </div>
 
-      {/* Main Scrollable Calendar Content */}
-      <div className="scheduler-content" ref={schedulerContentRef}>
+      <div className="scheduler-content-wrapper" ref={schedulerContentRef}>
         {renderCalendarContent()}
-        <div className="current-time-line" style={{ top: `${currentTimeLineTop}px` }}>
-            <span className="current-time-marker">{currentTimeText}</span>
-        </div>
       </div>
       
-      {/* Modals */}
       {showUnavailablePopup && (
         <div className="service-selection-overlay" onClick={closeBookingModal}>
           <div className="service-selection-popup" onClick={e => e.stopPropagation()}>
@@ -1322,7 +1468,6 @@ const SelectCalendar = () => {
               <button className="booking-modal-close" onClick={closeBookingModal}>×</button>
               <h2>New Appointment</h2>
               
-              {/* Step Indicator */}
               <div className="step-indicator">
                 <div className={`step-dot ${bookingStep >= 1 ? 'active' : ''} ${bookingStep > 1 ? 'completed' : ''}`}></div>
                 <div className={`step-connector ${bookingStep > 1 ? 'active' : ''}`}></div>
@@ -1339,7 +1484,6 @@ const SelectCalendar = () => {
               {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
               {bookingSuccess && <div className="booking-modal-success">{bookingSuccess}</div>}
 
-              {/* Service Selection Step */}
               {bookingStep === 1 && (
                 <>
                   <h3>✨ Select Your Service</h3>
@@ -1354,7 +1498,6 @@ const SelectCalendar = () => {
                 </>
               )}
 
-              {/* Professional Selection Step */}
               {bookingStep === 2 && (
                 <>
                   <h3>👨‍⚕️ Choose Your Professional</h3>
@@ -1372,7 +1515,6 @@ const SelectCalendar = () => {
                 </>
               )}
 
-              {/* Time Selection Step */}
               {bookingStep === 3 && (
                 <>
                   <h3>🕐 Pick Your Perfect Time</h3>
@@ -1394,18 +1536,16 @@ const SelectCalendar = () => {
                 </>
               )}
 
-              {/* Client Information Step */}
               {bookingStep === 4 && (
                 <>
                   <h3>👤 Client Information</h3>
                   
-                  {/* Client Search Section */}
                   <div className="client-search-section">
                     <div className="client-search-header">
                       <h4>Search Existing Client</h4>
                       {selectedExistingClient && (
-                        <button 
-                          className="clear-client-btn" 
+                        <button
+                          className="clear-client-btn"
                           onClick={clearClientSelection}
                         >
                           Clear Selection
@@ -1431,8 +1571,8 @@ const SelectCalendar = () => {
                         {showClientSearch && clientSearchResults.length > 0 && (
                           <div className="client-search-results">
                             {clientSearchResults.map(client => (
-                              <div 
-                                key={client._id} 
+                              <div
+                                key={client._id}
                                 className="client-search-result"
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => selectExistingClient(client)}
@@ -1456,7 +1596,7 @@ const SelectCalendar = () => {
                         {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
                           <div className="client-search-no-results">
                             <p>No clients found for "{clientSearchQuery}"</p>
-                            <button 
+                            <button
                               className="add-new-client-btn"
                               onClick={addNewClient}
                             >
@@ -1466,7 +1606,7 @@ const SelectCalendar = () => {
                         )}
                         
                         {!showClientSearch && !isAddingNewClient && (
-                          <button 
+                          <button
                             className="add-new-client-btn"
                             onClick={addNewClient}
                           >
@@ -1476,7 +1616,6 @@ const SelectCalendar = () => {
                       </div>
                     )}
                     
-                    {/* Selected Client Display */}
                     {selectedExistingClient && (
                       <div className="selected-client-display">
                         <div className="selected-client-avatar">
@@ -1496,12 +1635,11 @@ const SelectCalendar = () => {
                       </div>
                     )}
                     
-                    {/* New Client Form */}
                     {isAddingNewClient && (
                       <div className="new-client-form">
                         <div className="new-client-header">
                           <h4>Add New Client</h4>
-                          <button 
+                          <button
                             className="back-to-search-btn"
                             onClick={() => {
                               setIsAddingNewClient(false);
@@ -1515,35 +1653,35 @@ const SelectCalendar = () => {
                         <div className="booking-modal-form">
                           <div className="form-group">
                             <label htmlFor="clientName">Client Name *</label>
-                            <input 
+                            <input
                               id="clientName"
-                              type="text" 
-                              placeholder="Enter client's full name" 
-                              value={clientInfo.name} 
-                              onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))} 
-                              required 
+                              type="text"
+                              placeholder="Enter client's full name"
+                              value={clientInfo.name}
+                              onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))}
+                              required
                             />
                           </div>
                           <div className="form-group">
                             <label htmlFor="clientEmail">Email Address *</label>
-                            <input 
+                            <input
                               id="clientEmail"
-                              type="email" 
-                              placeholder="Enter client's email address" 
-                              value={clientInfo.email} 
-                              onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))} 
-                              required 
+                              type="email"
+                              placeholder="Enter client's email address"
+                              value={clientInfo.email}
+                              onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
+                              required
                             />
                           </div>
                           <div className="form-group">
                             <label htmlFor="clientPhone">Phone Number *</label>
-                            <input 
+                            <input
                               id="clientPhone"
-                              type="tel" 
-                              placeholder="Enter client's phone number" 
-                              value={clientInfo.phone} 
-                              onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))} 
-                              required 
+                              type="tel"
+                              placeholder="Enter client's phone number"
+                              value={clientInfo.phone}
+                              onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
+                              required
                             />
                           </div>
                         </div>
@@ -1552,11 +1690,11 @@ const SelectCalendar = () => {
                   </div>
                   
                   <div className="booking-modal-actions">
-                    <button 
-                      className="booking-modal-next" 
+                    <button
+                      className="booking-modal-next"
                       onClick={() => setBookingStep(5)}
                       disabled={
-                        !selectedExistingClient && 
+                        !selectedExistingClient &&
                         (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
                       }
                     >
@@ -1567,7 +1705,6 @@ const SelectCalendar = () => {
                 </>
               )}
 
-              {/* Payment & Confirmation Step */}
               {bookingStep === 5 && (
                 <>
                   <h3>💳 Payment & Final Confirmation</h3>
@@ -1575,7 +1712,7 @@ const SelectCalendar = () => {
                     <div className="summary-item">
                       <span>Client:</span>
                       <span>
-                        {selectedExistingClient 
+                        {selectedExistingClient
                           ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
                           : clientInfo.name
                         }
@@ -1587,7 +1724,7 @@ const SelectCalendar = () => {
                     <div className="summary-item">
                       <span>📧 Email:</span>
                       <span>
-                        {selectedExistingClient 
+                        {selectedExistingClient
                           ? selectedExistingClient.email
                           : clientInfo.email
                         }
@@ -1596,7 +1733,7 @@ const SelectCalendar = () => {
                     <div className="summary-item">
                       <span>📱 Phone:</span>
                       <span>
-                        {selectedExistingClient 
+                        {selectedExistingClient
                           ? selectedExistingClient.phone
                           : clientInfo.phone
                         }
@@ -1613,11 +1750,11 @@ const SelectCalendar = () => {
                     <div className="summary-item">
                       <span>📅 Date & Time:</span>
                       <span>
-                        {currentDate?.toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                        {currentDate?.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
                         })} at {' '}
                         {selectedTimeSlot ? new Date(selectedTimeSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}
                       </span>
@@ -1642,8 +1779,8 @@ const SelectCalendar = () => {
                     </div>
                   </div>
                   <div className="booking-modal-actions">
-                    <button 
-                      className="booking-modal-confirm" 
+                    <button
+                      className="booking-modal-confirm"
                       onClick={handleCreateBooking}
                       disabled={bookingLoading}
                     >
@@ -1658,23 +1795,22 @@ const SelectCalendar = () => {
         </div>
       )}
       
-      {/* More Appointments Dropdown */}
       {showMoreAppointments && (
         <>
           <div className="more-appointments-backdrop" onClick={closeMoreAppointmentsDropdown}></div>
-          <div 
+          <div
             className={`more-appointments-dropdown ${dropdownPositionedAbove ? 'positioned-above' : ''}`}
-            style={{ 
-              top: dropdownPosition.top, 
-              left: dropdownPosition.left 
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left
             }}
           >
             <div className="more-appointments-dropdown-header">
               <span>All Appointments</span>
               <span className="more-appointments-date">
-                {selectedDayDate?.toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric' 
+                {selectedDayDate?.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
                 })}
               </span>
             </div>
@@ -1696,25 +1832,14 @@ const SelectCalendar = () => {
         </>
       )}
       
-      {/* Booking Tooltip */}
       {showBookingTooltip && tooltipData && (
-        <div 
+        <div
           className="booking-tooltip"
           style={{
-            position: 'fixed',
+            position: 'absolute',
             top: tooltipPosition.y,
             left: tooltipPosition.x,
             zIndex: 10000,
-            backgroundColor: '#333',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            maxWidth: '200px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            pointerEvents: 'none',
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-8px'
           }}
         >
           <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{tooltipData.client}</div>
@@ -1731,138 +1856,6 @@ const SelectCalendar = () => {
       )}
     </div>
   );
-};
-
-// Reusable components for cleaner rendering
-const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlotUnavailable, handleTimeSlotClick, showBookingTooltipHandler, hideBookingTooltip }) => {
-    const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
-    const dayKey = currentDate.toISOString().split('T')[0];
-    const hasShift = hasShiftOnDate(employee, currentDate);
-
-    return (
-        <div key={employee.id} className={`staff-column ${!hasShift ? 'staff-absent' : ''}`}>
-            <div className="staff-header">
-                <div className="staff-avatar" style={{ backgroundColor: hasShift ? employee.avatarColor : '#9ca3af' }}>
-                    {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
-                </div>
-                <div className="staff-info">
-                    <div className="staff-name">{employee.name}</div>
-                    <div className="staff-position">{employee.position}</div>
-                    {!hasShift && <div className="staff-status">No shift</div>}
-                </div>
-            </div>
-            <div className="time-slots-column">
-                {timeSlots.map((slot) => {
-                    const slotKey = `${dayKey}_${slot}`;
-                    const appointment = appointments[employee.id]?.[slotKey];
-                    const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
-
-                    return (
-                        <div key={slot} className="time-slot-wrapper" style={{ height: `${timeSlotHeightPx}px` }}>
-                            <div className={`time-slot ${
-                                appointment ? 'appointment' : 
-                                (!hasShift ? 'no-shift' : 
-                                (unavailableReason ? 'unavailable' : 'empty'))
-                            }`}
-                                 onClick={hasShift ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
-                                 onMouseEnter={appointment ? (e) => showBookingTooltipHandler(e, {
-                                     client: appointment.client,
-                                     service: appointment.service,
-                                     time: slot,
-                                     professional: employee.name,
-                                     status: appointment.status || 'Confirmed',
-                                     notes: appointment.notes
-                                 }) : null}
-                                 onMouseLeave={appointment ? hideBookingTooltip : null}
-                                 style={{
-                                     ...(appointment ? { backgroundColor: appointment.color } : {}),
-                                     cursor: hasShift ? 'pointer' : 'not-allowed'
-                                 }}>
-                                {appointment && <div className="appointment-text">{appointment.client} - {appointment.service}</div>}
-                                {unavailableReason && !appointment && (
-                                    <div className="unavailable-text">
-                                        {unavailableReason.includes("Day Off") ? "DAY OFF" : (unavailableReason.includes("Block") ? "BLOCKED" : "UNAVAIL")}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnavailable, handleTimeSlotClick, onShowMoreAppointments, showBookingTooltipHandler, hideBookingTooltip }) => {
-    const dayKey = day.toISOString().split('T')[0];
-    const isToday = day.toDateString() === new Date().toDateString();
-
-    // Get all appointments for this day from all employees (similar to month view)
-    const dayAppointments = [];
-    
-    employees.forEach(emp => {
-        if (appointments[emp.id]) {
-            Object.entries(appointments[emp.id]).forEach(([slotKey, appointment]) => {
-                // Check if the appointment is for this day
-                if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                    // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
-                    const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                    dayAppointments.push({
-                        ...appointment,
-                        employeeName: emp.name,
-                        employeeAvatar: emp.avatar,
-                        employeeId: emp.id,
-                        time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD'
-                    });
-                }
-            });
-        }
-    });
-
-    return (
-        <div key={dayKey} className="week-day-column">
-            <div className={`week-day-header ${isToday ? 'is-today' : ''}`}>
-                <span className="weekday-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
-                <span className="day-number">{day.getDate()}</span>
-            </div>
-            <div className="week-appointments">
-                {dayAppointments.length > 0 ? (
-                    <>
-                        {dayAppointments.slice(0, 3).map((app, index) => (
-                            <div key={index} 
-                                 className="week-appointment-entry" 
-                                 style={{ backgroundColor: app.color }}
-                                 onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                                     client: app.client,
-                                     service: app.service,
-                                     time: app.time,
-                                     professional: app.employeeName,
-                                     status: app.status || 'Confirmed',
-                                     notes: app.notes
-                                 })}
-                                 onMouseLeave={hideBookingTooltip}>
-                                <span className="appointment-client-name">{app.client}</span>
-                                <span className="appointment-service-name">{app.service}</span>
-                                <span className="appointment-time">{app.time}</span>
-                            </div>
-                        ))}
-                        {dayAppointments.length > 3 && (
-                            <div 
-                                className="week-more-appointments"
-                                onClick={(event) => onShowMoreAppointments(dayAppointments, day, event)}
-                            >
-                                +{dayAppointments.length - 3} more
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <div className="week-no-appointments">
-                        No appointments
-                    </div>
-                )}
-            </div>
-        </div>
-    );
 };
 
 export default SelectCalendar;
