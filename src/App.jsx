@@ -6,7 +6,9 @@ import LoginPage from "./Clientsidepage/Loginpage";
 
 // Import all page components
 import DashboardPage from "./Clientsidepage/HomePage";
-import Scheduler from "./Clientsidepage/Selectcalander";
+// import Scheduler from "./Clientsidepage/Selectcalander";
+// import Scheduler from "./Clientsidepage/Selectcalander";
+import SelectCalendar from "./Clientsidepage/SelectCalendar";
 import ClientsList from "./Clientsidepage/Clientlist";
 import DailySalesSummary from './Clientsidepage/Dailysalesss';
 import SalesAppointments from './Clientsidepage/Appoint';
@@ -17,7 +19,7 @@ import TeamMembers from './Clientsidepage/Teammembers';
 import ScheduledShifts from './Clientsidepage/Sheduledshifts';
 import TimeSheets from './Clientsidepage/TimeSheets';
 import ServiceMenu from './Clientsidepage/ServiceMenu';
-import CatalogMemberships from './Clientsidepage/Membership';
+// import CatalogMemberships from './Clientsidepage/Membership';
 import Searchbar from "./Clientsidepage/SearchBar";
 import Reporting from "./Clientsidepage/Dashboard";
 import Membership from "./Clientsidepage/Membership";
@@ -35,7 +37,7 @@ function App() {
 
           {/* Top-level pages */}
           <Route index element={<DashboardPage />} />
-          <Route path="calendar" element={<Scheduler />} />
+          <Route path="calendar" element={<SelectCalendar />} />
           <Route path="clients-list" element={<ClientsList />} />
           <Route path="search-bar" element={<Searchbar />} />
           <Route path="report-analytics" element={<Reporting />} />

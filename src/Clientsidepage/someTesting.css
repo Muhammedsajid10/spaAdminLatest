@@ -1,4 +1,4 @@
-/* --- CORE STYLES & VARIABLES --- */
+--- CORE STYLES & VARIABLES ---
 :root {
   --primary-color: #6366f1; 
   --primary-hover: #4f46e5;
@@ -46,15 +46,15 @@
   justify-content: space-between;
   align-items: center;
   box-shadow: var(--shadow-sm);
-  z-index: 10;
+  z-index: 10;  
 }
 
-.header-left h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
+  .header-left h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
 
 .current-time-display { /* Renamed for clarity vs. red line indicator */
   font-size: 14px;
