@@ -174,10 +174,10 @@ const PaymentClient = () => {
                 <span className="pay-search-icon"><SearchIcon /></span>
                 <input type="text" placeholder="Search by reference or name..." className="pay-search-input" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
-            <div className="pay-filters">
+            {/* <div className="pay-filters">
                 <button className="pay-filter-btn"><CalendarIcon /> Date range</button>
                 <button className="pay-filter-btn"><FilterIcon /> Filters</button>
-            </div>
+            </div> */}
         </div>
       </div>
       

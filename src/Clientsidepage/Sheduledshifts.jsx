@@ -1319,7 +1319,7 @@ const ShiftScheduler = () => {
             ))}
           </div>
 
-          <div className="table-body">
+          <div className="table-body" >
             {teamMembers.length > 0 ? (
               teamMembers.map((member) => (
                 <div key={member.id} className="member-row">

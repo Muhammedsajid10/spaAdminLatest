@@ -294,7 +294,7 @@
 
 .table-body {
   max-height: 600px;
-  overflow-y: auto;
+  /* overflow-y: auto; */
 }
 
 .table-row {

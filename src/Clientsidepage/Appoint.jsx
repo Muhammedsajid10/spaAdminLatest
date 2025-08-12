@@ -523,14 +523,14 @@ const Appoint = () => {
 
           <div className="filter-button-group">
             <div className="filter-select-wrapper">
-              <button
+              {/* <button
                 className="filter-control-button"
                 onClick={() => setShowDatePicker(true)}
               >
                 <Calendar className="button-icon" />
                 {dateFilter}
                 <ChevronDown className="button-icon" />
-              </button>
+              </button> */}
             </div>
 
             {/* <button
