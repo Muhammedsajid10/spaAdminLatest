@@ -1,4 +1,4 @@
-/* --- CORE STYLES & VARIABLES --- */
+/* --- CORE STYLES & VARIABLE */
 :root {
   --primary-color: #6366f1; 
   --primary-hover: #4f46e5;
@@ -2286,6 +2286,8 @@
   background: #f8fafc;
   border-radius: 6px;
   padding: 16px;
+  height:280px;
+  overflow-y: scroll;
   margin: 12px 20px;
 }
 
