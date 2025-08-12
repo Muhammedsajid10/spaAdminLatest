@@ -279,7 +279,7 @@ const DateRangePicker = ({ isOpen, onClose, onApply, currentDateFilter }) => {
   return (
     <div className="date-picker-overlay">
       <div className="date-range-picker">
-        <div className="date-range-header">
+        {/* <div className="date-range-header">
           <h2>Date range</h2>
           <div className="date-range-dropdown">
             <select className="month-dropdown">
@@ -289,7 +289,7 @@ const DateRangePicker = ({ isOpen, onClose, onApply, currentDateFilter }) => {
               <option>Custom range</option>
             </select>
           </div>
-        </div>
+        </div> */}
 
         <div className="date-inputs">
           <div className="date-input-group">
@@ -533,15 +533,15 @@ const Appoint = () => {
               </button>
             </div>
 
-            <button
+            {/* <button
               onClick={() => setShowFilterPopup(true)}
               className="filter-control-button"
             >
               <Filter className="button-icon" />
               Filters
-            </button>
+            </button> */}
 
-            <div className="filter-select-wrapper">
+            {/* <div className="filter-select-wrapper">
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
                 className="filter-control-button"
@@ -609,7 +609,7 @@ const Appoint = () => {
                   </div>
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
         </div>
 

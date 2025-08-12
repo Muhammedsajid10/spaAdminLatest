@@ -1,7 +1,7 @@
 /* --- CORE STYLES & VARIABLES (Assumed global, consolidated once) --- */
 :root {
   /* Primary Theme Colors (Professional Purple/Blue accent from reference image) */
-  --primary-color: #6a0dad; /* Deeper Purple */
+  --primary-color: #18131c; /* Deeper Purple */
   --primary-light: #e6e6fa; /* Very light purple for subtle accents/active backgrounds (Lavender Blush) */
   --primary-text-contrast: #ffffff; /* White text for primary buttons */
   

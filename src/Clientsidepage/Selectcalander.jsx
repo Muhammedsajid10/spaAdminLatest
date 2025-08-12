@@ -1130,16 +1130,18 @@ const SelectCalendar = () => {
 
     return (
         <div className="calendar-grid-container">
-          <div className="time-column">
-            <div className="time-header">Time</div>
-            <div className="time-slots">
-              {timeSlots.map(slot => (
-                <div key={slot} className={`time-slot-label ${slot.endsWith(':00') ? 'hour-start' : ''}`}>
-                  {slot.endsWith(':00') ? <span>{formatTime(slot)}</span> : slot}
-                </div>
-              ))}
+          {currentView === 'Day' && (
+            <div className="time-column">
+              <div className="time-header">Time</div>
+              <div className="time-slots">
+                {timeSlots.map(slot => (
+                  <div key={slot} className={`time-slot-label ${slot.endsWith(':00') ? 'hour-start' : ''}`}>
+                    {slot.endsWith(':00') ? <span>{formatTime(slot)}</span> : slot}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="staff-grid">
             {currentView === 'Day' && displayEmployees.map(employee => (
@@ -1236,13 +1238,13 @@ const SelectCalendar = () => {
                             ) : (
                               <div 
                                 className="week-empty-cell"
-                                onClick={hasShift ? () => {
-                                  const defaultTime = "09:00";
-                                  handleTimeSlotClick(employee.id, defaultTime, day);
-                                } : undefined}
-                                style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                                // onClick={hasShift ? () => {
+                                //   const defaultTime = "09:00";
+                                //   handleTimeSlotClick(employee.id, defaultTime, day);
+                                // } : undefined}
+                                // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
                               >
-                                <span className="add-appointment-plus">{hasShift ? '+' : ''}</span>
+                                {/* <span className="add-appointment-plus">{hasShift ? '+' : ''}</span> */}
                               </div>
                             )}
                           </div>
@@ -1647,7 +1649,7 @@ const SelectCalendar = () => {
                       onClick={handleCreateBooking}
                       disabled={bookingLoading}
                     >
-                      {bookingLoading ? '✨ Creating Your Luxury Experience...' : '🌟 Confirm Booking 🌟'}
+                      {bookingLoading ? ' Creating Your Luxury Experience...' : ' Confirm Booking '}
                     </button>
                     <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back</button>
                   </div>
