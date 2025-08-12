@@ -2116,7 +2116,7 @@
     max-width: 750px;
     width: 95%;
     max-height: 100vh;
-    height: 849px;
+    /* height: 849px; */
     z-index: 999;
 }
 

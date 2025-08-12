@@ -1,25 +1,28 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import {
-  FaHome,
-  FaCalendarAlt,
-  FaUserFriends,
-  FaUserTie,
-  FaSalesforce,
-  FaThLarge,
-  FaTachometerAlt,
-} from "react-icons/fa";
-import "./MainSideBar.css";
+  FiHome,
+  FiCalendar,
+FiTag,
+  
+  FiBook,
+  FiSmile,
+  FiUsers
+} from "react-icons/fi";
 
+import {FaTachometerAlt,FaUserTie} from 'react-icons/fa'
+import {FaChartLine} from 'react-icons/fa6'
+
+import "./MainSideBar.css";
 const MainSideBar = () => {
   const menuItems = [
-    { icon: <FaHome />, label: "Home", to: "/" },
-    { icon: <FaCalendarAlt />, label: "Calendar", to: "/calendar" },
-    { icon: <FaSalesforce />, label: "Sales", to: "/sales" },
-    { icon: <FaUserFriends />, label: "Appointments", to: "/clients-list" },
-    { icon: <FaUserTie />, label: "Team", to: "/catalog" },
-    { icon: <FaThLarge />, label: "Catalog", to: "/team" },
-    { icon: <FaTachometerAlt />, label: "Dashboard", to: "/report-analytics" },
+    { icon: <FiHome />, label: "Home", to: "/" },
+    { icon: <FiCalendar />, label: "Calendar", to: "/calendar" },
+    { icon: <FiTag />, label: "Sale", to: "/sales" },
+    { icon: <FiSmile />, label: "Clients", to: "/clients-list" },
+    { icon: <FiUsers />, label: "Team", to: "/team" },
+    { icon: <FiBook />, label: "Catalog", to: "/catalog" },
+    { icon: <FaChartLine />, label: "Report", to: "/report-analytics" },
   ];
 
   return (
