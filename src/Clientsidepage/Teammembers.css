@@ -388,8 +388,7 @@
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: flex;
+z-index: 1021;  display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
@@ -1293,4 +1292,684 @@
     opacity: 0;
   }
 }
+/* --- NEW/UPDATED STYLES FOR ACTION DROPDOWN --- */
+/* This container makes the dropdown relative to the cell */
+.team-actions-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
 
+/* The button to open the dropdown */
+.team-actions-btn {
+  background-color: transparent;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.team-actions-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+/* The dropdown menu itself */
+.team-actions-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 180px;
+  background-color: white;
+  border: 1px solid #111827;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  overflow: hidden;
+  animation: dropdown-fade-in 0.2s ease-out;
+}
+
+/* Individual items in the dropdown */
+.team-action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  color: #111827;
+  background: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.team-action-item:hover {
+  background-color: #f3f4f6;
+  /* color: #111827; */
+}
+
+.team-action-item svg {
+  color: #4b5563;
+  flex-shrink: 0;
+}
+
+/* --- UPDATED STYLES FOR THE EDIT MODAL --- */
+/* The edit modal overlay and container are the same as the add modal, but with updated styling for the status toggle. */
+
+.professional-status-toggle-group {
+  display: flex;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+}
+
+.professional-status-toggle-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.professional-status-toggle-btn.is-active {
+  background-color: #111827;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+/* --- CORE STYLES --- */
+.team-members-container {
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
+  max-width: 1500px;
+}
+
+.team-members-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* --- NEW PAGE HEADING STYLES --- */
+.team-page-header {
+  margin-bottom: 24px;
+}
+
+.team-page-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* --- HEADER AND ACTIONS --- */
+.team-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.team-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.team-count {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.team-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Options Dropdown */
+.team-options-container {
+  position: relative;
+  display: inline-block;
+}
+
+.team-options-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.team-options-btn:hover {
+  background-color: #f9fafb;
+}
+
+.team-options-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  min-width: 200px;
+  overflow: hidden;
+  animation: dropdown-fade-in 0.2s ease-out;
+}
+
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.team-options-header {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.team-option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  color: #374151;
+  background: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.team-option-item:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.team-option-item:active {
+  background-color: #e5e7eb;
+}
+
+.team-option-item svg {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.team-option-item:hover svg {
+  color: #374151;
+}
+
+.team-add-btn {
+  background: black;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.team-add-btn:hover {
+  background-color: #1f2937;
+}
+
+/* Controls */
+.team-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.team-search-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.team-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.team-search-input {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.team-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Table */
+.team-table-container {
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.team-table-wrapper {
+  overflow-x: auto;
+}
+
+.team-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.team-table-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.team-table-header th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.team-th-checkbox {
+  width: 48px;
+}
+
+.team-th-contact {
+  min-width: 200px;
+}
+
+.team-th-actions {
+  width: 120px;
+  text-align: center;
+}
+
+.team-th-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.team-sort-icon {
+  color: #9ca3af;
+}
+
+.team-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+
+.team-table-body {
+  background-color: white;
+}
+
+.team-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.team-table-row:hover {
+  background-color: #f9fafb;
+}
+
+.team-table-row td {
+  padding: 16px;
+  vertical-align: middle;
+}
+
+.team-member-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-avatar-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.team-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.team-member-name {
+  font-weight: 500;
+  color: #111827;
+  font-size: 14px;
+}
+
+.team-member-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.team-status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #eab308;
+  border-radius: 50%;
+}
+
+.team-contact-info {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.team-email-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.team-email-link:hover {
+  color: #1d4ed8;
+}
+
+.team-phone {
+  color: #6b7280;
+}
+
+.team-no-reviews {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.team-rating-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-rating-score {
+  font-weight: 500;
+  color: #111827;
+  font-size: 14px;
+}
+
+.team-rating-star {
+  color: #000;
+}
+
+.team-review-count {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.team-empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* --- ACTION DROPDOWN STYLES --- */
+.team-actions-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.team-actions-text-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: white;
+  color: #111827;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.team-actions-text-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.team-actions-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 180px;
+  background-color: #111827; /* Black background */
+  border: 1px solid #111827;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  overflow: hidden;
+  animation: dropdown-fade-in 0.2s ease-out;
+}
+
+.team-action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  color: white; /* White text */
+  background: #111827;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.team-action-item:hover {
+  background-color: #1f2937;
+}
+
+.team-action-item svg {
+  color: white;
+  flex-shrink: 0;
+}
+
+/* --- OTHER STYLES (MODALS, RESPONSIVE) --- */
+/* The professional modal styles are complex and long. */
+/* I've kept the most important new additions. */
+.professional-status-toggle-group {
+  display: flex;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+}
+
+.professional-status-toggle-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.professional-status-toggle-btn.is-active {
+  background-color: #111827;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 640px) {
+  .team-members-container {
+    padding: 24px;
+  }
+  .team-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .team-title {
+    font-size: 32px;
+  }
+  .team-controls {
+    flex-direction: row;
+    align-items: center;
+  }
+  .team-search-wrapper {
+    max-width: 400px;
+  }
+}
+
+@media (min-width: 768px) {
+  .team-members-container {
+    padding: 32px;
+  }
+  .team-title {
+    font-size: 36px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .team-members-container {
+    padding: 11px 38px;
+    width: 100%;
+    max-width: 1255px;
+  }
+}
+
+/* Status column styles */
+.team-th-status,
+.team-td-status {
+  width: 100px;
+  text-align: center;
+}
+.team-member-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.team-status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #eab308;
+  border-radius: 50%;
+}
+.team-status-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.team-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.team-status-indicator.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.team-status-indicator.status-active .team-status-dot {
+  background-color: #16a34a;
+}
+
+.team-status-indicator.status-inactive {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.team-status-indicator.status-inactive .team-status-dot {
+  background-color: #dc2626;
+}
+
+.team-status-indicator .team-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}

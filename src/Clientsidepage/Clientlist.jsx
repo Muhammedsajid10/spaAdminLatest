@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, ChevronDown, Plus, Edit, Trash2, X } from 'lucide-react';
-import './Clientlist.css';
-import api from '../Service/Api'; // Assuming 'api' is correctly configured with your Base_url and token handling
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { Search, ChevronDown, Plus, Edit, Trash2, X } from "lucide-react";
+import "./Clientlist.css";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+import api from "../Service/Api"; // Assuming 'api' is correctly configured with your Base_url and token handling
 
 // Spinner component (No changes, just for reference)
 const Spinner = () => (
@@ -10,40 +12,52 @@ const Spinner = () => (
   </div>
 );
 
+
 // Helper function to get random color for avatars (Moved out for reusability)
 const getRandomColor = () => {
-  const colors = ['purple', 'blue', 'indigo', 'green', 'red', 'yellow', 'pink', 'teal', 'cyan', 'orange']; // Added more colors
+  const colors = [
+    "purple",
+    "blue",
+    "indigo",
+    "green",
+    "red",
+    "yellow",
+    "pink",
+    "teal",
+    "cyan",
+    "orange",
+  ]; // Added more colors
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
 // Client Form Modal Component (Remains unchanged from your last provided code)
 const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    gender: 'other'
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    gender: "other",
   });
 
   // Populate form when client prop changes (for editing)
   useEffect(() => {
     if (client) {
       setFormData({
-        firstName: client.firstName || '',
-        lastName: client.lastName || '',
-        email: client.email || '',
-        phone: client.mobile || '', // Use client.mobile for phone
-        gender: client.gender || 'other'
+        firstName: client.firstName || "",
+        lastName: client.lastName || "",
+        email: client.email || "",
+        phone: client.mobile || "", // Use client.mobile for phone
+        gender: client.gender || "other",
       });
     } else {
       // Reset form for adding new client
       setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        gender: 'other'
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        gender: "other",
       });
     }
   }, [client]);
@@ -59,7 +73,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2>{client ? 'Edit Client' : 'Add New Client'}</h2>
+          <h2>{client ? "Edit Client" : "Add New Client"}</h2>
           <button onClick={onClose} className="modal-close">
             <X className="icon-small" />
           </button>
@@ -71,7 +85,9 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
               <input
                 type="text"
                 value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
                 required
               />
             </div>
@@ -80,7 +96,9 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
               <input
                 type="text"
                 value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
                 required
               />
             </div>
@@ -90,24 +108,40 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
+              readOnly={!!client} // 🔹 Make read-only when editing
+              style={
+                client
+                  ? { backgroundColor: "#f5f5f5", cursor: "not-allowed" }
+                  : {}
+              }
             />
           </div>
+
           <div className="form-group">
             <label>Phone *</label>
-            <input
-              type="tel"
+            <PhoneInput
+              country={"ae"} // default country (example: UAE)
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              required
+              onChange={(phone) => setFormData({ ...formData, phone })}
+              inputProps={{
+                name: "phone",
+                required: true,
+                autoFocus: false,
+              }}
             />
           </div>
+
           <div className="form-group">
             <label>Gender</label>
             <select
               value={formData.gender}
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, gender: e.target.value })
+              }
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -119,8 +153,14 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
               Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <Spinner /> : (client ? 'Update Client' : 'Add Client')}
-            </button>
+  {loading ? (
+    <>
+      <span className="btn-loader"></span> {/* small inline loader */}
+      &nbsp;Saving...
+    </>
+  ) : client ? "Update Client" : "Add Client"}
+</button>
+
           </div>
         </form>
       </div>
@@ -133,8 +173,8 @@ const ClientDirectory = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // Default sort
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest"); // Default sort
   const [selectedClients, setSelectedClients] = useState([]); // For checkboxes
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false); // For new sort dropdown
   const [showModal, setShowModal] = useState(false); // For ClientFormModal
@@ -153,7 +193,7 @@ const ClientDirectory = () => {
         try {
           // Ensure client.id is available, if not, skip this client
           if (!client.id) {
-            console.warn('Client ID missing for sales data fetch:', client);
+            console.warn("Client ID missing for sales data fetch:", client);
             salesMap[client.id] = 0;
             return;
           }
@@ -168,7 +208,7 @@ const ClientDirectory = () => {
       await Promise.all(salesPromises); // Wait for all sales fetches to complete
       setSalesData(salesMap);
     } catch (err) {
-      console.error('Error fetching sales data:', err);
+      console.error("Error fetching sales data:", err);
     }
   }, []);
 
@@ -177,32 +217,37 @@ const ClientDirectory = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('/admin/clients');
+      const res = await api.get("/admin/clients");
       const clientsData = res.data.data.clients || [];
 
       // Transform the data to match the frontend format, and assign random colors
-      const transformedClients = clientsData.map(client => ({
+      const transformedClients = clientsData.map((client) => ({
         id: client._id,
-        name: `${client.firstName || ''} ${client.lastName || ''}`.trim(),
-        firstName: client.firstName || '',
-        lastName: client.lastName || '',
-        mobile: client.phone || '-', // Ensure using 'phone' from API
-        email: client.email || '-',
-        reviews: '-', // This would typically require another API or be part of client data
+        name: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+        firstName: client.firstName || "",
+        lastName: client.lastName || "",
+        mobile: client.phone || "-", // Ensure using 'phone' from API
+        email: client.email || "-",
+        reviews: "-", // This would typically require another API or be part of client data
         sales: `AED 0`, // Placeholder, updated by fetchSalesData
         createdAt: new Date(client.createdAt), // Keep as Date object for sorting
-        initial: (client.firstName ? client.firstName[0].toUpperCase() : (client.lastName ? client.lastName[0].toUpperCase() : '?')),
+        initial: client.firstName
+          ? client.firstName[0].toUpperCase()
+          : client.lastName
+          ? client.lastName[0].toUpperCase()
+          : "?",
         color: getRandomColor(),
         isActive: client.isActive,
-        gender: client.gender
+        gender: client.gender,
       }));
 
       setClients(transformedClients);
       // After setting clients, fetch their sales data
       await fetchSalesData(transformedClients);
-
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to load clients');
+      setError(
+        err.response?.data?.message || err.message || "Failed to load clients"
+      );
     } finally {
       setLoading(false);
     }
@@ -214,14 +259,14 @@ const ClientDirectory = () => {
     setFormLoading(true); // Set form loading true here
     try {
       // API call to create client (assuming /auth/signup creates a user with role 'client')
-      const response = await api.post('/auth/signup', {
+      const response = await api.post("/auth/signup", {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         gender: formData.gender,
-        role: 'client',
-        password: 'defaultPassword123' // You might want to generate a secure password or prompt for it
+        role: "client",
+        password: "defaultPassword123", // You might want to generate a secure password or prompt for it
       });
 
       console.log("Client created successfully:", response.data); // Log success
@@ -229,8 +274,11 @@ const ClientDirectory = () => {
       setShowModal(false); // Close modal on success
       fetchClients(); // Refresh the list
     } catch (err) {
-      console.error("Error creating client:", err.response?.data || err.message); // Log error details
-      alert(err.response?.data?.message || 'Failed to create client');
+      console.error(
+        "Error creating client:",
+        err.response?.data || err.message
+      ); // Log error details
+      alert(err.response?.data?.message || "Failed to create client");
     } finally {
       setFormLoading(false); // Set form loading false here
     }
@@ -252,25 +300,24 @@ const ClientDirectory = () => {
       setEditingClient(null); // Clear editing state
       fetchClients(); // Refresh the list
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update client');
+      alert(err.response?.data?.message || "Failed to update client");
     } finally {
       setFormLoading(false); // Set form loading false here
     }
   };
 
   const handleDeleteClient = async (clientId) => {
-    if (!window.confirm('Are you sure you want to delete this client?')) return;
+    if (!window.confirm("Are you sure you want to delete this client?")) return;
 
     try {
       // Optimistically update UI first
-      setClients(prev => prev.filter(client => client.id !== clientId));
-      setSelectedClients(prev => prev.filter(id => id !== clientId)); // Remove from selected too
+      setClients((prev) => prev.filter((client) => client.id !== clientId));
+      setSelectedClients((prev) => prev.filter((id) => id !== clientId)); // Remove from selected too
 
       // API call to delete client
       await api.delete(`/admin/clients/${clientId}`);
-
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete client');
+      alert(err.response?.data?.message || "Failed to delete client");
       fetchClients(); // Re-fetch to sync if optimistic update failed
     }
   };
@@ -293,61 +340,78 @@ const ClientDirectory = () => {
 
   // --- Client Selection Handlers ---
   const handleSelectClient = (clientId) => {
-    setSelectedClients(prev =>
+    setSelectedClients((prev) =>
       prev.includes(clientId)
-        ? prev.filter(id => id !== clientId)
+        ? prev.filter((id) => id !== clientId)
         : [...prev, clientId]
     );
   };
 
   const handleSelectAll = () => {
-    if (selectedClients.length === filteredAndSortedClients.length && filteredAndSortedClients.length > 0) {
+    if (
+      selectedClients.length === filteredAndSortedClients.length &&
+      filteredAndSortedClients.length > 0
+    ) {
       setSelectedClients([]); // Deselect all
     } else {
-      setSelectedClients(filteredAndSortedClients.map(client => client.id)); // Select all visible
+      setSelectedClients(filteredAndSortedClients.map((client) => client.id)); // Select all visible
     }
   };
 
   // --- Sorting Logic ---
-  const sortOptions = useMemo(() => ({
-    newest: 'Newest',
-    oldest: 'Oldest',
-    name_asc: 'Name (A-Z)',
-    name_desc: 'Name (Z-A)',
-    sales_desc: 'Sales (High to Low)', // New sort option
-    sales_asc: 'Sales (Low to High)',  // New sort option
-  }), []);
+  const sortOptions = useMemo(
+    () => ({
+      newest: "Newest",
+      oldest: "Oldest",
+      name_asc: "Name (A-Z)",
+      name_desc: "Name (Z-A)",
+      sales_desc: "Sales (High to Low)", // New sort option
+      sales_asc: "Sales (Low to High)", // New sort option
+    }),
+    []
+  );
 
   const filteredAndSortedClients = useMemo(() => {
     let currentClients = [...clients]; // Create a mutable copy
 
     // 1. Filter
-    currentClients = currentClients.filter(client =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.mobile.includes(searchTerm) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      // Ensure client.sales is a string before calling toLowerCase
-      (client.sales ? client.sales.toLowerCase().includes(searchTerm.toLowerCase()) : false)
+    currentClients = currentClients.filter(
+      (client) =>
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.mobile.includes(searchTerm) ||
+        client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        // Ensure client.sales is a string before calling toLowerCase
+        (client.sales
+          ? client.sales.toLowerCase().includes(searchTerm.toLowerCase())
+          : false)
     );
 
     // 2. Sort
     currentClients.sort((a, b) => {
-      if (sortBy === 'newest') {
+      if (sortBy === "newest") {
         return b.createdAt.getTime() - a.createdAt.getTime();
-      } else if (sortBy === 'oldest') {
+      } else if (sortBy === "oldest") {
         return a.createdAt.getTime() - b.createdAt.getTime();
-      } else if (sortBy === 'name_asc') {
+      } else if (sortBy === "name_asc") {
         return a.name.localeCompare(b.name);
-      } else if (sortBy === 'name_desc') {
+      } else if (sortBy === "name_desc") {
         return b.name.localeCompare(a.name);
-      } else if (sortBy === 'sales_desc') {
+      } else if (sortBy === "sales_desc") {
         // Parse sales string (e.g., "AED 1,250" -> 1250)
-        const salesA = parseFloat(String(a.sales).replace('AED ', '').replace(/,/g, '')) || 0;
-        const salesB = parseFloat(String(b.sales).replace('AED ', '').replace(/,/g, '')) || 0;
+        const salesA =
+          parseFloat(String(a.sales).replace("AED ", "").replace(/,/g, "")) ||
+          0;
+        const salesB =
+          parseFloat(String(b.sales).replace("AED ", "").replace(/,/g, "")) ||
+          0;
         return salesB - salesA;
-      } else if (sortBy === 'sales_asc') {
-        const salesA = parseFloat(String(a.sales).replace('AED ', '').replace(/,/g, '')) || 0;
-        const salesB = parseFloat(String(b.sales).replace('AED ', '').replace(/,/g, '')) || 0;
+      } else if (sortBy === "sales_asc") {
+        const salesA =
+          parseFloat(String(a.sales).replace("AED ", "").replace(/,/g, "")) ||
+          0;
+        const salesB =
+          parseFloat(String(b.sales).replace("AED ", "").replace(/,/g, "")) ||
+          0;
         return salesA - salesB;
       }
       return 0; // Default no-sort
@@ -355,11 +419,10 @@ const ClientDirectory = () => {
 
     // 3. Update 'sales' display value based on fetched salesData
     // Map over currentClients to ensure sales data is always fresh based on salesData state
-    return currentClients.map(client => ({
+    return currentClients.map((client) => ({
       ...client,
-      sales: `AED ${salesData[client.id]?.toLocaleString() || '0'}` // Format sales for display
+      sales: `AED ${salesData[client.id]?.toLocaleString() || "0"}`, // Format sales for display
     }));
-
   }, [clients, searchTerm, sortBy, salesData]); // Dependencies for useMemo
 
   // --- Conditional Rendering for Loading/Error States ---
@@ -379,7 +442,13 @@ const ClientDirectory = () => {
         <div className="client-directory-wrapper">
           <div className="client-error">
             <p>Error loading clients: {error}</p>
-            <button onClick={fetchClients} className="btn-primary" style={{marginTop: '1rem'}}>Retry</button>
+            <button
+              onClick={fetchClients}
+              className="btn-primary"
+              style={{ marginTop: "1rem" }}
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
@@ -406,7 +475,8 @@ const ClientDirectory = () => {
               {/* Removed dropdown-options since it's not in the provided CSS, simplified options */}
               <button onClick={openCreateModal} className="btn-add-client">
                 <Plus className="icon-small" />
-                <span className="btn-text">Add Client</span> {/* Changed text here */}
+                <span className="btn-text">Add Client</span>{" "}
+                {/* Changed text here */}
               </button>
             </div>
           </div>
@@ -427,7 +497,10 @@ const ClientDirectory = () => {
 
           {/* Sort Dropdown UI */}
           <div className="sort-dropdown">
-            <button className="sort-toggle-button" onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}>
+            <button
+              className="sort-toggle-button"
+              onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+            >
               Sort by: {sortOptions[sortBy]}
               <ChevronDown size={16} />
             </button>
@@ -437,7 +510,10 @@ const ClientDirectory = () => {
                   <button
                     key={key}
                     className="sort-option"
-                    onClick={() => { setSortBy(key); setIsSortMenuOpen(false); }}
+                    onClick={() => {
+                      setSortBy(key);
+                      setIsSortMenuOpen(false);
+                    }}
                   >
                     {value}
                   </button>
@@ -449,13 +525,19 @@ const ClientDirectory = () => {
 
         {/* Table */}
         <div className="client-table-container">
-          <table> {/* Changed from <div> based structure to semantic <table> */}
+          <table>
+            {" "}
+            {/* Changed from <div> based structure to semantic <table> */}
             <thead>
               <tr>
                 <th>
                   <input
                     type="checkbox"
-                    checked={selectedClients.length === filteredAndSortedClients.length && filteredAndSortedClients.length > 0}
+                    checked={
+                      selectedClients.length ===
+                        filteredAndSortedClients.length &&
+                      filteredAndSortedClients.length > 0
+                    }
                     onChange={handleSelectAll}
                     className="checkbox-client"
                   />
@@ -487,14 +569,22 @@ const ClientDirectory = () => {
                       <div className="client-meta">
                         <div className="client-full-name">{client.name}</div>
                         {/* Display phone here for smaller screens if needed by CSS responsive rules */}
-                        <div className="client-secondary-phone">{client.mobile}</div>
+                        <div className="client-secondary-phone">
+                          {client.mobile}
+                        </div>
                       </div>
                     </div>
                   </td>
                   <td>{client.mobile}</td>
                   <td>{client.email}</td>
                   <td>{client.sales}</td>
-                  <td>{client.createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td>
+                    {client.createdAt.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
                   <td>
                     <div className="table-col-actions">
                       <button
@@ -535,7 +625,7 @@ const ClientDirectory = () => {
         }}
         client={editingClient}
         onSubmit={editingClient ? handleUpdateClient : handleCreateClient}
-        loading={formLoading} 
+        loading={formLoading}
       />
     </div>
   );

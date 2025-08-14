@@ -34,6 +34,7 @@
     "react-day-picker": "^9.8.1",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
+    "react-phone-input-2": "^2.15.1",
     "react-router-dom": "^7.6.2",
     "reactjs-popup": "^2.0.6",
     "recharts": "^3.0.2",

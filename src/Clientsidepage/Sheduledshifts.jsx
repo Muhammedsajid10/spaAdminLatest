@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import './Sheduledshifts.css'; // Your responsive CSS for this component
 import './EmployeeEditModal.css'; // CSS for employee edit modal
@@ -6,184 +7,282 @@ import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react'; // 
 
 // --- GLOBAL HELPER DATA (MOVED MONTHS ARRAY HERE) ---
 const months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
 // --- Helper Functions (Moved outside the component for reusability and clarity) ---
+// --- THESE FUNCTIONS ARE CRUCIAL AND WERE LIKELY MISSING ---
 
 const getAvatarColor = (employeeId) => {
-  const colors = ['#E8D5FF', '#E8F4FD', '#FFF4E6', '#F0F0F0', '#E8F5E8', '#F5E8FF', '#E8F0FF', '#FFF0E8', '#D6EAF8', '#FADBD8']; // More colors
-  if (!employeeId) return colors[0]; // Default color
-  const hash = Array.from(employeeId.toString()).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return colors[hash % colors.length];
+  const colors = ['#E8D5FF', '#E8F4FD', '#FFF4E6', '#F0F0F0', '#E8F5E8', '#F5E8FF', '#E8F0FF', '#FFF0E8', '#D6EAF8', '#FADBD8']; // More colors
+  if (!employeeId) return colors[0]; // Default color
+  const hash = Array.from(employeeId.toString()).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
 };
 
 const getWeekStart = (date) => {
-  const d = new Date(date);
-  const day = d.getDay(); // 0 for Sunday, 1 for Monday, etc.
-  const diff = d.getDate() - day; // Adjust date to Sunday of the current week
-  return new Date(d.setDate(diff));
+  const d = new Date(date);
+  const day = d.getDay(); // 0 for Sunday, 1 for Monday, etc.
+  const diff = d.getDate() - day; // Adjust date to Sunday of the current week
+  return new Date(d.setDate(diff));
 };
 
 const getWeekDays = (startDate) => {
-  const days = [];
-  const weekStart = getWeekStart(startDate);
+  const days = [];
+  const weekStart = getWeekStart(startDate);
 
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(weekStart);
-    day.setDate(weekStart.getDate() + i);
-    days.push(day);
-  }
-  return days;
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + i);
+    days.push(day);
+  }
+  return days;
 };
 
 const formatDateHeader = (date) => {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  // `months` is now globally available
-  return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}`;
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}`;
 };
 
 const getDayName = (date) => {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return days[date.getDay()];
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getDay()];
 };
 
 const formatWeekRange = (startDate) => {
-  const weekStart = getWeekStart(startDate);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekStart = getWeekStart(startDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
 
-  const startDay = weekStart.getDate();
-  const endDay = weekEnd.getDate();
-  const startMonth = months[weekStart.getMonth()]; // `months` is now globally available
-  const endMonth = months[weekEnd.getMonth()];   // `months` is now globally available
-  const year = weekStart.getFullYear();
+  const startDay = weekStart.getDate();
+  const endDay = weekEnd.getDate();
+  const startMonth = months[weekStart.getMonth()];
+  const endMonth = months[weekEnd.getMonth()];
+  const year = weekStart.getFullYear();
 
-  if (weekStart.getMonth() === weekEnd.getMonth()) {
-    return `${startDay} - ${endDay} ${startMonth}, ${year}`;
-  } else {
-    return `${startDay} ${startMonth} - ${endDay} ${endMonth}, ${year}`;
-  }
+  if (weekStart.getMonth() === weekEnd.getMonth()) {
+    return `${startDay} - ${endDay} ${startMonth}, ${year}`;
+  } else {
+    return `${startDay} ${startMonth} - ${endDay} ${endMonth}, ${year}`;
+  }
 };
 
 const timeToMinutes = (timeStr) => {
-  if (!timeStr) return 0;
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  return hours * 60 + minutes;
+  if (!timeStr) return 0;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
 };
-
-const calculateDuration = (startTime, endTime) => {
-  const startMinutes = timeToMinutes(startTime);
-  const endMinutes = timeToMinutes(endTime);
-
-  if (startMinutes === 0 && endMinutes === 0) return '0h'; // No shift or error in times
-
-  let totalMinutes = 0;
-  if (endMinutes > startMinutes) {
-    totalMinutes = endMinutes - startMinutes;
-  } else {
-    // Overnight shift: calculate minutes until midnight + minutes from midnight
-    totalMinutes = (24 * 60 - startMinutes) + endMinutes;
-  }
-
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours === 0 && minutes === 0) return '0h';
-  if (minutes > 0) return `${hours}h ${minutes}min`;
-  return `${hours}h`;
-};
-
 
 // --- Spinner Component ---
 const Spinner = () => (
-  <div className="spinner-container">
-    <div className="spinner"></div>
-  </div>
+  <div className="spinner-container">
+    <div className="spinner"></div>
+  </div>
 );
+// --- End of helper functions ---
 
-// --- Shift Editor Modal Component ---
-const ShiftEditorModal = ({
-  isOpen, onClose, editingShift, setEditingShift,
-  handleSaveShift, handleDeleteShift, savingShift, error // Pass error specific to save/delete
-}) => {
-  if (!isOpen) return null;
-
-  const quickShiftOptions = [
-    { label: 'Day Shift', value: '09:00 - 17:00' },
-    { label: 'Evening Shift', value: '14:00 - 22:00' },
-    { label: 'Night Shift', value: '22:00 - 06:00' },
-    { label: 'Full Day', value: '00:00 - 23:59' },
-    { label: 'Split Shift', value: '09:00 - 13:00, 14:00 - 18:00' },
-    { label: 'Morning + Evening', value: '06:00 - 12:00, 18:00 - 22:00' },
-  ];
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="shift-editor-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Edit Shift</h3>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-        <div className="modal-content">
-          {error && <div className="modal-error-message">{error}</div>} {/* Display error */}
-          <div className="shift-info">
-            <div className="shift-member">
-              <strong>{editingShift.memberName}</strong>
-            </div>
-            <div className="shift-date">
-              {formatDateHeader(editingShift.day)}
-            </div>
-          </div>
-
-          <div className="shift-input-group">
-            <label>Shift Time:</label>
-            <input
-              type="text"
-              value={editingShift.newShift}
-              onChange={(e) => setEditingShift(prev => ({ ...prev, newShift: e.target.value }))}
-              placeholder="e.g., 09:00 - 17:00 or 09:00 - 13:00, 14:00 - 18:00"
-              className="shift-input"
-            />
-            <div className="shift-examples">
-              <span>Examples: 09:00 - 17:00, 14:00 - 22:00, 09:00 - 13:00, 14:00 - 18:00</span>
-            </div>
-          </div>
-
-          <div className="quick-shifts">
-            <label>Quick Select:</label>
-            <div className="quick-shift-buttons">
-              {quickShiftOptions.map(option => (
-                <button
-                  key={option.value}
-                  className="quick-btn"
-                  onClick={() => setEditingShift(prev => ({ ...prev, newShift: option.value }))}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="modal-actions">
-          <button className="delete-btn" onClick={handleDeleteShift} disabled={savingShift}>
-            {savingShift ? 'Deleting...' : 'Delete Shift'}
-          </button>
-          <div className="action-buttons">
-            <button className="cancel-btn" onClick={onClose} disabled={savingShift}>
-              Cancel
-            </button>
-            <button className="save-btn" onClick={handleSaveShift} disabled={savingShift}>
-              {savingShift ? 'Saving...' : 'Save Shift'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+const calculateTotalHours = (shifts) => {
+  let totalMinutes = 0;
+  shifts.forEach(shift => {
+    if (shift.startTime && shift.endTime && shift.endTime !== 'Select an option') {
+      const startMinutes = timeToMinutes(shift.startTime);
+      const endMinutes = timeToMinutes(shift.endTime);
+      totalMinutes += endMinutes >= startMinutes
+        ? endMinutes - startMinutes
+        : (24 * 60) - startMinutes + endMinutes;
+    }
+  });
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes}min`;
 };
+const ShiftEditorModal = ({
+    isOpen, onClose, editingShift, handleSaveShift, handleDeleteShift, savingShift, error
+}) => {
+    const [shifts, setShifts] = useState([]);
+    // --- NEW STATE FOR VALIDATION ERRORS ---
+    const [validationError, setValidationError] = useState(null);
+
+    useEffect(() => {
+        if (isOpen && editingShift) {
+            const member = editingShift.memberData;
+            const dayName = getDayName(editingShift.day);
+            const schedule = member?.workSchedule?.[dayName];
+            
+            if (schedule && schedule.shifts) {
+                const existingShifts = schedule.shifts.split(',').map(s => {
+                    const trimmed = s.trim();
+                    const parts = trimmed.split(' - ');
+                    return {
+                        startTime: parts[0] || '09:00',
+                        endTime: parts[1] || '17:00'
+                    };
+                });
+                setShifts(existingShifts);
+            } else if (schedule && schedule.startTime && schedule.endTime) {
+                setShifts([{ startTime: schedule.startTime, endTime: schedule.endTime }]);
+            } else {
+                setShifts([{ startTime: '09:00', endTime: '17:00' }]);
+            }
+            setValidationError(null); // Clear validation error on open
+        }
+    }, [isOpen, editingShift]);
+
+    if (!isOpen) return null;
+
+    const generateTimeOptions = () => {
+        const options = [];
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 5) {
+                const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                options.push(time);
+            }
+        }
+        return options;
+    };
+
+    const timeOptions = generateTimeOptions();
+
+    const handleShiftChange = (index, field, value) => {
+        const newShifts = [...shifts];
+        newShifts[index][field] = value;
+        setShifts(newShifts);
+        setValidationError(null); // Clear error on any change
+    };
+
+    const addShift = () => {
+        setShifts([...shifts, { startTime: '09:00', endTime: '17:00' }]);
+        setValidationError(null); // Clear error on adding a new shift
+    };
+
+    const removeShift = (index) => {
+        if (shifts.length > 1) {
+            setShifts(shifts.filter((_, i) => i !== index));
+            setValidationError(null); // Clear error on removing a shift
+        }
+    };
+    
+    // --- NEW INTERNAL SAVE FUNCTION WITH VALIDATION ---
+    const handleInternalSave = () => {
+        const uniqueShifts = new Set();
+        let isDuplicate = false;
+        shifts.forEach(shift => {
+            const shiftKey = `${shift.startTime}-${shift.endTime}`;
+            if (uniqueShifts.has(shiftKey)) {
+                isDuplicate = true;
+            }
+            uniqueShifts.add(shiftKey);
+        });
+
+        if (isDuplicate) {
+            setValidationError("Please choose a unique shift. You cannot add the same shift multiple times.");
+            return; // Stop the save process
+        }
+        
+        // If validation passes, call the parent's handleSaveShift
+        handleSaveShift(shifts);
+    };
+
+    const handleInternalDelete = () => {
+        setValidationError(null); // Clear any local errors before calling parent's delete handler
+        handleDeleteShift();
+    };
+
+    const handleInternalClose = () => {
+        setValidationError(null); // Clear errors on close
+        onClose();
+    };
+
+    return (
+        <div className="modal-overlay" onClick={handleInternalClose}>
+            <div className="shift-editor-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3>
+                        {editingShift?.memberName}'s shift &nbsp;
+                        {editingShift?.day && formatDateHeader(editingShift.day)}
+                    </h3>
+                    <button className="close-btn" onClick={handleInternalClose}>×</button>
+                </div>
+
+                <div className="modal-content">
+                    {/* --- DISPLAYING THE NEW VALIDATION ERROR --- */}
+                    {(error || validationError) && <div className="modal-error-message">{error || validationError}</div>}
+
+                    <div className="shift-input-group">
+                        <div className="shift-rows-container">
+                            {shifts.map((shift, index) => (
+                                <div key={index} className="shift-row">
+                                    <div className="time-inputs">
+                                        <div className="time-input-group">
+                                            <label>Start time</label>
+                                            <select
+                                                value={shift.startTime}
+                                                onChange={(e) => handleShiftChange(index, 'startTime', e.target.value)}
+                                                className="time-select"
+                                            >
+                                                {timeOptions.map(time => (
+                                                    <option key={time} value={time}>{time}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <span className="time-separator">-</span>
+
+                                        <div className="time-input-group">
+                                            <label>End time</label>
+                                            <select
+                                                value={shift.endTime}
+                                                onChange={(e) => handleShiftChange(index, 'endTime', e.target.value)}
+                                                className="time-select"
+                                            >
+                                                {timeOptions.map(time => (
+                                                    <option key={time} value={time}>{time}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        className="delete-shift-btn"
+                                        onClick={() => removeShift(index)}
+                                        disabled={shifts.length <= 1}
+                                        title="Remove this shift"
+                                    >
+                                        🗑️
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button className="add-shift-btn" onClick={addShift}>
+                            <span className="plus-icon">⊕</span> Add another shift
+                        </button>
+
+                        <div className="total-hours">
+                            {calculateTotalHours(shifts)}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="modal-actions">
+                    <button className="delete-btn" onClick={handleInternalDelete} disabled={savingShift}>
+                        Delete
+                    </button>
+                    <div className="action-buttons">
+                        <button className="cancel-btn" onClick={handleInternalClose} disabled={savingShift}>
+                            Cancel
+                        </button>
+                        <button className="save-btn" onClick={handleInternalSave} disabled={savingShift}>
+                            {savingShift ? 'Saving...' : 'Save'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 
 // --- Employee Edit Modal Component ---
@@ -601,7 +700,17 @@ const ShiftScheduler = () => {
       console.log('Raw employee data from backend:', employees); // Debug log
 
       const transformedMembers = employees.map(emp => {
-        console.log('Processing employee workSchedule:', emp.workSchedule); // Debug log
+        console.log('Processing employee:', emp.user?.firstName, 'workSchedule:', emp.workSchedule); // Enhanced debug log
+        
+        // Check if shifts field exists in each day's schedule
+        if (emp.workSchedule) {
+          Object.entries(emp.workSchedule).forEach(([day, schedule]) => {
+            if (schedule && schedule.shifts) {
+              console.log(`Found shifts for ${day}:`, schedule.shifts);
+            }
+          });
+        }
+        
         return {
           id: emp._id,
           name: emp.user?.firstName && emp.user?.lastName
@@ -689,6 +798,7 @@ const ShiftScheduler = () => {
     setEditingShift({
       memberId,
       memberName: member.name,
+      memberData: member, // Include full member data for modal
       day,
       dateKey: formatDateHeader(day),
       currentShift: currentShift,
@@ -699,64 +809,72 @@ const ShiftScheduler = () => {
     setShowShiftEditor(true);
   }, [teamMembers]); // Dependency on teamMembers to ensure it's always up-to-date
 
-  const handleSaveShift = async () => {
+  const handleSaveShift = async (modalShifts) => {
     setSavingShift(true);
     setShiftEditorError(null); // Clear previous errors in the modal
 
     try {
       const token = localStorage.getItem('token');
       
-      // Parse multiple shifts - supports both single and multiple shift formats
-      const parseMultipleShifts = (shiftString) => {
-        // Remove extra spaces and split by comma for multiple shifts
-        const shifts = shiftString.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        const parsedShifts = [];
-        
+      // Validate that we have shifts data (either from modal or old format)
+      let validShifts = [];
+      
+      if (modalShifts && modalShifts.length > 0) {
+        // New modal format: array of {startTime, endTime} objects
+        validShifts = modalShifts.filter(shift => 
+          shift.startTime && 
+          shift.endTime && 
+          shift.endTime !== 'Select an option'
+        );
+      } else if (editingShift.newShift && editingShift.newShift.trim()) {
+        // Old text format fallback: parse "09:00 - 17:00, 14:00 - 18:00"
+        const shifts = editingShift.newShift.split(',').map(s => s.trim()).filter(s => s.length > 0);
         for (const shift of shifts) {
-          // Split each shift by " - " to get start and end times
           const parts = shift.split(' - ');
-          if (parts.length !== 2) {
-            throw new Error(`Invalid shift format: "${shift}". Use format like "09:00 - 17:00" or "09:00 - 13:00, 14:00 - 18:00"`);
+          if (parts.length === 2) {
+            validShifts.push({ startTime: parts[0].trim(), endTime: parts[1].trim() });
           }
-          
-          const [startTime, endTime] = parts.map(t => t.trim());
-          
-          // Validate time format (HH:MM)
-          const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-          if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-            throw new Error(`Invalid time format in "${shift}". Use HH:MM format (e.g., 09:00)`);
-          }
-          
-          parsedShifts.push({ startTime, endTime });
         }
-        
-        return parsedShifts;
-      };
-
-      // Validate input
-      if (!editingShift.newShift || !editingShift.newShift.trim()) {
-        throw new Error('Shift time is required (e.g., 09:00 - 17:00)');
+      }
+      
+      if (validShifts.length === 0) {
+        throw new Error('Please add at least one valid shift with start and end times');
       }
 
-      const shifts = parseMultipleShifts(editingShift.newShift);
+      // Validate time format
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      for (const shift of validShifts) {
+        if (!timeRegex.test(shift.startTime) || !timeRegex.test(shift.endTime)) {
+          throw new Error(`Invalid time format in "${shift.startTime} - ${shift.endTime}". Use HH:MM format (e.g., 09:00)`);
+        }
+      }
 
-      // For backend compatibility, we'll store multiple shifts as a comma-separated string
-      // The backend can be updated later to handle array format
-      const shiftString = shifts.map(s => `${s.startTime} - ${s.endTime}`).join(', ');
+      // Create shift string for backend storage
+      const shiftString = validShifts.map(s => `${s.startTime} - ${s.endTime}`).join(', ');
       
-      // For now, use the first shift for startTime/endTime fields (backward compatibility)
-      const primaryShift = shifts[0];
+      // For backward compatibility, use first shift for primary startTime/endTime
+      const primaryShift = validShifts[0];
 
+      // Try multiple approaches to ensure data persists
       const updateData = {
         workSchedule: {
           [editingShift.dayName]: {
             isWorking: true,
             startTime: primaryShift.startTime,
             endTime: primaryShift.endTime,
-            shifts: shiftString // Store full shift string for multiple shifts
+            shifts: shiftString, // Primary approach
+            shiftsData: validShifts, // Alternative: store as array
+            multipleShifts: shiftString, // Alternative: different field name
+            shiftCount: validShifts.length
           }
         }
       };
+
+      console.log('📤 Sending PATCH request to backend:');
+      console.log(`  URL: ${Base_url}/employees/${editingShift.memberId}`);
+      console.log(`  Method: PATCH`);
+      console.log(`  Headers: Authorization: Bearer ${token ? '[TOKEN PRESENT]' : '[NO TOKEN]'}`);
+      console.log(`  Body:`, JSON.stringify(updateData, null, 2));
 
       const response = await fetch(`${Base_url}/employees/${editingShift.memberId}`, {
         method: 'PATCH',
@@ -767,12 +885,30 @@ const ShiftScheduler = () => {
         body: JSON.stringify(updateData)
       });
 
+      console.log('📥 PATCH Response received:');
+      console.log(`  Status: ${response.status} ${response.statusText}`);
+      console.log(`  OK: ${response.ok}`);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ PATCH failed with error response:', errorData);
         throw new Error(errorData.message || 'Failed to update shift');
       }
 
-      // Update local state directly to reflect change
+      const responseData = await response.json();
+      console.log('✅ PATCH Success Response:', responseData);
+      
+      // Log the saved employee data from backend response
+      if (responseData.data && responseData.data.employee) {
+        const savedEmployee = responseData.data.employee;
+        console.log('💾 Backend saved employee data:');
+        console.log(`  Employee ID: ${savedEmployee._id}`);
+        console.log(`  Work Schedule:`, savedEmployee.workSchedule);
+        console.log(`  ${editingShift.dayName} schedule:`, savedEmployee.workSchedule[editingShift.dayName]);
+        console.log(`  Shifts field in backend:`, savedEmployee.workSchedule[editingShift.dayName]?.shifts);
+      }
+
+      // Update local state directly to reflect change immediately
       setTeamMembers(prevMembers => {
         const updatedMembers = prevMembers.map(member =>
           member.id === editingShift.memberId
@@ -780,17 +916,48 @@ const ShiftScheduler = () => {
                 ...member,
                 workSchedule: {
                   ...member.workSchedule, // Preserve existing workSchedule for other days
-                  [editingShift.dayName]: updateData.workSchedule[editingShift.dayName]
+                  [editingShift.dayName]: {
+                    ...updateData.workSchedule[editingShift.dayName],
+                    // Ensure the shifts field is properly set for immediate UI update
+                    shifts: shiftString,
+                    isWorking: true
+                  }
                 }
               }
             : member
         );
-        console.log('Local state updated after shift save:', updatedMembers.find(m => m.id === editingShift.memberId)?.workSchedule); // Debug log
+        
+        // Log the updated member's schedule for debugging
+        const updatedMember = updatedMembers.find(m => m.id === editingShift.memberId);
+        console.log('✅ Local state updated after shift save:');
+        console.log(`  Employee: ${updatedMember.name}`);
+        console.log(`  Day: ${editingShift.dayName}`);
+        console.log(`  Updated schedule:`, updatedMember.workSchedule[editingShift.dayName]);
+        console.log(`  Shifts string: "${shiftString}"`);
+        
         return updatedMembers;
       });
+
+      // Close modal immediately since state is updated
       setShowShiftEditor(false);
+
+      // Only refetch if we want to verify backend persistence - but don't overwrite good UI state
+      // We'll comment this out for now to prevent overwriting the UI state
+      // setTimeout(() => {
+      //   console.log('🔄 Refetching employees to verify persistence...');
+      //   fetchEmployees();
+      // }, 1000);
+
+      console.log('🎉 Shift saved successfully! UI state updated without refetch.');
     } catch (err) {
+      console.error('❌ Save shift error:', err);
       setShiftEditorError(err.message); // Set error for modal
+      
+      // If save failed, we should probably refetch to get accurate data
+      console.log('🔄 Save failed, refetching to get accurate data...');
+      setTimeout(() => {
+        fetchEmployees();
+      }, 500);
     } finally {
       setSavingShift(false);
     }
@@ -1010,28 +1177,45 @@ const ShiftScheduler = () => {
     const dayName = getDayName(day);
     const schedule = member.workSchedule[dayName];
     
-    console.log(`Getting shift display for ${member.name} on ${dayName}:`, {
-      schedule,
-      fullWorkSchedule: member.workSchedule,
-      hasShifts: schedule?.shifts,
-      hasStartEnd: schedule?.startTime && schedule?.endTime,
+    console.log(`🔍 getShiftDisplay for ${member.name} on ${dayName}:`, {
+      schedule: schedule,
+      hasShifts: !!schedule?.shifts,
+      shiftsValue: schedule?.shifts,
+      hasMultipleShifts: !!schedule?.multipleShifts,
+      multipleShiftsValue: schedule?.multipleShifts,
+      hasStartEnd: !!(schedule?.startTime && schedule?.endTime),
       isWorking: schedule?.isWorking
-    }); // Enhanced debug log
+    }); 
     
     if (schedule && schedule.isWorking) {
-      // Check if we have multiple shifts stored
-      if (schedule.shifts) {
-        console.log(`Found shifts field: ${schedule.shifts}`); // Debug log
-        return schedule.shifts; // Return the full shift string (e.g., "09:00 - 13:00, 14:00 - 18:00")
+      // Try multiple field names for shifts (in case backend uses different field)
+      const shiftsField = schedule.shifts || schedule.multipleShifts || schedule.shiftsData;
+      
+      if (shiftsField) {
+        console.log(`✅ Found shifts field: "${shiftsField}"`);
+        if (typeof shiftsField === 'string') {
+          // String format: "09:00 - 13:00, 14:00 - 18:00" => ["09:00 - 13:00", "14:00 - 18:00"]
+          const shiftsArray = shiftsField.split(',').map(s => s.trim()).filter(s => s.length > 0);
+          console.log(`📋 Parsed shifts array:`, shiftsArray);
+          return shiftsArray;
+        } else if (Array.isArray(shiftsField)) {
+          // Array format: [{startTime: "09:00", endTime: "13:00"}, ...]
+          const shiftsArray = shiftsField.map(shift => `${shift.startTime} - ${shift.endTime}`);
+          console.log(`📋 Converted array to strings:`, shiftsArray);
+          return shiftsArray;
+        }
       }
-      // Fallback to single shift format for backward compatibility
+      
+      // Fallback to single shift
       if (schedule.startTime && schedule.endTime) {
-        console.log(`Using fallback: ${schedule.startTime} - ${schedule.endTime}`); // Debug log
-        return `${schedule.startTime} - ${schedule.endTime}`;
+        const fallbackShift = `${schedule.startTime} - ${schedule.endTime}`;
+        console.log(`🔄 Using fallback shift: ${fallbackShift}`);
+        return [fallbackShift];
       }
     }
-    console.log('No shift found for this day'); // Debug log
-    return null;
+    
+    console.log('❌ No shifts found, returning empty array');
+    return [];
   };
 
 
@@ -1114,82 +1298,84 @@ const ShiftScheduler = () => {
 
         <button className="nav-btn" onClick={handleNextWeek}><ChevronRight size={20} /></button>
         <button className="today-btn" onClick={goToToday}>Today</button>
+        
+        {/* Debug button to check data */}
+      
       </div>
 
       {/* Main schedule table/cards container */}
       <div className="schedule-table-container">
         {/* Desktop Table (Visible on larger screens) */}
-        <div className="schedule-table desktop-view">
-          <div className="table-header">
-            <div className="member-column-header">
-              <span className="member-title">Team member</span>
-              <span className="change-link" onClick={() => console.log('Change team members clicked')}>Change</span>
-            </div>
-            {currentWeekDays.map((day) => (
-              <div key={day.toISOString()} className="day-header">
-                <span className="day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
-                <span className="day-date">{day.getDate()}</span>
-                <span className="day-hours">{calculateDayHours(day, teamMembers)}</span> {/* Daily total hours */}
-              </div>
-            ))}
-          </div>
+      ...
+<div className="schedule-table desktop-view">
+  {/* Table Header Section */}
+  <div className="table-header">
+    <div className="member-column-header">
+      <span className="member-title">Team member</span>
+      <span className="change-link" onClick={() => console.log('Change team members clicked')}>Change</span>
+    </div>
+    {currentWeekDays.map((day) => (
+      <div key={day.toISOString()} className="day-header">
+        <span className="day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+        <span className="day-date">{day.getDate()}</span>
+        <span className="day-hours">{calculateDayHours(day, teamMembers)}</span>
+      </div>
+    ))}
+  </div>
 
-          <div className="table-body">
-            {teamMembers.length > 0 ? (
-              teamMembers.map((member) => (
-                <div key={member.id} className="member-row">
-                  <div className="member-info">
-                    <div className="member-avatar" style={{ backgroundColor: member.avatarColor }}>
-                      <span>{member.avatar}</span>
-                    </div>
-                    <div className="member-details">
-                      <div className="member-name">{member.name}</div>
-                      <div className="member-hours">{calculateWeekHours(member, currentWeekDays)}</div> {/* Weekly total hours */}
-                    </div>
-                    <button
-                      className="edit-member-btn"
-                      onClick={() => handleEditMember(member.id)}
-                      title="Edit employee details"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M11.5 2.5L13.5 4.5L5 13H3V11L11.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  {currentWeekDays.map((day) => {
-                    const shift = getShiftDisplay(member, day);
-                    return (
-                      <div key={day.toISOString()} className="shift-cell">
-                        {shift ? (
-                          <div
-                            className="shift-block"
-                            onClick={() => handleShiftClick(member.id, day)} // Simplified call
-                            title="Click to edit shift"
-                          >
-                            {shift}
-                          </div>
-                        ) : (
-                          <div
-                            className="shift-block shift-empty"
-                            onClick={() => handleShiftClick(member.id, day)} // Simplified call
-                            title="Click to add shift"
-                          >
-                            +
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                <p>No employees found. Add employees to start scheduling shifts.</p>
-              </div>
-            )}
+  {/* Table Rows Section (previously in `table-body`) */}
+  {teamMembers.length > 0 ? (
+    teamMembers.map((member) => (
+      <div key={member.id} className="member-row">
+        <div className="member-info">
+          <div className="member-avatar" style={{ backgroundColor: member.avatarColor }}>
+            <span>{member.avatar}</span>
           </div>
+          <div className="member-details">
+            <div className="member-name">{member.name}</div>
+            <div className="member-hours">{calculateWeekHours(member, currentWeekDays)}</div>
+          </div>
+          <button
+            className="edit-member-btn"
+            onClick={() => handleEditMember(member.id)}
+            title="Edit employee details"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M11.5 2.5L13.5 4.5L5 13H3V11L11.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
+        {currentWeekDays.map((day) => {
+          const shifts = getShiftDisplay(member, day);
+          return (
+            <div key={day.toISOString()} className="shift-cell">
+              {shifts.length > 0 ? (
+                <div className="shift-blocks" onClick={() => handleShiftClick(member.id, day)} title="Click to edit shift">
+                  {shifts.map((s, idx) => (
+                    <div key={idx} className="shift-block shift-block-vertical">{s}</div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  className="shift-block shift-empty"
+                  onClick={() => handleShiftClick(member.id, day)}
+                  title="Click to add shift"
+                >
+                  +
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    ))
+  ) : (
+    <div className="empty-state">
+      <p>No employees found. Add employees to start scheduling shifts.</p>
+    </div>
+  )}
+</div>
+...
 
         {/* Mobile Cards (Visible on smaller screens) */}
         <div className="mobile-card-layout mobile-view">
@@ -1216,21 +1402,25 @@ const ShiftScheduler = () => {
                 </div>
                 <div className="card-daily-shifts">
                   {currentWeekDays.map(day => {
-                    const shift = getShiftDisplay(member, day);
+                    const shifts = getShiftDisplay(member, day); // Get as array
                     return (
                       <div key={day.toISOString()} className="card-shift-item">
                         <span className="card-day-name">{day.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</span>
-                        {shift ? (
-                          <span
-                            className="card-shift-time"
-                            onClick={() => handleShiftClick(member.id, day)} // Simplified call
+                        {shifts.length > 0 ? (
+                          <div 
+                            className="card-shift-blocks"
+                            onClick={() => handleShiftClick(member.id, day)}
+                            title="Click to edit shifts"
                           >
-                            {shift}
-                          </span>
+                            {shifts.map((shift, idx) => (
+                              <div key={idx} className="card-shift-block">{shift}</div>
+                            ))}
+                          </div>
                         ) : (
                           <span
                             className="card-shift-empty"
-                            onClick={() => handleShiftClick(member.id, day)} // Simplified call
+                            onClick={() => handleShiftClick(member.id, day)}
+                            title="Click to add shift"
                           >
                             +
                           </span>
