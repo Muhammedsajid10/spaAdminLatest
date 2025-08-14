@@ -112,39 +112,57 @@
 .week-date { font-size: 1.1rem; font-weight: 600; color: #111827; }
 
 /* --- RESPONSIVE TABLE CONTAINER --- */
+/* This becomes the main scrolling container */
 .schedule-table-container {
   width: 100%;
-  /* overflow-x: auto; This is the key: makes the container scroll horizontally */
+  overflow-x: auto; /* Enable global horizontal scrolling here */
   background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  position: relative; /* Needed for sticky positioning */
 }
 
 .schedule-table {
-  width: 100%;
+  width: 100%; /* Important: This will be adjusted by min-width */
   border-collapse: collapse;
-  /* Set a minimum width to ensure columns don't get too squished */
-  min-width: 900px; 
+  min-width: 1000px; /* Set a minimum width to force horizontal scroll */
 }
 
 /* --- TABLE HEADER --- */
+/* Removed overflow-x from here */
 .table-header {
-    display: grid
-;
-overflow-x: scroll;
-    grid-template-columns: 250px repeat(7, 1fr);
-    border-bottom: 1px solid #000000;    background-color: #ffffff;
+  display: grid;
+  grid-template-columns: 250px repeat(7, 150px); /* Fixed width for days */
+  border-bottom: 1px solid #000000;
+  background-color: #ffffff;
+}
+/* Removed overflow-x from here */
+.table-body {
+  /* No overflow here, let the parent handle it */
+  display: block; 
 }
 .member-column-header {
-     padding: 1rem 1.5rem;
-    font-weight: 600;
-    color: #4b5563;
-    text-align: left;
-    position: sticky;
-    left: 0;
-    background-color: #ffffff;
-    z-index: 10;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-align: left;
+  position: sticky; /* Keep sticky */
+  left: 0; /* Stays at the left edge of its scrolling parent */
+  background-color: #ffffff;
+  z-index: 10;
+  /* Remove border-right to avoid it jumping */
+}
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  position: sticky; /* Keep sticky */
+  left: 0; /* Stays at the left edge of its scrolling parent */
+  background-color: white;
+  z-index: 5;
+  border-right: 1px solid #e5e7eb;
 }
 .day-header {
   padding: 0.75rem 1rem;
@@ -163,7 +181,7 @@ overflow-x: scroll;
 .table-body { display: block;overflow-x: scroll; }
 .member-row {
   display: grid;
-  grid-template-columns: 250px repeat(7, 1fr);
+  grid-template-columns: 250px repeat(7, 150px);
   border-bottom: 1px solid #e5e7eb;
 }
 .member-row:last-child { border-bottom: none; }

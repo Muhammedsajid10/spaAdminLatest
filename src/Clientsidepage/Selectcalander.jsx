@@ -62,12 +62,187 @@ const getDayName = (date) => {
 };
 
 const hasShiftOnDate = (employee, date) => {
-  if (!employee.workSchedule) return false;
+  // console.log('=== SHIFT CHECK DEBUG ===');
+  // console.log('Employee:', employee?.name || 'Unknown');
+  // console.log('Date:', date?.toDateString());
+  
+  if (!employee?.workSchedule) {
+    // console.log('❌ No workSchedule found');
+    return false;
+  }
+  
+  const dayName = getDayName(date);
+  const schedule = employee.workSchedule[dayName];
+  // console.log('Day name:', dayName);
+  // console.log('Schedule for day:', schedule);
+  
+  if (!schedule) {
+    // console.log('❌ No schedule for this day');
+    return false;
+  }
+  
+  // Check different possible schedule formats
+  let hasShift = false;
+  
+  // Format 1: { isWorking: true/false }
+  if (typeof schedule.isWorking === 'boolean') {
+    hasShift = schedule.isWorking;
+    // console.log('✅ Found isWorking:', hasShift);
+  }
+  // Format 2: { startTime: "09:00", endTime: "17:00" }
+  else if (schedule.startTime && schedule.endTime) {
+    hasShift = true;
+    // console.log('✅ Found startTime/endTime:', schedule.startTime, '-', schedule.endTime);
+  }
+  // Format 3: { shifts: "09:00 - 17:00" }
+  else if (schedule.shifts && typeof schedule.shifts === 'string' && schedule.shifts.trim()) {
+    hasShift = true;
+    // console.log('✅ Found shifts string:', schedule.shifts);
+  }
+  // Format 4: { shiftsData: [{ startTime, endTime }] }
+  else if (Array.isArray(schedule.shiftsData) && schedule.shiftsData.length > 0) {
+    hasShift = schedule.shiftsData.some(shift => shift.startTime && shift.endTime);
+    // console.log('✅ Found shiftsData:', schedule.shiftsData.length, 'shifts');
+  }
+  
+  // console.log('Final hasShift result:', hasShift);
+  // console.log('========================');
+  
+  return hasShift;
+};
+
+// NEW: Get employee's actual shift hours for a specific date
+const getEmployeeShiftHours = (employee, date) => {
+  // console.log('=== GETTING SHIFT HOURS ===');
+  // console.log('Employee:', employee?.name);
+  // console.log('Date:', date?.toDateString());
+  
+  if (!employee?.workSchedule) {
+    // console.log('❌ No workSchedule');
+    return [];
+  }
   
   const dayName = getDayName(date);
   const schedule = employee.workSchedule[dayName];
   
-  return schedule && schedule.isWorking;
+  if (!schedule) {
+    // console.log('❌ No schedule for', dayName);
+    return [];
+  }
+  
+  let shifts = [];
+  
+  // Handle multiple shift formats
+  if (Array.isArray(schedule.shiftsData) && schedule.shiftsData.length > 0) {
+    shifts = schedule.shiftsData
+      .filter(shift => shift.startTime && shift.endTime)
+      .map(shift => ({
+        startTime: shift.startTime,
+        endTime: shift.endTime
+      }));
+    // console.log('✅ Using shiftsData:', shifts);
+  }
+  else if (typeof schedule.shifts === 'string' && schedule.shifts.trim()) {
+    // Parse "09:00 - 13:00, 14:00 - 18:00" format
+    shifts = schedule.shifts
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(block => {
+        const parts = block.split(' - ');
+        if (parts.length >= 2) {
+          return { startTime: parts[0].trim(), endTime: parts[1].trim() };
+        }
+        return null;
+      })
+      .filter(Boolean);
+    // console.log('✅ Using shifts string:', shifts);
+  }
+  else if (schedule.startTime && schedule.endTime) {
+    shifts = [{
+      startTime: schedule.startTime,
+      endTime: schedule.endTime
+    }];
+    // console.log('✅ Using single shift:', shifts);
+  }
+  
+  // console.log('Final shifts:', shifts);
+  // console.log('===========================');
+  
+  return shifts;
+};
+
+// ENHANCED: Generate time slots ONLY for employee's actual shift hours
+const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDuration = 30, intervalMinutes = 10) => {
+  // console.log('=== GENERATING TIME SLOTS FROM SHIFT ===');
+  // console.log('Employee:', employee?.name);
+  // console.log('Service duration:', serviceDuration, 'minutes');
+  // console.log('Interval:', intervalMinutes, 'minutes');
+  
+  const shifts = getEmployeeShiftHours(employee, date);
+  
+  if (shifts.length === 0) {
+    // console.log('❌ No shifts found, returning empty slots');
+    return [];
+  }
+  
+  const toMinutes = (timeStr) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+  
+  const minutesToLabel = (mins) => {
+    mins = mins % (24 * 60);
+    const h = Math.floor(mins / 60).toString().padStart(2, '0');
+    const m = (mins % 60).toString().padStart(2, '0');
+    return `${h}:${m}`;
+  };
+  
+  const toISOOnDate = (timeLabel) => {
+    const [h, m] = timeLabel.split(':').map(Number);
+    const d = new Date(date);
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
+  };
+  
+  const slots = [];
+  
+  shifts.forEach(shift => {
+    // console.log('Processing shift:', shift.startTime, '-', shift.endTime);
+    
+    let startMinutes = toMinutes(shift.startTime);
+    let endMinutes = toMinutes(shift.endTime);
+    
+    // Handle overnight shifts
+    if (endMinutes <= startMinutes) {
+      endMinutes += 24 * 60;
+    }
+    
+    // console.log(`Shift in minutes: ${startMinutes} - ${endMinutes}`);
+    
+    // Generate slots for this shift
+    for (let slotStart = startMinutes; slotStart + serviceDuration <= endMinutes; slotStart += intervalMinutes) {
+      const slotEnd = slotStart + serviceDuration;
+      const startLabel = minutesToLabel(slotStart);
+      const endLabel = minutesToLabel(slotEnd);
+      
+      slots.push({
+        startTime: toISOOnDate(startLabel),
+        endTime: toISOOnDate(endLabel),
+        available: true,
+        source: 'employee-shift'
+      });
+    }
+  });
+  
+  // console.log('Generated', slots.length, 'time slots from shifts');
+  // console.log('Sample slots:', slots.slice(0, 3).map(s => ({
+  //   start: new Date(s.startTime).toLocaleTimeString(),
+  //   end: new Date(s.endTime).toLocaleTimeString()
+  // })));
+  // console.log('=====================================');
+  
+  return slots;
 };
 
 const MOCK_SUCCESS_DATA = {
@@ -179,10 +354,36 @@ const SelectCalendar = () => {
 
   const schedulerContentRef = useRef(null);
 
+  // Booking Status Management States
+  const [showBookingStatusModal, setShowBookingStatusModal] = useState(false);
+  const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
+  const [bookingStatusLoading, setBookingStatusLoading] = useState(false);
+  const [bookingStatusError, setBookingStatusError] = useState(null);
+
   // --- HELPER FUNCTIONS ---
   const handleTimeSlotClick = (employeeId, slotTime, day) => {
-    // This function is for clicking a slot on the calendar grid
-    // Now it behaves the same as the "Add" button - full booking flow
+    // Check if this time slot has an existing appointment
+    const dayKey = (day || currentDate).toISOString().split('T')[0];
+    const slotKey = `${dayKey}_${slotTime}`;
+    const existingAppointment = appointments[employeeId]?.[slotKey];
+    
+    if (existingAppointment) {
+      // Show booking status modal for existing appointment
+      const employee = employees.find(emp => emp.id === employeeId);
+      const appointmentDetails = {
+        ...existingAppointment,
+        employeeId,
+        employeeName: employee?.name,
+        slotTime,
+        date: dayKey,
+        slotKey
+      };
+      setSelectedBookingForStatus(appointmentDetails);
+      setShowBookingStatusModal(true);
+      return;
+    }
+    
+    // Continue with new booking flow for empty slots
     const employee = employees.find(emp => emp.id === employeeId);
     
     // Check if employee has a shift on this day
@@ -226,6 +427,123 @@ const SelectCalendar = () => {
     setShowAddBookingModal(false);
     setShowUnavailablePopup(false);
     resetBookingForm();
+  };
+
+  const closeBookingStatusModal = () => {
+    setShowBookingStatusModal(false);
+    setSelectedBookingForStatus(null);
+    setBookingStatusError(null);
+  };
+
+  const handleBookingStatusUpdate = async (newStatus) => {
+    if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
+      setBookingStatusError('Invalid booking selected');
+      return;
+    }
+
+    setBookingStatusLoading(true);
+    setBookingStatusError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      // Correct backend route (admin update booking): PATCH /bookings/admin/:id with body containing updated fields
+      const bookingId = selectedBookingForStatus.bookingId;
+      const endpoint = `${Base_url}/bookings/admin/${bookingId}`;
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || `Failed to update booking status (HTTP ${res.status})`);
+      }
+
+      // Update local state optimistically with new status
+      setAppointments(prev => ({
+        ...prev,
+        [selectedBookingForStatus.employeeId]: {
+          ...prev[selectedBookingForStatus.employeeId],
+          [selectedBookingForStatus.slotKey]: {
+            ...prev[selectedBookingForStatus.employeeId][selectedBookingForStatus.slotKey],
+            status: newStatus
+          }
+        }
+      }));
+
+      // Close modal and refresh calendar
+      closeBookingStatusModal();
+  setTimeout(() => { fetchCalendarData(); }, 300);
+    } catch (err) {
+      console.error('Status update error:', err);
+      setBookingStatusError(err.message);
+    } finally {
+      setBookingStatusLoading(false);
+    }
+  };
+
+  const handleDeleteBooking = async () => {
+    if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
+      setBookingStatusError('Invalid booking selected');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete this booking for ${selectedBookingForStatus.client}?`)) {
+      return;
+    }
+
+    setBookingStatusLoading(true);
+    setBookingStatusError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const res = await fetch(`${Base_url}/bookings/${selectedBookingForStatus.bookingId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || `Failed to delete booking`);
+      }
+
+      if (data.success) {
+        // Remove the appointment from local state
+        setAppointments(prev => {
+          const newAppointments = { ...prev };
+          if (newAppointments[selectedBookingForStatus.employeeId]) {
+            delete newAppointments[selectedBookingForStatus.employeeId][selectedBookingForStatus.slotKey];
+          }
+          return newAppointments;
+        });
+
+        // Close modal and refresh calendar
+        closeBookingStatusModal();
+        setTimeout(() => {
+          fetchCalendarData();
+        }, 500);
+      } else {
+        throw new Error(data.message || 'Failed to delete booking');
+      }
+    } catch (err) {
+      console.error('Delete booking error:', err);
+      setBookingStatusError(err.message);
+    } finally {
+      setBookingStatusLoading(false);
+    }
   };
 
   const handleAddAppointment = () => {
@@ -287,11 +605,11 @@ const SelectCalendar = () => {
     setBookingLoading(true);
     setBookingError(null);
     try {
-      console.log('Fetching services from:', `${Base_url}/bookings/services`);
+      // console.log('Fetching services from:', `${Base_url}/bookings/services`);
       const res = await fetch(`${Base_url}/bookings/services`);
       const data = await res.json();
       
-      console.log('Services API response:', data);
+      // console.log('Services API response:', data);
       
       if (res.ok && data.success) {
         setAvailableServices(data.data?.services || []);
@@ -308,120 +626,243 @@ const SelectCalendar = () => {
     }
   }, []);
 
+  // TEMPORARY DEBUG FUNCTION - Add this to help diagnose the issue
+  const debugProfessionalData = (prof, date) => {
+    // console.log('=== DEBUGGING PROFESSIONAL ===');
+    // console.log('Professional:', {
+    //   id: prof._id,
+    //   name: `${prof.user?.firstName} ${prof.user?.lastName}`,
+    //   isActive: prof.user?.isActive,
+    //   position: prof.position
+    // });
+    // console.log('WorkSchedule:', prof.workSchedule);
+    
+    const dayName = getDayName(date);
+    // console.log('Day being checked:', dayName);
+    // console.log('Schedule for this day:', prof.workSchedule?.[dayName]);
+    
+    // Check what the hasShiftOnDate function actually returns
+    const employeeForShiftCheck = { workSchedule: prof.workSchedule || {} };
+    // console.log('Employee object for shift check:', employeeForShiftCheck);
+    
+    const hasShift = hasShiftOnDate(employeeForShiftCheck, date);
+    // console.log('Has shift result:', hasShift);
+    
+    // Let's also check if the workSchedule has any data at all
+    // console.log('WorkSchedule keys:', Object.keys(prof.workSchedule || {}));
+    // console.log('WorkSchedule values:', Object.values(prof.workSchedule || {}));
+    
+    // console.log('================================');
+    
+    return hasShift;
+  };
+
   const fetchBookingProfessionals = useCallback(async (serviceId, date) => {
+    // console.log('=== FETCHING PROFESSIONALS ===');
+    // console.log('Service ID:', serviceId);
+    // console.log('Date:', date?.toDateString());
+    
     setBookingLoading(true);
     setBookingError(null);
+    
     try {
       const dateStr = date.toISOString().slice(0, 10);
       const url = `${Base_url}/bookings/professionals?service=${serviceId}&date=${dateStr}`;
-      console.log('Fetching professionals from:', url);
+      // console.log('API URL:', url);
       
       const res = await fetch(url);
       const data = await res.json();
       
-      console.log('Professionals API response:', data);
+      // console.log('API Response:', data);
       
       if (res.ok && data.success) {
         const allProfessionals = data.data?.professionals || [];
-        console.log('Total professionals received:', allProfessionals.length);
+        // console.log('Total professionals from API:', allProfessionals.length);
         
-        // Debug: Log each professional's status
-        allProfessionals.forEach((prof, index) => {
+        // Filter professionals with shifts on this date
+        const professionalsWithShifts = allProfessionals.filter(prof => {
           const isActive = prof.user?.isActive !== false;
-          const workScheduleForCheck = {
-            workSchedule: prof.workSchedule || {}
-          };
-          const hasShift = hasShiftOnDate(workScheduleForCheck, date);
           
-          console.log(`Professional ${index + 1}:`, {
+          // Create employee object for shift checking
+          const employeeForShiftCheck = {
             name: `${prof.user?.firstName} ${prof.user?.lastName}`,
-            isActive,
-            hasShift,
-            workSchedule: prof.workSchedule,
-            selectedDate: date.toISOString().split('T')[0],
-            dayName: getDayName(date),
-            scheduleForDay: prof.workSchedule?.[getDayName(date)]
-          });
-        });
-        
-        // Filter out inactive employees and those without shifts on the selected date
-        const activeProfessionals = allProfessionals.filter(prof => {
-          const isActive = prof.user?.isActive !== false;
-          const workScheduleForCheck = {
             workSchedule: prof.workSchedule || {}
           };
-          const hasShift = hasShiftOnDate(workScheduleForCheck, date);
           
-          // For booking purposes, show all active professionals regardless of shift
-          // The backend should handle availability checking
-          console.log(`Filtering Professional: ${prof.user?.firstName} - Active: ${isActive}, HasShift: ${hasShift}`);
+          const hasShift = hasShiftOnDate(employeeForShiftCheck, date);
           
-          return isActive; // Only filter by active status for now
+          // console.log(`Professional ${prof.user?.firstName}: Active=${isActive}, HasShift=${hasShift}`);
+          
+          return isActive && hasShift;
         });
         
-        console.log('Active professionals with shifts:', activeProfessionals.length);
+        // console.log('Professionals with shifts:', professionalsWithShifts.length);
         
-        setAvailableProfessionals(activeProfessionals);
-        
-        if (activeProfessionals.length === 0 && (data.data?.professionals || []).length > 0) {
-          const totalProfessionals = data.data?.professionals || [];
-          const inactiveProfessionals = totalProfessionals.filter(prof => prof.user?.isActive === false);
-          
-          let errorMessage = 'No professionals are available for this service at the selected date.';
-          if (inactiveProfessionals.length > 0) {
-            errorMessage += ` ${inactiveProfessionals.length} staff members are currently inactive.`;
-          }
-          if (totalProfessionals.length === inactiveProfessionals.length) {
-            errorMessage = 'All professionals for this service are currently inactive.';
-          }
-          
-          setBookingError(errorMessage);
+        if (professionalsWithShifts.length === 0) {
+          setBookingError(`No professionals have shifts scheduled for ${date.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            month: 'long', 
+            day: 'numeric' 
+          })}. Please select a different date.`);
         }
+        
+        setAvailableProfessionals(professionalsWithShifts);
+        
       } else {
         throw new Error(data.message || 'Failed to fetch professionals');
       }
     } catch (err) {
       console.error('Error fetching professionals:', err);
       setBookingError('Failed to fetch professionals: ' + err.message);
-      // Fallback to mock data
-      setAvailableProfessionals(MOCK_PROFESSIONALS_DATA);
+      
+      // Fallback to local employees with shifts
+      const localProfessionalsWithShifts = employees
+        .filter(emp => emp.isActive !== false && hasShiftOnDate(emp, date))
+        .map(emp => ({
+          _id: emp.id,
+          user: {
+            firstName: emp.name.split(' ')[0],
+            lastName: emp.name.split(' ').slice(1).join(' ') || '',
+            isActive: emp.isActive !== false
+          },
+          position: emp.position,
+          workSchedule: emp.workSchedule || {}
+        }));
+      
+      // console.log('Fallback professionals with shifts:', localProfessionalsWithShifts.length);
+      setAvailableProfessionals(localProfessionalsWithShifts);
     } finally {
       setBookingLoading(false);
+      // console.log('=== FETCH PROFESSIONALS COMPLETE ===');
     }
-  }, []);
+  }, [employees]);
+
+  const filterOutBookedTimeSlots = (timeSlots, employeeId, date) => {
+    const dayKey = date.toISOString().split('T')[0];
+    const employeeAppointments = appointments[employeeId] || {};
+    
+    // console.log(`🔍 Filtering time slots for employee ${employeeId} on ${dayKey}`);
+    // console.log('📅 Employee appointments:', employeeAppointments);
+    
+    return timeSlots.filter(slot => {
+      const slotStartTime = new Date(slot.startTime);
+      const slotEndTime = new Date(slot.endTime);
+      
+      // Check if this time slot conflicts with any existing appointment
+      const hasConflict = Object.entries(employeeAppointments).some(([slotKey, appointment]) => {
+        // Only check appointments for the same date
+        if (!slotKey.startsWith(dayKey)) return false;
+        
+        // Extract time from slot key (YYYY-MM-DD_HH:MM)
+        const appointmentTimeStr = slotKey.split('_')[1];
+        if (!appointmentTimeStr) return false;
+        
+        // Create appointment time range
+        const [hours, minutes] = appointmentTimeStr.split(':').map(Number);
+        const appointmentStart = new Date(date);
+        appointmentStart.setHours(hours, minutes, 0, 0);
+        
+        // Use appointment duration to calculate end time
+        const appointmentDuration = appointment.duration || 30; // minutes
+        const appointmentEnd = new Date(appointmentStart.getTime() + (appointmentDuration * 60000));
+        
+        // Check for time conflict
+        const conflict = (slotStartTime >= appointmentStart && slotStartTime < appointmentEnd) ||
+                        (slotEndTime > appointmentStart && slotEndTime <= appointmentEnd) ||
+                        (slotStartTime <= appointmentStart && slotEndTime >= appointmentEnd);
+        
+        if (conflict) {
+          // console.log(`❌ Slot ${slotStartTime.toLocaleTimeString()} conflicts with appointment ${appointmentTimeStr} (${appointmentDuration}min)`);
+        }
+        
+        return conflict;
+      });
+      
+      if (!hasConflict) {
+        // console.log(`✅ Slot ${slotStartTime.toLocaleTimeString()} is available`);
+      }
+      
+      return !hasConflict && slot.available !== false;
+    });
+  };
 
   const fetchBookingTimeSlots = useCallback(async (employeeId, serviceId, date) => {
+    console.log('=== ENHANCED TIME SLOT FETCHING ===');
+    console.log('Employee ID:', employeeId);
+    console.log('Service ID:', serviceId);
+    console.log('Date:', date?.toDateString());
+    
     setBookingLoading(true);
     setBookingError(null);
+    
     try {
-      const dateStr = date.toISOString().slice(0, 10);
-      const url = `${Base_url}/bookings/time-slots?employeeId=${employeeId}&serviceId=${serviceId}&date=${dateStr}`;
-      console.log('Fetching time slots from:', url);
-      
-      const res = await fetch(url);
-      const data = await res.json();
-      
-      console.log('Time slots API response:', data);
-      
-      if (res.ok && data.success) {
-        setAvailableTimeSlots(data.data?.timeSlots || []);
-      } else {
-        throw new Error(data.message || 'Failed to fetch time slots');
+      // Find the employee to check their shift
+      const employee = employees.find(e => e.id === employeeId);
+      if (!employee) {
+        throw new Error('Employee not found');
       }
+      
+      // Check if employee has shift on this date
+      const hasShift = hasShiftOnDate(employee, date);
+      if (!hasShift) {
+        setBookingError(`${employee.name} has no shift scheduled on ${date.toLocaleDateString()}`);
+        setAvailableTimeSlots([]);
+        setBookingLoading(false);
+        return;
+      }
+      
+      // Get employee's actual shift hours
+      const shiftHours = getEmployeeShiftHours(employee, date);
+      if (shiftHours.length === 0) {
+        setBookingError(`${employee.name} has no defined shift hours on ${date.toLocaleDateString()}`);
+        setAvailableTimeSlots([]);
+        setBookingLoading(false);
+        return;
+      }
+      
+      const service = availableServices.find(s => s._id === serviceId);
+      const serviceDuration = service?.duration || 30;
+      
+      console.log('📋 Employee shift hours:', shiftHours);
+      console.log('⏱️ Service duration:', serviceDuration);
+      
+      // Generate slots ONLY from employee's actual shift hours
+      const shiftBasedSlots = generateTimeSlotsFromEmployeeShift(employee, date, serviceDuration, 10);
+      
+      if (shiftBasedSlots.length === 0) {
+        setBookingError(`No time slots can be generated from ${employee.name}'s shift hours`);
+        setAvailableTimeSlots([]);
+        setBookingLoading(false);
+        return;
+      }
+      
+      console.log('🔧 Generated shift-based slots:', shiftBasedSlots.length);
+      
+      // Filter out already booked time slots
+      const availableSlots = filterOutBookedTimeSlots(shiftBasedSlots, employeeId, date);
+      
+      console.log('✅ Available slots after filtering:', availableSlots.length);
+      console.log('📅 Sample available times:', availableSlots.slice(0, 5).map(slot => 
+        new Date(slot.startTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+      ));
+      
+      if (availableSlots.length === 0) {
+        setBookingError(`All time slots are already booked for ${employee.name} on ${date.toLocaleDateString()}. Please select a different date or professional.`);
+        setAvailableTimeSlots([]);
+      } else {
+        setAvailableTimeSlots(availableSlots);
+        setBookingError(null);
+      }
+      
     } catch (err) {
-      console.error('Error fetching time slots:', err);
-      setBookingError('Failed to fetch time slots: ' + err.message);
-      // Fallback to mock data
-      const mockTimeSlots = MOCK_TIME_SLOTS_DATA.map(slot => ({
-        startTime: `${date.toISOString().slice(0, 10)}T${slot.time}:00.000Z`,
-        endTime: `${date.toISOString().slice(0, 10)}T${slot.time.split(':')[0]}:${(parseInt(slot.time.split(':')[1]) + 30).toString().padStart(2, '0')}:00.000Z`,
-        available: slot.available
-      }));
-      setAvailableTimeSlots(mockTimeSlots);
+      console.error('Error in fetchBookingTimeSlots:', err);
+      setBookingError(`Failed to fetch time slots: ${err.message}`);
+      setAvailableTimeSlots([]);
     } finally {
       setBookingLoading(false);
+      console.log('=== TIME SLOT FETCHING COMPLETE ===');
     }
-  }, []);
+  }, [employees, availableServices, appointments]);
 
   const fetchExistingClients = useCallback(async () => {
     try {
@@ -432,7 +873,7 @@ const SelectCalendar = () => {
         return;
       }
       
-      console.log('Fetching clients from:', `${Base_url}/admin/clients`);
+      // console.log('Fetching clients from:', `${Base_url}/admin/clients`);
       const res = await fetch(`${Base_url}/admin/clients`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -440,7 +881,7 @@ const SelectCalendar = () => {
       });
       const data = await res.json();
       
-      console.log('Clients API response:', data);
+      // console.log('Clients API response:', data);
       
       if (res.ok && data.success) {
         setExistingClients(data.data?.clients || []);
@@ -557,31 +998,24 @@ const SelectCalendar = () => {
   };
 
   // Booking Tooltip Functions
-  const showBookingTooltipHandler = (appointment, event) => {
-    const rect = event.target.getBoundingClientRect();
+  const showBookingTooltipHandler = (event, appointment) => {
+    if (!event) return;
+    const el = event.currentTarget || event.target;
+    if (!el || !el.getBoundingClientRect) return;
+    const rect = el.getBoundingClientRect();
     const tooltipWidth = 280;
-    const tooltipHeight = 200;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
     const scrollY = window.scrollY;
     const scrollX = window.scrollX;
-    
-    // Calculate position
-    let top = rect.top + scrollY - tooltipHeight - 10; // Position above by default
-    let left = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2); // Center horizontally
-    
-    // Adjust if tooltip goes off screen
-    if (top < scrollY + 10) {
-      top = rect.bottom + scrollY + 10; // Position below if not enough space above
-    }
-    
-    if (left < scrollX + 10) {
-      left = scrollX + 10; // Ensure minimum left margin
-    } else if (left + tooltipWidth > scrollX + viewportWidth - 10) {
-      left = scrollX + viewportWidth - tooltipWidth - 10; // Ensure minimum right margin
-    }
-    
-    setTooltipPosition({ top, left });
+    let x = rect.left + scrollX + rect.width / 2; // center horizontally
+    // We render with transform translate(-50%, -100%), so y should be the element top (adds 8px gap)
+    let y = rect.top + scrollY - 8; 
+    // Constrain horizontally so tooltip (after translating -50%) stays in viewport roughly
+    const halfWidth = tooltipWidth / 2;
+    const minX = scrollX + halfWidth + 8;
+    const maxX = scrollX + window.innerWidth - halfWidth - 8;
+    if (x < minX) x = minX;
+    if (x > maxX) x = maxX;
+    setTooltipPosition({ x, y });
     setTooltipData(appointment);
     setShowBookingTooltip(true);
   };
@@ -714,7 +1148,7 @@ const SelectCalendar = () => {
         bookingSource: 'admin' // Specify this is admin-created booking
       };
 
-      console.log('Booking payload:', JSON.stringify(bookingPayload, null, 2));
+      // console.log('Booking payload:', JSON.stringify(bookingPayload, null, 2));
       
       const res = await fetch(`${Base_url}/bookings`, {
         method: 'POST',
@@ -726,7 +1160,7 @@ const SelectCalendar = () => {
       });
       
       const responseData = await res.json();
-      console.log('Booking creation response:', responseData);
+      // console.log('Booking creation response:', responseData);
 
       if (!res.ok) {
         throw new Error(responseData.message || `HTTP ${res.status}: ${res.statusText}`);
@@ -801,7 +1235,7 @@ const SelectCalendar = () => {
       const startDateParam = startDate.toISOString().split('T')[0];
       const endDateParam = endDate.toISOString().split('T')[0];
 
-      console.log('Fetching calendar data for:', { startDateParam, endDateParam, currentView });
+      // console.log('Fetching calendar data for:', { startDateParam, endDateParam, currentView });
 
       const [employeesResponse, bookingsResponse, servicesResponse] = await Promise.all([
         api.get(EMPLOYEES_API_URL),
@@ -809,11 +1243,11 @@ const SelectCalendar = () => {
         api.get(SERVICES_API_URL)
       ]);
 
-      console.log('API Responses:', {
-        employees: employeesResponse.data,
-        bookings: bookingsResponse.data,
-        services: servicesResponse.data
-      });
+      // console.log('API Responses:', {
+      //   employees: employeesResponse.data,
+      //   bookings: bookingsResponse.data,
+      //   services: servicesResponse.data
+      // });
 
       if (bookingsResponse.data.success && employeesResponse.data.success) {
         const allBookings = bookingsResponse.data.data.bookings || [];
@@ -848,6 +1282,7 @@ const SelectCalendar = () => {
 
               const appointmentDate = new Date(booking.appointmentDate);
               const startTime = service.startTime ? new Date(service.startTime) : appointmentDate;
+              const serviceDuration = service.service?.duration || service.duration || 30;
               
               const timeSlot = startTime.toLocaleTimeString('en-US', {
                 hour12: false,
@@ -855,27 +1290,50 @@ const SelectCalendar = () => {
                 minute: '2-digit'
               });
               
-              const slotKey = `${appointmentDate.toISOString().split('T')[0]}_${timeSlot}`;
+              const appointmentInfo = {
+                client: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
+                service: service.service?.name || 'Service',
+                duration: serviceDuration,
+                color: getRandomAppointmentColor(),
+                date: appointmentDate.toISOString().split('T')[0],
+                bookingId: booking._id,
+                status: booking.status || 'confirmed'
+              };
+
+              // Create time slots for the full duration of the service
+              const intervalMinutes = 10; // Time slot interval
+              const slotsToCreate = Math.ceil(serviceDuration / intervalMinutes);
               
-              if (!transformedAppointments[employeeId][slotKey]) {
-                transformedAppointments[employeeId][slotKey] = {
-                  client: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
-                  service: service.service?.name || 'Service',
-                  duration: service.service?.duration || service.duration || 30,
-                  color: getRandomAppointmentColor(),
-                  date: appointmentDate.toISOString().split('T')[0],
-                  bookingId: booking._id,
-                  status: booking.status || 'confirmed'
-                };
+              for (let i = 0; i < slotsToCreate; i++) {
+                const slotStartTime = new Date(startTime);
+                slotStartTime.setMinutes(startTime.getMinutes() + (i * intervalMinutes));
+                
+                const slotTimeString = slotStartTime.toLocaleTimeString('en-US', {
+                  hour12: false,
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+                
+                const slotKey = `${appointmentDate.toISOString().split('T')[0]}_${slotTimeString}`;
+                
+                // Add appointment info to each slot for the duration
+                if (!transformedAppointments[employeeId][slotKey]) {
+                  transformedAppointments[employeeId][slotKey] = {
+                    ...appointmentInfo,
+                    isMainSlot: i === 0, // Mark the first slot as main slot
+                    slotIndex: i,
+                    totalSlots: slotsToCreate
+                  };
+                }
               }
             }
           });
         });
         
-        console.log('Transformed data:', {
-          employees: transformedEmployees.length,
-          appointments: Object.keys(transformedAppointments).length
-        });
+        // console.log('Transformed data:', {
+        //   employees: transformedEmployees.length,
+        //   appointments: Object.keys(transformedAppointments).length
+        // });
         
         setEmployees(transformedEmployees);
         setTimeSlots(generateTimeSlots('00:00', '23:50', 10));
@@ -1060,6 +1518,22 @@ const SelectCalendar = () => {
                         <div key={index} 
                              className="month-appointment-entry" 
                              style={{ backgroundColor: app.color }}
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (app.bookingId) {
+                                 // Show booking status for existing appointment
+                                 const appointmentDetails = {
+                                   ...app,
+                                   employeeId: app.employeeId,
+                                   employeeName: app.employeeName,
+                                   slotTime: app.time,
+                                   date: dayKey,
+                                   slotKey: `${dayKey}_${app.time}`
+                                 };
+                                 setSelectedBookingForStatus(appointmentDetails);
+                                 setShowBookingStatusModal(true);
+                               }
+                             }}
                              onMouseEnter={(e) => showBookingTooltipHandler(e, {
                                client: app.client,
                                service: app.service,
@@ -1145,7 +1619,19 @@ const SelectCalendar = () => {
           
           <div className="staff-grid">
             {currentView === 'Day' && displayEmployees.map(employee => (
-                <StaffColumn key={employee.id} employee={employee} timeSlots={timeSlots} appointments={appointments} currentDate={currentDate} isTimeSlotUnavailable={isTimeSlotUnavailable} handleTimeSlotClick={handleTimeSlotClick} showBookingTooltipHandler={showBookingTooltipHandler} hideBookingTooltip={hideBookingTooltip} />
+                <StaffColumn 
+                  key={employee.id} 
+                  employee={employee} 
+                  timeSlots={timeSlots} 
+                  appointments={appointments} 
+                  currentDate={currentDate} 
+                  isTimeSlotUnavailable={isTimeSlotUnavailable} 
+                  handleTimeSlotClick={handleTimeSlotClick} 
+                  showBookingTooltipHandler={showBookingTooltipHandler} 
+                  hideBookingTooltip={hideBookingTooltip}
+                  setSelectedBookingForStatus={setSelectedBookingForStatus}
+                  setShowBookingStatusModal={setShowBookingStatusModal}
+                />
             ))}
             {currentView === 'Week' && (
                 <div className="week-view-container">
@@ -1202,7 +1688,7 @@ const SelectCalendar = () => {
                           <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
                             {!hasShift ? (
                               <div className="week-no-shift">
-                                <span className="no-shift-text">No shift</span>
+                                <span className="no-shift-text">No shift today</span>
                               </div>
                             ) : dayAppointments.length > 0 ? (
                               <div className="week-appointments-container">
@@ -1211,7 +1697,24 @@ const SelectCalendar = () => {
                                     key={index} 
                                     className="week-appointment-block" 
                                     style={{ backgroundColor: app.color }}
-                                    onClick={() => app.timeSlot && handleTimeSlotClick(employee.id, app.timeSlot, day)}
+                                    onClick={() => {
+                                      if (app.timeSlot && app.bookingId) {
+                                        // Show booking status for existing appointment
+                                        const appointmentDetails = {
+                                          ...app,
+                                          employeeId: employee.id,
+                                          employeeName: employee.name,
+                                          slotTime: app.timeSlot,
+                                          date: dayKey,
+                                          slotKey: app.slotKey
+                                        };
+                                        setSelectedBookingForStatus(appointmentDetails);
+                                        setShowBookingStatusModal(true);
+                                      } else if (app.timeSlot) {
+                                        // Fallback to regular time slot click
+                                        handleTimeSlotClick(employee.id, app.timeSlot, day);
+                                      }
+                                    }}
                                     onMouseEnter={(e) => showBookingTooltipHandler(e, {
                                       client: app.client,
                                       service: app.service,
@@ -1316,11 +1819,143 @@ const SelectCalendar = () => {
           </div>
         </div>
       )}
-      
-      {showAddBookingModal && (
+
+      {/* Booking Status Modal */}
+      {showBookingStatusModal && selectedBookingForStatus && (
         <div className="modern-booking-modal">
           <div className="booking-modal-overlay booking-modal-fade-in">
             <div className="booking-modal booking-modal-animate-in">
+              <button className="booking-modal-close" onClick={closeBookingStatusModal}>×</button>
+              <h2>Booking Management</h2>
+              
+              {bookingStatusError && (
+                <div className="booking-modal-error">
+                  <div className="error-icon">⚠️</div>
+                  <div className="error-content">
+                    <strong>Error</strong>
+                    <p>{bookingStatusError}</p>
+                  </div>
+                </div>
+              )}
+              
+              {bookingStatusLoading && (
+                <div className="booking-modal-loading">
+                  <div className="loading-spinner"></div>
+                  <div className="loading-content">
+                    <strong>Processing</strong>
+                    <p>Updating booking status...</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="booking-status-details">
+                <div className="booking-status-header">
+                  <div className="booking-status-avatar" style={{ backgroundColor: selectedBookingForStatus.color }}>
+                    {selectedBookingForStatus.client.charAt(0)}
+                  </div>
+                  <div className="booking-status-info">
+                    <h3>{selectedBookingForStatus.client}</h3>
+                    <p>{selectedBookingForStatus.service}</p>
+                  </div>
+                  <div className={`booking-status-badge status-${selectedBookingForStatus.status?.toLowerCase() || 'booked'}`}>
+                    {(selectedBookingForStatus.status || 'Booked').charAt(0).toUpperCase() + (selectedBookingForStatus.status || 'Booked').slice(1)}
+                  </div>
+                </div>
+
+                <div className="booking-status-grid">
+                  <div className="status-detail">
+                    <div className="detail-icon">👨‍⚕️</div>
+                    <div className="detail-content">
+                      <span className="detail-label">Professional</span>
+                      <span className="detail-value">{selectedBookingForStatus.employeeName}</span>
+                    </div>
+                  </div>
+                  <div className="status-detail">
+                    <div className="detail-icon">📅</div>
+                    <div className="detail-content">
+                      <span className="detail-label">Date</span>
+                      <span className="detail-value">
+                        {new Date(selectedBookingForStatus.date).toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="status-detail">
+                    <div className="detail-icon">🕒</div>
+                    <div className="detail-content">
+                      <span className="detail-label">{selectedBookingForStatus.slotTime}</span>
+                    </div>
+                  </div>
+                  <div className="status-detail">
+                    <div className="detail-icon">⏱️</div>
+                    <div className="detail-content">
+                      <span className="detail-label">Duration</span>
+                      <span className="detail-value">{selectedBookingForStatus.duration} minutes</span>
+                    </div>
+                  </div>
+                  <div className="status-detail">
+                    <div className="detail-icon">🆔</div>
+                    <div className="detail-content">
+                      <span className="detail-label">Booking ID</span>
+                      <span className="detail-value">{selectedBookingForStatus.bookingId || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="booking-status-actions">
+                  <div className="status-actions-header">
+                    <label htmlFor="booking-status-select" className="status-select-label">Update Status</label>
+                    <div className="status-select-wrapper">
+                      <select
+                        id="booking-status-select"
+                        className="status-select"
+                        disabled={bookingStatusLoading}
+                        value={(selectedBookingForStatus.status || 'booked').toLowerCase()}
+                        onChange={(e) => handleBookingStatusUpdate(e.target.value)}
+                      >
+                        <option value="booked">Booked</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="arrived">Arrived</option>
+                        <option value="started">Started</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="booking-danger-zone">
+                    <div className="danger-zone-header">
+                      <h5>Danger Zone</h5>
+                      <p>This action cannot be undone</p>
+                    </div>
+                    <button 
+                      className="delete-booking-btn"
+                      onClick={handleDeleteBooking}
+                      disabled={bookingStatusLoading}
+                    >
+                      <span className="btn-icon">🗑️</span>
+                      <span className="btn-text">Delete Booking</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="booking-modal-actions">
+                <button className="booking-modal-back" onClick={closeBookingStatusModal}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {showAddBookingModal && (
+        <div className="modern-booking-modal">
+          <div className="booking-modal-overlay booking-modal-fade-in" onClick={closeBookingModal}>
+            <div className="booking-modal booking-modal-animate-in" onClick={e => e.stopPropagation()}>
               <button className="booking-modal-close" onClick={closeBookingModal}>×</button>
               <h2>New Appointment</h2>
               
@@ -1344,7 +1979,7 @@ const SelectCalendar = () => {
               {/* Service Selection Step */}
               {bookingStep === 1 && (
                 <>
-                  <h3>✨ Select Your Service</h3>
+                  <h3>Select Your Service</h3>
                   <div className="booking-modal-list">
                     {availableServices.map(service => (
                       <button key={service._id} className={`booking-modal-list-item${selectedService && selectedService._id === service._id ? ' selected' : ''}`} onClick={() => { setSelectedService(service); setBookingStep(2); fetchBookingProfessionals(service._id, currentDate); }}>
@@ -1353,6 +1988,11 @@ const SelectCalendar = () => {
                       </button>
                     ))}
                   </div>
+                  <div className="booking-modal-actions">
+                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
+                      Cancel
+                    </button>
+                  </div>
                 </>
               )}
 
@@ -1360,16 +2000,71 @@ const SelectCalendar = () => {
               {bookingStep === 2 && (
                 <>
                   <h3>👨‍⚕️ Choose Your Professional</h3>
-                  <div className="booking-modal-list">
-                    {availableProfessionals.map(prof => (
-                      <button key={prof._id} className={`booking-modal-list-item${selectedProfessional && selectedProfessional._id === prof._id ? ' selected' : ''}`} onClick={() => { setSelectedProfessional(prof); setBookingStep(3); fetchBookingTimeSlots(prof._id, selectedService._id, currentDate); }}>
-                        <div className="booking-modal-item-name">{prof.user.firstName} {prof.user.lastName}</div>
-                        <div className="booking-modal-list-desc">{prof.position} • Expert in {selectedService?.name}</div>
-                      </button>
-                    ))}
-                  </div>
+                  {availableProfessionals.length === 0 ? (
+                    <div className="booking-modal-empty-state">
+                      <p>No professionals are available for this service on {currentDate.toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}.</p>
+                      <p>Please select a different date or service.</p>
+                    </div>
+                  ) : (
+                    <div className="booking-modal-list">
+                      {availableProfessionals.map(prof => {
+                        // FIXED: Create proper employee object for shift checking
+                        const employeeForShiftCheck = { 
+                          workSchedule: prof.workSchedule || {} 
+                        };
+                        const hasShift = hasShiftOnDate(employeeForShiftCheck, currentDate);
+                        const dayName = getDayName(currentDate);
+                        const todaySchedule = prof.workSchedule?.[dayName];
+                        
+                        // FIXED: Better shift info display
+                        let shiftInfo = 'Available';
+                        if (todaySchedule) {
+                          if (todaySchedule.shifts && typeof todaySchedule.shifts === 'string') {
+                            shiftInfo = todaySchedule.shifts;
+                          } else if (todaySchedule.startTime && todaySchedule.endTime) {
+                            shiftInfo = `${todaySchedule.startTime} - ${todaySchedule.endTime}`;
+                          } else if (Array.isArray(todaySchedule.shiftsData) && todaySchedule.shiftsData.length > 0) {
+                            const firstShift = todaySchedule.shiftsData[0];
+                            shiftInfo = `${firstShift.startTime} - ${firstShift.endTime}`;
+                            if (todaySchedule.shiftsData.length > 1) {
+                              shiftInfo += ' +more';
+                            }
+                          }
+                        }
+                        
+                        return (
+                          <button 
+                            key={prof._id} 
+                            className={`booking-modal-list-item${selectedProfessional && selectedProfessional._id === prof._id ? ' selected' : ''}`} 
+                            onClick={() => { 
+                              setSelectedProfessional(prof); 
+                              setBookingStep(3); 
+                              fetchBookingTimeSlots(prof._id, selectedService._id, currentDate); 
+                            }}
+                          >
+                            <div className="booking-modal-item-name">
+                              {prof.user.firstName} {prof.user.lastName}
+                              <span className="professional-shift-indicator">
+                                ✓ Available
+                              </span>
+                            </div>
+                            <div className="booking-modal-list-desc">
+                              {prof.position} • Shift: {shiftInfo} • Expert in {selectedService?.name}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => setBookingStep(1)}>← Back</button>
+                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
+                      Cancel
+                    </button>
                   </div>
                 </>
               )}
@@ -1392,6 +2087,9 @@ const SelectCalendar = () => {
                   </div>
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => setBookingStep(2)}>← Back</button>
+                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
+                      Cancel
+                    </button>
                   </div>
                 </>
               )}
@@ -1565,6 +2263,9 @@ const SelectCalendar = () => {
                       Continue to Payment →
                     </button>
                     <button className="booking-modal-back" onClick={() => setBookingStep(3)}>← Back</button>
+                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
+                      Cancel
+                    </button>
                   </div>
                 </>
               )}
@@ -1650,8 +2351,12 @@ const SelectCalendar = () => {
                       disabled={bookingLoading}
                     >
                       {bookingLoading ? ' Creating Your Luxury Experience...' : ' Confirm Booking '}
+
                     </button>
                     <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back</button>
+                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
+                      Cancel
+                    </button>
                   </div>
                 </>
               )}
@@ -1704,8 +2409,8 @@ const SelectCalendar = () => {
           className="booking-tooltip"
           style={{
             position: 'fixed',
-            top: tooltipPosition.y,
-            left: tooltipPosition.x,
+            top: tooltipPosition?.y,
+            left: tooltipPosition?.x,
             zIndex: 10000,
             backgroundColor: '#333',
             color: 'white',
@@ -1740,55 +2445,254 @@ const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlo
     const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
     const dayKey = currentDate.toISOString().split('T')[0];
     const hasShift = hasShiftOnDate(employee, currentDate);
+    const shiftHours = getEmployeeShiftHours(employee, currentDate);
+    const hasValidShifts = shiftHours.length > 0;
+
+    // ENHANCED: StaffColumn component with Fresha-style appointment blocks
+    const processAppointmentBlocks = () => {
+      const employeeAppointments = appointments[employee.id] || {};
+      const appointmentBlocks = [];
+      const processedSlots = new Set();
+
+      Object.entries(employeeAppointments).forEach(([slotKey, appointment]) => {
+        if (!slotKey.startsWith(dayKey) || processedSlots.has(slotKey)) return;
+
+        if (appointment.isMainSlot) {
+          // Calculate the full appointment block
+          const startTimeStr = slotKey.split('_')[1];
+          const duration = appointment.duration || 30;
+          const totalSlots = appointment.totalSlots || Math.ceil(duration / 10);
+          
+          // Mark all slots in this appointment as processed
+          const [startHour, startMinute] = startTimeStr.split(':').map(Number);
+          for (let i = 0; i < totalSlots; i++) {
+            const slotTime = new Date();
+            slotTime.setHours(startHour, startMinute + (i * 10), 0, 0);
+            const slotTimeStr = slotTime.toLocaleTimeString('en-US', {
+              hour12: false,
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            const slotKeyToProcess = `${dayKey}_${slotTimeStr}`;
+            processedSlots.add(slotKeyToProcess);
+          }
+
+          appointmentBlocks.push({
+            startSlot: startTimeStr,
+            duration: totalSlots,
+            height: totalSlots * timeSlotHeightPx,
+            appointment: appointment
+          });
+        }
+      });
+
+      return appointmentBlocks;
+    };
+
+    const appointmentBlocks = processAppointmentBlocks();
 
     return (
-        <div key={employee.id} className={`staff-column ${!hasShift ? 'staff-absent' : ''}`}>
+        <div key={employee.id} className={`staff-column ${!hasShift ? 'staff-absent' : ''} ${!hasValidShifts ? 'no-shifts' : ''}`}>
             <div className="staff-header">
-                <div className="staff-avatar" style={{ backgroundColor: hasShift ? employee.avatarColor : '#9ca3af' }}>
-                    {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
+                <div className="staff-avatar" style={{ 
+                  backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
+                  opacity: hasShift && hasValidShifts ? 1 : 0.5
+                }}>
+                    {employee.avatar ? 
+                      <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{
+                        opacity: hasShift && hasValidShifts ? 1 : 0.5
+                      }} /> : 
+                      employee.name.charAt(0)
+                    }
                 </div>
                 <div className="staff-info">
-                    <div className="staff-name">{employee.name}</div>
-                    <div className="staff-position">{employee.position}</div>
-                    {!hasShift && <div className="staff-status">No shift</div>}
+                    <div className="staff-name" style={{ 
+                      color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' 
+                    }}>
+                      {employee.name}
+                    </div>
+                    <div className="staff-position" style={{ 
+                      color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' 
+                    }}>
+                      {employee.position}
+                    </div>
+                    {!hasShift && <div className="staff-status no-shift">No shift today</div>}
+                    {hasShift && !hasValidShifts && <div className="staff-status no-hours">No shift hours</div>}
+                    {hasShift && hasValidShifts && (
+                      <div className="staff-shift-info">
+                        {shiftHours.map((shift, index) => (
+                          <div key={index} className="shift-time">
+                            {shift.startTime} - {shift.endTime}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
             </div>
+            
             <div className="time-slots-column">
-                {timeSlots.map((slot) => {
+                {/* Render time slots */}
+                {timeSlots.map((slot, index) => {
                     const slotKey = `${dayKey}_${slot}`;
                     const appointment = appointments[employee.id]?.[slotKey];
                     const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
+                    
+                    // Check if this slot is within employee's shift hours
+                    const isWithinShift = hasShift && hasValidShifts && shiftHours.some(shift => {
+                      const [slotHour, slotMinute] = slot.split(':').map(Number);
+                      const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
+                      const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
+                      
+                      const slotMinutes = slotHour * 60 + slotMinute;
+                      const shiftStartMinutes = shiftStartHour * 60 + shiftStartMinute;
+                      const shiftEndMinutes = shiftEndHour * 60 + shiftEndMinute;
+                      
+                      return slotMinutes >= shiftStartMinutes && slotMinutes < shiftEndMinutes;
+                    });
+
+                    // Check if this slot is covered by an appointment block
+                    const isCoveredByAppointment = appointmentBlocks.some(block => {
+                      const [blockStartHour, blockStartMinute] = block.startSlot.split(':').map(Number);
+                      const [slotHour, slotMinute] = slot.split(':').map(Number);
+                      
+                      const blockStartMinutes = blockStartHour * 60 + blockStartMinute;
+                      const blockEndMinutes = blockStartMinutes + (block.duration * 10);
+                      const slotMinutes = slotHour * 60 + slotMinute;
+                      
+                      return slotMinutes >= blockStartMinutes && slotMinutes < blockEndMinutes;
+                    });
+
+                    // Don't render individual slots if they're covered by appointment blocks
+                    if (isCoveredByAppointment) {
+                      return null;
+                    }
 
                     return (
                         <div key={slot} className="time-slot-wrapper" style={{ height: `${timeSlotHeightPx}px` }}>
                             <div className={`time-slot ${
-                                appointment ? 'appointment' : 
-                                (!hasShift ? 'no-shift' : 
-                                (unavailableReason ? 'unavailable' : 'empty'))
+                                (!hasShift || !hasValidShifts ? 'no-shift' : 
+                                (!isWithinShift ? 'outside-shift' :
+                                (unavailableReason ? 'unavailable' : 'empty')))
                             }`}
-                                 onClick={hasShift ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
-                                 onMouseEnter={appointment ? (e) => showBookingTooltipHandler(e, {
-                                     client: appointment.client,
-                                     service: appointment.service,
-                                     time: slot,
-                                     professional: employee.name,
-                                     status: appointment.status || 'Confirmed',
-                                     notes: appointment.notes
-                                 }) : null}
-                                 onMouseLeave={appointment ? hideBookingTooltip : null}
+                                 onClick={hasShift && hasValidShifts && isWithinShift ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
                                  style={{
-                                     ...(appointment ? { backgroundColor: appointment.color } : {}),
-                                     cursor: hasShift ? 'pointer' : 'not-allowed'
+                                     cursor: (hasShift && hasValidShifts && isWithinShift) ? 'pointer' : 'not-allowed',
+                                     opacity: (!hasShift || !hasValidShifts || !isWithinShift) ? 0.3 : 1,
+                                     backgroundColor: (!hasShift || !hasValidShifts) ? '#f3f4f6' : 
+                                                   (!isWithinShift ? '#e5e7eb' : '#ffffff') // Light grey for outside shift
                                  }}>
-                                {appointment && <div className="appointment-text">{appointment.client} - {appointment.service}</div>}
-                                {unavailableReason && !appointment && (
+                                
+                                {unavailableReason && isWithinShift && (
                                     <div className="unavailable-text">
                                         {unavailableReason.includes("Day Off") ? "DAY OFF" : (unavailableReason.includes("Block") ? "BLOCKED" : "UNAVAIL")}
+                                    </div>
+                                )}
+                                {!hasShift && (
+                                    <div className="unavailable-text">
+                                        NO SHIFT
+                                    </div>
+                                )}
+                                {hasShift && !hasValidShifts && (
+                                    <div className="unavailable-text">
+                                        NO HOURS
+                                    </div>
+                                )}
+                                {hasShift && hasValidShifts && !isWithinShift && (
+                                    <div className="unavailable-text off-shift-text">
+                                        OFF SHIFT
                                     </div>
                                 )}
                             </div>
                         </div>
                     );
+                })}
+
+                {/* Render appointment blocks (Fresha style) */}
+                {appointmentBlocks.map((block, index) => {
+                  const [blockHour, blockMinute] = block.startSlot.split(':').map(Number);
+                  const slotIndex = timeSlots.findIndex(slot => {
+                    const [slotHour, slotMin] = slot.split(':').map(Number);
+                    return slotHour === blockHour && slotMin === blockMinute;
+                  });
+                  
+                  const topPosition = slotIndex * timeSlotHeightPx;
+
+                  return (
+                    <div
+                      key={`block-${index}`}
+                      className="appointment-block fresha-style"
+                      style={{
+                        position: 'absolute',
+                        top: `${topPosition}px`,
+                        left: '0',
+                        right: '0',
+                        height: `${block.height}px`,
+                        backgroundColor: block.appointment.color || '#3b82f6', // Use appointment color or blue default
+                        borderRadius: '6px',
+                        border: `1px solid ${block.appointment.color ? `${block.appointment.color}CC` : '#2563eb'}`,
+                        margin: '1px',
+                        padding: '8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        zIndex: 10
+                      }}
+                      onClick={() => {
+                        const appointmentDetails = {
+                          ...block.appointment,
+                          employeeId: employee.id,
+                          employeeName: employee.name,
+                          slotTime: block.startSlot,
+                          date: dayKey,
+                          slotKey: `${dayKey}_${block.startSlot}`
+                        };
+                        setSelectedBookingForStatus(appointmentDetails);
+                        setShowBookingStatusModal(true);
+                      }}
+                      onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                        client: block.appointment.client,
+                        service: block.appointment.service,
+                        time: block.startSlot,
+                        professional: employee.name,
+                        status: block.appointment.status || 'Confirmed',
+                        notes: block.appointment.notes,
+                        duration: block.appointment.duration
+                      })}
+                      onMouseLeave={hideBookingTooltip}
+                    >
+                      <div className="appointment-block-content">
+                        <div className="appointment-block-client" style={{
+                          color: 'white',
+                          fontWeight: '600',
+                          fontSize: '13px',
+                          marginBottom: '2px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {block.appointment.client}
+                        </div>
+                        <div className="appointment-block-service" style={{
+                          color: 'rgba(255,255,255,0.9)',
+                          fontSize: '12px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {block.appointment.service}
+                        </div>
+                        <div className="appointment-block-duration" style={{
+                          color: 'rgba(255,255,255,0.8)',
+                          fontSize: '11px',
+                          marginTop: '2px'
+                        }}>
+                          {block.appointment.duration}min
+                        </div>
+                      </div>
+                    </div>
+                  );
                 })}
             </div>
         </div>
@@ -1807,15 +2711,14 @@ const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnav
             Object.entries(appointments[emp.id]).forEach(([slotKey, appointment]) => {
                 // Check if the appointment is for this day
                 if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                    // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
-                    const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                    dayAppointments.push({
-                        ...appointment,
-                        employeeName: emp.name,
-                        employeeAvatar: emp.avatar,
-                        employeeId: emp.id,
-                        time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD'
-                    });
+                  const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
+                  dayAppointments.push({
+                    ...appointment,
+                    time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
+                    slotKey,
+                    timeSlot: timeFromKey,
+                    
+                  });
                 }
             });
         }
@@ -1830,37 +2733,37 @@ const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnav
             <div className="week-appointments">
                 {dayAppointments.length > 0 ? (
                     <>
-                        {dayAppointments.slice(0, 3).map((app, index) => (
-                            <div key={index} 
-                                 className="week-appointment-entry" 
-                                 style={{ backgroundColor: app.color }}
-                                 onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                                     client: app.client,
-                                     service: app.service,
-                                     time: app.time,
-                                     professional: app.employeeName,
-                                     status: app.status || 'Confirmed',
-                                     notes: app.notes
-                                 })}
-                                 onMouseLeave={hideBookingTooltip}>
-                                <span className="appointment-client-name">{app.client}</span>
-                                <span className="appointment-service-name">{app.service}</span>
-                                <span className="appointment-time">{app.time}</span>
-                            </div>
-                        ))}
-                        {dayAppointments.length > 3 && (
-                            <div 
-                                className="week-more-appointments"
-                                onClick={(event) => onShowMoreAppointments(dayAppointments, day, event)}
-                            >
-                                +{dayAppointments.length - 3} more
-                            </div>
-                        )}
+                      {dayAppointments.slice(0, 3).map((app, index) => (
+                        <div key={index} 
+                             className="week-appointment-entry" 
+                             style={{ backgroundColor: app.color }}
+                             onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                               client: app.client,
+                               service: app.service,
+                               time: app.time,
+                               professional: app.employeeName,
+                               status: app.status || 'Confirmed',
+                               notes: app.notes
+                             })}
+                             onMouseLeave={hideBookingTooltip}>
+                            <span className="appointment-client-name">{app.client}</span>
+                            <span className="appointment-service-name">{app.service}</span>
+                            <span className="appointment-time">{app.time}</span>
+                        </div>
+                      ))}
+                      {dayAppointments.length > 3 && (
+                        <div 
+                            className="week-more-appointments"
+                            onClick={(event) => onShowMoreAppointments(dayAppointments, day, event)}
+                          >
+                            +{dayAppointments.length - 3} more
+                        </div>
+                      )}
                     </>
                 ) : (
-                    <div className="week-no-appointments">
-                        No appointments
-                    </div>
+                  <div className="week-no-appointments">
+                    No appointments
+                  </div>
                 )}
             </div>
         </div>

@@ -12,7 +12,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./HomePage.css";
-import api, { resetMockDataMode, forceRefreshToken } from "../Service/Api";
+import api from "../Service/Api";
+
+/* -------------------- Small UI helpers -------------------- */
 
 // Spinner component
 const Spinner = () => (
@@ -21,99 +23,181 @@ const Spinner = () => (
   </div>
 );
 
-// Graphs Component
+// Error banner (lightweight)
+const ErrorBanner = ({ message }) => (
+  <div
+    style={{
+      width: "100%",
+      padding: "10px 12px",
+      borderRadius: 8,
+      background: "#FFF4F4",
+      color: "#B00020",
+      fontSize: 14,
+      border: "1px solid #F7C8C8",
+      textAlign: "center",
+    }}
+  >
+    {message}
+  </div>
+);
+
+/* -------------------- Graphs Component -------------------- */
+
 const Graphs = () => {
   const [salesData, setSalesData] = useState(null);
   const [appointmentData, setAppointmentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // helpers
+  const fmtDateLabel = (d) =>
+    d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }); // e.g., "13 Aug"
+  const weekdayParam = (d) =>
+    d.toLocaleDateString("en-GB", { weekday: "long" }).toLowerCase(); // "monday"
+
+  // build last 7 days array (oldest -> today)
+  const last7Days = () => {
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const dt = new Date(today);
+      dt.setDate(today.getDate() - i);
+      days.push(dt);
+    }
+    return days;
+  };
+
   useEffect(() => {
     const fetchGraphsData = async () => {
       setLoading(true);
       setError(null);
       try {
-        console.log('🔄 Attempting to fetch real dashboard data from backend...');
+        // 1) Fetch monthly summary stats (unchanged)
         const dashboardRes = await api.get("/admin/dashboard");
-        const revenueRes = await api.get("/admin/analytics/revenue?period=daily");
-        const bookingRes = await api.get("/admin/analytics/bookings");
 
-        console.log('✅ Real dashboard data fetched successfully!', {
-          dashboard: dashboardRes.data,
-          revenue: revenueRes.data,
-          bookings: bookingRes.data
-        });
+        // 2) Fetch day-wise revenue by calling ?period=<weekday> for each of the last 7 days
+        const days = last7Days();
+        const dayRequests = days.map((d) =>
+          api
+            .get(`/admin/analytics/revenue?period=${weekdayParam(d)}`)
+            .then((res) => ({
+              label: fmtDateLabel(d),
+              weekday: weekdayParam(d),
+              revenue:
+                res?.data?.data?.revenueData?.[0]?.revenue != null
+                  ? res.data.data.revenueData[0].revenue
+                  : 0,
+              bookings:
+                res?.data?.data?.revenueData?.[0]?.bookings != null
+                  ? res.data.data.revenueData[0].bookings
+                  : 0,
+            }))
+        );
 
-        // Prepare salesData for Graphs
-        const salesGraph = (revenueRes.data.data.revenueData || []).map(item => ({
-          name: `${item._id.month || ''}/${item._id.day || ''}`,
-          appointments: item.bookings,
-          value: item.revenue
+        const dailyResults = await Promise.all(dayRequests);
+
+        // Build sales graph data for recharts
+        const salesGraph = dailyResults.map((r) => ({
+          name: r.label, // "13 Aug"
+          appointments: r.bookings,
+          value: r.revenue,
         }));
+
         setSalesData({
-          totalRevenue: dashboardRes.data.data.thisMonth.revenue,
-          totalBookings: dashboardRes.data.data.thisMonth.totalBookings,
-          graphData: salesGraph
+          totalRevenue: dashboardRes.data?.data?.thisMonth?.revenue || 0,
+          totalBookings: dashboardRes.data?.data?.thisMonth?.totalBookings || 0,
+          graphData: salesGraph,
         });
 
-        // Prepare appointmentData for Graphs (using booking trends)
-        const trends = bookingRes.data.data.bookingTrends || [];
-        const appointmentGraph = trends.slice(-7).map(item => ({
-          day: `${item._id.month || ''}/${item._id.year || ''}`,
-          confirmed: item.completedBookings
-        }));
-        setAppointmentData({
-          totalConfirmed: appointmentGraph.reduce((sum, d) => sum + d.confirmed, 0),
-          totalCancelled: 0, // You can enhance this with cancelled count if available
-          graphData: appointmentGraph
+        // 3) FIXED: Booking trends data from the correct API response
+        const bookingRes = await api.get("/admin/analytics/bookings");
+        const bookingAnalytics = bookingRes?.data?.data;
+
+        // Process booking trends correctly - these are monthly data
+        const trends = bookingAnalytics?.bookingTrends || [];
+
+        // Convert monthly trends to chart data
+        const appointmentGraph = trends.map((item) => {
+          const monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          const monthName = monthNames[(item._id?.month || 1) - 1]; // Convert 1-based to 0-based
+
+          return {
+            day: `${monthName} ${item._id?.year || "2025"}`, // "Jul 2025"
+            totalBookings: item.totalBookings || 0,
+            confirmed: item.completedBookings || 0,
+            cancelled: item.cancelledBookings || 0,
+          };
         });
+
+        // Calculate totals from status distribution for more accurate numbers
+        const statusDistribution = bookingAnalytics?.statusDistribution || [];
+        const confirmedTotal =
+          statusDistribution.find((s) => s._id === "confirmed")?.count || 0;
+        const completedTotal =
+          statusDistribution.find((s) => s._id === "completed")?.count || 0;
+        const totalConfirmed = confirmedTotal + completedTotal;
+        const totalCancelled =
+          statusDistribution.find((s) => s._id === "cancelled")?.count || 0;
+
+        setAppointmentData({
+          totalConfirmed: totalConfirmed,
+          totalCancelled: totalCancelled,
+          graphData: appointmentGraph,
+          statusDistribution: statusDistribution, // Pass along for additional insights
+        });
+
         setLoading(false);
       } catch (err) {
-        console.log('❌ Backend API failed, using mock data for graphs');
-        
-        // Check if it's mock data mode or actual error
-        if (err.message === 'MOCK_DATA_MODE' || localStorage.getItem('useMockData') === 'true') {
-          console.log('🔧 Mock data mode activated');
-        } else {
-          console.log('Error details:', err.response?.status, err.response?.data?.message || err.message);
-        }
-        // Use mock data instead of showing error
+        console.log("❌ Backend API failed for graphs");
+        console.log(
+          "Error details:",
+          err.response?.status,
+          err.response?.data?.message || err.message
+        );
+        setError("Could not load sales/appointments analytics. Please try again.");
         setSalesData({
-          totalRevenue: 15750,
-          totalBookings: 92,
-          graphData: [
-            { name: '1/13', appointments: 8, value: 850 },
-            { name: '1/14', appointments: 12, value: 1200 },
-            { name: '1/15', appointments: 15, value: 1500 },
-            { name: '1/16', appointments: 10, value: 1000 },
-            { name: '1/17', appointments: 18, value: 1800 }
-          ]
+          totalRevenue: 0,
+          totalBookings: 0,
+          graphData: [],
         });
-        
         setAppointmentData({
-          totalConfirmed: 67,
-          totalCancelled: 8,
-          graphData: [
-            { day: '1/13', confirmed: 8 },
-            { day: '1/14', confirmed: 12 },
-            { day: '1/15', confirmed: 15 },
-            { day: '1/16', confirmed: 10 },
-            { day: '1/17', confirmed: 18 }
-          ]
+          totalConfirmed: 0,
+          totalCancelled: 0,
+          graphData: [],
         });
         setLoading(false);
       }
     };
+
     fetchGraphsData();
   }, []);
 
   return (
     <div className="graph-upcoming-container">
+      {/* Recent sales */}
       <div className="card">
         <div className="card-header">
           <h3>Recent sales</h3>
           <span>Last 7 days</span>
-          <h1>AED {salesData?.totalRevenue?.toLocaleString(undefined, {minimumFractionDigits:2}) || '0.00'}</h1>
+          <h1>
+            AED{" "}
+            {salesData?.totalRevenue?.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            }) || "0.00"}
+          </h1>
           <div className="appointments-info">
             <div className="appointments-count">
               <span>Appointments</span>
@@ -121,36 +205,54 @@ const Graphs = () => {
             </div>
             <div className="appointments-count">
               <span>Appointments value</span>
-              <strong>AED {salesData?.totalRevenue?.toLocaleString(undefined, {minimumFractionDigits:2}) || '0.00'}</strong>
+              <strong className="appointments-value">
+                AED{" "}
+                {salesData?.totalRevenue?.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                }) || "0.00"}
+              </strong>
             </div>
           </div>
         </div>
-        <div className="chart-wrapper" style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          className="chart-wrapper"
+          style={{
+            minHeight: 220,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           {loading ? (
             <Spinner />
+          ) : error ? (
+            <ErrorBanner message={error} />
+          ) : salesData?.graphData?.length ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={salesData.graphData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="appointments" stroke="#00C49F" />
+                <Line type="monotone" dataKey="value" stroke="#8884d8" />
+              </LineChart>
+            </ResponsiveContainer>
           ) : (
-          <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={salesData?.graphData || []}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="appointments" stroke="#00C49F" />
-              <Line type="monotone" dataKey="value" stroke="#8884d8" />
-            </LineChart>
-          </ResponsiveContainer>
+            <div style={{ opacity: 0.7 }}>No data available</div>
           )}
         </div>
       </div>
 
+      {/* FIXED: Booking trends appointments */}
       <div className="card">
         <div className="card-header">
-          <h3>Upcoming appointments</h3>
-          <span>Next 7 days</span>
-          <h1>{appointmentData?.totalConfirmed || 0} booked</h1>
+          <h3>Booking Trends</h3>
+          <span>Monthly Overview</span>
+          <h1>{appointmentData?.totalConfirmed || 0} total</h1>
           <div className="appointments-info">
             <div className="appointments-count">
-              <span>Confirmed appointments</span>
+              <span>Confirmed + Completed</span>
               <strong>{appointmentData?.totalConfirmed || 0}</strong>
             </div>
             <div className="appointments-count">
@@ -159,19 +261,44 @@ const Graphs = () => {
             </div>
           </div>
         </div>
-        <div className="chart-wrapper" style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          className="chart-wrapper"
+          style={{
+            minHeight: 220,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           {loading ? (
             <Spinner />
+          ) : error ? (
+            <ErrorBanner message={error} />
+          ) : appointmentData?.graphData?.length ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={appointmentData.graphData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value, name) => [
+                    value,
+                    name === "totalBookings"
+                      ? "Total Bookings"
+                      : name === "confirmed"
+                      ? "Completed"
+                      : name === "cancelled"
+                      ? "Cancelled"
+                      : name,
+                  ]}
+                />
+                <Bar dataKey="totalBookings" fill="#3B82F6" name="Total Bookings" />
+                <Bar dataKey="confirmed" fill="#10B981" name="Completed" />
+                <Bar dataKey="cancelled" fill="#EF4444" name="Cancelled" />
+              </BarChart>
+            </ResponsiveContainer>
           ) : (
-          <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={appointmentData?.graphData || []}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="confirmed" fill="#5B2EFF" />
-            </BarChart>
-          </ResponsiveContainer>
+            <div style={{ opacity: 0.7 }}>No booking data available</div>
           )}
         </div>
       </div>
@@ -179,208 +306,335 @@ const Graphs = () => {
   );
 };
 
-// AppointmentsRedesign Component
+/* -------------------- AppointmentsRedesign Component -------------------- */
+
 const AppointmentsRedesign = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Pagination for Appointments Activity (5 items per page)
+  const ACTIVITY_PAGE_SIZE = 5;
+  const [activityPage, setActivityPage] = useState(1);
+
+  // Pagination for Today's Next Appointments (4 items per page)
+  const NEXT_APPOINTMENTS_PAGE_SIZE = 4;
+  const [nextAppointmentsPage, setNextAppointmentsPage] = useState(1);
 
   useEffect(() => {
     const fetchAppointments = async () => {
       setLoading(true);
       setError(null);
       try {
-        console.log('🔄 Attempting to fetch real appointments data...');
-        const dashboardRes = await api.get("/admin/dashboard");
-        console.log('✅ Real appointments data fetched successfully!', dashboardRes.data);
-        
-        const bookings = dashboardRes.data.data.recentActivities.recentBookings || [];
-        setAppointments(bookings.map(b => ({
-          date: new Date(b.appointmentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-          month: new Date(b.appointmentDate).toLocaleDateString('en-GB', { month: 'short' }),
-          time: new Date(b.appointmentDate).toLocaleString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-          status: b.status,
-          title: b.services?.map(s => s.service?.name).join(', '),
-          type: b.services?.map(s => s.type).join(', '),
-          payment: b.paymentMethod || '',
-          price: b.finalAmount ? `AED ${b.finalAmount}` : '',
-          location: b.location || ''
-        })));
+        const dashboardRes = await api.get("/bookings/admin/all");
+
+        const bookings = dashboardRes.data?.data?.bookings || [];
+        setAppointments(
+          bookings.map((b) => {
+            const dt = new Date(b.appointmentDate);
+            return {
+              originalDate: dt, // keep raw date for filtering
+              date: dt.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+              }),
+              month: dt.toLocaleDateString("en-GB", { month: "short" }),
+              time: dt.toLocaleString("en-GB", {
+                weekday: "short",
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              status: b.status,
+              title: b.services?.map((s) => s?.service?.name).join(", "),
+              type: b.services?.map((s) => s?.type).join(", "),
+              payment: b.paymentMethod || "",
+              price: b.finalAmount ? `AED ${b.finalAmount}` : "",
+              location: b.location || "",
+            };
+          })
+        );
         setLoading(false);
       } catch (err) {
-        console.log('❌ Appointments API failed, using mock data');
-        
-        // Check if it's mock data mode or actual error
-        if (err.message === 'MOCK_DATA_MODE' || localStorage.getItem('useMockData') === 'true') {
-          console.log('🔧 Mock data mode activated for appointments');
-        } else {
-          console.log('Error details:', err.response?.status, err.response?.data?.message || err.message);
-        }
-        // Use mock appointments data instead of showing error
-        setAppointments([
-          {
-            date: '17 Jan',
-            month: 'Jan',
-            time: 'Mon 17 Jan 2025 10:00',
-            status: 'confirmed',
-            title: 'Deep Tissue Massage, Facial Treatment',
-            type: 'Spa Treatment',
-            payment: 'Card Payment',
-            price: 'AED 450',
-            location: 'Room 1'
-          },
-          {
-            date: '17 Jan',
-            month: 'Jan', 
-            time: 'Mon 17 Jan 2025 14:30',
-            status: 'pending',
-            title: 'Swedish Massage',
-            type: 'Massage',
-            payment: 'Cash Payment',
-            price: 'AED 280',
-            location: 'Room 2'
-          },
-          {
-            date: '18 Jan',
-            month: 'Jan',
-            time: 'Tue 18 Jan 2025 09:00',
-            status: 'confirmed',
-            title: 'Hot Stone Therapy',
-            type: 'Spa Treatment',
-            payment: 'Card Payment',
-            price: 'AED 380',
-            location: 'Room 3'
-          }
-        ]);
+        console.log("❌ Appointments API failed");
+        console.log(
+          "Error details:",
+          err.response?.status,
+          err.response?.data?.message || err.message
+        );
+        setError("Could not load appointments. Please try again.");
+        setAppointments([]); // no mock
         setLoading(false);
       }
     };
     fetchAppointments();
   }, []);
 
+  // Reset pagination when appointments data changes
+  useEffect(() => {
+    setActivityPage(1);
+    setNextAppointmentsPage(1);
+  }, [appointments]);
+
+  // Calculate pagination for Appointments Activity
+  const totalActivityPages = Math.max(
+    1,
+    Math.ceil(appointments.length / ACTIVITY_PAGE_SIZE)
+  );
+  const activityStartIdx = (activityPage - 1) * ACTIVITY_PAGE_SIZE;
+  const visibleActivityAppointments = appointments.slice(
+    activityStartIdx,
+    activityStartIdx + ACTIVITY_PAGE_SIZE
+  );
+
+  const onPrevActivity = () => setActivityPage((p) => Math.max(1, p - 1));
+  const onNextActivity = () =>
+    setActivityPage((p) => Math.min(totalActivityPages, p + 1));
+
+  // Filter today's appointments using originalDate
+  const todaysAppointments = appointments.filter((app) => {
+    const today = new Date();
+    const d = app.originalDate;
     return (
-        <div className='appointments-layout'>
-            <div className="appointments-left-section">
-                <div className="activity-container">
-                    <h2>Appointments Activity</h2>
-
-                    <div className="activity-scroll-wrapper">
-                        <div className="activity-list" style={{ minHeight: 120, display: loading ? 'flex' : undefined, alignItems: loading ? 'center' : undefined, justifyContent: loading ? 'center' : undefined }}>
-                            {loading ? (
-                                <Spinner />
-                            ) : (
-                                appointments.map((app, index) => (
-                                <div key={index} className="activity-card">
-                                    <div className="activity-date">{app.date}</div>
-
-                                    <div className="activity-details">
-                                        <div className="activity-time-status">
-                                            <span className="activity-time">{app.time}</span>
-                                                <span className={`activity-status ${app.status?.toLowerCase()}`}>{app.status}</span>
-                                        </div>
-                                        <div className="activity-title">{app.title}</div>
-                                        <div className="activity-type">{app.type}</div>
-                                        {app.payment && <div className="activity-payment">{app.payment}</div>}
-                                    </div>
-                                    <div className="activity-price">{app.price}</div>
-                                </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="appointments-right-section">
-                <div>
-                        <h3 className="next-appointment-heading">Today's Next Appointments</h3>
-                    </div>
-                <div className="next-appointment-container">
-                    {/* You can enhance this to show the next real appointment from the data */}
-                    {appointments.length > 0 && !loading && (
-                    <div className='next-appointment-box'>
-                        <div className="next-date-box">
-                              <div className="next-date">{appointments[0].date}</div>
-                              <div className="next-month">{appointments[0].month}</div>
-                        </div>
-                        <div className="next-details">
-                            <div className="next-time-status">
-                                  <span className="next-time">{appointments[0].time}</span>
-                                  <span className="next-status">{appointments[0].status}</span>
-                            </div>
-                              <div className="next-title">{appointments[0].title}</div>
-                              <div className="next-info">{appointments[0].type}</div>
-                              <div className="next-location">{appointments[0].location || ''}</div>
-                        </div>
-                          <div className="next-price">{appointments[0].price}</div>
-                    </div>
-                    )}
-                </div>
-            </div>
-        </div>
+      d.getDate() === today.getDate() &&
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear()
     );
+  });
+
+  // Calculate pagination for Today's Next Appointments
+  const totalNextAppointmentsPages = Math.max(
+    1,
+    Math.ceil(todaysAppointments.length / NEXT_APPOINTMENTS_PAGE_SIZE)
+  );
+  const nextAppointmentsStartIdx =
+    (nextAppointmentsPage - 1) * NEXT_APPOINTMENTS_PAGE_SIZE;
+  const visibleNextAppointments = todaysAppointments.slice(
+    nextAppointmentsStartIdx,
+    nextAppointmentsStartIdx + NEXT_APPOINTMENTS_PAGE_SIZE
+  );
+
+  const onPrevNextAppointments = () =>
+    setNextAppointmentsPage((p) => Math.max(1, p - 1));
+  const onNextNextAppointments = () =>
+    setNextAppointmentsPage((p) =>
+      Math.min(totalNextAppointmentsPages, p + 1)
+    );
+
+  return (
+    <div className="appointments-layout">
+      <div className="appointments-left-section">
+        <div className="activity-container">
+          <h2>Appointments Activity</h2>
+
+          <div className="activity-scroll-wrapper">
+            <div
+              className="activity-list"
+              style={{
+                minHeight: 120,
+                display: loading ? "flex" : undefined,
+                alignItems: loading ? "center" : undefined,
+                justifyContent: loading ? "center" : undefined,
+              }}
+            >
+              {loading ? (
+                <Spinner />
+              ) : error ? (
+                <ErrorBanner message={error} />
+              ) : visibleActivityAppointments.length ? (
+                visibleActivityAppointments.map((app, index) => (
+                  <div key={index} className="activity-card">
+                    <div className="activity-date">{app.date}</div>
+
+                    <div className="activity-details">
+                      <div className="activity-time-status">
+                        <span className="activity-time">{app.time}</span>
+                        <span
+                          className={`activity-status ${app.status?.toLowerCase()}`}
+                        >
+                          {app.status}
+                        </span>
+                      </div>
+                      <div className="activity-title">{app.title}</div>
+                      <div className="activity-type">{app.type}</div>
+                      {app.payment && (
+                        <div className="activity-payment">{app.payment}</div>
+                      )}
+                    </div>
+                    <div className="activity-price">{app.price}</div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ opacity: 0.7 }}>No appointments found</div>
+              )}
+            </div>
+          </div>
+
+          {/* Pagination for Appointments Activity */}
+          {!loading && !error && appointments.length > ACTIVITY_PAGE_SIZE && (
+            <div className="stats-pagination">
+              <button
+                className="page-btn"
+                onClick={onPrevActivity}
+                disabled={activityPage === 1}
+              >
+                ‹
+              </button>
+              <span className="page-info">
+                {activityPage} of {totalActivityPages}
+              </span>
+              <button
+                className="page-btn"
+                onClick={onNextActivity}
+                disabled={activityPage === totalActivityPages}
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="appointments-right-section">
+        <div>
+          <h3 className="next-appointment-heading">Today's Next Appointments</h3>
+        </div>
+        <div className="next-appointment-container">
+          {loading ? (
+            <Spinner />
+          ) : error ? (
+            <ErrorBanner message={error} />
+          ) : visibleNextAppointments.length ? (
+            visibleNextAppointments.map((app, index) => (
+              <div key={index} className="next-appointment-box">
+                <div className="next-date-box">
+                  <div className="next-date">{app.date}</div>
+                  <div className="next-month">{app.month}</div>
+                </div>
+                <div className="next-details">
+                  <div className="next-time-status">
+                    <span className="next-time">{app.time}</span>
+                    <span className="next-status">{app.status}</span>
+                  </div>
+                  <div className="next-title">{app.title}</div>
+                  <div className="next-info">{app.type}</div>
+                  <div className="next-location">{app.location || ""}</div>
+                </div>
+                <div className="next-price">{app.price}</div>
+              </div>
+            ))
+          ) : (
+            <div style={{ opacity: 0.7 }}>No appointments for today</div>
+          )}
+
+          {/* Pagination for Today's Next Appointments */}
+          {!loading &&
+            !error &&
+            todaysAppointments.length > NEXT_APPOINTMENTS_PAGE_SIZE && (
+              <div className="stats-pagination">
+                <button
+                  className="page-btn"
+                  onClick={onPrevNextAppointments}
+                  disabled={nextAppointmentsPage === 1}
+                >
+                  ‹
+                </button>
+                <span className="page-info">
+                  {nextAppointmentsPage} of {totalNextAppointmentsPages}
+                </span>
+                <button
+                  className="page-btn"
+                  onClick={onNextNextAppointments}
+                  disabled={nextAppointmentsPage === totalNextAppointmentsPages}
+                >
+                  ›
+                </button>
+              </div>
+            )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-// TopStats Component
+/* -------------------- TopStats Component -------------------- */
+
 const TopStats = () => {
   const [topServices, setTopServices] = useState([]);
   const [topTeamMembers, setTopTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // -- Pagination (client-side, no API changes)
+  const PAGE_SIZE = 7;
+  const [servicePage, setServicePage] = useState(1);
+
+  // Reset to first page whenever data reloads
+  useEffect(() => {
+    setServicePage(1);
+  }, [topServices]);
+
+  // Compute visible slice
+  const totalServicePages = Math.max(
+    1,
+    Math.ceil(topServices.length / PAGE_SIZE)
+  );
+  const serviceStartIdx = (servicePage - 1) * PAGE_SIZE;
+  const visibleServices = topServices.slice(
+    serviceStartIdx,
+    serviceStartIdx + PAGE_SIZE
+  );
+
+  const onPrevService = () => setServicePage((p) => Math.max(1, p - 1));
+  const onNextService = () =>
+    setServicePage((p) => Math.min(totalServicePages, p + 1));
+
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
       setError(null);
       try {
-        console.log('🔄 Attempting to fetch real stats data...');
         const bookingRes = await api.get("/admin/analytics/bookings");
         const employeeRes = await api.get("/admin/analytics/employees");
-        console.log('✅ Real stats data fetched successfully!', {
-          bookings: bookingRes.data,
-          employees: employeeRes.data
-        });
-        
+
         // Prepare top services for TopStats
-        const popularServices = bookingRes.data.data.popularServices || [];
-        setTopServices(popularServices.map(s => ({
-          service: s.serviceName,
-          thisMonth: s.bookings,
-          lastMonth: s.revenue // You can adjust this if you want last month's bookings
-        })));
+        const popularServices = bookingRes.data?.data?.popularServices || [];
+        setTopServices(
+          popularServices.map((s) => ({
+            service: s.serviceName,
+            thisMonth: s.bookings,
+            lastMonth: s.revenue, // keep as provided (adjust if API offers last month separately)
+          }))
+        );
+
         // Prepare top team members for TopStats
-        const employeePerformance = employeeRes.data.data.employeePerformance || [];
-        setTopTeamMembers(employeePerformance.slice(0, 5).map(e => ({
-          name: e.employeeName,
-          thisMonth: `AED ${e.totalRevenue?.toLocaleString(undefined, {minimumFractionDigits:2})}`,
-          lastMonth: `AED ${e.avgBookingValue?.toLocaleString(undefined, {minimumFractionDigits:2})}`
-        })));
+        const employeePerformance =
+          employeeRes.data?.data?.employeePerformance || [];
+        setTopTeamMembers(
+          employeePerformance.slice(0, 5).map((e) => ({
+            name: e.employeeName,
+            thisMonth: `AED ${(
+              e.totalRevenue || 0
+            ).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            lastMonth: `AED ${(
+              e.avgBookingValue || 0
+            ).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          }))
+        );
+
         setLoading(false);
       } catch (err) {
-        console.log('❌ Stats API failed, using mock data');
-        
-        // Check if it's mock data mode or actual error
-        if (err.message === 'MOCK_DATA_MODE' || localStorage.getItem('useMockData') === 'true') {
-          console.log('🔧 Mock data mode activated for stats');
-        } else {
-          console.log('Error details:', err.response?.status, err.response?.data?.message || err.message);
-        }
-        // Use mock data instead of showing error
-        setTopServices([
-          { service: 'Deep Tissue Massage', thisMonth: 45, lastMonth: 38 },
-          { service: 'Facial Treatment', thisMonth: 32, lastMonth: 29 },
-          { service: 'Swedish Massage', thisMonth: 28, lastMonth: 31 },
-          { service: 'Hot Stone Therapy', thisMonth: 22, lastMonth: 18 },
-          { service: 'Aromatherapy', thisMonth: 19, lastMonth: 24 }
-        ]);
-        
-        setTopTeamMembers([
-          { name: 'Sarah Johnson', thisMonth: 'AED 8,450', lastMonth: 'AED 7,200' },
-          { name: 'Mike Chen', thisMonth: 'AED 7,890', lastMonth: 'AED 8,100' },
-          { name: 'Emma Wilson', thisMonth: 'AED 6,750', lastMonth: 'AED 6,300' },
-          { name: 'David Lee', thisMonth: 'AED 5,920', lastMonth: 'AED 5,450' },
-          { name: 'Lisa Park', thisMonth: 'AED 5,180', lastMonth: 'AED 4,800' }
-        ]);
+        console.log("❌ Stats API failed");
+        console.log(
+          "Error details:",
+          err.response?.status,
+          err.response?.data?.message || err.message
+        );
+        setError("Could not load top services/team stats.");
+        setTopServices([]);
+        setTopTeamMembers([]);
         setLoading(false);
       }
     };
@@ -390,49 +644,92 @@ const TopStats = () => {
   return (
     <div className="top-stats-container">
       <div className="stats-card">
-        <h2 className="stats-title">Top services</h2>
-        <div className="stats-table" style={{ minHeight: 120, display: loading ? 'flex' : undefined, alignItems: loading ? 'center' : undefined, justifyContent: loading ? 'center' : undefined }}>
-          {loading ? (
-            <Spinner />
-          ) : (
-            <>
-          <div className="stats-header stats-row">
+        <h3 className="stats-title">Top Services</h3>
+        <div className="stats-table">
+          <div className="stats-row stats-header">
             <div className="stats-cell">Service</div>
-            <div className="stats-cell">This month</div>
-            <div className="stats-cell">Last month</div>
+            <div className="stats-cell">This Month</div>
+            <div className="stats-cell">Last Month</div>
           </div>
-          {topServices.map((item, index) => (
-            <div className="stats-row" key={index}>
-              <div className="stats-cell">{item.service}</div>
-              <div className="stats-cell">{item.thisMonth}</div>
-              <div className="stats-cell">{item.lastMonth}</div>
+          {loading ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: "100px",
+              }}
+            >
+              <Spinner />
             </div>
-          ))}
-            </>
+          ) : error ? (
+            <ErrorBanner message={error} />
+          ) : visibleServices.length ? (
+            visibleServices.map((service, index) => (
+              <div key={index} className="stats-row">
+                <div className="stats-cell">{service.service}</div>
+                <div className="stats-cell">{service.thisMonth}</div>
+                <div className="stats-cell">{service.lastMonth}</div>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: 12, opacity: 0.7 }}>No services data</div>
           )}
         </div>
+        {!loading && !error && topServices.length > PAGE_SIZE && (
+          <div className="stats-pagination">
+            <button
+              className="page-btn"
+              onClick={onPrevService}
+              disabled={servicePage === 1}
+            >
+              ‹
+            </button>
+            <span className="page-info">
+              {servicePage} of {totalServicePages}
+            </span>
+            <button
+              className="page-btn"
+              onClick={onNextService}
+              disabled={servicePage === totalServicePages}
+            >
+              ›
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="stats-card">
-        <h2 className="stats-title">Top team member</h2>
-        <div className="stats-table" style={{ minHeight: 120, display: loading ? 'flex' : undefined, alignItems: loading ? 'center' : undefined, justifyContent: loading ? 'center' : undefined }}>
-          {loading ? (
-            <Spinner />
-          ) : (
-            <>
-          <div className="stats-header stats-row">
-            <div className="stats-cell">Team member</div>
-            <div className="stats-cell">This month</div>
-            <div className="stats-cell">Last month</div>
+        <h3 className="stats-title">Top Team Members</h3>
+        <div className="stats-table">
+          <div className="stats-row stats-header">
+            <div className="stats-cell">Name</div>
+            <div className="stats-cell">This Month</div>
+            <div className="stats-cell">Last Month</div>
           </div>
-          {topTeamMembers.map((member, index) => (
-            <div className="stats-row" key={index}>
-              <div className="stats-cell">{member.name}</div>
-              <div className="stats-cell">{member.thisMonth}</div>
-              <div className="stats-cell">{member.lastMonth}</div>
+          {loading ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: "100px",
+              }}
+            >
+              <Spinner />
             </div>
-          ))}
-            </>
+          ) : error ? (
+            <ErrorBanner message={error} />
+          ) : topTeamMembers.length ? (
+            topTeamMembers.map((member, index) => (
+              <div key={index} className="stats-row">
+                <div className="stats-cell">{member.name}</div>
+                <div className="stats-cell">{member.thisMonth}</div>
+                <div className="stats-cell">{member.lastMonth}</div>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: 12, opacity: 0.7 }}>No team data</div>
           )}
         </div>
       </div>
@@ -440,68 +737,11 @@ const TopStats = () => {
   );
 };
 
-// Main App Component
+/* -------------------- Main DashboardPage -------------------- */
+
 const DashboardPage = () => {
-  const handleResetMockMode = () => {
-    resetMockDataMode();
-    window.location.reload();
-  };
-
-  const handleForceRefresh = async () => {
-    try {
-      console.log('🔄 Forcing fresh token and data refresh...');
-      await forceRefreshToken();
-      window.location.reload();
-    } catch (error) {
-      console.error('❌ Force refresh failed:', error);
-    }
-  };
-
-  const isUsingMockData = localStorage.getItem('useMockData') === 'true';
-  const hasToken = localStorage.getItem('token');
-
   return (
     <div>
-      {(isUsingMockData || !hasToken) && (
-        <div style={{
-          background: '#ff4444',
-          color: 'white',
-          padding: '10px',
-          textAlign: 'center',
-          marginBottom: '20px',
-          borderRadius: '5px'
-        }}>
-          {isUsingMockData ? '🔧 Mock Data Mode Active - Using fake data instead of real backend data' : '⚠️ No valid token found'}
-          <button 
-            onClick={handleResetMockMode}
-            style={{
-              marginLeft: '10px',
-              padding: '5px 10px',
-              backgroundColor: 'white',
-              color: '#ff4444',
-              border: 'none',
-              borderRadius: '3px',
-              cursor: 'pointer'
-            }}
-          >
-            Reset & Use Real Data
-          </button>
-          <button 
-            onClick={handleForceRefresh}
-            style={{
-              marginLeft: '10px',
-              padding: '5px 10px',
-              backgroundColor: 'white',
-              color: '#ff4444',
-              border: 'none',
-              borderRadius: '3px',
-              cursor: 'pointer'
-            }}
-          >
-            Force Fresh Login
-          </button>
-        </div>
-      )}
       <Graphs />
       <AppointmentsRedesign />
       <TopStats />
@@ -510,27 +750,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-
-/* Spinner CSS */
-// Add this to HomePage.css for production, but for now, include here for demo:
-const spinnerStyle = document.createElement('style');
-spinnerStyle.innerHTML = `
-.spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 120px;
-}
-.spinner {
-  border: 6px solid #f3f3f3;
-  border-top: 6px solid #5B2EFF;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}`;
-document.head.appendChild(spinnerStyle);
