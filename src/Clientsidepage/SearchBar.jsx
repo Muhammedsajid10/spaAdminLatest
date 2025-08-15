@@ -81,7 +81,9 @@ const Searchbar = () => {
       rawClientEmail: booking.client?.email || "",
       rawBookingRef: booking.bookingNumber || booking._id,
       // Store the raw date object for sorting
-      appointmentDateTime: booking.appointmentDate ? new Date(booking.appointmentDate) : new Date(0),
+      appointmentDateTime: booking.appointmentDate
+        ? new Date(booking.appointmentDate)
+        : new Date(0),
     };
   };
 
@@ -99,12 +101,16 @@ const Searchbar = () => {
       setAllAppointments(mappedAppointments);
       // Fixed sort for initial display: Most recent upcoming first
       setFilteredAppointments(
-        [...mappedAppointments].sort((a, b) => b.appointmentDateTime - a.appointmentDateTime).slice(0, 5)
+        [...mappedAppointments]
+          .sort((a, b) => b.appointmentDateTime - a.appointmentDateTime)
+          .slice(0, 5)
       );
     } catch (err) {
       console.error("Failed to load appointments:", err);
       setError(
-        err.response?.data?.message || err.message || "Failed to load appointments"
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load appointments"
       );
     }
   }, []); // Removed appointmentSortOrder from dependencies
@@ -120,18 +126,27 @@ const Searchbar = () => {
         name: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
         phone: client.phone || "-",
         email: client.email || "-",
-        initial: (client.firstName ? client.firstName[0] : (client.lastName ? client.lastName[0] : '?')).toUpperCase(),
+        initial: (client.firstName
+          ? client.firstName[0]
+          : client.lastName
+          ? client.lastName[0]
+          : "?"
+        ).toUpperCase(),
         color: getRandomColor(),
         createdAt: client.createdAt ? new Date(client.createdAt) : new Date(0), // Store raw date for sorting
       }));
       setAllClients(transformedClients);
       // Fixed sort for initial display: Most recent added clients first
       setFilteredClients(
-        [...transformedClients].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5)
+        [...transformedClients]
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .slice(0, 5)
       );
     } catch (err) {
       console.error("Failed to load clients:", err);
-      setError(err.response?.data?.message || err.message || "Failed to load clients");
+      setError(
+        err.response?.data?.message || err.message || "Failed to load clients"
+      );
     }
   }, []); // Removed clientSortOrder from dependencies
 
@@ -164,7 +179,9 @@ const Searchbar = () => {
       })
       .sort((a, b) => b.appointmentDateTime - a.appointmentDateTime); // Fixed: Current to old
 
-    setFilteredAppointments(searchTerm ? appointments : appointments.slice(0, 5)); // Apply slice only if no search term
+    setFilteredAppointments(
+      searchTerm ? appointments : appointments.slice(0, 5)
+    ); // Apply slice only if no search term
 
     // Filter and Sort Clients (recent to old)
     const clients = allClients
@@ -190,8 +207,8 @@ const Searchbar = () => {
   if (loading) {
     return (
       <div className="search-page loading-state">
-        <div className="loading-spinner"></div>
-        <p className="search-subtext">Fetching the latest data...</p>
+        <div className="minimal-spinner"></div>
+        <span className="loading-text">Loading...</span>
       </div>
     );
   }
@@ -201,7 +218,9 @@ const Searchbar = () => {
       <div className="search-page error-state">
         <h2 className="error-title">Oops! Something went wrong.</h2>
         <p className="error-message">Error: {error}</p>
-        <p className="error-tip">Please check your internet connection or try refreshing the page.</p>
+        <p className="error-tip">
+          Please check your internet connection or try refreshing the page.
+        </p>
       </div>
     );
   }
@@ -216,7 +235,8 @@ const Searchbar = () => {
         onChange={handleSearchChange}
       />
       <p className="search-subtext">
-        Search by client name, mobile, email, service, booking reference or appointment details
+        Search by client name, mobile, email, service, booking reference or
+        appointment details
       </p>
 
       <div className="content">
@@ -230,7 +250,9 @@ const Searchbar = () => {
               <div className="appointment-card" key={appt.id}>
                 <div className="date">{appt.date}</div>
                 <div className="info">
-                  <div className="time-status-wrapper"> {/* HTML change for time-status-wrapper */}
+                  <div className="time-status-wrapper">
+                    {" "}
+                    {/* HTML change for time-status-wrapper */}
                     <span className="time">{appt.time}</span>
                     <span className="status">{appt.status}</span>
                   </div>
@@ -257,7 +279,10 @@ const Searchbar = () => {
           {filteredClients.length > 0 ? (
             filteredClients.map((client) => (
               <div className="client-card" key={client.id}>
-                <div className="client-avatar" style={{ backgroundColor: client.color }}>
+                <div
+                  className="client-avatar"
+                  style={{ backgroundColor: client.color }}
+                >
                   {client.initial}
                 </div>
                 <div>
