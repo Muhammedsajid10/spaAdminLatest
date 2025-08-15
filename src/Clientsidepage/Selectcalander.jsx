@@ -65,25 +65,25 @@ const hasShiftOnDate = (employee, date) => {
   // console.log('=== SHIFT CHECK DEBUG ===');
   // console.log('Employee:', employee?.name || 'Unknown');
   // console.log('Date:', date?.toDateString());
-  
+
   if (!employee?.workSchedule) {
     // console.log('❌ No workSchedule found');
     return false;
   }
-  
+
   const dayName = getDayName(date);
   const schedule = employee.workSchedule[dayName];
   // console.log('Day name:', dayName);
   // console.log('Schedule for day:', schedule);
-  
+
   if (!schedule) {
     // console.log('❌ No schedule for this day');
     return false;
   }
-  
+
   // Check different possible schedule formats
   let hasShift = false;
-  
+
   // Format 1: { isWorking: true/false }
   if (typeof schedule.isWorking === 'boolean') {
     hasShift = schedule.isWorking;
@@ -104,10 +104,10 @@ const hasShiftOnDate = (employee, date) => {
     hasShift = schedule.shiftsData.some(shift => shift.startTime && shift.endTime);
     // console.log('✅ Found shiftsData:', schedule.shiftsData.length, 'shifts');
   }
-  
+
   // console.log('Final hasShift result:', hasShift);
   // console.log('========================');
-  
+
   return hasShift;
 };
 
@@ -116,22 +116,22 @@ const getEmployeeShiftHours = (employee, date) => {
   // console.log('=== GETTING SHIFT HOURS ===');
   // console.log('Employee:', employee?.name);
   // console.log('Date:', date?.toDateString());
-  
+
   if (!employee?.workSchedule) {
     // console.log('❌ No workSchedule');
     return [];
   }
-  
+
   const dayName = getDayName(date);
   const schedule = employee.workSchedule[dayName];
-  
+
   if (!schedule) {
     // console.log('❌ No schedule for', dayName);
     return [];
   }
-  
+
   let shifts = [];
-  
+
   // Handle multiple shift formats
   if (Array.isArray(schedule.shiftsData) && schedule.shiftsData.length > 0) {
     shifts = schedule.shiftsData
@@ -165,10 +165,10 @@ const getEmployeeShiftHours = (employee, date) => {
     }];
     // console.log('✅ Using single shift:', shifts);
   }
-  
+
   // console.log('Final shifts:', shifts);
   // console.log('===========================');
-  
+
   return shifts;
 };
 
@@ -178,54 +178,54 @@ const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDuration = 30
   // console.log('Employee:', employee?.name);
   // console.log('Service duration:', serviceDuration, 'minutes');
   // console.log('Interval:', intervalMinutes, 'minutes');
-  
+
   const shifts = getEmployeeShiftHours(employee, date);
-  
+
   if (shifts.length === 0) {
     // console.log('❌ No shifts found, returning empty slots');
     return [];
   }
-  
+
   const toMinutes = (timeStr) => {
     const [h, m] = timeStr.split(':').map(Number);
     return h * 60 + (m || 0);
   };
-  
+
   const minutesToLabel = (mins) => {
     mins = mins % (24 * 60);
     const h = Math.floor(mins / 60).toString().padStart(2, '0');
     const m = (mins % 60).toString().padStart(2, '0');
     return `${h}:${m}`;
   };
-  
+
   const toISOOnDate = (timeLabel) => {
     const [h, m] = timeLabel.split(':').map(Number);
     const d = new Date(date);
     d.setHours(h, m, 0, 0);
     return d.toISOString();
   };
-  
+
   const slots = [];
-  
+
   shifts.forEach(shift => {
     // console.log('Processing shift:', shift.startTime, '-', shift.endTime);
-    
+
     let startMinutes = toMinutes(shift.startTime);
     let endMinutes = toMinutes(shift.endTime);
-    
+
     // Handle overnight shifts
     if (endMinutes <= startMinutes) {
       endMinutes += 24 * 60;
     }
-    
+
     // console.log(`Shift in minutes: ${startMinutes} - ${endMinutes}`);
-    
+
     // Generate slots for this shift
     for (let slotStart = startMinutes; slotStart + serviceDuration <= endMinutes; slotStart += intervalMinutes) {
       const slotEnd = slotStart + serviceDuration;
       const startLabel = minutesToLabel(slotStart);
       const endLabel = minutesToLabel(slotEnd);
-      
+
       slots.push({
         startTime: toISOOnDate(startLabel),
         endTime: toISOOnDate(endLabel),
@@ -234,14 +234,14 @@ const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDuration = 30
       });
     }
   });
-  
+
   // console.log('Generated', slots.length, 'time slots from shifts');
   // console.log('Sample slots:', slots.slice(0, 3).map(s => ({
   //   start: new Date(s.startTime).toLocaleTimeString(),
   //   end: new Date(s.endTime).toLocaleTimeString()
   // })));
   // console.log('=====================================');
-  
+
   return slots;
 };
 
@@ -269,8 +269,8 @@ const MOCK_SERVICES_DATA = [
 ];
 
 const MOCK_CLIENTS_DATA = [
-    { _id: 'c1', firstName: 'Aswin', lastName: 'P', email: 'aswinp04@gmail.com', phone: '7736018588' },
-    { _id: 'c2', firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '123-456-7890' },
+  { _id: 'c1', firstName: 'Aswin', lastName: 'P', email: 'aswinp04@gmail.com', phone: '7736018588' },
+  { _id: 'c2', firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '123-456-7890' },
 ];
 
 const MOCK_PROFESSIONALS_DATA = [
@@ -279,17 +279,79 @@ const MOCK_PROFESSIONALS_DATA = [
 ];
 
 const MOCK_TIME_SLOTS_DATA = [
-    { time: '09:00', available: true },
-    { time: '09:30', available: true },
-    { time: '10:00', available: false },
-    { time: '10:30', available: true },
+  { time: '09:00', available: true },
+  { time: '09:30', available: true },
+  { time: '10:00', available: false },
+  { time: '10:30', available: true },
 ];
 
 const paymentMethods = [
-  { value: 'cash', label: 'Cash' }, 
+  { value: 'cash', label: 'Cash' },
   { value: 'card', label: 'Card' },
   { value: 'online', label: 'Online' }
 ];
+
+// --- ENHANCED: Utility to get valid time slots for a professional and service ---
+const getValidTimeSlotsForProfessional = (employee, date, serviceDuration, appointments) => {
+  const shifts = getEmployeeShiftHours(employee, date);
+  if (!shifts.length) return [];
+
+  const intervalMinutes = 10;
+  const validSlots = [];
+
+  shifts.forEach(shift => {
+    const startMinutes = parseInt(shift.startTime.split(':')[0]) * 60 + parseInt(shift.startTime.split(':')[1]);
+    const endMinutes = parseInt(shift.endTime.split(':')[0]) * 60 + parseInt(shift.endTime.split(':')[1]);
+    for (let slotStart = startMinutes; slotStart + serviceDuration <= endMinutes; slotStart += intervalMinutes) {
+      const hour = Math.floor(slotStart / 60).toString().padStart(2, '0');
+      const minute = (slotStart % 60).toString().padStart(2, '0');
+      const slotLabel = `${hour}:${minute}`;
+      const slotDate = new Date(date);
+      slotDate.setHours(hour, minute, 0, 0);
+      const slotKey = `${date.toISOString().split('T')[0]}_${slotLabel}`;
+
+      // Check for overlap with existing appointments
+      const employeeAppointments = appointments[employee.id] || {};
+      const overlaps = Object.entries(employeeAppointments).some(([appKey, app]) => {
+        if (!appKey.startsWith(date.toISOString().split('T')[0])) return false;
+        const [appHour, appMinute] = appKey.split('_')[1].split(':').map(Number);
+        const appStart = new Date(date);
+        appStart.setHours(appHour, appMinute, 0, 0);
+        const appEnd = new Date(appStart.getTime() + (app.duration || 30) * 60000);
+        const slotStartDate = slotDate;
+        const slotEndDate = new Date(slotStartDate.getTime() + serviceDuration * 60000);
+        return (slotStartDate < appEnd && slotEndDate > appStart);
+      });
+
+      if (!overlaps) {
+        validSlots.push({
+          startTime: slotDate.toISOString(),
+          endTime: new Date(slotDate.getTime() + serviceDuration * 60000).toISOString(),
+          label: slotLabel,
+          available: true
+        });
+      }
+    }
+  });
+
+  return validSlots;
+};
+
+// --- ENHANCED: Booking Modal Step 2 (Professional Selection) ---
+const getAvailableProfessionalsForService = (serviceId, date, employees, appointments, availableServices) => {
+  const service = availableServices.find(s => s._id === serviceId);
+  if (!service) return [];
+  return employees.filter(emp => {
+    if (!hasShiftOnDate(emp, date)) return false;
+    const validSlots = getValidTimeSlotsForProfessional(emp, date, service.duration, appointments);
+    return validSlots.length > 0;
+  });
+};
+
+// --- ENHANCED: Booking Modal Step 3 (Time Selection) ---
+const getAvailableTimeSlotsForProfessional = (employee, date, serviceDuration, appointments) => {
+  return getValidTimeSlotsForProfessional(employee, date, serviceDuration, appointments);
+};
 
 const SelectCalendar = () => {
   const [employees, setEmployees] = useState([]);
@@ -300,7 +362,7 @@ const SelectCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('Day');
   const [selectedStaff, setSelectedStaff] = useState('All');
-  
+
   // Enhanced Booking Flow States
   const [availableServices, setAvailableServices] = useState([]);
   const [bookingStep, setBookingStep] = useState(1);
@@ -308,7 +370,7 @@ const SelectCalendar = () => {
   const [showUnavailablePopup, setShowUnavailablePopup] = useState(false);
   const [unavailableMessage, setUnavailableMessage] = useState('');
   const [isNewAppointment, setIsNewAppointment] = useState(false);
-  
+  // const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
   // Client Search States
   const [existingClients, setExistingClients] = useState([]);
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -316,7 +378,7 @@ const SelectCalendar = () => {
   const [selectedExistingClient, setSelectedExistingClient] = useState(null);
   const [showClientSearch, setShowClientSearch] = useState(false);
   const [isAddingNewClient, setIsAddingNewClient] = useState(false);
-  
+
   // Booking Selection States
   const [availableProfessionals, setAvailableProfessionals] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -324,14 +386,14 @@ const SelectCalendar = () => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [bookingDefaults, setBookingDefaults] = useState(null);
-  
+
   // Form States
   const [clientInfo, setClientInfo] = useState({ name: '', email: '', phone: '' });
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
-  
+
   // Month View More Appointments States
   const [showMoreAppointments, setShowMoreAppointments] = useState(false);
   const [selectedDayAppointments, setSelectedDayAppointments] = useState([]);
@@ -361,12 +423,60 @@ const SelectCalendar = () => {
   const [bookingStatusError, setBookingStatusError] = useState(null);
 
   // --- HELPER FUNCTIONS ---
+  // const handleTimeSlotClick = (employeeId, slotTime, day) => {
+  //   const dayKey = (day || currentDate).toISOString().split('T')[0];
+  //   const slotKey = `${dayKey}_${slotTime}`;
+  //   const existingAppointment = appointments[employeeId]?.[slotKey];
+
+  //   if (existingAppointment) {
+  //     // Show booking status modal for existing appointment
+  //     const employee = employees.find(emp => emp.id === employeeId);
+  //     const appointmentDetails = {
+  //       ...existingAppointment,
+  //       employeeId,
+  //       employeeName: employee?.name,
+  //       slotTime,
+  //       date: dayKey,
+  //       slotKey
+  //     };
+  //     setSelectedBookingForStatus(appointmentDetails);
+  //     setShowBookingStatusModal(true);
+  //     return;
+  //   }
+
+  //   // Continue with new booking flow for empty slots
+  //   const employee = employees.find(emp => emp.id === employeeId);
+
+  //   // Check if employee has a shift on this day
+  //   if (!hasShiftOnDate(employee, day || currentDate)) {
+  //     setUnavailableMessage(`${employee?.name || 'Employee'} has no shift scheduled on this day`);
+  //     setShowUnavailablePopup(true);
+  //     return;
+  //   }
+
+  //   const unavailableReason = isTimeSlotUnavailable(employeeId, slotTime);
+  //   if (unavailableReason && unavailableReason !== "No shift scheduled") {
+  //     setUnavailableMessage(`This time slot is unavailable: ${unavailableReason}`);
+  //     setShowUnavailablePopup(true);
+  //     return;
+  //   }
+
+  //   // Store the clicked employee and time slot as defaults for pre-selection
+  //   const staff = employees.find(emp => emp.id === employeeId);
+  //   setBookingDefaults({
+  //     professional: { _id: staff.id, user: { firstName: staff.name.split(' ')[0], lastName: staff.name.split(' ')[1] || '' } },
+  //     time: slotTime,
+  //     staffId: staff.id
+  //   });
+  //   setIsNewAppointment(true);
+  //   setShowAddBookingModal(true);
+  // };
   const handleTimeSlotClick = (employeeId, slotTime, day) => {
-    // Check if this time slot has an existing appointment
+    // ... (existing logic for checking existing appointments and unavailable periods)
     const dayKey = (day || currentDate).toISOString().split('T')[0];
     const slotKey = `${dayKey}_${slotTime}`;
     const existingAppointment = appointments[employeeId]?.[slotKey];
-    
+   console.log('this is the employee id ',employeeId,slotTime)
     if (existingAppointment) {
       // Show booking status modal for existing appointment
       const employee = employees.find(emp => emp.id === employeeId);
@@ -382,46 +492,91 @@ const SelectCalendar = () => {
       setShowBookingStatusModal(true);
       return;
     }
-    
+
     // Continue with new booking flow for empty slots
     const employee = employees.find(emp => emp.id === employeeId);
-    
+
     // Check if employee has a shift on this day
     if (!hasShiftOnDate(employee, day || currentDate)) {
       setUnavailableMessage(`${employee?.name || 'Employee'} has no shift scheduled on this day`);
       setShowUnavailablePopup(true);
       return;
     }
-    
+
     const unavailableReason = isTimeSlotUnavailable(employeeId, slotTime);
     if (unavailableReason && unavailableReason !== "No shift scheduled") {
       setUnavailableMessage(`This time slot is unavailable: ${unavailableReason}`);
       setShowUnavailablePopup(true);
-    } else if (unavailableReason !== "No shift scheduled") {
-      // Store the clicked employee and time slot as defaults for pre-selection
-      const staff = employees.find(emp => emp.id === employeeId);
-      const [hour, minute] = slotTime.split(':').map(Number);
-      const startTime = new Date(currentDate);
-      startTime.setHours(hour, minute, 0, 0);
-      const endTime = new Date(startTime.getTime() + 30 * 60000); // Default 30 minutes
-      
-      const timeSlot = {
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        available: true
-      };
-
-      setBookingDefaults({
-        professional: { _id: staff.id, user: { firstName: staff.name.split(' ')[0], lastName: staff.name.split(' ')[1] || '' } },
-        timeSlot,
-        staffId: staff.id,
-        time: slotTime
-      });
-      
-      setIsNewAppointment(true); // Now behaves like "Add" button - full booking flow
-      setShowAddBookingModal(true);
+      return;
     }
+    // Store the clicked employee and time slot as defaults for pre-selection
+    const staff = employees.find(emp => emp.id === employeeId);
+    if (!staff) {
+      console.error('Employee not found in state for ID:', employeeId);
+      return;
+    }
+    setBookingDefaults({
+      professional: staff,
+      time: slotTime,
+      date: day || currentDate
+    });
+
+    setIsNewAppointment(true);
+    setShowAddBookingModal(true);
   };
+
+  // ... (inside SelectCalendar component)
+
+  const handleServiceSelect = (service) => {
+  setSelectedService(service);
+  setBookingStep(2);
+  setBookingError(null);
+
+  // Case 1: User clicked a time slot directly
+  if (bookingDefaults?.professional) {
+    const selectedProfessional = bookingDefaults.professional;
+    console.log("selected professional ", selectedProfessional);
+
+    setSelectedProfessional(selectedProfessional);
+
+    const employeeWithSchedule = employees.find(e => e.id === selectedProfessional.id);
+    if (employeeWithSchedule) {
+      // Correctly generate and filter time slots for the selected professional and service
+      const allPossibleSlots = generateTimeSlotsFromEmployeeShift(employeeWithSchedule, bookingDefaults.date, service.duration, 10);
+      const filteredSlots = filterOutBookedTimeSlots(allPossibleSlots, selectedProfessional.id, bookingDefaults.date);
+      setAvailableTimeSlots(filteredSlots);
+
+      // We have the professional and the time slot already selected from the click.
+      // We can skip directly to the client info step.
+      const [hour, minute] = bookingDefaults.time.split(':').map(Number);
+      const originalSlot = filteredSlots.find(slot => {
+        const d = new Date(slot.startTime);
+        return d.getHours() === hour && d.getMinutes() === minute;
+      });
+
+      if (originalSlot) {
+        setSelectedTimeSlot(originalSlot);
+        setBookingStep(4); // Skip to client info
+      } else {
+        setBookingError(`The selected service duration (${service.duration} mins) does not fit in the original time slot. Please choose a different time.`);
+        setBookingStep(3); // Stay on time selection, but with a warning.
+      }
+    } else {
+      setBookingError("Professional data is missing. Please try again.");
+    }
+    return;
+  }
+  
+  // Case 2: User clicked "Add Appointment" from the header
+  const professionals = getAvailableProfessionalsForService(
+    service._id,
+    currentDate,
+    employees,
+    appointments,
+    availableServices
+  );
+  setAvailableProfessionals(professionals);
+};
 
   const closeBookingModal = () => {
     setShowAddBookingModal(false);
@@ -479,7 +634,7 @@ const SelectCalendar = () => {
 
       // Close modal and refresh calendar
       closeBookingStatusModal();
-  setTimeout(() => { fetchCalendarData(); }, 300);
+      setTimeout(() => { fetchCalendarData(); }, 300);
     } catch (err) {
       console.error('Status update error:', err);
       setBookingStatusError(err.message);
@@ -596,7 +751,7 @@ const SelectCalendar = () => {
         }
       }
     }
-    
+
     return false;
   };
 
@@ -608,9 +763,9 @@ const SelectCalendar = () => {
       // console.log('Fetching services from:', `${Base_url}/bookings/services`);
       const res = await fetch(`${Base_url}/bookings/services`);
       const data = await res.json();
-      
+
       // console.log('Services API response:', data);
-      
+
       if (res.ok && data.success) {
         setAvailableServices(data.data?.services || []);
       } else {
@@ -636,24 +791,24 @@ const SelectCalendar = () => {
     //   position: prof.position
     // });
     // console.log('WorkSchedule:', prof.workSchedule);
-    
+
     const dayName = getDayName(date);
     // console.log('Day being checked:', dayName);
     // console.log('Schedule for this day:', prof.workSchedule?.[dayName]);
-    
+
     // Check what the hasShiftOnDate function actually returns
     const employeeForShiftCheck = { workSchedule: prof.workSchedule || {} };
     // console.log('Employee object for shift check:', employeeForShiftCheck);
-    
+
     const hasShift = hasShiftOnDate(employeeForShiftCheck, date);
     // console.log('Has shift result:', hasShift);
-    
+
     // Let's also check if the workSchedule has any data at all
     // console.log('WorkSchedule keys:', Object.keys(prof.workSchedule || {}));
     // console.log('WorkSchedule values:', Object.values(prof.workSchedule || {}));
-    
+
     // console.log('================================');
-    
+
     return hasShift;
   };
 
@@ -661,60 +816,60 @@ const SelectCalendar = () => {
     // console.log('=== FETCHING PROFESSIONALS ===');
     // console.log('Service ID:', serviceId);
     // console.log('Date:', date?.toDateString());
-    
+
     setBookingLoading(true);
     setBookingError(null);
-    
+
     try {
       const dateStr = date.toISOString().slice(0, 10);
-      const url = `${Base_url}/bookings/professionals?service=${serviceId}&date=${dateStr}`;
+      const url = `${EMPLOYEES_API_URL}`;
       // console.log('API URL:', url);
-      
+
       const res = await fetch(url);
       const data = await res.json();
-      
+
       // console.log('API Response:', data);
-      
+
       if (res.ok && data.success) {
-        const allProfessionals = data.data?.professionals || [];
+        const allProfessionals = data.data?.employees || [];
         // console.log('Total professionals from API:', allProfessionals.length);
-        
+
         // Filter professionals with shifts on this date
         const professionalsWithShifts = allProfessionals.filter(prof => {
           const isActive = prof.user?.isActive !== false;
-          
+
           // Create employee object for shift checking
           const employeeForShiftCheck = {
             name: `${prof.user?.firstName} ${prof.user?.lastName}`,
             workSchedule: prof.workSchedule || {}
           };
-          
+
           const hasShift = hasShiftOnDate(employeeForShiftCheck, date);
-          
+
           // console.log(`Professional ${prof.user?.firstName}: Active=${isActive}, HasShift=${hasShift}`);
-          
+
           return isActive && hasShift;
         });
-        
+
         // console.log('Professionals with shifts:', professionalsWithShifts.length);
-        
+
         if (professionalsWithShifts.length === 0) {
-          setBookingError(`No professionals have shifts scheduled for ${date.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric' 
+          setBookingError(`No professionals have shifts scheduled for ${date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
           })}. Please select a different date.`);
         }
-        
+
         setAvailableProfessionals(professionalsWithShifts);
-        
+
       } else {
         throw new Error(data.message || 'Failed to fetch professionals');
       }
     } catch (err) {
       console.error('Error fetching professionals:', err);
       setBookingError('Failed to fetch professionals: ' + err.message);
-      
+
       // Fallback to local employees with shifts
       const localProfessionalsWithShifts = employees
         .filter(emp => emp.isActive !== false && hasShiftOnDate(emp, date))
@@ -728,7 +883,7 @@ const SelectCalendar = () => {
           position: emp.position,
           workSchedule: emp.workSchedule || {}
         }));
-      
+
       // console.log('Fallback professionals with shifts:', localProfessionalsWithShifts.length);
       setAvailableProfessionals(localProfessionalsWithShifts);
     } finally {
@@ -737,51 +892,53 @@ const SelectCalendar = () => {
     }
   }, [employees]);
 
+
+
   const filterOutBookedTimeSlots = (timeSlots, employeeId, date) => {
     const dayKey = date.toISOString().split('T')[0];
     const employeeAppointments = appointments[employeeId] || {};
-    
+
     // console.log(`🔍 Filtering time slots for employee ${employeeId} on ${dayKey}`);
     // console.log('📅 Employee appointments:', employeeAppointments);
-    
+
     return timeSlots.filter(slot => {
       const slotStartTime = new Date(slot.startTime);
       const slotEndTime = new Date(slot.endTime);
-      
+
       // Check if this time slot conflicts with any existing appointment
       const hasConflict = Object.entries(employeeAppointments).some(([slotKey, appointment]) => {
         // Only check appointments for the same date
         if (!slotKey.startsWith(dayKey)) return false;
-        
+
         // Extract time from slot key (YYYY-MM-DD_HH:MM)
         const appointmentTimeStr = slotKey.split('_')[1];
         if (!appointmentTimeStr) return false;
-        
+
         // Create appointment time range
         const [hours, minutes] = appointmentTimeStr.split(':').map(Number);
         const appointmentStart = new Date(date);
         appointmentStart.setHours(hours, minutes, 0, 0);
-        
+
         // Use appointment duration to calculate end time
         const appointmentDuration = appointment.duration || 30; // minutes
         const appointmentEnd = new Date(appointmentStart.getTime() + (appointmentDuration * 60000));
-        
+
         // Check for time conflict
         const conflict = (slotStartTime >= appointmentStart && slotStartTime < appointmentEnd) ||
-                        (slotEndTime > appointmentStart && slotEndTime <= appointmentEnd) ||
-                        (slotStartTime <= appointmentStart && slotEndTime >= appointmentEnd);
-        
+          (slotEndTime > appointmentStart && slotEndTime <= appointmentEnd) ||
+          (slotStartTime <= appointmentStart && slotEndTime >= appointmentEnd);
+
         if (conflict) {
           // console.log(`❌ Slot ${slotStartTime.toLocaleTimeString()} conflicts with appointment ${appointmentTimeStr} (${appointmentDuration}min)`);
         }
-        
+
         return conflict;
       });
-      
+
       if (!hasConflict) {
         // console.log(`✅ Slot ${slotStartTime.toLocaleTimeString()} is available`);
       }
-      
+
       return !hasConflict && slot.available !== false;
     });
   };
@@ -791,17 +948,17 @@ const SelectCalendar = () => {
     console.log('Employee ID:', employeeId);
     console.log('Service ID:', serviceId);
     console.log('Date:', date?.toDateString());
-    
+
     setBookingLoading(true);
     setBookingError(null);
-    
+
     try {
       // Find the employee to check their shift
       const employee = employees.find(e => e.id === employeeId);
       if (!employee) {
         throw new Error('Employee not found');
       }
-      
+
       // Check if employee has shift on this date
       const hasShift = hasShiftOnDate(employee, date);
       if (!hasShift) {
@@ -810,7 +967,7 @@ const SelectCalendar = () => {
         setBookingLoading(false);
         return;
       }
-      
+
       // Get employee's actual shift hours
       const shiftHours = getEmployeeShiftHours(employee, date);
       if (shiftHours.length === 0) {
@@ -819,33 +976,33 @@ const SelectCalendar = () => {
         setBookingLoading(false);
         return;
       }
-      
+
       const service = availableServices.find(s => s._id === serviceId);
       const serviceDuration = service?.duration || 30;
-      
+
       console.log('📋 Employee shift hours:', shiftHours);
       console.log('⏱️ Service duration:', serviceDuration);
-      
+
       // Generate slots ONLY from employee's actual shift hours
       const shiftBasedSlots = generateTimeSlotsFromEmployeeShift(employee, date, serviceDuration, 10);
-      
+
       if (shiftBasedSlots.length === 0) {
         setBookingError(`No time slots can be generated from ${employee.name}'s shift hours`);
         setAvailableTimeSlots([]);
         setBookingLoading(false);
         return;
       }
-      
+
       console.log('🔧 Generated shift-based slots:', shiftBasedSlots.length);
-      
+
       // Filter out already booked time slots
       const availableSlots = filterOutBookedTimeSlots(shiftBasedSlots, employeeId, date);
-      
+
       console.log('✅ Available slots after filtering:', availableSlots.length);
-      console.log('📅 Sample available times:', availableSlots.slice(0, 5).map(slot => 
+      console.log('📅 Sample available times:', availableSlots.slice(0, 5).map(slot =>
         new Date(slot.startTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
       ));
-      
+
       if (availableSlots.length === 0) {
         setBookingError(`All time slots are already booked for ${employee.name} on ${date.toLocaleDateString()}. Please select a different date or professional.`);
         setAvailableTimeSlots([]);
@@ -853,7 +1010,7 @@ const SelectCalendar = () => {
         setAvailableTimeSlots(availableSlots);
         setBookingError(null);
       }
-      
+
     } catch (err) {
       console.error('Error in fetchBookingTimeSlots:', err);
       setBookingError(`Failed to fetch time slots: ${err.message}`);
@@ -872,7 +1029,7 @@ const SelectCalendar = () => {
         setExistingClients(MOCK_CLIENTS_DATA);
         return;
       }
-      
+
       // console.log('Fetching clients from:', `${Base_url}/admin/clients`);
       const res = await fetch(`${Base_url}/admin/clients`, {
         headers: {
@@ -880,9 +1037,9 @@ const SelectCalendar = () => {
         },
       });
       const data = await res.json();
-      
+
       // console.log('Clients API response:', data);
-      
+
       if (res.ok && data.success) {
         setExistingClients(data.data?.clients || []);
       } else {
@@ -900,16 +1057,16 @@ const SelectCalendar = () => {
       setClientSearchResults(existingClients.slice(0, 10));
       return;
     }
-    
+
     const filtered = existingClients.filter(client => {
       const fullName = `${client.firstName || ''} ${client.lastName || ''}`.toLowerCase();
       const email = (client.email || '').toLowerCase();
       const phone = (client.phone || '').toLowerCase();
       const searchTerm = query.toLowerCase();
-      
-      return fullName.includes(searchTerm) || 
-             email.includes(searchTerm) || 
-             phone.includes(searchTerm);
+
+      return fullName.includes(searchTerm) ||
+        email.includes(searchTerm) ||
+        phone.includes(searchTerm);
     });
     setClientSearchResults(filtered);
   }, [existingClients]);
@@ -953,36 +1110,36 @@ const SelectCalendar = () => {
     const viewportWidth = window.innerWidth;
     const scrollY = window.scrollY;
     const scrollX = window.scrollX;
-    
+
     // Calculate initial position
     let top = rect.bottom + scrollY + 8; // 8px gap below
     let left = rect.left + scrollX;
     let positionedAbove = false;
-    
+
     // Check if dropdown would overflow bottom of viewport
     if (rect.bottom + dropdownHeight > viewportHeight) {
       // Position above the element instead
       top = rect.top + scrollY - dropdownHeight - 8; // 8px gap above
       positionedAbove = true;
     }
-    
+
     // Check if dropdown would overflow right side of viewport
     if (rect.left + dropdownWidth > viewportWidth) {
       // Align to the right edge of the trigger element
       left = rect.right + scrollX - dropdownWidth;
     }
-    
+
     // Ensure dropdown doesn't go off the left edge
     if (left < scrollX + 16) { // 16px minimum margin
       left = scrollX + 16;
     }
-    
+
     // Ensure dropdown doesn't go off the top edge
     if (top < scrollY + 16) { // 16px minimum margin
       top = scrollY + 16;
       positionedAbove = false; // Reset if we had to move it down
     }
-    
+
     setDropdownPosition({ top, left });
     setDropdownPositionedAbove(positionedAbove);
     setSelectedDayAppointments(dayAppointments);
@@ -1008,7 +1165,7 @@ const SelectCalendar = () => {
     const scrollX = window.scrollX;
     let x = rect.left + scrollX + rect.width / 2; // center horizontally
     // We render with transform translate(-50%, -100%), so y should be the element top (adds 8px gap)
-    let y = rect.top + scrollY - 8; 
+    let y = rect.top + scrollY - 8;
     // Constrain horizontally so tooltip (after translating -50%) stays in viewport roughly
     const halfWidth = tooltipWidth / 2;
     const minX = scrollX + halfWidth + 8;
@@ -1048,7 +1205,7 @@ const SelectCalendar = () => {
     if (showMoreAppointments) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleEscapeKey);
-      
+
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
         document.removeEventListener('keydown', handleEscapeKey);
@@ -1066,7 +1223,7 @@ const SelectCalendar = () => {
 
     if (showAddBookingModal) {
       document.addEventListener('keydown', handleEscapeKey);
-      
+
       return () => {
         document.removeEventListener('keydown', handleEscapeKey);
       };
@@ -1077,18 +1234,18 @@ const SelectCalendar = () => {
     setBookingLoading(true);
     setBookingError(null);
     setBookingSuccess(null);
-    
+
     try {
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
         setBookingError('Authentication required. Please log in again.');
         setBookingLoading(false);
         return;
       }
-      
+
       let clientData;
-      
+
       if (selectedExistingClient) {
         clientData = {
           firstName: selectedExistingClient.firstName,
@@ -1112,6 +1269,7 @@ const SelectCalendar = () => {
           phone: clientInfo.phone.trim()
         };
       }
+      console.log('selected professional', selectedProfessional);
 
       // Validate required fields
       if (!selectedService || !selectedProfessional || !selectedTimeSlot) {
@@ -1119,7 +1277,7 @@ const SelectCalendar = () => {
         setBookingLoading(false);
         return;
       }
-
+      console.log("selected professional with id ",selectedProfessional.id)
       if (!clientData.email || !clientData.phone) {
         setBookingError('Client email and phone are required.');
         setBookingLoading(false);
@@ -1127,29 +1285,31 @@ const SelectCalendar = () => {
       }
 
       // Create the booking payload according to backend model
-      const bookingPayload = {
-        services: [
-          {
-            service: selectedService._id,
-            employee: selectedProfessional._id,
-            duration: selectedService.duration,
-            price: selectedService.price,
-            startTime: selectedTimeSlot.startTime,
-            endTime: selectedTimeSlot.endTime,
-          },
-        ],
-        appointmentDate: selectedTimeSlot.startTime,
-        totalDuration: selectedService.duration,
-        totalAmount: selectedService.price,
-        finalAmount: selectedService.price, // Add finalAmount as required by backend
-        paymentMethod: paymentMethod,
-        client: clientData,
-        notes: '', // Add notes field
-        bookingSource: 'admin' // Specify this is admin-created booking
-      };
+      // ...inside handleCreateBooking...
+      console.log('this si the employee id ',selectedProfessional.id,selectedService._)
+const bookingPayload = {
+  services: [
+    {
+      service: selectedService._id,
+      employee: selectedProfessional.id, // Always use backend _id
+      duration: selectedService.duration,
+      price: selectedService.price,
+      startTime: selectedTimeSlot.startTime,
+      endTime: selectedTimeSlot.endTime,
+    },
+  ],
+  appointmentDate: selectedTimeSlot.startTime,
+  totalDuration: selectedService.duration,
+  totalAmount: selectedService.price,
+  finalAmount: selectedService.price,
+  paymentMethod: paymentMethod,
+  client: clientData,
+  notes: '',
+  bookingSource: 'admin'
+};
 
       // console.log('Booking payload:', JSON.stringify(bookingPayload, null, 2));
-      
+
       const res = await fetch(`${Base_url}/bookings`, {
         method: 'POST',
         headers: {
@@ -1158,30 +1318,30 @@ const SelectCalendar = () => {
         },
         body: JSON.stringify(bookingPayload),
       });
-      
+
       const responseData = await res.json();
       // console.log('Booking creation response:', responseData);
 
       if (!res.ok) {
         throw new Error(responseData.message || `HTTP ${res.status}: ${res.statusText}`);
       }
-      
+
       if (!responseData.success) {
         throw new Error(responseData.message || 'Booking creation failed');
       }
-      
-      const clientName = selectedExistingClient 
+
+      const clientName = selectedExistingClient
         ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
         : clientData.firstName;
-      
+
       setBookingSuccess(`✨ Booking created successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
-      
+
       // Refresh calendar data after successful booking
       setTimeout(() => {
         closeBookingModal();
         fetchCalendarData(); // Refresh the calendar
       }, 2500);
-      
+
     } catch (err) {
       console.error('Booking creation error:', err);
       setBookingError(`Failed to create booking: ${err.message}`);
@@ -1231,7 +1391,7 @@ const SelectCalendar = () => {
         startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
         endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       }
-      
+
       const startDateParam = startDate.toISOString().split('T')[0];
       const endDateParam = endDate.toISOString().split('T')[0];
 
@@ -1252,89 +1412,60 @@ const SelectCalendar = () => {
       if (bookingsResponse.data.success && employeesResponse.data.success) {
         const allBookings = bookingsResponse.data.data.bookings || [];
         const employees = employeesResponse.data.data.employees || [];
-        
+
         if (servicesResponse.data.success) {
           setAvailableServices(servicesResponse.data.data.services || []);
         }
 
         // Filter out inactive employees from calendar display and booking interfaces
         const activeEmployees = employees.filter(emp => emp.user?.isActive !== false);
-        
+
         const transformedEmployees = activeEmployees.map(emp => ({
-          id: emp._id || emp.id,
-          name: `${emp.user?.firstName || emp.firstName || ''} ${emp.user?.lastName || emp.lastName || ''}`.trim(),
-          position: emp.position || emp.department || 'Staff',
-          avatar: emp.user?.avatar || emp.avatar,
-          avatarColor: getRandomColor(),
-          unavailablePeriods: emp.unavailablePeriods || [],
-          isActive: emp.user?.isActive !== false, // Ensure we track active status
-          workSchedule: emp.workSchedule || {} // Include work schedule for shift checking
-        }));
-
+  id: emp._id, // Always use backend _id
+  name: `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim(),
+  position: emp.position || emp.department || 'Staff',
+  avatar: emp.user?.avatar || emp.avatar,
+  avatarColor: getRandomColor(),
+  unavailablePeriods: emp.unavailablePeriods || [],
+  isActive: emp.user?.isActive !== false,
+  workSchedule: emp.workSchedule || {}
+}));
         const transformedAppointments = {};
-        allBookings.forEach(booking => {
-          booking.services?.forEach(service => {
-            const employeeId = service.employee?._id || service.employee;
-            if (employeeId) {
-              if (!transformedAppointments[employeeId]) {
-                transformedAppointments[employeeId] = {};
-              }
+        // ...inside fetchCalendarData...
+allBookings.forEach(booking => {
+  booking.services?.forEach(service => {
+    const employeeId = service.employee?._id || service.employee;
+    if (employeeId) {
+      if (!transformedAppointments[employeeId]) {
+        transformedAppointments[employeeId] = {};
+      }
+      const appointmentDate = new Date(booking.appointmentDate);
+      const startTime = service.startTime ? new Date(service.startTime) : appointmentDate;
+      const timeSlot = startTime.toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const slotKey = `${appointmentDate.toISOString().split('T')[0]}_${timeSlot}`;
+      transformedAppointments[employeeId][slotKey] = {
+        client: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
+        service: service.service?.name || service.name || 'Service',
+        duration: service.duration || 30,
+        color: getRandomAppointmentColor(),
+        date: appointmentDate.toISOString().split('T')[0],
+        bookingId: booking._id,
+        status: booking.status || 'confirmed',
+        isMainSlot: true
+      };
+    }
+  });
+});
 
-              const appointmentDate = new Date(booking.appointmentDate);
-              const startTime = service.startTime ? new Date(service.startTime) : appointmentDate;
-              const serviceDuration = service.service?.duration || service.duration || 30;
-              
-              const timeSlot = startTime.toLocaleTimeString('en-US', {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-              
-              const appointmentInfo = {
-                client: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
-                service: service.service?.name || 'Service',
-                duration: serviceDuration,
-                color: getRandomAppointmentColor(),
-                date: appointmentDate.toISOString().split('T')[0],
-                bookingId: booking._id,
-                status: booking.status || 'confirmed'
-              };
-
-              // Create time slots for the full duration of the service
-              const intervalMinutes = 10; // Time slot interval
-              const slotsToCreate = Math.ceil(serviceDuration / intervalMinutes);
-              
-              for (let i = 0; i < slotsToCreate; i++) {
-                const slotStartTime = new Date(startTime);
-                slotStartTime.setMinutes(startTime.getMinutes() + (i * intervalMinutes));
-                
-                const slotTimeString = slotStartTime.toLocaleTimeString('en-US', {
-                  hour12: false,
-                  hour: '2-digit',
-                  minute: '2-digit'
-                });
-                
-                const slotKey = `${appointmentDate.toISOString().split('T')[0]}_${slotTimeString}`;
-                
-                // Add appointment info to each slot for the duration
-                if (!transformedAppointments[employeeId][slotKey]) {
-                  transformedAppointments[employeeId][slotKey] = {
-                    ...appointmentInfo,
-                    isMainSlot: i === 0, // Mark the first slot as main slot
-                    slotIndex: i,
-                    totalSlots: slotsToCreate
-                  };
-                }
-              }
-            }
-          });
-        });
-        
         // console.log('Transformed data:', {
         //   employees: transformedEmployees.length,
         //   appointments: Object.keys(transformedAppointments).length
         // });
-        
+
         setEmployees(transformedEmployees);
         setTimeSlots(generateTimeSlots('00:00', '23:50', 10));
         setAppointments(transformedAppointments);
@@ -1343,20 +1474,26 @@ const SelectCalendar = () => {
         throw new Error('Failed to fetch calendar data');
       }
     } catch (err) {
-      console.error("Error fetching calendar data:", err);
-      setError(`Failed to load calendar data: ${err.message}`);
-      
-      // Use mock data for development/demo
-      setEmployees(MOCK_SUCCESS_DATA.employees);
-      setTimeSlots(generateTimeSlots('00:00', '23:50', 10));
-      setAppointments(MOCK_SUCCESS_DATA.appointments);
-      setAvailableServices(MOCK_SERVICES_DATA);
-      setExistingClients(MOCK_CLIENTS_DATA);
-    } finally {
-      setLoading(false);
-    }
+  console.error("Error fetching calendar data:", err);
+  setError(`Failed to load calendar data: ${err.message}`);
+  // Do NOT set mock data here!
+} finally {
+  setLoading(false);
+}
   };
-
+  // const handleServiceSelect = (service) => {
+  //   setSelectedService(service);
+  //   setBookingStep(2);
+  //   // Filter professionals locally using already-fetched employees and appointments
+  //   const professionals = getAvailableProfessionalsForService(
+  //     service._id,
+  //     currentDate,
+  //     employees,
+  //     appointments,
+  //     availableServices
+  //   );
+  //   setAvailableProfessionals(professionals);
+  // };
   useEffect(() => {
     fetchCalendarData();
   }, [currentDate, currentView]);
@@ -1382,7 +1519,7 @@ const SelectCalendar = () => {
       }
     }
   }, [bookingStep, bookingDefaults, availableProfessionals, selectedService, currentDate, fetchBookingTimeSlots]);
-  
+
   useEffect(() => {
     if (bookingStep === 3 && bookingDefaults?.time && availableTimeSlots.length > 0) {
       const [hour, minute] = bookingDefaults.time.split(':').map(Number);
@@ -1408,8 +1545,8 @@ const SelectCalendar = () => {
     setCurrentTime(now);
 
     if (now.toDateString() !== currentDate.toDateString() || currentView !== 'Day') {
-        setCurrentTimeLineTop(-100);
-        return;
+      setCurrentTimeLineTop(-100);
+      return;
     }
 
     const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
@@ -1474,7 +1611,7 @@ const SelectCalendar = () => {
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const firstDayIndex = startOfMonth.getDay();
     const emptyCellsBefore = Array.from({ length: (firstDayIndex === 0 ? 6 : firstDayIndex - 1) });
-    
+
     return (
       <div className="month-view-container">
         <div className="month-day-names">
@@ -1485,7 +1622,7 @@ const SelectCalendar = () => {
           {calendarDays.map(day => {
             const dayKey = day.toISOString().split('T')[0];
             const dayAppointments = [];
-            
+
             // Get appointments for this day from all employees
             displayEmployees.forEach(emp => {
               if (appointments[emp.id]) {
@@ -1505,7 +1642,7 @@ const SelectCalendar = () => {
                 });
               }
             });
-            
+
             return (
               <div key={dayKey} className="month-day-cell">
                 <div className="month-day-header">
@@ -1515,40 +1652,40 @@ const SelectCalendar = () => {
                   {dayAppointments.length > 0 ? (
                     <>
                       {dayAppointments.slice(0, 3).map((app, index) => (
-                        <div key={index} 
-                             className="month-appointment-entry" 
-                             style={{ backgroundColor: app.color }}
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               if (app.bookingId) {
-                                 // Show booking status for existing appointment
-                                 const appointmentDetails = {
-                                   ...app,
-                                   employeeId: app.employeeId,
-                                   employeeName: app.employeeName,
-                                   slotTime: app.time,
-                                   date: dayKey,
-                                   slotKey: `${dayKey}_${app.time}`
-                                 };
-                                 setSelectedBookingForStatus(appointmentDetails);
-                                 setShowBookingStatusModal(true);
-                               }
-                             }}
-                             onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                               client: app.client,
-                               service: app.service,
-                               time: app.time,
-                               professional: app.employeeName,
-                               status: app.status || 'Confirmed',
-                               notes: app.notes
-                             })}
-                             onMouseLeave={hideBookingTooltip}>
-                            <span className="appointment-client-name">{app.client}</span>
-                            <span className="appointment-service-name">{app.service}</span>
+                        <div key={index}
+                          className="month-appointment-entry"
+                          style={{ backgroundColor: app.color }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (app.bookingId) {
+                              // Show booking status for existing appointment
+                              const appointmentDetails = {
+                                ...app,
+                                employeeId: app.employeeId,
+                                employeeName: app.employeeName,
+                                slotTime: app.time,
+                                date: dayKey,
+                                slotKey: `${dayKey}_${app.time}`
+                              };
+                              setSelectedBookingForStatus(appointmentDetails);
+                              setShowBookingStatusModal(true);
+                            }
+                          }}
+                          onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                            client: app.client,
+                            service: app.service,
+                            time: app.time,
+                            professional: app.employeeName,
+                            status: app.status || 'Confirmed',
+                            notes: app.notes
+                          })}
+                          onMouseLeave={hideBookingTooltip}>
+                          <span className="appointment-client-name">{app.client}</span>
+                          <span className="appointment-service-name">{app.service}</span>
                         </div>
                       ))}
                       {dayAppointments.length > 3 && (
-                        <div 
+                        <div
                           className="month-more-appointments"
                           onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
                         >
@@ -1565,200 +1702,200 @@ const SelectCalendar = () => {
       </div>
     );
   };
-  
+
   const renderCalendarContent = () => {
     if (loading) {
       return (
         <div className="content-loading-overlay">
           <div className="loading-message">
-              <p>Loading calendar data...</p>
+            <p>Loading calendar data...</p>
           </div>
         </div>
       );
     }
     if (error) {
-        return (
-            <div className="content-error-message-overlay">
-                <div className="error-message">
-                    <p>{error}</p>
-                    <button onClick={fetchCalendarData} className="action-btn">
-                        Try Again
-                    </button>
-                </div>
-            </div>
-        );
+      return (
+        <div className="content-error-message-overlay">
+          <div className="error-message">
+            <p>{error}</p>
+            <button onClick={fetchCalendarData} className="action-btn">
+              Try Again
+            </button>
+          </div>
+        </div>
+      );
     }
     if (employees.length === 0 && Object.keys(appointments).length === 0) {
-        return (
-            <div className="content-empty-state">
-                <div className="empty-state-content">
-                    <p>No employees or appointments scheduled.</p>
-                </div>
-            </div>
-        );
+      return (
+        <div className="content-empty-state">
+          <div className="empty-state-content">
+            <p>No employees or appointments scheduled.</p>
+          </div>
+        </div>
+      );
     }
 
     if (currentView === 'Month') {
-        return renderMonthView();
+      return renderMonthView();
     }
 
     return (
-        <div className="calendar-grid-container">
-          {currentView === 'Day' && (
-            <div className="time-column">
-              <div className="time-header">Time</div>
-              <div className="time-slots">
-                {timeSlots.map(slot => (
-                  <div key={slot} className={`time-slot-label ${slot.endsWith(':00') ? 'hour-start' : ''}`}>
-                    {slot.endsWith(':00') ? <span>{formatTime(slot)}</span> : slot}
-                  </div>
-                ))}
-              </div>
+      <div className="calendar-grid-container">
+        {currentView === 'Day' && (
+          <div className="time-column">
+            <div className="time-header">Time</div>
+            <div className="time-slots">
+              {timeSlots.map(slot => (
+                <div key={slot} className={`time-slot-label ${slot.endsWith(':00') ? 'hour-start' : ''}`}>
+                  {slot.endsWith(':00') ? <span>{formatTime(slot)}</span> : slot}
+                </div>
+              ))}
             </div>
-          )}
-          
-          <div className="staff-grid">
-            {currentView === 'Day' && displayEmployees.map(employee => (
-                <StaffColumn 
-                  key={employee.id} 
-                  employee={employee} 
-                  timeSlots={timeSlots} 
-                  appointments={appointments} 
-                  currentDate={currentDate} 
-                  isTimeSlotUnavailable={isTimeSlotUnavailable} 
-                  handleTimeSlotClick={handleTimeSlotClick} 
-                  showBookingTooltipHandler={showBookingTooltipHandler} 
-                  hideBookingTooltip={hideBookingTooltip}
-                  setSelectedBookingForStatus={setSelectedBookingForStatus}
-                  setShowBookingStatusModal={setShowBookingStatusModal}
-                />
-            ))}
-            {currentView === 'Week' && (
-                <div className="week-view-container">
-                  {/* Week Day Headers */}
-                  <div className="week-headers-row">
-                    <div className="week-staff-header-cell">Staff</div>
-                    {calendarDays.map(day => {
-                      const isToday = day.toDateString() === new Date().toDateString();
-                      return (
-                        <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
-                          <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                          <div className="week-day-number">{day.getDate()}</div>
-                        </div>
-                      );
-                    })}
+          </div>
+        )}
+
+        <div className="staff-grid">
+          {currentView === 'Day' && displayEmployees.map(employee => (
+            <StaffColumn
+              key={employee.id}
+              employee={employee}
+              timeSlots={timeSlots}
+              appointments={appointments}
+              currentDate={currentDate}
+              isTimeSlotUnavailable={isTimeSlotUnavailable}
+              handleTimeSlotClick={handleTimeSlotClick}
+              showBookingTooltipHandler={showBookingTooltipHandler}
+              hideBookingTooltip={hideBookingTooltip}
+              setSelectedBookingForStatus={setSelectedBookingForStatus}
+              setShowBookingStatusModal={setShowBookingStatusModal}
+            />
+          ))}
+          {currentView === 'Week' && (
+            <div className="week-view-container">
+              {/* Week Day Headers */}
+              <div className="week-headers-row">
+                <div className="week-staff-header-cell">Staff</div>
+                {calendarDays.map(day => {
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  return (
+                    <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
+                      <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                      <div className="week-day-number">{day.getDate()}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Employee Rows with Daily Appointments */}
+              {displayEmployees.map(employee => (
+                <div key={employee.id} className="week-employee-row">
+                  <div className="week-staff-cell">
+                    <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
+                      {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
+                    </div>
+                    <div className="staff-info">
+                      <div className="staff-name">{employee.name}</div>
+                      <div className="staff-position">{employee.position}</div>
+                    </div>
                   </div>
-                  
-                  {/* Employee Rows with Daily Appointments */}
-                  {displayEmployees.map(employee => (
-                    <div key={employee.id} className="week-employee-row">
-                      <div className="week-staff-cell">
-                        <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
-                          {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
-                        </div>
-                        <div className="staff-info">
-                          <div className="staff-name">{employee.name}</div>
-                          <div className="staff-position">{employee.position}</div>
-                        </div>
-                      </div>
-                      
-                      {/* Daily appointment cells for this employee */}
-                      {calendarDays.map(day => {
-                        const dayKey = day.toISOString().split('T')[0];
-                        const hasShift = hasShiftOnDate(employee, day);
-                        
-                        // Get appointments for this employee on this day
-                        const dayAppointments = [];
-                        if (appointments[employee.id]) {
-                          Object.entries(appointments[employee.id]).forEach(([slotKey, appointment]) => {
-                            if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                              const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                              dayAppointments.push({
-                                ...appointment,
-                                time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
-                                slotKey,
-                                timeSlot: timeFromKey,
-                                
-                              });
-                            }
+
+                  {/* Daily appointment cells for this employee */}
+                  {calendarDays.map(day => {
+                    const dayKey = day.toISOString().split('T')[0];
+                    const hasShift = hasShiftOnDate(employee, day);
+
+                    // Get appointments for this employee on this day
+                    const dayAppointments = [];
+                    if (appointments[employee.id]) {
+                      Object.entries(appointments[employee.id]).forEach(([slotKey, appointment]) => {
+                        if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
+                          const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
+                          dayAppointments.push({
+                            ...appointment,
+                            time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
+                            slotKey,
+                            timeSlot: timeFromKey,
+
                           });
                         }
-                        
-                        return (
-                          <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
-                            {!hasShift ? (
-                              <div className="week-no-shift">
-                                <span className="no-shift-text">No shift today</span>
-                              </div>
-                            ) : dayAppointments.length > 0 ? (
-                              <div className="week-appointments-container">
-                                {dayAppointments.slice(0, 3).map((app, index) => (
-                                  <div 
-                                    key={index} 
-                                    className="week-appointment-block" 
-                                    style={{ backgroundColor: app.color }}
-                                    onClick={() => {
-                                      if (app.timeSlot && app.bookingId) {
-                                        // Show booking status for existing appointment
-                                        const appointmentDetails = {
-                                          ...app,
-                                          employeeId: employee.id,
-                                          employeeName: employee.name,
-                                          slotTime: app.timeSlot,
-                                          date: dayKey,
-                                          slotKey: app.slotKey
-                                        };
-                                        setSelectedBookingForStatus(appointmentDetails);
-                                        setShowBookingStatusModal(true);
-                                      } else if (app.timeSlot) {
-                                        // Fallback to regular time slot click
-                                        handleTimeSlotClick(employee.id, app.timeSlot, day);
-                                      }
-                                    }}
-                                    onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                                      client: app.client,
-                                      service: app.service,
-                                      time: app.time,
-                                      professional: employee.name,
-                                      status: app.status || 'Confirmed',
-                                      notes: app.notes
-                                    })}
-                                    onMouseLeave={hideBookingTooltip}
-                                  >
-                                    <div className="appointment-client">{app.client}</div>
-                                    <div className="appointment-service">{app.service}</div>
-                                  </div>
-                                ))}
-                                {dayAppointments.length > 3 && (
-                                  <div 
-                                    className="week-more-appointments"
-                                    onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
-                                  >
-                                    +{dayAppointments.length - 3} more
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <div 
-                                className="week-empty-cell"
-                                // onClick={hasShift ? () => {
-                                //   const defaultTime = "09:00";
-                                //   handleTimeSlotClick(employee.id, defaultTime, day);
-                                // } : undefined}
-                                // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                      });
+                    }
+
+                    return (
+                      <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
+                        {!hasShift ? (
+                          <div className="week-no-shift">
+                            <span className="no-shift-text">No shift today</span>
+                          </div>
+                        ) : dayAppointments.length > 0 ? (
+                          <div className="week-appointments-container">
+                            {dayAppointments.slice(0, 3).map((app, index) => (
+                              <div
+                                key={index}
+                                className="week-appointment-block"
+                                style={{ backgroundColor: app.color }}
+                                onClick={() => {
+                                  if (app.timeSlot && app.bookingId) {
+                                    // Show booking status for existing appointment
+                                    const appointmentDetails = {
+                                      ...app,
+                                      employeeId: employee.id,
+                                      employeeName: employee.name,
+                                      slotTime: app.timeSlot,
+                                      date: dayKey,
+                                      slotKey: app.slotKey
+                                    };
+                                    setSelectedBookingForStatus(appointmentDetails);
+                                    setShowBookingStatusModal(true);
+                                  } else if (app.timeSlot) {
+                                    // Fallback to regular time slot click
+                                    handleTimeSlotClick(employee.id, app.timeSlot, day);
+                                  }
+                                }}
+                                onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                                  client: app.client,
+                                  service: app.service,
+                                  time: app.time,
+                                  professional: employee.name,
+                                  status: app.status || 'Confirmed',
+                                  notes: app.notes
+                                })}
+                                onMouseLeave={hideBookingTooltip}
                               >
-                                {/* <span className="add-appointment-plus">{hasShift ? '+' : ''}</span> */}
+                                <div className="appointment-client">{app.client}</div>
+                                <div className="appointment-service">{app.service}</div>
+                              </div>
+                            ))}
+                            {dayAppointments.length > 3 && (
+                              <div
+                                className="week-more-appointments"
+                                onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
+                              >
+                                +{dayAppointments.length - 3} more
                               </div>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                        ) : (
+                          <div
+                            className="week-empty-cell"
+                          // onClick={hasShift ? () => {
+                          //   const defaultTime = "09:00";
+                          //   handleTimeSlotClick(employee.id, defaultTime, day);
+                          // } : undefined}
+                          // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                          >
+                            {/* <span className="add-appointment-plus">{hasShift ? '+' : ''}</span> */}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
     );
   };
 
@@ -1773,7 +1910,7 @@ const SelectCalendar = () => {
         <div className="header-actions">
           <button className="action-btn" onClick={goToToday}>Today</button>
           <button className="action-btn" onClick={goToPrevious}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6" /></svg>
           </button>
           <span className="date-display">
             {currentView === 'Day' && currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -1781,7 +1918,7 @@ const SelectCalendar = () => {
             {currentView === 'Month' && currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
           </span>
           <button className="action-btn" onClick={goToNext}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6" /></svg>
           </button>
           <select value={currentView} onChange={(e) => setCurrentView(e.target.value)} className="action-btn">
             <option value="Day">Day</option>
@@ -1803,10 +1940,10 @@ const SelectCalendar = () => {
       <div className="scheduler-content" ref={schedulerContentRef}>
         {renderCalendarContent()}
         <div className="current-time-line" style={{ top: `${currentTimeLineTop}px` }}>
-            <span className="current-time-marker">{currentTimeText}</span>
+          <span className="current-time-marker">{currentTimeText}</span>
         </div>
       </div>
-      
+
       {/* Modals */}
       {showUnavailablePopup && (
         <div className="service-selection-overlay" onClick={closeBookingModal}>
@@ -1827,7 +1964,7 @@ const SelectCalendar = () => {
             <div className="booking-modal booking-modal-animate-in">
               <button className="booking-modal-close" onClick={closeBookingStatusModal}>×</button>
               <h2>Booking Management</h2>
-              
+
               {bookingStatusError && (
                 <div className="booking-modal-error">
                   <div className="error-icon">⚠️</div>
@@ -1837,7 +1974,7 @@ const SelectCalendar = () => {
                   </div>
                 </div>
               )}
-              
+
               {bookingStatusLoading && (
                 <div className="booking-modal-loading">
                   <div className="loading-spinner"></div>
@@ -1875,11 +2012,11 @@ const SelectCalendar = () => {
                     <div className="detail-content">
                       <span className="detail-label">Date</span>
                       <span className="detail-value">
-                        {new Date(selectedBookingForStatus.date).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                        {new Date(selectedBookingForStatus.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
                         })}
                       </span>
                     </div>
@@ -1924,13 +2061,13 @@ const SelectCalendar = () => {
                       </select>
                     </div>
                   </div>
-                  
+
                   <div className="booking-danger-zone">
                     <div className="danger-zone-header">
                       <h5>Danger Zone</h5>
                       <p>This action cannot be undone</p>
                     </div>
-                    <button 
+                    <button
                       className="delete-booking-btn"
                       onClick={handleDeleteBooking}
                       disabled={bookingStatusLoading}
@@ -1951,14 +2088,14 @@ const SelectCalendar = () => {
           </div>
         </div>
       )}
-      
+
       {showAddBookingModal && (
         <div className="modern-booking-modal">
           <div className="booking-modal-overlay booking-modal-fade-in" onClick={closeBookingModal}>
             <div className="booking-modal booking-modal-animate-in" onClick={e => e.stopPropagation()}>
               <button className="booking-modal-close" onClick={closeBookingModal}>×</button>
               <h2>New Appointment</h2>
-              
+
               {/* Step Indicator */}
               <div className="step-indicator">
                 <div className={`step-dot ${bookingStep >= 1 ? 'active' : ''} ${bookingStep > 1 ? 'completed' : ''}`}></div>
@@ -1982,7 +2119,11 @@ const SelectCalendar = () => {
                   <h3>Select Your Service</h3>
                   <div className="booking-modal-list">
                     {availableServices.map(service => (
-                      <button key={service._id} className={`booking-modal-list-item${selectedService && selectedService._id === service._id ? ' selected' : ''}`} onClick={() => { setSelectedService(service); setBookingStep(2); fetchBookingProfessionals(service._id, currentDate); }}>
+                      <button
+                        key={service._id}
+                        className={`booking-modal-list-item${selectedService && selectedService._id === service._id ? ' selected' : ''}`}
+                        onClick={() => handleServiceSelect(service)}
+                      >
                         <div className="booking-modal-item-name">{service.name}</div>
                         <div className="booking-modal-list-desc">{service.duration} minutes • AED {service.price}</div>
                       </button>
@@ -2002,10 +2143,10 @@ const SelectCalendar = () => {
                   <h3>👨‍⚕️ Choose Your Professional</h3>
                   {availableProfessionals.length === 0 ? (
                     <div className="booking-modal-empty-state">
-                      <p>No professionals are available for this service on {currentDate.toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        month: 'long', 
-                        day: 'numeric' 
+                      <p>No professionals are available for this service on {currentDate.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric'
                       })}.</p>
                       <p>Please select a different date or service.</p>
                     </div>
@@ -2013,13 +2154,13 @@ const SelectCalendar = () => {
                     <div className="booking-modal-list">
                       {availableProfessionals.map(prof => {
                         // FIXED: Create proper employee object for shift checking
-                        const employeeForShiftCheck = { 
-                          workSchedule: prof.workSchedule || {} 
+                        const employeeForShiftCheck = {
+                          workSchedule: prof.workSchedule || {}
                         };
                         const hasShift = hasShiftOnDate(employeeForShiftCheck, currentDate);
                         const dayName = getDayName(currentDate);
                         const todaySchedule = prof.workSchedule?.[dayName];
-                        
+
                         // FIXED: Better shift info display
                         let shiftInfo = 'Available';
                         if (todaySchedule) {
@@ -2035,25 +2176,27 @@ const SelectCalendar = () => {
                             }
                           }
                         }
-                        
+
                         return (
-                          <button 
-                            key={prof._id} 
-                            className={`booking-modal-list-item${selectedProfessional && selectedProfessional._id === prof._id ? ' selected' : ''}`} 
-                            onClick={() => { 
-                              setSelectedProfessional(prof); 
-                              setBookingStep(3); 
-                              fetchBookingTimeSlots(prof._id, selectedService._id, currentDate); 
-                            }}
+                          <button
+                            key={prof._id}
+                            className={`booking-modal-list-item${selectedProfessional && selectedProfessional._id === prof._id ? ' selected' : ''}`}
+                            onClick={() => {
+    setSelectedProfessional(prof); // Correctly sets the professional from the map
+    setBookingStep(3);
+    const service = selectedService;
+    const slots = getValidTimeSlotsForProfessional(prof, currentDate, service.duration, appointments);
+    setAvailableTimeSlots(slots);
+}}
                           >
                             <div className="booking-modal-item-name">
-                              {prof.user.firstName} {prof.user.lastName}
+                              {prof.name}
                               <span className="professional-shift-indicator">
                                 ✓ Available
                               </span>
                             </div>
                             <div className="booking-modal-list-desc">
-                              {prof.position} • Shift: {shiftInfo} • Expert in {selectedService?.name}
+                              {/* {prof.position} • Shift: {shiftInfo} • Expert in {selectedService?.name} */}
                             </div>
                           </button>
                         );
@@ -2080,7 +2223,7 @@ const SelectCalendar = () => {
                           {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
                         <div className="booking-modal-list-desc">
-                          {selectedService?.duration} minutes with {selectedProfessional?.user?.firstName}
+                          {selectedService?.duration} minutes with {selectedProfessional?.name}
                         </div>
                       </button>
                     ))}
@@ -2098,21 +2241,21 @@ const SelectCalendar = () => {
               {bookingStep === 4 && (
                 <>
                   <h3>👤 Client Information</h3>
-                  
+
                   {/* Client Search Section */}
                   <div className="client-search-section">
                     <div className="client-search-header">
                       <h4>Search Existing Client</h4>
                       {selectedExistingClient && (
-                        <button 
-                          className="clear-client-btn" 
+                        <button
+                          className="clear-client-btn"
                           onClick={clearClientSelection}
                         >
                           Clear Selection
                         </button>
                       )}
                     </div>
-                    
+
                     {!selectedExistingClient && !isAddingNewClient && (
                       <div className="client-search-input-wrapper">
                         <input
@@ -2131,8 +2274,8 @@ const SelectCalendar = () => {
                         {showClientSearch && clientSearchResults.length > 0 && (
                           <div className="client-search-results">
                             {clientSearchResults.map(client => (
-                              <div 
-                                key={client._id} 
+                              <div
+                                key={client._id}
                                 className="client-search-result"
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => selectExistingClient(client)}
@@ -2152,11 +2295,11 @@ const SelectCalendar = () => {
                             ))}
                           </div>
                         )}
-                        
+
                         {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
                           <div className="client-search-no-results">
                             <p>No clients found for "{clientSearchQuery}"</p>
-                            <button 
+                            <button
                               className="add-new-client-btn"
                               onClick={addNewClient}
                             >
@@ -2164,9 +2307,9 @@ const SelectCalendar = () => {
                             </button>
                           </div>
                         )}
-                        
+
                         {!showClientSearch && !isAddingNewClient && (
-                          <button 
+                          <button
                             className="add-new-client-btn"
                             onClick={addNewClient}
                           >
@@ -2175,7 +2318,7 @@ const SelectCalendar = () => {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Selected Client Display */}
                     {selectedExistingClient && (
                       <div className="selected-client-display">
@@ -2195,13 +2338,13 @@ const SelectCalendar = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* New Client Form */}
                     {isAddingNewClient && (
                       <div className="new-client-form">
                         <div className="new-client-header">
                           <h4>Add New Client</h4>
-                          <button 
+                          <button
                             className="back-to-search-btn"
                             onClick={() => {
                               setIsAddingNewClient(false);
@@ -2215,48 +2358,48 @@ const SelectCalendar = () => {
                         <div className="booking-modal-form">
                           <div className="form-group">
                             <label htmlFor="clientName">Client Name *</label>
-                            <input 
+                            <input
                               id="clientName"
-                              type="text" 
-                              placeholder="Enter client's full name" 
-                              value={clientInfo.name} 
-                              onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))} 
-                              required 
+                              type="text"
+                              placeholder="Enter client's full name"
+                              value={clientInfo.name}
+                              onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))}
+                              required
                             />
                           </div>
                           <div className="form-group">
                             <label htmlFor="clientEmail">Email Address *</label>
-                            <input 
+                            <input
                               id="clientEmail"
-                              type="email" 
-                              placeholder="Enter client's email address" 
-                              value={clientInfo.email} 
-                              onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))} 
-                              required 
+                              type="email"
+                              placeholder="Enter client's email address"
+                              value={clientInfo.email}
+                              onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
+                              required
                             />
                           </div>
                           <div className="form-group">
                             <label htmlFor="clientPhone">Phone Number *</label>
-                            <input 
+                            <input
                               id="clientPhone"
-                              type="tel" 
-                              placeholder="Enter client's phone number" 
-                              value={clientInfo.phone} 
-                              onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))} 
-                              required 
+                              type="tel"
+                              placeholder="Enter client's phone number"
+                              value={clientInfo.phone}
+                              onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
+                              required
                             />
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="booking-modal-actions">
-                    <button 
-                      className="booking-modal-next" 
+                    <button
+                      className="booking-modal-next"
                       onClick={() => setBookingStep(5)}
                       disabled={
-                        !selectedExistingClient && 
+                        !selectedExistingClient &&
                         (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
                       }
                     >
@@ -2278,7 +2421,7 @@ const SelectCalendar = () => {
                     <div className="summary-item">
                       <span>Client:</span>
                       <span>
-                        {selectedExistingClient 
+                        {selectedExistingClient
                           ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
                           : clientInfo.name
                         }
@@ -2290,7 +2433,7 @@ const SelectCalendar = () => {
                     <div className="summary-item">
                       <span>📧 Email:</span>
                       <span>
-                        {selectedExistingClient 
+                        {selectedExistingClient
                           ? selectedExistingClient.email
                           : clientInfo.email
                         }
@@ -2299,7 +2442,7 @@ const SelectCalendar = () => {
                     <div className="summary-item">
                       <span>📱 Phone:</span>
                       <span>
-                        {selectedExistingClient 
+                        {selectedExistingClient
                           ? selectedExistingClient.phone
                           : clientInfo.phone
                         }
@@ -2311,16 +2454,21 @@ const SelectCalendar = () => {
                     </div>
                     <div className="summary-item">
                       <span>👨‍⚕️ Professional:</span>
-                      <span>{selectedProfessional?.user?.firstName} {selectedProfessional?.user?.lastName}</span>
+                      {/* <span>{selectedProfessional?.user?.firstName} {selectedProfessional?.user?.lastName}</span> */}
+                      <span>
+                        {selectedProfessional?.user?.firstName
+                          ? `${selectedProfessional.user.firstName} ${selectedProfessional.user.lastName}`
+                          : selectedProfessional?.name || ''}
+                      </span>
                     </div>
                     <div className="summary-item">
                       <span>📅 Date & Time:</span>
                       <span>
-                        {currentDate?.toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                        {currentDate?.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
                         })} at {' '}
                         {selectedTimeSlot ? new Date(selectedTimeSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}
                       </span>
@@ -2345,8 +2493,8 @@ const SelectCalendar = () => {
                     </div>
                   </div>
                   <div className="booking-modal-actions">
-                    <button 
-                      className="booking-modal-confirm" 
+                    <button
+                      className="booking-modal-confirm"
                       onClick={handleCreateBooking}
                       disabled={bookingLoading}
                     >
@@ -2364,24 +2512,24 @@ const SelectCalendar = () => {
           </div>
         </div>
       )}
-      
+
       {/* More Appointments Dropdown */}
       {showMoreAppointments && (
         <>
           <div className="more-appointments-backdrop" onClick={closeMoreAppointmentsDropdown}></div>
-          <div 
+          <div
             className={`more-appointments-dropdown ${dropdownPositionedAbove ? 'positioned-above' : ''}`}
-            style={{ 
-              top: dropdownPosition.top, 
-              left: dropdownPosition.left 
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left
             }}
           >
             <div className="more-appointments-dropdown-header">
               <span>All Appointments</span>
               <span className="more-appointments-date">
-                {selectedDayDate?.toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric' 
+                {selectedDayDate?.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
                 })}
               </span>
             </div>
@@ -2402,10 +2550,10 @@ const SelectCalendar = () => {
           </div>
         </>
       )}
-      
+
       {/* Booking Tooltip */}
       {showBookingTooltip && tooltipData && (
-        <div 
+        <div
           className="booking-tooltip"
           style={{
             position: 'fixed',
@@ -2442,83 +2590,83 @@ const SelectCalendar = () => {
 
 // Reusable components for cleaner rendering
 const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlotUnavailable, handleTimeSlotClick, showBookingTooltipHandler, hideBookingTooltip }) => {
-    const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
-    const dayKey = currentDate.toISOString().split('T')[0];
-    const hasShift = hasShiftOnDate(employee, currentDate);
-    const shiftHours = getEmployeeShiftHours(employee, currentDate);
-    const hasValidShifts = shiftHours.length > 0;
+  const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
+  const dayKey = currentDate.toISOString().split('T')[0];
+  const hasShift = hasShiftOnDate(employee, currentDate);
+  const shiftHours = getEmployeeShiftHours(employee, currentDate);
+  const hasValidShifts = shiftHours.length > 0;
 
-    // ENHANCED: StaffColumn component with Fresha-style appointment blocks
-    const processAppointmentBlocks = () => {
-      const employeeAppointments = appointments[employee.id] || {};
-      const appointmentBlocks = [];
-      const processedSlots = new Set();
+  // ENHANCED: StaffColumn component with Fresha-style appointment blocks
+  const processAppointmentBlocks = () => {
+    const employeeAppointments = appointments[employee.id] || {};
+    const appointmentBlocks = [];
+    const processedSlots = new Set();
 
-      Object.entries(employeeAppointments).forEach(([slotKey, appointment]) => {
-        if (!slotKey.startsWith(dayKey) || processedSlots.has(slotKey)) return;
+    Object.entries(employeeAppointments).forEach(([slotKey, appointment]) => {
+      if (!slotKey.startsWith(dayKey) || processedSlots.has(slotKey)) return;
 
-        if (appointment.isMainSlot) {
-          // Calculate the full appointment block
-          const startTimeStr = slotKey.split('_')[1];
-          const duration = appointment.duration || 30;
-          const totalSlots = appointment.totalSlots || Math.ceil(duration / 10);
-          
-          // Mark all slots in this appointment as processed
-          const [startHour, startMinute] = startTimeStr.split(':').map(Number);
-          for (let i = 0; i < totalSlots; i++) {
-            const slotTime = new Date();
-            slotTime.setHours(startHour, startMinute + (i * 10), 0, 0);
-            const slotTimeStr = slotTime.toLocaleTimeString('en-US', {
-              hour12: false,
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-            const slotKeyToProcess = `${dayKey}_${slotTimeStr}`;
-            processedSlots.add(slotKeyToProcess);
-          }
+      if (appointment.isMainSlot) {
+        // Calculate the full appointment block
+        const startTimeStr = slotKey.split('_')[1];
+        const duration = appointment.duration || 30;
+        const totalSlots = appointment.totalSlots || Math.ceil(duration / 10);
 
-          appointmentBlocks.push({
-            startSlot: startTimeStr,
-            duration: totalSlots,
-            height: totalSlots * timeSlotHeightPx,
-            appointment: appointment
+        // Mark all slots in this appointment as processed
+        const [startHour, startMinute] = startTimeStr.split(':').map(Number);
+        for (let i = 0; i < totalSlots; i++) {
+          const slotTime = new Date();
+          slotTime.setHours(startHour, startMinute + (i * 10), 0, 0);
+          const slotTimeStr = slotTime.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
           });
+          const slotKeyToProcess = `${dayKey}_${slotTimeStr}`;
+          processedSlots.add(slotKeyToProcess);
         }
-      });
 
-      return appointmentBlocks;
-    };
+        appointmentBlocks.push({
+          startSlot: startTimeStr,
+          duration: totalSlots,
+          height: totalSlots * timeSlotHeightPx,
+          appointment: appointment
+        });
+      }
+    });
 
-    const appointmentBlocks = processAppointmentBlocks();
+    return appointmentBlocks;
+  };
 
-    return (
-        <div key={employee.id} className={`staff-column ${!hasShift ? 'staff-absent' : ''} ${!hasValidShifts ? 'no-shifts' : ''}`}>
-            <div className="staff-header">
-                <div className="staff-avatar" style={{ 
-                  backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
-                  opacity: hasShift && hasValidShifts ? 1 : 0.5
-                }}>
-                    {employee.avatar ? 
-                      <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{
-                        opacity: hasShift && hasValidShifts ? 1 : 0.5
-                      }} /> : 
-                      employee.name.charAt(0)
-                    }
-                </div>
-                <div className="staff-info">
-                    <div className="staff-name" style={{ 
-                      color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' 
-                    }}>
-                      {employee.name}
-                    </div>
-                    <div className="staff-position" style={{ 
-                      color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' 
-                    }}>
-                      {employee.position}
-                    </div>
-                    {!hasShift && <div className="staff-status no-shift">No shift today</div>}
-                    {hasShift && !hasValidShifts && <div className="staff-status no-hours">No shift hours</div>}
-                    {hasShift && hasValidShifts && (
+  const appointmentBlocks = processAppointmentBlocks();
+
+  return (
+    <div key={employee.id} className={`staff-column ${!hasShift ? 'staff-absent' : ''} ${!hasValidShifts ? 'no-shifts' : ''}`}>
+      <div className="staff-header">
+        <div className="staff-avatar" style={{
+          backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
+          opacity: hasShift && hasValidShifts ? 1 : 0.5
+        }}>
+          {employee.avatar ?
+            <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{
+              opacity: hasShift && hasValidShifts ? 1 : 0.5
+            }} /> :
+            employee.name.charAt(0)
+          }
+        </div>
+        <div className="staff-info">
+          <div className="staff-name" style={{
+            color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af'
+          }}>
+            {employee.name}
+          </div>
+          <div className="staff-position" style={{
+            color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af'
+          }}>
+            {employee.position}
+          </div>
+          {/* {!hasShift && <div className="staff-status no-shift">No shift today</div>}
+                    {hasShift && !hasValidShifts && <div className="staff-status no-hours">No shift hours</div>} */}
+          {/* {hasShift && hasValidShifts && (
                       <div className="staff-shift-info">
                         {shiftHours.map((shift, index) => (
                           <div key={index} className="shift-time">
@@ -2526,248 +2674,226 @@ const StaffColumn = ({ employee, timeSlots, appointments, currentDate, isTimeSlo
                           </div>
                         ))}
                       </div>
-                    )}
-                </div>
-            </div>
-            
-            <div className="time-slots-column">
-                {/* Render time slots */}
-                {timeSlots.map((slot, index) => {
-                    const slotKey = `${dayKey}_${slot}`;
-                    const appointment = appointments[employee.id]?.[slotKey];
-                    const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
-                    
-                    // Check if this slot is within employee's shift hours
-                    const isWithinShift = hasShift && hasValidShifts && shiftHours.some(shift => {
-                      const [slotHour, slotMinute] = slot.split(':').map(Number);
-                      const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
-                      const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
-                      
-                      const slotMinutes = slotHour * 60 + slotMinute;
-                      const shiftStartMinutes = shiftStartHour * 60 + shiftStartMinute;
-                      const shiftEndMinutes = shiftEndHour * 60 + shiftEndMinute;
-                      
-                      return slotMinutes >= shiftStartMinutes && slotMinutes < shiftEndMinutes;
-                    });
-
-                    // Check if this slot is covered by an appointment block
-                    const isCoveredByAppointment = appointmentBlocks.some(block => {
-                      const [blockStartHour, blockStartMinute] = block.startSlot.split(':').map(Number);
-                      const [slotHour, slotMinute] = slot.split(':').map(Number);
-                      
-                      const blockStartMinutes = blockStartHour * 60 + blockStartMinute;
-                      const blockEndMinutes = blockStartMinutes + (block.duration * 10);
-                      const slotMinutes = slotHour * 60 + slotMinute;
-                      
-                      return slotMinutes >= blockStartMinutes && slotMinutes < blockEndMinutes;
-                    });
-
-                    // Don't render individual slots if they're covered by appointment blocks
-                    if (isCoveredByAppointment) {
-                      return null;
-                    }
-
-                    return (
-                        <div key={slot} className="time-slot-wrapper" style={{ height: `${timeSlotHeightPx}px` }}>
-                            <div className={`time-slot ${
-                                (!hasShift || !hasValidShifts ? 'no-shift' : 
-                                (!isWithinShift ? 'outside-shift' :
-                                (unavailableReason ? 'unavailable' : 'empty')))
-                            }`}
-                                 onClick={hasShift && hasValidShifts && isWithinShift ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
-                                 style={{
-                                     cursor: (hasShift && hasValidShifts && isWithinShift) ? 'pointer' : 'not-allowed',
-                                     opacity: (!hasShift || !hasValidShifts || !isWithinShift) ? 0.3 : 1,
-                                     backgroundColor: (!hasShift || !hasValidShifts) ? '#f3f4f6' : 
-                                                   (!isWithinShift ? '#e5e7eb' : '#ffffff') // Light grey for outside shift
-                                 }}>
-                                
-                                {unavailableReason && isWithinShift && (
-                                    <div className="unavailable-text">
-                                        {unavailableReason.includes("Day Off") ? "DAY OFF" : (unavailableReason.includes("Block") ? "BLOCKED" : "UNAVAIL")}
-                                    </div>
-                                )}
-                                {!hasShift && (
-                                    <div className="unavailable-text">
-                                        NO SHIFT
-                                    </div>
-                                )}
-                                {hasShift && !hasValidShifts && (
-                                    <div className="unavailable-text">
-                                        NO HOURS
-                                    </div>
-                                )}
-                                {hasShift && hasValidShifts && !isWithinShift && (
-                                    <div className="unavailable-text off-shift-text">
-                                        OFF SHIFT
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-
-                {/* Render appointment blocks (Fresha style) */}
-                {appointmentBlocks.map((block, index) => {
-                  const [blockHour, blockMinute] = block.startSlot.split(':').map(Number);
-                  const slotIndex = timeSlots.findIndex(slot => {
-                    const [slotHour, slotMin] = slot.split(':').map(Number);
-                    return slotHour === blockHour && slotMin === blockMinute;
-                  });
-                  
-                  const topPosition = slotIndex * timeSlotHeightPx;
-
-                  return (
-                    <div
-                      key={`block-${index}`}
-                      className="appointment-block fresha-style"
-                      style={{
-                        position: 'absolute',
-                        top: `${topPosition}px`,
-                        left: '0',
-                        right: '0',
-                        height: `${block.height}px`,
-                        backgroundColor: block.appointment.color || '#3b82f6', // Use appointment color or blue default
-                        borderRadius: '6px',
-                        border: `1px solid ${block.appointment.color ? `${block.appointment.color}CC` : '#2563eb'}`,
-                        margin: '1px',
-                        padding: '8px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        zIndex: 10
-                      }}
-                      onClick={() => {
-                        const appointmentDetails = {
-                          ...block.appointment,
-                          employeeId: employee.id,
-                          employeeName: employee.name,
-                          slotTime: block.startSlot,
-                          date: dayKey,
-                          slotKey: `${dayKey}_${block.startSlot}`
-                        };
-                        setSelectedBookingForStatus(appointmentDetails);
-                        setShowBookingStatusModal(true);
-                      }}
-                      onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                        client: block.appointment.client,
-                        service: block.appointment.service,
-                        time: block.startSlot,
-                        professional: employee.name,
-                        status: block.appointment.status || 'Confirmed',
-                        notes: block.appointment.notes,
-                        duration: block.appointment.duration
-                      })}
-                      onMouseLeave={hideBookingTooltip}
-                    >
-                      <div className="appointment-block-content">
-                        <div className="appointment-block-client" style={{
-                          color: 'white',
-                          fontWeight: '600',
-                          fontSize: '13px',
-                          marginBottom: '2px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {block.appointment.client}
-                        </div>
-                        <div className="appointment-block-service" style={{
-                          color: 'rgba(255,255,255,0.9)',
-                          fontSize: '12px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {block.appointment.service}
-                        </div>
-                        <div className="appointment-block-duration" style={{
-                          color: 'rgba(255,255,255,0.8)',
-                          fontSize: '11px',
-                          marginTop: '2px'
-                        }}>
-                          {block.appointment.duration}min
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
+                    )} */}
         </div>
-    );
+      </div>
+
+      <div className="time-slots-column">
+        {/* Render time slots */}
+        {timeSlots.map((slot, index) => {
+          const slotKey = `${dayKey}_${slot}`;
+          const appointment = appointments[employee.id]?.[slotKey];
+          const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
+
+          // Check if this slot is within employee's shift hours
+          const isWithinShift = hasShift && hasValidShifts && shiftHours.some(shift => {
+            const [slotHour, slotMinute] = slot.split(':').map(Number);
+            const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
+            const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
+
+            const slotMinutes = slotHour * 60 + slotMinute;
+            const shiftStartMinutes = shiftStartHour * 60 + shiftStartMinute;
+            const shiftEndMinutes = shiftEndHour * 60 + shiftEndMinute;
+            return slotMinutes >= shiftStartMinutes && slotMinutes < shiftEndMinutes;
+          });
+
+          // Check if this slot is covered by an appointment block
+          const isCoveredByAppointment = appointmentBlocks.some(block => {
+            const [blockStartHour, blockStartMinute] = block.startSlot.split(':').map(Number);
+            const [slotHour, slotMinute] = slot.split(':').map(Number);
+
+            const blockStartMinutes = blockStartHour * 60 + blockStartMinute;
+            const blockEndMinutes = blockStartMinutes + (block.duration * 10);
+            const slotMinutes = slotHour * 60 + slotMinute;
+
+            return slotMinutes >= blockStartMinutes && slotMinutes < blockEndMinutes;
+          });
+
+          // Don't render individual slots if they're covered by appointment blocks
+          if (isCoveredByAppointment) {
+            return null;
+          }
+
+          return (
+            <div key={slot} className="time-slot-wrapper" style={{ height: `${timeSlotHeightPx}px` }}>
+              <div className={`time-slot ${(!hasShift || !hasValidShifts ? 'no-shift' :
+                  (!isWithinShift ? 'outside-shift' :
+                    (unavailableReason ? 'unavailable' : 'empty')))
+                }`}
+                onClick={hasShift && hasValidShifts && isWithinShift ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
+                style={{
+                  cursor: (hasShift && hasValidShifts && isWithinShift) ? 'pointer' : 'not-allowed',
+                  opacity: (!hasShift || !hasValidShifts || !isWithinShift) ? 0.3 : 1,
+                  backgroundColor: (!hasShift || !hasValidShifts) ? 'gray' :
+                    (!isWithinShift ? 'gray' : '#ffffff') // Light grey for outside shift
+                }}>
+
+                {unavailableReason && isWithinShift && (
+                  <div className="unavailable-text">
+                    {unavailableReason.includes("Day Off") ? "DAY OFF" : (unavailableReason.includes("Block") ? "BLOCKED" : "UNAVAIL")}
+                  </div>
+                )}
+                  {!hasShift && (
+                    <div className="unavailable-text">
+                      {/* NO SHIFT */}
+                    </div>
+                  )}
+                  {hasShift && !hasValidShifts && (
+                    <div className="unavailable-text">
+                      {/* NO HOURS */}
+                    </div>
+                  )}
+                  {hasShift && hasValidShifts && !isWithinShift && (
+                    <div className="unavailable-text off-shift-text">
+                      {/* OFF SHIFT */}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+        })}
+
+        {/* Render appointment blocks (Fresha style) */}
+        {appointmentBlocks.map((block, index) => {
+          const [blockHour, blockMinute] = block.startSlot.split(':').map(Number);
+          const slotIndex = timeSlots.findIndex(slot => {
+            const [slotHour, slotMin] = slot.split(':').map(Number);
+            return slotHour === blockHour && slotMin === blockMinute;
+          });
+
+          const topPosition = slotIndex * timeSlotHeightPx;
+
+          return (
+            <div
+              key={`block-${index}`}
+              className="appointment-block fresha-style"
+              style={{
+                position: 'absolute',
+                top: `${topPosition}px`,
+                left: '0',
+                right: '0',
+                height: `${block.height}px`,
+                backgroundColor: block.appointment.color,
+                borderRadius: '8px',
+                marginBottom: '2px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                padding: '0 4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                zIndex: 1
+              }}
+              onClick={() => {
+                
+                // Show booking status for existing appointment
+                const appointmentDetails = {
+                  ...block.appointment,
+                  employeeId: employee.id,
+                  employeeName: employee.name,
+                  slotTime: block.startSlot,
+                  date: dayKey,
+                  slotKey: `${dayKey}_${block.startSlot}`
+                };
+                setSelectedBookingForStatus(appointmentDetails);
+                setShowBookingStatusModal(true);
+              }}
+                onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                            client: block.appointment.client,
+                            service: block.appointment.service,
+                            time: block.startSlot,
+                            professional: block.appointment.employeeName,
+                            status: block.appointment.status || 'Confirmed',
+                            notes: block.appointment.notes
+                          })}
+                          onMouseLeave={hideBookingTooltip}
+            >
+              <div className="appointment-client" style={{ fontWeight: 'bold', color: '#fff' }}>
+                {block.appointment.client}
+              </div>
+              <div className="appointment-service" style={{ color: '#fff' }}>
+                {block.appointment.service}
+              </div>
+              <div className="appointment-time" style={{ fontSize: '12px', color: '#e0e0e0' }}>
+                {block.startSlot} - {new Date(new Date().setHours(blockHour, blockMinute + (block.duration * 10))).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
 const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnavailable, handleTimeSlotClick, onShowMoreAppointments, showBookingTooltipHandler, hideBookingTooltip }) => {
-    const dayKey = day.toISOString().split('T')[0];
-    const isToday = day.toDateString() === new Date().toDateString();
+  const dayKey = day.toISOString().split('T')[0];
+  const isToday = day.toDateString() === new Date().toDateString();
 
-    // Get all appointments for this day from all employees (similar to month view)
-    const dayAppointments = [];
-    
-    employees.forEach(emp => {
-        if (appointments[emp.id]) {
-            Object.entries(appointments[emp.id]).forEach(([slotKey, appointment]) => {
-                // Check if the appointment is for this day
-                if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                  const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                  dayAppointments.push({
-                    ...appointment,
-                    time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
-                    slotKey,
-                    timeSlot: timeFromKey,
-                    
-                  });
-                }
-            });
+  // Get all appointments for this day from all employees (similar to month view)
+  const dayAppointments = [];
+
+  employees.forEach(emp => {
+    if (appointments[emp.id]) {
+      Object.entries(appointments[emp.id]).forEach(([slotKey, appointment]) => {
+        // Check if the appointment is for this day
+        if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
+          // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
+          const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
+          dayAppointments.push({
+            ...appointment,
+            time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
+            slotKey,
+            timeSlot: timeFromKey,
+
+          });
         }
-    });
+      });
+    }
+  });
 
-    return (
-        <div key={dayKey} className="week-day-column">
-            <div className={`week-day-header ${isToday ? 'is-today' : ''}`}>
-                <span className="weekday-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
-                <span className="day-number">{day.getDate()}</span>
-            </div>
-            <div className="week-appointments">
-                {dayAppointments.length > 0 ? (
-                    <>
-                      {dayAppointments.slice(0, 3).map((app, index) => (
-                        <div key={index} 
-                             className="week-appointment-entry" 
-                             style={{ backgroundColor: app.color }}
-                             onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                               client: app.client,
-                               service: app.service,
-                               time: app.time,
-                               professional: app.employeeName,
-                               status: app.status || 'Confirmed',
-                               notes: app.notes
-                             })}
-                             onMouseLeave={hideBookingTooltip}>
-                            <span className="appointment-client-name">{app.client}</span>
-                            <span className="appointment-service-name">{app.service}</span>
-                            <span className="appointment-time">{app.time}</span>
-                        </div>
-                      ))}
-                      {dayAppointments.length > 3 && (
-                        <div 
-                            className="week-more-appointments"
-                            onClick={(event) => onShowMoreAppointments(dayAppointments, day, event)}
-                          >
-                            +{dayAppointments.length - 3} more
-                        </div>
-                      )}
-                    </>
-                ) : (
-                  <div className="week-no-appointments">
-                    No appointments
-                  </div>
-                )}
-            </div>
-        </div>
-    );
+  return (
+    <div key={dayKey} className="week-day-column">
+      <div className={`week-day-header ${isToday ? 'is-today' : ''}`}>
+        <span className="weekday-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+        <span className="day-number">{day.getDate()}</span>
+      </div>
+      <div className="week-appointments">
+        {dayAppointments.length > 0 ? (
+          <>
+            {dayAppointments.slice(0, 3).map((app, index) => (
+              <div key={index}
+                className="week-appointment-entry"
+                style={{ backgroundColor: app.color }}
+                onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                  client: app.client,
+                  service: app.service,
+                  time: app.time,
+                  professional: app.employeeName,
+                  status: app.status || 'Confirmed',
+                  notes: app.notes
+                })}
+                onMouseLeave={hideBookingTooltip}>
+                <span className="appointment-client-name">{app.client}</span>
+                <span className="appointment-service-name">{app.service}</span>
+                <span className="appointment-time">{app.time}</span>
+              </div>
+            ))}
+            {dayAppointments.length > 3 && (
+              <div
+                className="week-more-appointments"
+                onClick={(event) => onShowMoreAppointments(dayAppointments, day, event)}
+              >
+                +{dayAppointments.length - 3} more
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="week-no-appointments">
+            No appointments
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
-
-export default SelectCalendar;
+export default SelectCalendar
