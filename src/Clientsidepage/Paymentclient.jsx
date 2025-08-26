@@ -42,7 +42,7 @@ const PaymentClient = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get("/payments/admin/all");
+        const res = await api.get("/payment/transactions");
         console.log("Payment API result:", res.data);
         
         const paymentsData = res.data?.data?.payments || [];

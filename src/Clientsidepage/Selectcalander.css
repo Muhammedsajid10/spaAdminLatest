@@ -4359,7 +4359,7 @@
 }
 
 .team-member-card.selected {
-  border-color: #000000;
+  /* border-color: #000000; */
   background: #f8f9fa;
   box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
 }

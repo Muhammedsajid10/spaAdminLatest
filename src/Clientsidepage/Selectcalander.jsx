@@ -3069,8 +3069,8 @@ useEffect(() => {
 
               <div className="booking-status-details">
                 <div className="booking-status-header">
-                  <div className="booking-status-avatar" style={{ backgroundColor: selectedBookingForStatus.color }}>
-                    {selectedBookingForStatus.client.charAt(0)}
+                  <div className="booking-status-avatar" >
+                    {/* {selectedBookingForStatus.client} */}
                   </div>
                   <div className="booking-status-info">
                     <h3>{selectedBookingForStatus.client}</h3>
@@ -4066,7 +4066,7 @@ const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnav
           </>
         ) : (
           <div className="week-no-appointments">
-            No appointments
+            <NoDataState/>
           </div>
         )}
       </div>

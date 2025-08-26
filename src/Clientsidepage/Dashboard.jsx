@@ -254,7 +254,7 @@ const ServiceAnalytics = () => {
               <div className="service-rank">{idx + 1}</div>
               <div className="service-meta">
                 <div className="service-name">{svc.serviceName || 'Unnamed'}</div>
-                <div className="service-sub">Category: {svc.category || '—'}</div>
+                <div className="service-sub">Category: {svc.category.name || '—'}</div>
               </div>
               <div className="service-stats">
                 <div>{svc.bookings || 0} bookings</div>
