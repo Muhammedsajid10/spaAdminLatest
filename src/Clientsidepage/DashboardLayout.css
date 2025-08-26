@@ -1,0 +1,179 @@
+/* New, simplified DashboardLayout.css */
+
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; /* Prevent body scroll */
+}
+
+/* --- 1. Fixed Top Navbar --- */
+.top-navbar-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+  z-index: 1010; /* Highest z-index */
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+
+/* --- 2. Main Area (below navbar) --- */
+.main-area {
+  margin-top: 64px;
+  height: calc(100vh - 64px);
+  display: grid;
+  grid-template-columns: 60px 207px 1fr; /* Default desktop layout */
+}
+
+/* On desktop, if there is no nested sidebar, it's 2 columns */
+.main-area:not(:has(.nestedSidebarArea)) {
+  grid-template-columns: 60px 1fr;
+}
+
+
+/* --- 3. Grid Areas --- */
+.mainSidebarArea {
+  grid-column: 1 / 2;
+  height: 100%;
+  position: relative; /* Changed from fixed */
+  z-index: 1002; /* --- CHANGE: Main sidebar is always on top --- */
+  background-color: white; /* Ensure it has a background to be opaque */
+}
+
+.nestedSidebarArea {
+  grid-column: 2 / 3;
+  height: 100%;
+  border-right: 1px solid #e2e8f0;
+}
+.nestedSidebarArea.isOpen + .sidebar-toggle-btn .icon-arrow {
+  /* Animate arrow to point left < */
+  transform: rotate(135deg);
+}
+.contentArea {
+  grid-column: 3 / 4;
+  overflow-y: auto;
+  background-color: white;
+  /* padding: 20px; */
+}
+.sidebar-toggle-btn .icon-arrow {
+  width: 8px;
+  height: 8px;
+  border: solid #1e293b;
+  border-width: 0 2px 2px 0;
+  /* Position arrow to point right > */
+  transform: rotate(-45deg);
+  /* Animate the arrow's rotation */
+  transition: transform 0.3s ease-in-out;
+}
+.nestedSidebarArea.isOpen + .sidebar-toggle-btn .icon-arrow {
+  /* Animate arrow to point left < */
+  transform: rotate(135deg);
+}
+.main-area:not(:has(.nestedSidebarArea)) .contentArea {
+  grid-column: 2 / 3;
+}
+
+/* Hide mobile elements on desktop by default */
+.sidebar-toggle-btn,
+.mobile-overlay {
+  display: none;
+}
+
+
+@media (max-width: 1024px) {
+  /* --- NEW: Use a 2-column grid on mobile for a stable layout --- */
+  .main-area {
+    /* Main sidebar gets 60px, content gets the rest */
+    grid-template-columns: 60px 1fr;
+    display: grid; /* Ensure grid is explicitly set */
+  }
+
+  /* --- NEW: Main sidebar is now part of the grid flow --- */
+  .mainSidebarArea {
+    grid-column: 1 / 2;
+    position: relative; /* No longer needs to be fixed */
+    z-index: 1002;
+    background-color: white;
+  }
+  
+  /* --- NEW: Content area is the second grid column --- */
+  .contentArea {
+    grid-column: 2 / 3;
+    overflow-y: auto;
+    /* The universal 20px padding is fine, but the problematic left padding is removed! */
+    /* padding: 20px; */
+  }
+
+  /* The nested sidebar still slides in from behind as a fixed element */
+  .nestedSidebarArea {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    width: 250px;
+    height: calc(100% - 64px);
+    z-index: 1001; /* Below the main sidebar */
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    background-color: white;
+    border-right: 1px solid #e2e8f0;
+  }
+
+  .nestedSidebarArea.isOpen {
+    transform: translateX(60px); /* Slides out to sit next to the main sidebar */
+  }
+
+  /* The toggle button logic remains the same and will work with this new layout */
+  .sidebar-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 10%;
+    left: 60px;
+    transform: translate(-50%, -50%);
+    z-index: 1003;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: left 0.3s ease-in-out;
+  }
+  
+  .sidebar-toggle-btn .icon-arrow {
+    width: 8px;
+    height: 8px;
+    border: solid #1e293b;
+    border-width: 0 2px 2px 0;
+    transform: rotate(-45deg);
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .nestedSidebarArea.isOpen + .sidebar-toggle-btn {
+    left: 310px; /* 60px (main) + 250px (nested) */
+  }
+  
+  .nestedSidebarArea.isOpen + .sidebar-toggle-btn .icon-arrow {
+    transform: rotate(135deg);
+  }
+
+  /* Overlay is adjusted to cover only the content area */
+  .mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 64px;
+    left: 60px; /* Start at the edge of the main sidebar */
+    width: calc(100% - 60px);
+    height: calc(100% - 64px);
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+  }
+
+  .nestedSidebarArea.isOpen ~ .mobile-overlay {
+      display: block;
+  }
+}

@@ -1,0 +1,623 @@
+/* --- CORE STYLES & VARIABLES (Assumed global, consolidated once) --- */
+:root {
+  --primary-color: #6a0dad; 
+  --primary-light: #e6e6fa; 
+  --primary-text-contrast: #ffffff; 
+  
+  --bg-primary: #ffffff; 
+  --bg-secondary: #f7f9fa; 
+  --bg-hover: #f0f2f4; 
+  
+  --text-color-dark: #333; 
+  --text-color-medium: #555; 
+  --text-color-light: #888; 
+
+  --border-color: #e6e6e6; 
+  --divider-color: #f0f0f0; 
+  
+  --status-success-bg: #d4edda; 
+  --status-success-text: #155724; 
+  --status-info-bg: #cfe2ff;
+  --status-info-text: #055160;
+  --status-warning-bg: #fff3cd; 
+  --status-warning-text: #856404; 
+  --status-error-bg: #f8d7da; 
+  --status-error-text: #721c24; 
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06); 
+  --shadow-md: 0 2px 5px rgba(0, 0, 0, 0.08); 
+  --shadow-lg: 0 5px 15px rgba(0, 0, 0, 0.1); 
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+}
+
+/* Global Base Styles (ensure these are applied once for the whole app) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color-dark);
+  background-color: var(--bg-primary);
+  overflow: auto; /* Default for body */
+}
+body.dropdown-open {
+  overflow: hidden; /* Only apply when dropdown is active */
+}
+
+
+/* --- Navbar Container --- */
+.navbar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--bg-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--spacing-lg);
+  box-shadow: none;
+  z-index: 1000;
+  transition: box-shadow 0.3s ease;
+}
+
+/* Add shadow when scrolling */
+.navbar-container.scrolled {
+  box-shadow: var(--shadow-sm);
+}
+
+.navbar-left-content {
+  display: flex;
+  align-items: center;
+}
+
+.spa-image {
+  height: 40px;
+  width: auto;
+}
+
+.navbar-right-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-left: auto;
+}
+
+.navbar-icons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* Common Icon Button Styling */
+.navbar-icons .icon {
+  background: none;
+  border: none;
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--text-color-medium);
+  transition: all 0.2s ease-out;
+}
+
+.navbar-icons .icon:hover {
+  background: var(--bg-hover);
+  color: var(--text-color-dark);
+}
+
+/* Logout Button */
+.logout-btn {
+  background-color:black;
+  color: var(--primary-text-contrast);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+.logout-btn:hover {
+  opacity: 0.9;
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- Search Dropdown (If used inline, currently navigates) --- */
+.search-wrapper {
+  position: relative;
+}
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + var(--spacing-xs));
+  right: 0;
+  width: 300px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-sm);
+  z-index: 1000;
+}
+
+.search-dropdown input {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-size: 0.9rem;
+  color: var(--text-color-dark);
+}
+.search-dropdown input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(106, 13, 173, 0.1);
+}
+
+/* --- Notification Dropdown (Main focus) --- */
+.notification-wrapper {
+  position: relative;
+}
+.notification-dropdown.custom-popup {
+  position: absolute;
+  top: calc(100% + var(--spacing-xs));
+  right: 0;
+  width: 380px;
+  max-height: calc(100vh - 80px); /* Max height relative to viewport */
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0;
+  z-index: 1000;
+  overflow: hidden; /* Contains scrolling content */
+}
+
+/* --- Appointments Container within Notification Dropdown --- */
+.appointments-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Take full height of its parent notification-dropdown */
+  background-color: var(--bg-primary);
+  font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+.appointments-header {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-primary);
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.appointments-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-color-dark);
+  margin: 0;
+}
+
+.more-button {
+  background: none;
+  border: none;
+  padding: var(--spacing-xs);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease-out;
+}
+
+.more-button:hover {
+  background-color: var(--bg-hover);
+}
+
+.more-icon {
+  color: var(--text-color-medium);
+}
+
+.appointments-section {
+  flex-grow: 1; /* Allows section to take remaining vertical space */
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding: var(--spacing-md);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-color-light) var(--bg-secondary);
+}
+
+/* Hide scrollbar (Webkit browsers like Chrome/Safari) */
+.appointments-section::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Hide scrollbar (IE/Edge/Firefox) */
+.appointments-section {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.section-header {
+  margin-bottom: var(--spacing-md);
+}
+
+.section-title {
+  font-size: 0.9rem;
+  color: var(--text-color-medium);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.appointment-item {
+  display: flex;
+  align-items: flex-start;
+  padding: var(--spacing-md);
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  gap: var(--spacing-md);
+  transition: background-color 0.15s ease-out;
+}
+
+.appointment-item:hover {
+  background: var(--bg-secondary);
+}
+
+.appointment-avatar-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.appointment-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--primary-text-contrast);
+  font-size: 16px;
+}
+
+.status-indicators {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  display: flex;
+  gap: 1px;
+}
+
+.check-icon,
+.users-icon {
+  background: var(--bg-primary);
+  border-radius: 50%;
+  padding: 1px;
+  box-shadow: var(--shadow-sm);
+}
+
+.check-icon {
+  color: var(--status-success-text);
+}
+
+.users-icon {
+  color: var(--text-color-medium);
+}
+
+.appointment-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.appointment-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.95rem;
+}
+
+.customer-name {
+  font-weight: 600;
+  color: var(--text-color-dark);
+}
+
+.booking-text {
+  color: var(--text-color-medium);
+  font-size: 0.85rem;
+}
+
+.amount {
+  margin-left: auto;
+  color: var(--text-color-dark);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.appointment-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  font-size: 0.85rem;
+  color: var(--text-color-medium);
+  line-height: 1.3;
+}
+
+.date-time {
+  color: var(--text-color-medium);
+}
+
+.service-name {
+  color: var(--text-color-dark);
+  font-weight: 500;
+}
+
+.booking-info {
+  color: var(--text-color-medium);
+  font-size: 0.75rem;
+}
+
+.notification-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  color: var(--text-color-medium);
+  text-align: center;
+  min-height: 120px;
+}
+.notification-status--error {
+  color: var(--status-error-text);
+}
+.notification-status__retry-btn {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: var(--spacing-sm);
+  transition: all 0.15s ease-out;
+}
+.notification-status__retry-btn:hover {
+  background: var(--primary-color);
+  color: var(--primary-text-contrast);
+}
+
+
+/* --- Responsive Design for Navbar & Dropdowns --- */
+
+@media (max-width: 768px) {
+  .navbar-container {
+    padding: 0 var(--spacing-md);
+    height: 56px;
+  }
+  .spa-image {
+    height: 32px;
+  }
+  .navbar-icons {
+    gap: var(--spacing-sm);
+  }
+  .navbar-icons .icon {
+    font-size: 1.1rem;
+    padding: var(--spacing-xs);
+  }
+  .logout-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  .notification-dropdown.custom-popup,
+  .search-dropdown {
+    /* Use calc for full width minus padding, and align right */
+    width: calc(100vw - var(--spacing-lg) * 2); 
+    right: var(--spacing-lg); 
+    max-height: calc(100vh - 64px - var(--spacing-md)); /* Adjusted height for shorter navbar */
+    border-radius: var(--radius-md);
+  }
+  .appointments-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .appointments-title {
+    font-size: 1rem;
+  }
+  .more-button {
+    padding: 4px;
+  }
+  .appointments-section {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .section-title {
+    font-size: 0.85rem;
+  }
+  .appointment-item {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+  .appointment-avatar {
+    width: 40px; height: 40px; font-size: 15px;
+  }
+  .check-icon, .users-icon {
+    size: 14px;
+  }
+  .appointment-main, .appointment-details {
+    font-size: 0.8rem;
+    gap: var(--spacing-xs);
+  }
+  .amount {
+    font-size: 0.85rem;
+  }
+  .booking-text, .date-time, .service-name, .booking-info {
+    font-size: 0.75rem;
+  }
+  .notification-status {
+    padding: var(--spacing-md);
+    font-size: 0.85rem;
+  }
+  .notification-status__retry-btn {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-container {
+    height: 50px;
+    padding: 0 var(--spacing-sm);
+  }
+  .spa-image {
+    height: 28px;
+  }
+  .navbar-icons {
+    gap: var(--spacing-xs);
+  }
+  .navbar-icons .icon {
+    font-size: 1rem;
+    padding: var(--spacing-xs);
+  }
+  .logout-btn {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+
+  .notification-dropdown.custom-popup,
+  .search-dropdown {
+    /* **CRITICAL FOR MOBILE FIT**: Use 100vw minus padding on the sides */
+    width: calc(100vw - var(--spacing-md) * 2); /* Adjusted to general page padding */
+    right: var(--spacing-md); /* Align to screen edge based on padding */
+    max-height: calc(100vh - 50px - var(--spacing-sm)); /* Adjusted for shorter navbar, tighter fit */
+    border-radius: var(--radius-sm);
+  }
+  .appointments-header {
+    padding: var(--spacing-sm) var(--spacing-sm);
+  }
+  .appointments-title {
+    font-size: 0.95rem;
+  }
+  .more-button {
+    padding: 2px;
+  }
+  .appointments-section {
+    padding: var(--spacing-sm);
+  }
+  .appointment-item {
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+  }
+  .appointment-avatar {
+    width: 36px; height: 36px; font-size: 14px;
+  }
+  .check-icon, .users-icon {
+    size: 12px;
+  }
+  .appointment-main, .appointment-details {
+    font-size: 0.75rem;
+    gap: var(--spacing-xs);
+  }
+  .amount {
+    font-size: 0.8rem;
+  }
+  .booking-text, .date-time, .service-name, .booking-info {
+    font-size: 0.7rem;
+  }
+  .notification-status {
+    padding: var(--spacing-md);
+    font-size: 0.8rem;
+  }
+  .notification-status__retry-btn {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+}
+
+/* --- NEW: Ultra-Small Screen Specific Styles (e.g., iPhone SE/5 or 320px width) --- */
+@media (max-width: 320px) {
+  .navbar-container {
+    height: 48px; /* Even shorter navbar for smallest screens */
+    padding: 0 var(--spacing-xs); /* Minimal horizontal padding */
+  }
+  .spa-image {
+    height: 24px; /* Smallest logo */
+  }
+  .navbar-icons {
+    gap: var(--spacing-xs);
+  }
+  .navbar-icons .icon {
+    font-size: 0.9rem; /* Smallest icons */
+    padding: 2px; /* Minimal padding */
+  }
+  .logout-btn {
+    padding: 3px 8px; /* Smallest logout button */
+    font-size: 0.75rem;
+  }
+
+  .notification-dropdown.custom-popup,
+  .search-dropdown {
+    width: calc(100vw - var(--spacing-md) * 2); /* Ensure it's very tight, minimal outer padding */
+    right: var(--spacing-sm); /* Adjusted right align */
+    max-height: calc(100vh - 48px - var(--spacing-xs)); /* Adjusted height for shortest navbar */
+    border-radius: var(--radius-sm);
+  }
+  .appointments-header {
+    padding: var(--spacing-xs) var(--spacing-sm); /* Minimal padding */
+  }
+  .appointments-title {
+    font-size: 0.9rem; /* Smallest title */
+  }
+  .more-button {
+    padding: 1px;
+  }
+  .appointments-section {
+    padding: var(--spacing-xs); /* Minimal section padding */
+  }
+  .appointment-item {
+    padding: var(--spacing-xs); /* Minimal item padding */
+    gap: var(--spacing-xs); /* Minimal gap */
+  }
+  .appointment-avatar {
+    width: 32px; height: 32px; font-size: 12px; /* Smallest avatar */
+  }
+  .check-icon, .users-icon {
+    size: 10px; /* Smallest status icons */
+  }
+  .appointment-main, .appointment-details {
+    font-size: 0.7rem; /* Smallest main and details text */
+    gap: 2px; /* Minimal gap */
+  }
+  .amount {
+    font-size: 0.75rem; /* Smallest amount text */
+  }
+  .booking-text, .date-time, .service-name, .booking-info {
+    font-size: 0.65rem; /* Ultra-small text */
+  }
+  .notification-status {
+    padding: var(--spacing-md);
+    font-size: 0.75rem;
+  }
+}

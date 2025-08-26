@@ -1,0 +1,171 @@
+.gift-container {
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #ffffff;
+  /* margin-top: -40px;
+  margin-left: 115px ; */
+  /* width: 100%; */
+}
+
+
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.header-section h1 {
+  font-size: 42px;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+}
+
+.desc {
+  color: #6b7280;
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+
+.desc a {
+  color: #8b5cf6;
+  text-decoration: none;
+}
+
+.options-btn {
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.controls input {
+  width: 300px;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #ffffff;
+}
+
+.controls input::placeholder {
+  color: #9ca3af;
+}
+
+.controls .filter-btn {
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.gift-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.gift-table thead th {
+  text-align: left;
+  padding: 16px 20px;
+  background-color: #f9fafb;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.gift-table tbody td {
+  padding: 16px 20px;
+  font-size: 14px;
+  border-bottom: 1px solid #f3f4f6;
+  white-space: nowrap;
+  color: #374151;
+}
+
+.gift-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.link {
+  color: #8b5cf6;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.expired {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+  min-width: 60px;
+}
+
+.redeemed {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+  min-width: 70px;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls input,
+  .controls .filter-btn,
+  .controls .options-btn {
+    width: 100%;
+  }
+
+  .controls .options-btn {
+    margin-left: 0;
+  }
+}
+

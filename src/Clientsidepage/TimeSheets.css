@@ -1,0 +1,546 @@
+/* Main Container */
+.timesheet-main-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  height: 100%;
+  /* overflow: auto; */
+  width: 100%;
+  margin-top: 20px;
+  max-width: 1810px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header Section */
+.timesheet-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  margin-left: 14px;
+}
+
+.timesheet-title-group h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1a202c;
+}
+
+.timesheet-title-group p {
+  color: #718096;
+  margin: 0.5rem 0 0;
+}
+
+.timesheet-action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Updated Header Button Styles */
+.timesheet-export-button,
+.timesheet-refresh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.timesheet-export-button:hover,
+.timesheet-refresh-button:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.timesheet-export-button {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+
+.timesheet-export-button:hover {
+  background-color: #1f2937;
+  border-color: #1f2937;
+}
+
+/* Controls Panel */
+.timesheet-controls-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  margin-left: 20px;
+}
+
+.timesheet-controls-left {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.timesheet-search-wrapper {
+  position: relative;
+  width: 250px;
+}
+
+.timesheet-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #718096;
+}
+
+.timesheet-search-field {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.timesheet-search-field:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* New Date Picker Styles */
+.timesheet-week-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+}
+
+.timesheet-date-input {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: #1a202c;
+  outline: none;
+}
+.timesheet-date-input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.timesheet-data-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #718096;
+  font-size: 0.875rem;
+}
+
+/* Table Section */
+.timesheet-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.timesheet-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.timesheet-table-head th {
+  background: #f8fafc;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.timesheet-table-row {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.timesheet-table-row:hover {
+  background-color: #f9fafb;
+}
+
+.timesheet-table-cell {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #1a202c;
+}
+
+/* Member Info */
+.timesheet-member-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.timesheet-member-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.timesheet-member-details h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.timesheet-member-details p {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Status Badges */
+.timesheet-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.timesheet-status-blue {
+  background: #ebf5ff;
+  color: #2563eb;
+}
+
+.timesheet-status-green {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.timesheet-more-actions {
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.timesheet-more-actions:hover {
+  background: #f1f5f9;
+  color: #1a202c;
+}
+
+/* New Empty State Styles */
+.timesheet-empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  font-size: 16px;
+  gap: 16px;
+}
+
+.timesheet-clear-search {
+  padding: 8px 16px;
+  background-color: #cbd5e1;
+  color: #374151;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timesheet-clear-search:hover {
+  background-color: #94a3b8;
+  color: white;
+}
+
+/* New Export Modal Styles */
+.timesheet-export-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.timesheet-export-modal-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.timesheet-export-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.timesheet-export-modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.timesheet-export-modal-header button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.timesheet-export-modal-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.timesheet-modal-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.timesheet-modal-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.timesheet-modal-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.timesheet-export-modal-content select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.timesheet-export-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.timesheet-btn-secondary,
+.timesheet-btn-primary {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timesheet-btn-secondary {
+  background: white;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.timesheet-btn-secondary:hover {
+  background-color: #f1f5f9;
+}
+
+.timesheet-btn-primary {
+  background: #111827;
+  color: white;
+}
+
+.timesheet-btn-primary:hover {
+  background-color: #1f2937;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .timesheet-search-wrapper {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .timesheet-main-wrapper {
+    padding: 1rem;
+  }
+  .timesheet-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-left: 0;
+  }
+  .timesheet-controls-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-left: 0;
+  }
+  .timesheet-controls-left {
+    width: 100%;
+    flex-direction: column;
+  }
+  .timesheet-search-wrapper {
+    width: 100%;
+  }
+  .timesheet-table-wrapper {
+    margin-top: 1rem;
+  }
+  .timesheet-export-button,
+  .timesheet-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* ... other styles remain the same ... */
+
+/* New Date Picker Styles */
+.timesheet-week-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #64748b; /* Ensures icon color is consistent */
+}
+
+.timesheet-date-input {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: #1a202c;
+  outline: none;
+  /* Hides the default date input calendar icon */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+.timesheet-date-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+/* ... other styles remain the same ... */
+
+/* New Date Picker Modal Styles */
+.timesheet-date-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.timesheet-date-picker-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 300px;
+  padding: 1rem;
+}
+
+.timesheet-date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.timesheet-date-picker-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.timesheet-date-picker-header button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #1a202c;
+  padding: 0.25rem;
+}
+
+.timesheet-day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #718096;
+  margin-bottom: 0.5rem;
+}
+
+.timesheet-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.timesheet-days-grid .timesheet-day,
+.timesheet-days-grid .timesheet-day-empty {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Makes the button square */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #1a202c;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.timesheet-days-grid .timesheet-day:hover {
+  background: #e2e8f0;
+}
+
+/* ... rest of the CSS file ... */
+/* ... rest of the CSS file ... */
