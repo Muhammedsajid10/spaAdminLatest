@@ -132,7 +132,7 @@
 }
 
 .btn-add-client:hover {
-  background: #4338ca; /* Darker on hover */
+  background: #ededed; /* Darker on hover */
   transform: translateY(-2px); /* Slight lift effect */
   box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); /* Enhanced shadow on hover */
 }

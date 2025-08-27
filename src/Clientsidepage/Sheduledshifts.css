@@ -57,7 +57,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid #000;
+  /* border: 1px solid #000; */
   background: #fff;
   color: #000;
   cursor: pointer;
@@ -223,12 +223,13 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid #000;
+  /* border: 1px solid #000; */
   background: #fff;
   color: #000;
   cursor: pointer;
   transition: background .12s ease, transform .08s ease;
   box-shadow: none;
+  border: none;
 }
 
 .week-navigation .nav-btn:hover,
@@ -247,13 +248,14 @@
   border-radius: 10px;
   background: #fff;
   color: #000;
-  border: 1px solid #000;   /* black border for strong business look */
+  /* border: 1px solid #000;   black border for strong business look */
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 6px 18px rgba(0,0,0,0.04);
   transition: background .12s ease, transform .08s ease;
   min-width: 260px;
   justify-content: center;
+  border: none;
 }
 
 .week-navigation .week-date-btn:hover,
@@ -276,12 +278,13 @@
 .week-navigation .today-btn {
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid #000;
+  /* border: 1px solid #000; */
   background: #fff;
   color: #000;
   font-weight: 600;
   cursor: pointer;
   transition: background .12s ease, transform .08s ease;
+  border: none;
 }
 
 .week-navigation .today-btn:hover,

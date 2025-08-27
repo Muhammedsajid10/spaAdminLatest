@@ -27,7 +27,7 @@
 .page-title {
   margin: 0;
   font-size: 28px;
-  font-weight: 600;
+  font-weight: 400;
   color: #1a1a1a;
 }
 
@@ -72,7 +72,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
   margin-bottom: 24px;
   padding: 16px;
   border-radius: 12px;
@@ -414,7 +414,7 @@
 
 /* Buttons */
 .primary-button {
-  background: #0b69ff;
+  background: #000000;
   color: #fff;
   padding: 8px 12px;
   border-radius: 8px;
@@ -743,7 +743,7 @@
 
 /* Buttons */
 .primary-button {
-  background: #0b69ff;
+  background: #000000;
   color: #fff;
   padding: 8px 12px;
   border-radius: 8px;

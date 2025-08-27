@@ -58,9 +58,9 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background-color: #111827;
-  color: white;
-  border: none;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
+  border: 1px solid ;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 500;

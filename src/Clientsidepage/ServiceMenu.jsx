@@ -5,6 +5,7 @@ import api from "../Service/Api";
 import "./ServiceMenu.css";
 import Loading from "../states/Loading";
 import Error500Page from "../states/ErrorPage";
+import { IoIosArrowDown } from "react-icons/io";
 import NoData from "../states/NoData";
 
 // Add export libs
@@ -531,7 +532,7 @@ const ServiceMenu = () => {
               aria-haspopup="true"
               aria-expanded={openAddMenu ? 'true' : undefined}
               onClick={handleAddMenuClick}
-              endIcon={<ArrowDown size={16} />}
+              endIcon={<IoIosArrowDown  size={16} />}
             >
               Add
             </Button>
@@ -558,7 +559,7 @@ const ServiceMenu = () => {
               aria-haspopup="true"
               aria-expanded={openExportMenu ? 'true' : undefined}
               onClick={handleExportClick}
-              endIcon={<ArrowDown size={14} />}
+              endIcon={<IoIosArrowDown  size={14} />}
             >
               Export
             </Button>
@@ -679,8 +680,7 @@ const ServiceMenu = () => {
                     endIcon={<ArrowDown size={16} />}
                   >
                     Actions
-                  </Button> */}
-              //   </div>
+                  </Button> */}   </div>
                 {filteredAndCategorizedServices[categoryName].map((service) => (
                   <div key={service._id} className="service-menu__service-card">
                     <div className="service-menu__service-card-main-info">

@@ -227,7 +227,7 @@ const Membership = () => {
           </div>
           <div className="mem-export-container">
             <button 
-              className="mem-export-btn"
+              className="options-btn"
               onClick={toggleExportDropdown}
             >
               <DownloadIcon />

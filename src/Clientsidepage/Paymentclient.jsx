@@ -339,7 +339,7 @@ const PaymentClient = () => {
           </div>
           <div className="pay-options">
             <button 
-              className="pay-options-btn" 
+              className="options-btn" 
               onClick={(e) => { e.stopPropagation(); setIsOptionsOpen(!isOptionsOpen); }}
               disabled={sortedAndFilteredPayments.length === 0}
             >
