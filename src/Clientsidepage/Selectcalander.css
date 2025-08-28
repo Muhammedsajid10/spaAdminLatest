@@ -16,7 +16,8 @@
   --radius-md: 8px; 
   --radius-lg: 12px;
   --time-slot-height: 80px; /* Increased height for 30-minute intervals */
-  --staff-column-width: 200px; /* Fixed width for staff columns */
+  --staff-column-min-width: 190px; /* Minimum width for staff columns */
+  --staff-column-max-width: 300px; /* Maximum width for staff columns */
   --time-column-width: 80px; /* Fixed width for time column */
 
   /* New availability color */
@@ -1132,16 +1133,105 @@
 .staff-grid {
   flex: 1;
   display: flex; /* For horizontal arrangement of staff columns */
-  overflow-x: auto; /* THIS IS YOUR HORIZONTAL SCROLL FOR EMPLOYEES */
+  overflow-x: auto; /* Horizontal scroll for many employees */
   position: relative; /* Important for sticky children */
+  min-height: 0; /* Allow flex item to shrink */
 }
 
 .staff-column {
-  width: var(--staff-column-width);
-  flex-shrink: 0; /* Prevent individual columns from shrinking */
+  /* Dynamic width: fill available space equally while respecting min/max constraints */
+  flex: 1 1 0; /* Grow, shrink, and start with 0 base width */
+  min-width: var(--staff-column-min-width);
+  max-width: var(--staff-column-max-width);
   border-right: 2px solid #e5e7eb;
   display: flex;
   flex-direction: column;
+}
+
+/* === DYNAMIC STAFF GRID SIZING === */
+/* Automatically adjust based on number of staff members */
+.staff-grid[data-staff-count="1"] .staff-column {
+  flex: 1 1 100%;
+  max-width: none; /* Remove max-width constraint for single employee */
+}
+
+.staff-grid[data-staff-count="2"] .staff-column {
+  flex: 1 1 50%;
+  max-width: 50vw;
+}
+
+.staff-grid[data-staff-count="3"] .staff-column {
+  flex: 1 1 33.33%;
+  max-width: 33vw;
+}
+
+.staff-grid[data-staff-count="4"] .staff-column {
+  flex: 1 1 25%;
+  max-width: 25vw;
+}
+
+.staff-grid[data-staff-count="5"] .staff-column {
+  flex: 1 1 20%;
+  max-width: 20vw;
+}
+
+.staff-grid[data-staff-count="6"] .staff-column {
+  flex: 1 1 16.66%;
+  max-width: 16.66vw;
+}
+
+/* For 7+ employees, maintain scrollable behavior with minimum widths */
+.staff-grid:not([data-staff-count="1"]):not([data-staff-count="2"]):not([data-staff-count="3"]):not([data-staff-count="4"]):not([data-staff-count="5"]):not([data-staff-count="6"]) .staff-column {
+  flex: 0 0 var(--staff-column-min-width);
+  max-width: var(--staff-column-max-width);
+}
+
+/* === RESPONSIVE DYNAMIC SIZING === */
+@media (max-width: 1200px) {
+  /* On smaller screens, allow more scrolling and reduce max widths */
+  .staff-grid[data-staff-count="4"] .staff-column,
+  .staff-grid[data-staff-count="5"] .staff-column,
+  .staff-grid[data-staff-count="6"] .staff-column {
+    flex: 0 0 var(--staff-column-min-width);
+    max-width: var(--staff-column-max-width);
+  }
+}
+
+@media (max-width: 768px) {
+  /* On mobile, prioritize usability over filling width */
+  .staff-grid[data-staff-count] .staff-column {
+    flex: 0 0 var(--staff-column-min-width);
+    max-width: var(--staff-column-max-width);
+  }
+  
+  /* Single employee still gets full width on mobile */
+  .staff-grid[data-staff-count="1"] .staff-column {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+}
+
+/* === WEEK VIEW DYNAMIC SIZING === */
+.week-view-container[data-staff-count="1"] .week-day-cell {
+  /* Give more space to day columns when fewer employees */
+  flex: 1 1 calc((100% - var(--staff-column-min-width)) / 7);
+}
+
+.week-view-container[data-staff-count="2"] .week-day-cell,
+.week-view-container[data-staff-count="3"] .week-day-cell {
+  flex: 1 1 calc((100% - var(--staff-column-min-width)) / 7);
+}
+
+.week-view-container .week-headers-row,
+.week-view-container .week-employee-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.week-view-container .week-day-header-cell,
+.week-view-container .week-day-cell {
+  flex: 1 1 0;
+  min-width: 120px; /* Ensure minimum usable width for days */
 }
 
 .staff-header {
@@ -1155,7 +1245,7 @@
   position: sticky; /* Sticky header for each staff column */
   top: 0; /* Sticky to the top of its scrollable parent (.scheduler-content) */
   left: 0; /* Important for horizontal sticky behavior inside overflow-x */
-  z-index: 1; /* Ensure it stays above schedule entries */
+  z-index: 3000; /* Ensure it stays above schedule entries */
 }
 
 .staff-avatar {
@@ -1666,13 +1756,16 @@
   }
 
   .staff-column {
-    width: var(--staff-column-width);
-    flex-shrink: 0;
+    /* Dynamic width in responsive mode too */
+    flex: 1 1 0;
+    min-width: var(--staff-column-min-width);
+    max-width: var(--staff-column-max-width);
     flex-direction: column;
   }
 
   .staff-header {
-    width: var(--staff-column-width);
+    /* Remove fixed width, let it inherit from column */
+    width: 100%;
     height: auto;
     flex-shrink: 0;
     position: sticky;
@@ -2453,8 +2546,11 @@
 
 /* Adjustments for Week View layout */
 .week-staff-column {
-    width: var(--staff-column-width);
-    flex-shrink: 0;
+    /* Dynamic width for week view too */
+    flex: 0 0 auto;
+    min-width: var(--staff-column-min-width);
+    max-width: var(--staff-column-max-width);
+    width: clamp(var(--staff-column-min-width), 20vw, var(--staff-column-max-width));
     background: var(--bg-primary);
     border-right: 2px solid var(--border-color);
     position: sticky;
@@ -2588,8 +2684,11 @@
 
 /* New sticky column for employee names */
 .week-staff-column {
-    width: var(--staff-column-width);
-    flex-shrink: 0;
+    /* Dynamic width for week staff column too */
+    flex: 0 0 auto;
+    min-width: var(--staff-column-min-width);
+    max-width: var(--staff-column-max-width);
+    width: clamp(var(--staff-column-min-width), 20vw, var(--staff-column-max-width));
     background: var(--bg-primary);
     border-right: 1px solid var(--border-color);
     position: sticky;
@@ -6672,5 +6771,400 @@
     position: absolute;
     top: 12px;
     right: 12px;
+  }
+}
+
+/* ============================= */
+/* BOOKING STATUS MODAL - CLEAN BLACK & WHITE THEME */
+/* ============================= */
+
+/* Modal Container */
+.booking-status-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+/* Modal Content */
+.booking-status-details {
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  width: 100%;
+    max-width: 729px;  max-height: 166vh;
+  overflow-y: auto;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Header Section */
+.booking-status-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 2px solid #f5f5f5;
+  background: #fafafa;
+}
+
+.booking-status-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #e5e5e5;
+  border: 2px solid #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 18px;
+  color: #000000;
+  flex-shrink: 0;
+}
+
+.booking-status-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.booking-status-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.booking-status-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #666666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.booking-status-badge {
+  background: #000000;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Status-specific badge colors */
+.booking-status-badge.status-booked {
+  background: #6c757d;
+}
+
+.booking-status-badge.status-confirmed {
+  background: #007bff;
+}
+
+.booking-status-badge.status-arrived {
+  background: #ffc107;
+  color: #000000;
+}
+
+.booking-status-badge.status-started {
+  background: #28a745;
+}
+
+.booking-status-badge.status-completed {
+  background: #000000;
+}
+
+.booking-status-badge.status-cancelled {
+  background: #dc3545;
+}
+
+/* Details Grid */
+.booking-status-grid {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.status-detail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+}
+
+.detail-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.detail-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.detail-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+  word-wrap: break-word;
+}
+
+/* Actions Section */
+.booking-status-actions {
+  padding: 24px;
+  border-top: 1px solid #e5e5e5;
+  background: #fafafa;
+}
+
+.status-actions-header {
+  margin-bottom: 16px;
+}
+
+.status-select-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 8px;
+}
+
+.status-select-wrapper {
+  position: relative;
+}
+
+.status-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 44px;
+}
+
+.status-select:hover {
+  border-color: #666666;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.status-select:disabled {
+  background: #f5f5f5;
+  color: #999999;
+  cursor: not-allowed;
+  border-color: #e5e5e5;
+}
+
+/* Status Buttons (if needed) */
+.status-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.status-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.status-btn:hover {
+  background: #f5f5f5;
+}
+
+.status-btn:active {
+  background: #e5e5e5;
+}
+
+.status-btn.primary {
+  background: #000000;
+  color: #ffffff;
+}
+
+.status-btn.primary:hover {
+  background: #333333;
+}
+
+.status-btn:disabled {
+  background: #f5f5f5;
+  color: #999999;
+  border-color: #e5e5e5;
+  cursor: not-allowed;
+}
+
+/* Loading States */
+.booking-modal-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  margin: 16px 24px;
+}
+
+/* Ensure the Loading component fits well in the booking modal */
+.booking-modal-loading .circular-progress {
+  flex-shrink: 0;
+}
+
+.loading-content {
+  flex: 1;
+}
+
+.loading-content strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 4px;
+}
+
+.loading-content p {
+  margin: 0;
+  font-size: 12px;
+  color: #666666;
+}
+
+/* Error States */
+.booking-modal-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  margin: 16px 24px;
+}
+
+.error-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.error-content {
+  flex: 1;
+}
+
+.error-content strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 4px;
+}
+
+.error-content p {
+  margin: 0;
+  font-size: 12px;
+  color: #991b1b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .booking-status-modal {
+    padding: 16px;
+  }
+  
+  .booking-status-details {
+    max-width: 100%;
+  }
+  
+  .booking-status-header {
+    padding: 20px;
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .booking-status-grid {
+    padding: 20px;
+    gap: 12px;
+  }
+  
+  .booking-status-actions {
+    padding: 20px;
+  }
+  
+  .status-buttons {
+    flex-direction: column;
+  }
+  
+  .status-btn {
+    min-width: auto;
+  }
+  
+  .status-detail {
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .detail-icon {
+    font-size: 18px;
+  }
+  
+  .booking-status-info h3 {
+    font-size: 16px;
+    white-space: normal;
+  }
+  
+  .booking-status-info p {
+    font-size: 13px;
+    white-space: normal;
   }
 }

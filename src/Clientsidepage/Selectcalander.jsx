@@ -2698,8 +2698,10 @@ useEffect(() => {
           </div>
         )}
 
-     <div className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 6)}`}
-          // make columns equal share of available width; each column min 220px, otherwise scroll
+     <div 
+          className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 6)}`}
+          data-staff-count={displayEmployees.length}
+          // Dynamic columns: equal share of available width with responsive behavior
         >
           {currentView === 'Day' && displayEmployees.map(employee => (
             <StaffColumn
@@ -2719,7 +2721,7 @@ useEffect(() => {
             />
           ))}
           {currentView === 'Week' && (
-            <div className="week-view-container">
+            <div className="week-view-container" data-staff-count={displayEmployees.length}>
               {/* Week Day Headers */}
               <div className="week-headers-row">
                 <div className="week-staff-header-cell">Staff</div>
@@ -3497,7 +3499,7 @@ useEffect(() => {
 
               {bookingStatusLoading && (
                 <div className="booking-modal-loading">
-                  <div className="loading-spinner"></div>
+                  <Loading />
                   <div className="loading-content">
                     <strong>Processing</strong>
                     <p>Updating booking status...</p>
@@ -3632,7 +3634,15 @@ useEffect(() => {
               </div>
 
               {bookingError && <div className="booking-modal-error">{bookingError}</div>}
-              {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
+              {bookingLoading && (
+                <div className="booking-modal-loading">
+                  <Loading />
+                  <div className="loading-content">
+                    <strong>Processing</strong>
+                    <p>Creating your perfect appointment...</p>
+                  </div>
+                </div>
+              )}
               {bookingSuccess && <div className="booking-modal-success">{bookingSuccess}</div>}
 
               {/* Service Selection Step */}
