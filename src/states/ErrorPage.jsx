@@ -1,6 +1,6 @@
 // Error500Page.jsx
 import React from 'react';
-import './Errorpage.css';
+import './ErrorPage.css';
 
 const Error500Page = () => {
   return (
