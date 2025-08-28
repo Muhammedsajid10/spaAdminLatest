@@ -1157,7 +1157,7 @@
   position: sticky; /* Sticky header for each staff column */
   top: 0; /* Sticky to the top of its scrollable parent (.scheduler-content) */
   left: 0; /* Important for horizontal sticky behavior inside overflow-x */
-  z-index: 1; /* Ensure it stays above schedule entries */
+  z-index: 3000; /* Ensure it stays above schedule entries */
 }
 
 .staff-avatar {

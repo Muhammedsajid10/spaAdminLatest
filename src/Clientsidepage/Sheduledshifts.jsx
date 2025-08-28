@@ -1290,17 +1290,14 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
 
          
 
-        // Close modal immediately since state is updated
+        // Close modal and refresh data to show updated shifts
         setShowShiftEditor(false);
 
-        // Only refetch if we want to verify backend persistence - but don't overwrite good UI state
-        // We'll comment this out for now to prevent overwriting the UI state
-        // setTimeout(() => {
-        //   console.log('🔄 Refetching employees to verify persistence...');
-        //   fetchEmployees();
-        // }, 1000);
+        // Fetch updated data to show the latest shifts from server
+        console.log('🔄 Refetching employees to show updated shifts...');
+        await fetchEmployees(currentDate);
 
-        console.log('🎉 Shift saved successfully! UI state updated without refetch.');
+        console.log('🎉 Shift saved successfully! Data refreshed.');
       } catch (err) {
         console.error('❌ Save shift error:', err);
         setShiftEditorError(err.message); // Set error for modal
@@ -1367,6 +1364,10 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
           return updatedMembers;
         });
         setShowShiftEditor(false);
+        
+        // Fetch updated data to show the latest shifts from server
+        console.log('🔄 Refetching employees after shift deletion...');
+        await fetchEmployees(currentDate);
       } catch (err) {
         setShiftEditorError(err.message);
       } finally {

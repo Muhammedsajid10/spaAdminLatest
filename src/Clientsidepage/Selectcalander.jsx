@@ -392,10 +392,10 @@ const paymentMethods = [
 ];
 // Add these functions after your existing date picker functions (around line 400)
 
-// Generate week ranges for a given month
-const generateWeekRangesForMonth = (month) => {
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
+// Generate week ranges for a given month - Enhanced to include weeks spanning months
+const generateWeekRangesForMonth = (baseDate) => {
+  const year = baseDate.getFullYear();
+  const monthIndex = baseDate.getMonth();
   
   // Get first day of month
   const firstDay = new Date(year, monthIndex, 1);
@@ -412,14 +412,15 @@ const generateWeekRangesForMonth = (month) => {
   
   let weekNumber = 1;
   
-  while (currentWeekStart <= lastDay) {
+  // Generate more weeks to cover the entire month plus partial weeks
+  while (currentWeekStart <= lastDay || weekNumber <= 6) {
     const weekEnd = new Date(currentWeekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
     
-    // Check if this week has any days in the current month
-    const hasMonthDays = (currentWeekStart <= lastDay && weekEnd >= firstDay);
+    // Include all weeks that touch the month, not just those with majority days
+    const touchesMonth = (currentWeekStart <= lastDay && weekEnd >= firstDay);
     
-    if (hasMonthDays) {
+    if (touchesMonth || weekNumber <= 6) {
       weeks.push({
         number: weekNumber,
         startDate: new Date(currentWeekStart),
@@ -431,8 +432,14 @@ const generateWeekRangesForMonth = (month) => {
     }
     
     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    
+    // Break if we've gone too far past the month
+    if (currentWeekStart.getTime() > lastDay.getTime() + (7 * 24 * 60 * 60 * 1000) && weekNumber > 6) {
+      break;
+    }
   }
   
+  console.log(`Generated ${weeks.length} weeks for ${baseDate.toLocaleDateString()}:`, weeks);
   return weeks;
 };
 
@@ -456,6 +463,8 @@ const getCurrentWeekRange = (date) => {
 
 // Handle week range selection
 const handleWeekRangeSelect = (weekRange) => {
+  console.log('Week range selected:', weekRange);
+  alert(`Selected week: ${weekRange.label} (${weekRange.dateRange})`);
   setCurrentDate(weekRange.startDate); // Set to start of selected week
   setSelectedWeekRange(weekRange);
   setShowDatePicker(false);
@@ -1173,23 +1182,48 @@ const goToDatePickerToday = () => {
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
+    const today = new Date();
+    setCurrentDate(today);
+    
+    // Update week range if in week view
+    if (currentView === 'Week') {
+      const todayWeekRange = getCurrentWeekRange(today);
+      setSelectedWeekRange(todayWeekRange);
+    }
   };
 
   const goToPrevious = () => {
     const newDate = new Date(currentDate);
-    if (currentView === 'Day') newDate.setDate(newDate.getDate() - 1);
-    if (currentView === 'Week') newDate.setDate(newDate.getDate() - 7);
-    if (currentView === 'Month') newDate.setMonth(newDate.getMonth() - 1);
-    setCurrentDate(newDate);
+    if (currentView === 'Day') {
+      newDate.setDate(newDate.getDate() - 1);
+      setCurrentDate(newDate);
+    } else if (currentView === 'Week') {
+      newDate.setDate(newDate.getDate() - 7);
+      setCurrentDate(newDate);
+      // Update week range for the new date
+      const newWeekRange = getCurrentWeekRange(newDate);
+      setSelectedWeekRange(newWeekRange);
+    } else if (currentView === 'Month') {
+      newDate.setMonth(newDate.getMonth() - 1);
+      setCurrentDate(newDate);
+    }
   };
 
   const goToNext = () => {
     const newDate = new Date(currentDate);
-    if (currentView === 'Day') newDate.setDate(newDate.getDate() + 1);
-    if (currentView === 'Week') newDate.setDate(newDate.getDate() + 7);
-    if (currentView === 'Month') newDate.setMonth(newDate.getMonth() + 1);
-    setCurrentDate(newDate);
+    if (currentView === 'Day') {
+      newDate.setDate(newDate.getDate() + 1);
+      setCurrentDate(newDate);
+    } else if (currentView === 'Week') {
+      newDate.setDate(newDate.getDate() + 7);
+      setCurrentDate(newDate);
+      // Update week range for the new date
+      const newWeekRange = getCurrentWeekRange(newDate);
+      setSelectedWeekRange(newWeekRange);
+    } else if (currentView === 'Month') {
+      newDate.setMonth(newDate.getMonth() + 1);
+      setCurrentDate(newDate);
+    }
   };
 
   const isTimeSlotUnavailable = (employeeId, slotTime) => {
@@ -2477,19 +2511,37 @@ useEffect(() => {
     return () => clearInterval(headerTimeTimer);
   }, []);
 
+  // Initialize week range when component mounts or view changes to Week
+  useEffect(() => {
+    if (currentView === 'Week' && !selectedWeekRange) {
+      const currentWeekRange = getCurrentWeekRange(currentDate);
+      setSelectedWeekRange(currentWeekRange);
+      setWeekRanges(generateWeekRangesForMonth(currentDate));
+    }
+  }, [currentView, currentDate, selectedWeekRange]);
+
   const displayEmployees = getFilteredEmployees();
 
   const getCalendarDays = () => {
     if (currentView === 'Day') {
       return [currentDate];
     } else if (currentView === 'Week') {
-      const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
-      return Array.from({ length: 7 }, (_, i) => {
-        const day = new Date(startOfWeek);
-        day.setDate(startOfWeek.getDate() + i);
-        return day;
-      });
+      // Use selectedWeekRange if available, otherwise calculate from currentDate
+      if (selectedWeekRange) {
+        return Array.from({ length: 7 }, (_, i) => {
+          const day = new Date(selectedWeekRange.startDate);
+          day.setDate(selectedWeekRange.startDate.getDate() + i);
+          return day;
+        });
+      } else {
+        const startOfWeek = new Date(currentDate);
+        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
+        return Array.from({ length: 7 }, (_, i) => {
+          const day = new Date(startOfWeek);
+          day.setDate(startOfWeek.getDate() + i);
+          return day;
+        });
+      }
     } else if (currentView === 'Month') {
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
@@ -2823,8 +2875,12 @@ useEffect(() => {
     // Set picker view based on current calendar view
     if (currentView === 'Week') {
       setDatePickerView('week');
-      setWeekRanges(generateWeekRangesForMonth(currentDate));
-      setSelectedWeekRange(getCurrentWeekRange(currentDate));
+      const weekRanges = generateWeekRangesForMonth(currentDate);
+      console.log('Generated week ranges:', weekRanges);
+      setWeekRanges(weekRanges);
+      const currentWeekRange = getCurrentWeekRange(currentDate);
+      console.log('Current week range:', currentWeekRange);
+      setSelectedWeekRange(currentWeekRange);
     } else if (currentView === 'Month') {
       setDatePickerView('month');
     } else {
@@ -2976,7 +3032,10 @@ useEffect(() => {
                 <button
                   key={index}
                   className={`week-range-item ${isCurrentWeek ? 'selected' : ''}`}
-                  onClick={() => handleWeekRangeSelect(weekRange)}
+                  onClick={() => {
+                    console.log('Week range clicked:', weekRange);
+                    handleWeekRangeSelect(weekRange);
+                  }}
                 >
                   <div className="week-range-label">{weekRange.label}</div>
                   <div className="week-range-dates">{weekRange.dateRange}</div>
@@ -3356,7 +3415,28 @@ useEffect(() => {
             </button>
             <select
               value={currentView}
-              onChange={(e) => setCurrentView(e.target.value)}
+              onChange={(e) => {
+                const newView = e.target.value;
+                setCurrentView(newView);
+                
+                // Initialize proper ranges when switching views
+                if (newView === 'Week') {
+                  // Initialize week range for current date
+                  const currentWeekRange = getCurrentWeekRange(currentDate);
+                  setSelectedWeekRange(currentWeekRange);
+                  setWeekRanges(generateWeekRangesForMonth(currentDate));
+                  // Set currentDate to start of the week
+                  setCurrentDate(currentWeekRange.startDate);
+                } else if (newView === 'Month') {
+                  // Set currentDate to start of the month
+                  const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                  setCurrentDate(startOfMonth);
+                } else if (newView === 'Day') {
+                  // Keep current date as is for day view
+                  // Reset week range if switching from week view
+                  setSelectedWeekRange(null);
+                }
+              }}
               className="view-selector"
             >
               <option value="Day">Day</option>
