@@ -45,6 +45,9 @@ const performDemoLogin = async () => {
         localStorage.setItem('user', JSON.stringify(user));
         console.log('✅ Demo login successful! Fresh token acquired.');
         console.log('👤 User:', user.fullName, '(', user.role, ')');
+        if (user.role !== 'admin') {
+          console.warn('⚠️ Demo login did NOT return an admin user! Role:', user.role);
+        }
         loginInProgress = false;
         loginPromise = null;
         resolve(token);
@@ -86,20 +89,28 @@ api.interceptors.request.use(
     }
 
     let token = localStorage.getItem('token');
-    
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('user'));
+    } catch (e) {}
+
     // If no token exists and no login in progress, try to perform demo login
     if (!token && !loginInProgress) {
       console.log('No token found, attempting demo login...');
       token = await performDemoLogin();
+      user = JSON.parse(localStorage.getItem('user'));
     }
-    
+
     if (token) {
+      if (user?.role !== 'admin') {
+        console.warn('⚠️ Token exists but user is not admin! Role:', user?.role);
+      }
       console.log('✅ Adding token to request headers');
       config.headers.Authorization = `Bearer ${token}`;
     } else {
       console.log('❌ No token available for request');
     }
-    
+
     return config;
   },
   (error) => {
