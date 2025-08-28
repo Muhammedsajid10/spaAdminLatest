@@ -4239,9 +4239,20 @@
 
 /* Enhanced team popup styles */
 
+/* Popup backdrop for team popup */
+.popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
 /* === ENHANCED TEAM POPUP === */
-.team-popup-enhanced {
-  position: absolute;
+/* .team-popup-enhanced {
+  position: absolute; 
   top: calc(100% + 12px);
   left: 0;
   background: #ffffff;
@@ -4250,9 +4261,26 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
   width: 400px;
   max-height: 600px;
-  z-index: 1000;
+  z-index: 9999 !important; 
   overflow: hidden;
   animation: teamPopupSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+} */
+
+.team-popup-enhanced {
+  position: absolute;
+    /* top: calc(100% + 12px); */
+    top: 144px;
+    left: 0;
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    max-height: 600px;
+    z-index: 9999 !important;
+    overflow: hidden;
+    animation: teamPopupSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    height: 455px;
 }
 
 @keyframes teamPopupSlideIn {
