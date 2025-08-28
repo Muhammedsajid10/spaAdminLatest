@@ -311,42 +311,17 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
   useEffect(() => {
     if (employee && employee.workSchedule) {
       // Create a proper default schedule with fallback values
-      const defaultSchedule = {
-        sunday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        monday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        tuesday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        wednesday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        thursday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        friday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        saturday: { isWorking: false, startTime: '09:00', endTime: '17:00' }
-      };
+ 
 
       // Merge with existing schedule but ensure times are valid
       const mergedSchedule = { ...defaultSchedule };
       Object.keys(employee.workSchedule).forEach(day => {
         if (employee.workSchedule[day]) {
-          const daySchedule = employee.workSchedule[day];
-          
-          // Check if this day has individual shifts (multiple shifts)
-          if (daySchedule.shifts) {
-            console.log(`📅 Day ${day} has individual shifts:`, daySchedule.shifts);
-            // For days with individual shifts, show the regular pattern if it exists
-            // but don't overwrite the individual shifts when saving
-            mergedSchedule[day] = {
-              isWorking: daySchedule.isWorking || false,
-              startTime: daySchedule.startTime || '09:00',
-              endTime: daySchedule.endTime || '17:00',
-              hasIndividualShifts: true, // Mark this for UI indication
-              individualShifts: daySchedule.shifts
-            };
-          } else {
-            // Regular single shift day
-            mergedSchedule[day] = {
-              isWorking: daySchedule.isWorking || false,
-              startTime: daySchedule.startTime || '09:00',
-              endTime: daySchedule.endTime || '17:00'
-            };
-          }
+          mergedSchedule[day] = {
+            isWorking: employee.workSchedule[day].isWorking || false,
+            startTime: employee.workSchedule[day].startTime || '09:00',
+            endTime: employee.workSchedule[day].endTime || '17:00'
+          };
         }
       });
 
@@ -416,36 +391,12 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
     setError(null);
 
     try {
-      console.log('📝 Starting save process for employee:', employee.id);
-      console.log('📋 Weekly schedule to save:', JSON.stringify(weeklySchedule, null, 2));
-      
-      // Clean the schedule data - remove UI-only properties
-      const cleanedSchedule = {};
-      Object.keys(weeklySchedule).forEach(day => {
-        const dayData = weeklySchedule[day];
-        cleanedSchedule[day] = {
-          isWorking: dayData.isWorking,
-          startTime: dayData.startTime,
-          endTime: dayData.endTime
-        };
-        // Don't include hasIndividualShifts or individualShifts in the save data
-      });
-      
-      console.log('🧹 Cleaned schedule for backend:', JSON.stringify(cleanedSchedule, null, 2));
-      
-      // Validate that at least one day is selected
-      const workingDays = Object.keys(cleanedSchedule).filter(day => cleanedSchedule[day].isWorking);
-      console.log('📅 Working days found:', workingDays);
-      
-      if (workingDays.length === 0) {
-        console.log('⚠️ No working days selected, saving anyway...');
-      }
-      
-      await onSave(employee.id, cleanedSchedule);
-      console.log('✅ Regular schedule saved successfully');
+      console.log('Saving schedule for employee:', employee.id, weeklySchedule);
+      await onSave(employee.id, weeklySchedule);
+      console.log('Schedule saved successfully');
       onClose();
     } catch (err) {
-      console.error('❌ Error saving schedule:', err);
+      console.error('Error saving schedule:', err);
       setError(err.message);
     } finally {
       setSaving(false);
@@ -577,14 +528,7 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
                         checked={daySchedule.isWorking}
                         onChange={() => handleDayToggle(key)}
                       />
-                      <span className="day-name">
-                        {label}
-                        {daySchedule.hasIndividualShifts && (
-                          <span className="individual-shifts-indicator" title={`Has individual shifts: ${daySchedule.individualShifts}`}>
-                            🔒
-                          </span>
-                        )}
-                      </span>
+                      <span className="day-name">{label}</span>
                     </label>
                     <span className="day-duration">{calculateDayHours(daySchedule)}</span>
                   </div>
@@ -612,11 +556,6 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
                         >
                           🗑️
                         </button>
-                        {daySchedule.hasIndividualShifts && (
-                          <div className="individual-shifts-note">
-                            <small>⚠️ Individual shifts: {daySchedule.individualShifts}</small>
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <button
@@ -1113,15 +1052,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         });
 
         setTeamMembers(transformedMembers);
-        console.log('🔄 setTeamMembers called with:', transformedMembers.length, 'employees');
-        console.log('📊 First employee workSchedule sample:', transformedMembers[0]?.workSchedule);
-        console.log('📊 All employees with schedules:', transformedMembers.map(emp => ({
-          name: emp.name,
-          id: emp.id,
-          hasSchedule: !!emp.workSchedule,
-          scheduleKeys: Object.keys(emp.workSchedule || {}),
-          workingDays: Object.keys(emp.workSchedule || {}).filter(day => emp.workSchedule[day]?.isWorking)
-        })));
       } catch (err) {
         setError(err.message);
       } finally {
@@ -1458,44 +1388,13 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
     };
 
     const saveEmployeeSchedule = async (employeeId, newSchedule) => {
-      console.log('🔄 Starting saveEmployeeSchedule for:', employeeId, newSchedule);
+      console.log('Updating employee schedule:', employeeId, newSchedule);
       const token = localStorage.getItem('token');
 
-      // First, get the current employee's workSchedule to preserve existing individual shifts
-      const currentEmployee = teamMembers.find(m => m.id === employeeId);
-      const currentWorkSchedule = currentEmployee?.workSchedule || {};
-      
-      console.log('📋 Current workSchedule before merge:', currentWorkSchedule);
-      console.log('📋 New regular schedule to apply:', newSchedule);
-
-      // Merge strategy: preserve individual shifts that have "shifts" field (multiple shifts)
-      // but allow regular schedule to overwrite simple single shifts
-      const mergedWorkSchedule = { ...currentWorkSchedule };
-      
-      Object.keys(newSchedule).forEach(dayName => {
-        const newDaySchedule = newSchedule[dayName];
-        const existingDaySchedule = currentWorkSchedule[dayName];
-        
-        // If the existing day has individual shifts (shifts field), preserve them
-        // unless the new schedule explicitly sets isWorking to false
-        if (existingDaySchedule && existingDaySchedule.shifts && newDaySchedule.isWorking) {
-          console.log(`🔒 Preserving individual shifts for ${dayName}:`, existingDaySchedule.shifts);
-          // Keep the existing individual shifts, don't overwrite
-          mergedWorkSchedule[dayName] = existingDaySchedule;
-        } else {
-          console.log(`📝 Applying regular schedule for ${dayName}:`, newDaySchedule);
-          // Apply the new regular schedule for this day
-          mergedWorkSchedule[dayName] = newDaySchedule;
-        }
-      });
-
-      console.log('🔀 Final merged workSchedule:', mergedWorkSchedule);
-
       const updateData = {
-        workSchedule: mergedWorkSchedule
+        workSchedule: newSchedule
       };
 
-      console.log('📤 Sending PATCH request for regular schedule...');
       const response = await fetch(`${Base_url}/employees/${employeeId}`, {
         method: 'PATCH',
         headers: {
@@ -1507,17 +1406,28 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ API Error:', errorData);
+        console.error('API Error:', errorData);
         throw new Error(errorData.message || 'Failed to update employee schedule');
       }
 
-      const responseData = await response.json();
-      console.log('✅ API update successful:', responseData);
+      console.log('API update successful, updating local state...');
 
-      // Rely solely on refetch for consistency - no local state update
-      console.log('🔄 Refetching employees after schedule update...');
-      await fetchEmployees(currentDate);
-      console.log('✅ Refetch completed - regular schedule save process finished');
+      // Update local state
+      setTeamMembers(prevMembers => {
+        const updatedMembers = prevMembers.map(member =>
+          member.id === employeeId
+            ? {
+              ...member,
+              workSchedule: {
+                ...member.workSchedule, // Preserve existing schedule
+                ...newSchedule // Merge with new schedule
+              }
+            }
+            : member
+        );
+        console.log('Local state updated:', updatedMembers.find(m => m.id === employeeId)?.workSchedule);
+        return updatedMembers;
+      });
     };
 
     // Calculate total hours for a member in a week

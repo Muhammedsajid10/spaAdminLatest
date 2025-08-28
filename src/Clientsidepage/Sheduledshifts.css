@@ -2150,25 +2150,3 @@
   flex-direction: column;
   z-index: 4001;
 }
-
-/* Individual Shifts Indicators */
-.individual-shifts-indicator {
-  margin-left: 8px;
-  font-size: 14px;
-  color: #ff6b35;
-  cursor: help;
-}
-
-.individual-shifts-note {
-  margin-top: 4px;
-  width: 100%;
-}
-
-.individual-shifts-note small {
-  color: #ff6b35;
-  font-size: 11px;
-  background: #fff5f3;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid #ffebe6;
-}

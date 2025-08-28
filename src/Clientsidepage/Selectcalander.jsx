@@ -60,6 +60,10 @@ const formatDateLocal = (d) => {
   return `${y}-${m}-${day}`;
 };
 
+// IMPORTANT: Use local date (not UTC ISO) for calendar day keys to avoid off-by-one issues
+// Caused by toISOString() converting to UTC (shifts date backwards/forwards depending on timezone)
+const localDateKey = (date) => formatDateLocal(date instanceof Date ? date : new Date(date));
+
 const getRandomColor = () => {
   const colors = ['#f97316', '#22c55e', '#0ea5e9', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981'];
   return colors[Math.floor(Math.random() * colors.length)];
@@ -274,11 +278,12 @@ const getEmployeeShiftHours = (employee, date) => {
   })).filter(s => s.startTime && s.endTime);
 };
 // ENHANCED: Generate time slots ONLY for employee's actual shift hours
-// FIXED: Improved to handle partial shift coverage within 30-minute calendar intervals
 const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDuration = 30, intervalMinutes = 30) => {
-  // This function generates time slots based on employee's actual shift hours
-  // It now properly handles cases where shifts don't align perfectly with 30-minute intervals
-  
+  // console.log('=== GENERATING TIME SLOTS FROM SHIFT ===');
+  // console.log('Employee:', employee?.name);
+  // console.log('Service duration:', serviceDuration, 'minutes');
+  // console.log('Interval:', intervalMinutes, 'minutes');
+
   const shifts = getEmployeeShiftHours(employee, date);
 
   if (shifts.length === 0) {
@@ -392,10 +397,10 @@ const paymentMethods = [
 ];
 // Add these functions after your existing date picker functions (around line 400)
 
-// Generate week ranges for a given month - Enhanced to include weeks spanning months
-const generateWeekRangesForMonth = (baseDate) => {
-  const year = baseDate.getFullYear();
-  const monthIndex = baseDate.getMonth();
+// Generate week ranges for a given month
+const generateWeekRangesForMonth = (month) => {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
   
   // Get first day of month
   const firstDay = new Date(year, monthIndex, 1);
@@ -412,15 +417,14 @@ const generateWeekRangesForMonth = (baseDate) => {
   
   let weekNumber = 1;
   
-  // Generate more weeks to cover the entire month plus partial weeks
-  while (currentWeekStart <= lastDay || weekNumber <= 6) {
+  while (currentWeekStart <= lastDay) {
     const weekEnd = new Date(currentWeekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
     
-    // Include all weeks that touch the month, not just those with majority days
-    const touchesMonth = (currentWeekStart <= lastDay && weekEnd >= firstDay);
+    // Check if this week has any days in the current month
+    const hasMonthDays = (currentWeekStart <= lastDay && weekEnd >= firstDay);
     
-    if (touchesMonth || weekNumber <= 6) {
+    if (hasMonthDays) {
       weeks.push({
         number: weekNumber,
         startDate: new Date(currentWeekStart),
@@ -432,14 +436,8 @@ const generateWeekRangesForMonth = (baseDate) => {
     }
     
     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-    
-    // Break if we've gone too far past the month
-    if (currentWeekStart.getTime() > lastDay.getTime() + (7 * 24 * 60 * 60 * 1000) && weekNumber > 6) {
-      break;
-    }
   }
   
-  console.log(`Generated ${weeks.length} weeks for ${baseDate.toLocaleDateString()}:`, weeks);
   return weeks;
 };
 
@@ -463,8 +461,6 @@ const getCurrentWeekRange = (date) => {
 
 // Handle week range selection
 const handleWeekRangeSelect = (weekRange) => {
-  console.log('Week range selected:', weekRange);
-  alert(`Selected week: ${weekRange.label} (${weekRange.dateRange})`);
   setCurrentDate(weekRange.startDate); // Set to start of selected week
   setSelectedWeekRange(weekRange);
   setShowDatePicker(false);
@@ -500,15 +496,14 @@ const getValidTimeSlotsForProfessional = (employee, date, serviceDuration, appoi
     for (let slotStart = startMinutes; slotStart + serviceDuration <= endMinutes; slotStart += intervalMinutes) {
       const hour = Math.floor(slotStart / 60).toString().padStart(2, '0');
       const minute = (slotStart % 60).toString().padStart(2, '0');
-      const slotLabel = `${hour}:${minute}`;
-      const slotDate = new Date(date);
-      slotDate.setHours(hour, minute, 0, 0);
-      const slotKey = `${date.toISOString().split('T')[0]}_${slotLabel}`;
+  const slotLabel = `${hour}:${minute}`;
+  const slotDate = new Date(date);
+  slotDate.setHours(hour, minute, 0, 0);
 
       // Check for overlap with existing appointments
       const employeeAppointments = appointments[employee.id] || {};
       const overlaps = Object.entries(employeeAppointments).some(([appKey, app]) => {
-        if (!appKey.startsWith(date.toISOString().split('T')[0])) return false;
+        if (!appKey.startsWith(localDateKey(date))) return false;
         const [appHour, appMinute] = appKey.split('_')[1].split(':').map(Number);
         const appStart = new Date(date);
         appStart.setHours(appHour, appMinute, 0, 0);
@@ -781,7 +776,7 @@ const getFilteredAndSearchedEmployees = () => {
 // Add this helper function:
 const getEmployeeAppointmentCount = (employeeId) => {
   const empAppointments = appointments[employeeId] || {};
-  const today = currentDate.toISOString().split('T')[0];
+  const today = localDateKey(currentDate);
   
   return Object.keys(empAppointments).filter(key => 
     key.startsWith(today)
@@ -861,7 +856,7 @@ const getEmployeeAppointmentCount = (employeeId) => {
   // };
   const handleTimeSlotClick = (employeeId, slotTime, day) => {
     // ... (existing logic for checking existing appointments and unavailable periods)
-    const dayKey = (day || currentDate).toISOString().split('T')[0];
+  const dayKey = localDateKey(day || currentDate);
     const slotKey = `${dayKey}_${slotTime}`;
     const existingAppointment = appointments[employeeId]?.[slotKey];
     console.log('this is the employee id ', employeeId, slotTime)
@@ -1182,76 +1177,31 @@ const goToDatePickerToday = () => {
   };
 
   const goToToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    
-    // Update week range if in week view
-    if (currentView === 'Week') {
-      const todayWeekRange = getCurrentWeekRange(today);
-      setSelectedWeekRange(todayWeekRange);
-    }
+    setCurrentDate(new Date());
   };
 
   const goToPrevious = () => {
     const newDate = new Date(currentDate);
-    if (currentView === 'Day') {
-      newDate.setDate(newDate.getDate() - 1);
-      setCurrentDate(newDate);
-    } else if (currentView === 'Week') {
-      newDate.setDate(newDate.getDate() - 7);
-      setCurrentDate(newDate);
-      // Update week range for the new date
-      const newWeekRange = getCurrentWeekRange(newDate);
-      setSelectedWeekRange(newWeekRange);
-    } else if (currentView === 'Month') {
-      newDate.setMonth(newDate.getMonth() - 1);
-      setCurrentDate(newDate);
-    }
+    if (currentView === 'Day') newDate.setDate(newDate.getDate() - 1);
+    if (currentView === 'Week') newDate.setDate(newDate.getDate() - 7);
+    if (currentView === 'Month') newDate.setMonth(newDate.getMonth() - 1);
+    setCurrentDate(newDate);
   };
 
   const goToNext = () => {
     const newDate = new Date(currentDate);
-    if (currentView === 'Day') {
-      newDate.setDate(newDate.getDate() + 1);
-      setCurrentDate(newDate);
-    } else if (currentView === 'Week') {
-      newDate.setDate(newDate.getDate() + 7);
-      setCurrentDate(newDate);
-      // Update week range for the new date
-      const newWeekRange = getCurrentWeekRange(newDate);
-      setSelectedWeekRange(newWeekRange);
-    } else if (currentView === 'Month') {
-      newDate.setMonth(newDate.getMonth() + 1);
-      setCurrentDate(newDate);
-    }
+    if (currentView === 'Day') newDate.setDate(newDate.getDate() + 1);
+    if (currentView === 'Week') newDate.setDate(newDate.getDate() + 7);
+    if (currentView === 'Month') newDate.setMonth(newDate.getMonth() + 1);
+    setCurrentDate(newDate);
   };
 
   const isTimeSlotUnavailable = (employeeId, slotTime) => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (!employee) return false;
 
-    // ENHANCED: Check if employee has any shift coverage for this time slot
-    const shiftHours = getEmployeeShiftHours(employee, currentDate);
-    if (shiftHours.length === 0) {
-      return "No shift scheduled";
-    }
-
-    // Check if the slot has any overlap with shift hours
-    const [slotHour, slotMinute] = slotTime.split(':').map(Number);
-    const slotStartMinutes = slotHour * 60 + slotMinute;
-    const slotEndMinutes = slotStartMinutes + 30; // 30-minute slots
-
-    const hasAnyShiftOverlap = shiftHours.some(shift => {
-      const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
-      const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
-      const shiftStartMinutes = shiftStartHour * 60 + shiftStartMinute;
-      const shiftEndMinutes = shiftEndHour * 60 + shiftEndMinute;
-
-      // Check for overlap
-      return slotStartMinutes < shiftEndMinutes && slotEndMinutes > shiftStartMinutes;
-    });
-
-    if (!hasAnyShiftOverlap) {
+    // Check if employee has a shift on this day
+    if (!hasShiftOnDate(employee, currentDate)) {
       return "No shift scheduled";
     }
 
@@ -1537,7 +1487,7 @@ const goToDatePickerToday = () => {
 
 
   const filterOutBookedTimeSlots = (timeSlots, employeeId, date) => {
-    const dayKey = date.toISOString().split('T')[0];
+  const dayKey = localDateKey(date);
     const employeeAppointments = appointments[employeeId] || {};
 
     // console.log(`🔍 Filtering time slots for employee ${employeeId} on ${dayKey}`);
@@ -2511,37 +2461,19 @@ useEffect(() => {
     return () => clearInterval(headerTimeTimer);
   }, []);
 
-  // Initialize week range when component mounts or view changes to Week
-  useEffect(() => {
-    if (currentView === 'Week' && !selectedWeekRange) {
-      const currentWeekRange = getCurrentWeekRange(currentDate);
-      setSelectedWeekRange(currentWeekRange);
-      setWeekRanges(generateWeekRangesForMonth(currentDate));
-    }
-  }, [currentView, currentDate, selectedWeekRange]);
-
   const displayEmployees = getFilteredEmployees();
 
   const getCalendarDays = () => {
     if (currentView === 'Day') {
       return [currentDate];
     } else if (currentView === 'Week') {
-      // Use selectedWeekRange if available, otherwise calculate from currentDate
-      if (selectedWeekRange) {
-        return Array.from({ length: 7 }, (_, i) => {
-          const day = new Date(selectedWeekRange.startDate);
-          day.setDate(selectedWeekRange.startDate.getDate() + i);
-          return day;
-        });
-      } else {
-        const startOfWeek = new Date(currentDate);
-        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
-        return Array.from({ length: 7 }, (_, i) => {
-          const day = new Date(startOfWeek);
-          day.setDate(startOfWeek.getDate() + i);
-          return day;
-        });
-      }
+      const startOfWeek = new Date(currentDate);
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
+      return Array.from({ length: 7 }, (_, i) => {
+        const day = new Date(startOfWeek);
+        day.setDate(startOfWeek.getDate() + i);
+        return day;
+      });
     } else if (currentView === 'Month') {
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
@@ -2570,7 +2502,7 @@ useEffect(() => {
         <div className="month-view-grid">
           {emptyCellsBefore.map((_, index) => <div key={`empty-${index}`} className="month-day-cell empty"></div>)}
           {calendarDays.map(day => {
-            const dayKey = day.toISOString().split('T')[0];
+            const dayKey = localDateKey(day);
             const dayAppointments = [];
 
             // Get appointments for this day from all employees
@@ -2698,10 +2630,8 @@ useEffect(() => {
           </div>
         )}
 
-     <div 
-          className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 6)}`}
-          data-staff-count={displayEmployees.length}
-          // Dynamic columns: equal share of available width with responsive behavior
+     <div className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 6)}`}
+          // make columns equal share of available width; each column min 220px, otherwise scroll
         >
           {currentView === 'Day' && displayEmployees.map(employee => (
             <StaffColumn
@@ -2721,7 +2651,7 @@ useEffect(() => {
             />
           ))}
           {currentView === 'Week' && (
-            <div className="week-view-container" data-staff-count={displayEmployees.length}>
+            <div className="week-view-container">
               {/* Week Day Headers */}
               <div className="week-headers-row">
                 <div className="week-staff-header-cell">Staff</div>
@@ -2877,12 +2807,8 @@ useEffect(() => {
     // Set picker view based on current calendar view
     if (currentView === 'Week') {
       setDatePickerView('week');
-      const weekRanges = generateWeekRangesForMonth(currentDate);
-      console.log('Generated week ranges:', weekRanges);
-      setWeekRanges(weekRanges);
-      const currentWeekRange = getCurrentWeekRange(currentDate);
-      console.log('Current week range:', currentWeekRange);
-      setSelectedWeekRange(currentWeekRange);
+      setWeekRanges(generateWeekRangesForMonth(currentDate));
+      setSelectedWeekRange(getCurrentWeekRange(currentDate));
     } else if (currentView === 'Month') {
       setDatePickerView('month');
     } else {
@@ -3034,10 +2960,7 @@ useEffect(() => {
                 <button
                   key={index}
                   className={`week-range-item ${isCurrentWeek ? 'selected' : ''}`}
-                  onClick={() => {
-                    console.log('Week range clicked:', weekRange);
-                    handleWeekRangeSelect(weekRange);
-                  }}
+                  onClick={() => handleWeekRangeSelect(weekRange)}
                 >
                   <div className="week-range-label">{weekRange.label}</div>
                   <div className="week-range-dates">{weekRange.dateRange}</div>
@@ -3417,28 +3340,7 @@ useEffect(() => {
             </button>
             <select
               value={currentView}
-              onChange={(e) => {
-                const newView = e.target.value;
-                setCurrentView(newView);
-                
-                // Initialize proper ranges when switching views
-                if (newView === 'Week') {
-                  // Initialize week range for current date
-                  const currentWeekRange = getCurrentWeekRange(currentDate);
-                  setSelectedWeekRange(currentWeekRange);
-                  setWeekRanges(generateWeekRangesForMonth(currentDate));
-                  // Set currentDate to start of the week
-                  setCurrentDate(currentWeekRange.startDate);
-                } else if (newView === 'Month') {
-                  // Set currentDate to start of the month
-                  const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-                  setCurrentDate(startOfMonth);
-                } else if (newView === 'Day') {
-                  // Keep current date as is for day view
-                  // Reset week range if switching from week view
-                  setSelectedWeekRange(null);
-                }
-              }}
+              onChange={(e) => setCurrentView(e.target.value)}
               className="view-selector"
             >
               <option value="Day">Day</option>
@@ -3499,7 +3401,7 @@ useEffect(() => {
 
               {bookingStatusLoading && (
                 <div className="booking-modal-loading">
-                  <Loading />
+                  <div className="loading-spinner"></div>
                   <div className="loading-content">
                     <strong>Processing</strong>
                     <p>Updating booking status...</p>
@@ -3634,15 +3536,7 @@ useEffect(() => {
               </div>
 
               {bookingError && <div className="booking-modal-error">{bookingError}</div>}
-              {bookingLoading && (
-                <div className="booking-modal-loading">
-                  <Loading />
-                  <div className="loading-content">
-                    <strong>Processing</strong>
-                    <p>Creating your perfect appointment...</p>
-                  </div>
-                </div>
-              )}
+              {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
               {bookingSuccess && <div className="booking-modal-success">{bookingSuccess}</div>}
 
               {/* Service Selection Step */}
@@ -4428,7 +4322,7 @@ const StaffColumn = ({
   setShowBookingStatusModal
 }) => {
   const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
-  const dayKey = currentDate.toISOString().split('T')[0];
+  const dayKey = localDateKey(currentDate);
   const hasShift = hasShiftOnDate(employee, currentDate);
   const shiftHours = getEmployeeShiftHours(employee, currentDate);
   const hasValidShifts = shiftHours.length > 0;
@@ -4513,47 +4407,17 @@ const StaffColumn = ({
           const slotKey = `${dayKey}_${slot}`;
           const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
 
-          // ENHANCED: Calculate precise shift coverage within the 30-minute slot
-          const getShiftCoverageDetails = () => {
-            if (!hasShift || !hasValidShifts) return { type: 'no-shift', coverage: 0 };
-            
+          // Check if this slot is within employee's shift hours
+          const isWithinShift = hasShift && hasValidShifts && shiftHours.some(shift => {
             const [slotHour, slotMinute] = slot.split(':').map(Number);
-            const slotStartMinutes = slotHour * 60 + slotMinute;
-            const slotEndMinutes = slotStartMinutes + 30; // 30-minute slots
-            
-            let totalCoveredMinutes = 0;
-            let hasAnyShift = false;
-            
-            shiftHours.forEach(shift => {
-              const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
-              const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
-              const shiftStartMinutes = shiftStartHour * 60 + shiftStartMinute;
-              const shiftEndMinutes = shiftEndHour * 60 + shiftEndMinute;
-              
-              // Calculate overlap
-              const overlapStart = Math.max(slotStartMinutes, shiftStartMinutes);
-              const overlapEnd = Math.min(slotEndMinutes, shiftEndMinutes);
-              
-              if (overlapStart < overlapEnd) {
-                totalCoveredMinutes += (overlapEnd - overlapStart);
-                hasAnyShift = true;
-              }
-            });
-            
-            if (!hasAnyShift) return { type: 'no-shift', coverage: 0 };
-            if (totalCoveredMinutes >= 30) return { type: 'full-shift', coverage: 100 };
-            
-            const coveragePercentage = (totalCoveredMinutes / 30) * 100;
-            return { 
-              type: 'partial-shift', 
-              coverage: coveragePercentage,
-              coveredMinutes: totalCoveredMinutes,
-              uncoveredMinutes: 30 - totalCoveredMinutes
-            };
-          };
+            const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
+            const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
 
-          const shiftDetails = getShiftCoverageDetails();
-          const isWithinShift = shiftDetails.type !== 'no-shift';
+            const slotMinutes = slotHour * 60 + slotMinute;
+            const shiftStartMinutes = shiftStartHour * 60 + shiftStartMinute;
+            const shiftEndMinutes = shiftEndHour * 60 + shiftEndMinute;
+            return slotMinutes >= shiftStartMinutes && slotMinutes < shiftEndMinutes;
+          });
 
           // FIXED: Check if this specific slot is covered by appointment
           const isCoveredByAppointment = processedSlots.has(slotKey);
@@ -4568,103 +4432,26 @@ const StaffColumn = ({
                 visibility: isCoveredByAppointment ? 'hidden' : 'visible'
               }}
             >
-              <div className={`time-slot ${shiftDetails.type === 'no-shift' ? 'no-shift' :
-                unavailableReason ? 'unavailable' : 'empty'}`}
-                onClick={isWithinShift && !isCoveredByAppointment ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
+              <div className={`time-slot ${(!hasShift || !hasValidShifts ? 'no-shift' :
+                (!isWithinShift ? 'outside-shift' :
+                  (unavailableReason ? 'unavailable' : 'empty')))
+                }`}
+                onClick={hasShift && hasValidShifts && isWithinShift && !isCoveredByAppointment ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
                 onMouseEnter={(e) => !isCoveredByAppointment && showTimeHoverHandler(e, slot)}
                 onMouseLeave={hideTimeHover}
                 style={{
-                  cursor: (isWithinShift && !isCoveredByAppointment) ? 'pointer' : 'not-allowed',
-                  opacity: (shiftDetails.type === 'no-shift') ? 0.3 : 1,
-                  // Remove the gradient background since we're using split divs
-                  background: shiftDetails.type === 'no-shift' ? '#f3f4f6' : '#ffffff',
-                  position: 'relative',
-                  overflow: 'hidden'
+                  cursor: (hasShift && hasValidShifts && isWithinShift && !isCoveredByAppointment) ? 'pointer' : 'not-allowed',
+                  opacity: (!hasShift || !hasValidShifts || !isWithinShift) ? 0.3 : 1,
+                  backgroundColor: (!hasShift || !hasValidShifts) ? 'gray' :
+                    (!isWithinShift ? 'gray' : '#ffffff')
                 }}>
 
-                {/* Split visual indicator for partial shifts */}
-                {shiftDetails.type === 'partial-shift' && (
-                  <div className="split-shift-indicator">
-                    <div 
-                      className="no-shift-portion" 
-                      style={{ 
-                        height: `${100 - shiftDetails.coverage}%`,
-                        width: '100%',
-                        background: '#d1d5db', // More distinct gray
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        zIndex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '1px solid #9ca3af',
-                        borderBottom: 'none'
-                      }}
-                    >
-                      {100 - shiftDetails.coverage > 25 && (
-                        <span style={{ 
-                          fontSize: '9px', 
-                          color: '#6b7280', 
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          NO SHIFT
-                        </span>
-                      )}
-                    </div>
-                    <div 
-                      className="available-portion" 
-                      style={{ 
-                        height: `${shiftDetails.coverage}%`,
-                        width: '100%',
-                        background: '#ffffff', // Clean white
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        zIndex: 1,
-                        border: '1px solid #e5e7eb',
-                        borderTop: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      {shiftDetails.coverage > 25 && (
-                        <span style={{ 
-                          fontSize: '9px', 
-                          color: '#059669', 
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          AVAILABLE
-                        </span>
-                      )}
-                    </div>
-                    <div 
-                      className="split-line" 
-                      style={{ 
-                        position: 'absolute',
-                        top: `${100 - shiftDetails.coverage}%`,
-                        left: 0,
-                        right: 0,
-                        height: '3px',
-                        background: '#374151',
-                        zIndex: 3,
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                  </div>
-                )}
-
                 {unavailableReason && isWithinShift && (
-                  <div className="unavailable-text" style={{ zIndex: 3, position: 'relative' }}>
+                  <div className="unavailable-text">
                     {unavailableReason.includes("Day Off") ? "DAY OFF" : (unavailableReason.includes("Block") ? "BLOCKED" : "UNAVAIL")}
                   </div>
                 )}
-                {shiftDetails.type === 'no-shift' && (
+                {!hasShift && (
                   <div className="unavailable-text">
                   </div>
                 )}
