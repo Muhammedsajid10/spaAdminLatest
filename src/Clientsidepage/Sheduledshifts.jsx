@@ -311,7 +311,15 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
   useEffect(() => {
     if (employee && employee.workSchedule) {
       // Create a proper default schedule with fallback values
- 
+      const defaultSchedule = {
+        sunday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        monday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        tuesday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        wednesday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        thursday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        friday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        saturday: { isWorking: false, startTime: '09:00', endTime: '17:00' }
+      };
 
       // Merge with existing schedule but ensure times are valid
       const mergedSchedule = { ...defaultSchedule };
@@ -1429,6 +1437,10 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         console.log('Local state updated:', updatedMembers.find(m => m.id === employeeId)?.workSchedule);
         return updatedMembers;
       });
+      
+      // Fetch updated data to show the latest shifts from server
+      console.log('🔄 Refetching employees after schedule update...');
+      await fetchEmployees(currentDate);
     };
 
     // Calculate total hours for a member in a week
