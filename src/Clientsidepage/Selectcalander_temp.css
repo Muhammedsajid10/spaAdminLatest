@@ -202,6 +202,7 @@
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
+
   font-size: 13px;
   font-weight: 600;
   text-align: center;
@@ -210,6 +211,7 @@
 .month-picker-item:hover {
   background: #f8f9fa;
   border-color: #000000;
+  transform: scale(1.02);
 }
 
 .month-picker-item.selected {
@@ -263,7 +265,7 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+
 }
 
 .team-filter-btn:hover {
@@ -299,7 +301,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  transition: background 0.2s ease;
+
 }
 
 .employee-item:hover {
@@ -358,7 +360,7 @@
   border: 2px solid #d1d5db;
   border-radius: 3px;
   background: #ffffff;
-  transition: all 0.2s ease;
+
 }
 
 .employee-checkbox input:checked + .checkmark {
@@ -416,7 +418,7 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   color: #6b7280;
 }
 
@@ -441,7 +443,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 8px 16px;
-  transition: background 0.2s ease;
+
 }
 
 .appointment-popup-item:hover {
@@ -505,7 +507,7 @@
   border: none;
   border-right: 1px solid #e5e7eb;
   cursor: pointer;
-  transition: background 0.2s ease;
+
 }
 
 .refresh-btn:hover {
@@ -539,7 +541,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
@@ -592,7 +594,7 @@
   bottom: 0;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 50%);
   opacity: 0;
-  transition: opacity 0.3s ease;
+
   pointer-events: none;
 }
 
@@ -685,7 +687,7 @@
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
 }
 
 .date-display-button:hover {
@@ -694,7 +696,7 @@
 
 .date-picker-icon {
   color: #000000;
-  transition: transform 0.2s ease;
+
 }
 
 .date-display-button:hover .date-picker-icon {
@@ -757,7 +759,7 @@
   border: 2px solid #000000;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   color: #000000;
 }
 
@@ -819,7 +821,7 @@
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   color: #000000;
   position: relative;
 }
@@ -895,7 +897,7 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   flex: 1;
 }
 
@@ -918,7 +920,7 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   flex: 1;
 }
 
@@ -972,7 +974,7 @@
   background: linear-gradient(45deg, transparent, transparent);
   border-radius: 14px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+
   z-index: -1;
 }
 
@@ -984,7 +986,7 @@
 
 /* Smooth transitions for all interactive elements */
 .date-picker-container * {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
 }
 /* === SCHEDULER HEADER (Application-level) === */
 .scheduler-header {
@@ -1029,7 +1031,7 @@
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+
 }
 
 .action-btn:hover {
@@ -1228,7 +1230,7 @@
   justify-content: center;
   position: relative;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   border-right: 1px solid #f3f4f6;
 }
 
@@ -1325,87 +1327,6 @@
 .time-slot.no-shift:hover {
   background-color: #f3f4f6;
   opacity: 0.6;
-}
-
-/* === PARTIAL SHIFT STYLES (New - for partial coverage) === */
-.time-slot.partial-shift {
-  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-  border-left: 4px solid #f39c12;
-  cursor: pointer;
-  opacity: 0.85;
-  position: relative;
-}
-
-.time-slot.partial-shift:hover {
-  background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
-  opacity: 1;
-}
-
-.partial-shift-text {
-  font-size: 10px;
-  font-weight: 600;
-  color: #e67e22;
-  text-align: center;
-  letter-spacing: 0.5px;
-  padding: 2px;
-}
-
-.time-slot.partial-shift::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
-  background-color: #f39c12;
-  border-radius: 50%;
-  opacity: 0.8;
-}
-
-/* === ENHANCED SPLIT SHIFT STYLES (for visual split coverage) === */
-.time-slot {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-
-.split-shift-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-.no-shift-portion {
-  background-color: #d1d5db !important;
-  opacity: 1;
-  border: 1px solid #9ca3af;
-}
-
-.available-portion {
-  background-color: #ffffff !important;
-  border: 1px solid #e5e7eb;
-}
-
-.split-line {
-  background: #374151 !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.time-slot:hover .split-line {
-  background: #1f2937 !important;
-}
-
-/* Enhanced no-shift styling for contrast */
-.time-slot.no-shift {
-  background-color: #d1d5db !important;
-  border: 1px solid #9ca3af;
-}
-
-.time-slot.no-shift:hover {
-  background-color: #9ca3af !important;
 }
 
 .week-day-cell.no-shift {
@@ -1525,7 +1446,7 @@
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: background 0.2s ease;
+
 }
 
 .error-message .action-btn:hover,
@@ -1899,7 +1820,7 @@
     padding: 12px;
     cursor: pointer;
     border-bottom: 1px solid var(--border-light);
-    transition: background-color 0.2s ease;
+
 }
 
 .client-option:hover {
@@ -2016,7 +1937,7 @@
     font-size: 14px;
     color: var(--text-primary);
     background-color: var(--bg-secondary);
-    transition: all 0.2s ease;
+
 }
 
 .form-group input:focus,
@@ -2102,7 +2023,7 @@
     min-height: 60px;
     border-bottom: 1px solid var(--border-light);
     background: var(--bg-secondary);
-    transition: background-color 0.2s ease;
+
 }
 
 .employee-row:hover {
@@ -2175,7 +2096,7 @@
     border: 1px solid var(--border-color);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+
     user-select: none;
     position: relative;
 }
@@ -2290,7 +2211,7 @@
     padding: 8px 12px;
     border-radius: 6px;
     margin-bottom: 2px;
-    transition: background-color 0.15s ease;
+
     cursor: pointer;
 }
 
@@ -2488,7 +2409,7 @@
     border-bottom: 1px solid var(--border-light);
     height: 60px;
     background: var(--bg-primary);
-    transition: all 0.2s ease;
+
     gap: 12px;
 }
 
@@ -2691,7 +2612,7 @@
     cursor: pointer;
     z-index: 10;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s ease;
+
 }
 
 .appointment-in-week-view:hover {
@@ -2731,7 +2652,7 @@
     border: 1px solid var(--border-color);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+
     user-select: none;
     z-index: 12;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -2770,7 +2691,7 @@
     overflow: hidden;
     background-color: var(--primary-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+
     position: relative;
 }
 
@@ -2817,7 +2738,7 @@
     border: 1px solid var(--border-color);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+
     user-select: none;
     position: relative;
 }
@@ -2937,7 +2858,7 @@
   padding: 12px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
-  transition: background-color 0.2s ease;
+
 }
 
 .client-option:hover {
@@ -3023,7 +2944,7 @@
   border-radius: var(--radius-md);
   padding: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   text-align: center;
 }
 
@@ -3232,7 +3153,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+
   backdrop-filter: blur(10px);
 }
 .booking-modal-empty-state {
@@ -3429,7 +3350,7 @@
   text-align: left;
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.15s ease;
+
 }
 
 .booking-modal-list-item:hover {
@@ -3789,7 +3710,7 @@
   font-weight: 500;
   cursor: pointer;
   border: none;
-  transition: all 0.15s ease;
+
   min-width: 120px;
   letter-spacing: -0.025em;
 }
@@ -3893,7 +3814,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+
 }
 
 .week-day-header-cell:last-child {
@@ -3905,7 +3826,7 @@
   border-bottom: 1px solid var(--border-light);
   min-height: 120px;
   background: var(--bg-primary);
-  transition: all 0.2s ease;
+
   width: 100%;
 }
 
@@ -3926,7 +3847,7 @@
   padding: 12px 8px;
   min-height: 120px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   position: relative;
 }
 
@@ -4063,7 +3984,7 @@
   border-radius: 6px;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   position: relative;
 }
 
@@ -4189,7 +4110,7 @@
   border: 2px solid #e5e7eb;
   border-radius: 24px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   font-size: 13px;
   font-weight: 600;
   color: #374151;
@@ -4239,7 +4160,7 @@
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   border: 1px solid #e5e7eb;
 }
 
@@ -4293,7 +4214,7 @@
   font-weight: 500;
   color: #0f172a;
   cursor: pointer;
-  transition: all 0.2s ease;
+
 }
 
 .team-search-input:focus {
@@ -4316,7 +4237,7 @@
   cursor: pointer;
   font-size: 10px;
   color: #6b7280;
-  transition: all 0.2s ease;
+
 }
 
 .clear-search-btn:hover {
@@ -4379,7 +4300,7 @@
   justify-content: center;
   font-size: 14px;
   color: #6b7280;
-  transition: all 0.2s ease;
+
 }
 
 .view-btn:hover {
@@ -4422,7 +4343,7 @@
   border: 2px solid #f1f5f9;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   position: relative;
 }
 
@@ -4520,7 +4441,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+
 }
 
 .checkbox-custom.checked {
@@ -4636,7 +4557,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   font-size: 14px;
 }
 
@@ -4735,7 +4656,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+
 }
 
 .apply-selection-btn:hover {
@@ -5515,7 +5436,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  transition: all 0.2s ease;
+
 }
 
 .mini-service-item:last-child {
@@ -6137,7 +6058,7 @@
   align-items: center;
   gap: 4px;
   text-decoration: none;
-  transition: all 0.2s ease;
+
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
