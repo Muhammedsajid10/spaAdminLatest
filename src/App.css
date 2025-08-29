@@ -157,6 +157,8 @@
   overflow-y: auto;
 }
 
+/* Final payment step (lighter look) */
+
 .booking-modal h2 {
   color: #111827;
   font-size: 28px;

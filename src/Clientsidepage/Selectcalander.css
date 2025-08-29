@@ -875,13 +875,7 @@
   background: #333333;
 }
 
-.date-picker-day.current-view {
-  /* box-shadow: 0 0 0 3px #ff6b35; */
-}
-
-.date-picker-day.current-view.selected {
-  /* box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px #ff6b35; */
-}
+/* Removed empty .date-picker-day.current-view* rulesets to satisfy linter */
 
 .date-picker-footer {
   display: flex;
@@ -1162,7 +1156,7 @@
   position: sticky; /* Sticky header for each staff column */
   top: 0; /* Sticky to the top of its scrollable parent (.scheduler-content) */
   left: 0; /* Important for horizontal sticky behavior inside overflow-x */
-  z-index: 1; /* Ensure it stays above schedule entries */
+  z-index: 3000; /* Ensure it stays above schedule entries */
 }
 
 .staff-avatar {
@@ -1813,6 +1807,391 @@
 .booking-modal {
     min-width: 500px;
     max-width: 600px;
+}
+
+/* Final payment step (light styling moved from App.css) */
+.booking-modal.final-step {
+  background: #fdfdfd;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+  border: 1px solid #e2e8f0;
+  transition: background .3s ease, box-shadow .3s ease;
+}
+
+.booking-modal.final-step h3 {
+  background: linear-gradient(90deg,#111827,#374151);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.booking-modal.final-step .multiple-appointments-summary,
+.booking-modal.final-step .client-summary,
+.booking-modal.final-step .booking-modal-form {
+  background: #ffffff;
+  border: 1px solid #eef1f4;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.booking-modal.final-step .booking-modal-confirm {
+  background: linear-gradient(90deg,#0f172a,#374151);
+}
+
+.booking-modal.final-step .booking-modal-confirm:hover {
+  background: linear-gradient(90deg,#111827,#1f2937);
+}
+
+/* Light payment form styling on final step */
+.booking-modal.final-step .booking-modal-form {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px 24px 8px 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+
+.booking-modal.final-step .booking-modal-form::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(17,24,39,0.05), transparent 55%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.booking-modal.final-step .booking-modal-form .form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.booking-modal.final-step .booking-modal-form .form-group input,
+.booking-modal.final-step .booking-modal-form .form-group select,
+.booking-modal.final-step .booking-modal-form .form-group textarea {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #0f172a;
+  transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.booking-modal.final-step .booking-modal-form .form-group input:focus,
+.booking-modal.final-step .booking-modal-form .form-group select:focus,
+.booking-modal.final-step .booking-modal-form .form-group textarea:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148,163,184,0.25);
+}
+
+.booking-modal.final-step .booking-modal-form .form-group textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.4;
+}
+
+.booking-modal.final-step .booking-modal-form select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
+                    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 4px), calc(100% - 14px) calc(50% - 4px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+}
+
+.booking-modal.final-step .booking-modal-form .form-group input::placeholder,
+.booking-modal.final-step .booking-modal-form .form-group textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Gift card / notes subtle grouping if needed later */
+.booking-modal.final-step .booking-modal-form .form-group:last-of-type {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 640px) {
+  .booking-modal.final-step .booking-modal-form {
+    padding: 20px 20px 6px 20px;
+    gap: 16px;
+  }
+  .booking-modal.final-step .booking-modal-form .form-group label {
+    font-size: 12px;
+    letter-spacing: .4px;
+  }
+}
+
+/* Light client summary styling on final payment step */
+.booking-modal.final-step .client-summary {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 22px 24px 14px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  position: relative;
+}
+
+.booking-modal.final-step .client-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(17,24,39,0.04), transparent 60%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.booking-modal.final-step .client-summary h4 {
+  margin: 0 0 16px 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg,#1e293b,#475569);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.booking-modal.final-step .client-summary .summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.booking-modal.final-step .client-summary .summary-item:last-child {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+.booking-modal.final-step .client-summary .summary-item span:first-child {
+  color: #64748b;
+  font-weight: 600;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.booking-modal.final-step .client-summary .summary-item span:last-child {
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.booking-modal.final-step .client-summary .existing-client-indicator {
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #bbf7d0;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .booking-modal.final-step .client-summary {
+    padding: 20px 20px 12px 20px;
+  }
+  .booking-modal.final-step .client-summary .summary-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .booking-modal.final-step .client-summary .summary-item span:last-child {
+    text-align: left;
+  }
+}
+
+/* Light styling for multiple appointments summary on payment step */
+.booking-modal.final-step .multiple-appointments-summary {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px 24px 12px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.booking-modal.final-step .multiple-appointments-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(17,24,39,0.06), transparent 60%);
+  pointer-events: none;
+}
+
+.booking-modal.final-step .multiple-appointments-summary h4 {
+  margin: 0 0 18px 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg,#1e293b,#475569);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .appointment-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg,#f8fafc,#f1f5f9);
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  position: relative;
+  transition: background .25s ease, transform .25s ease, box-shadow .25s ease;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .appointment-summary-item:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px -4px rgba(0,0,0,0.08);
+}
+
+.booking-modal.final-step .multiple-appointments-summary .appointment-number {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.booking-modal.final-step .multiple-appointments-summary .appointment-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .appointment-details .service-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .appointment-details .appointment-meta {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .remove-appointment-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .25s ease;
+  flex-shrink: 0;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .remove-appointment-btn:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .session-totals {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: grid;
+  gap: 10px;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .session-totals .total-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.booking-modal.final-step .multiple-appointments-summary .session-totals .total-item.total-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+@media (max-width: 640px) {
+  .booking-modal.final-step .multiple-appointments-summary {
+    padding: 20px 20px 10px 20px;
+  }
+  .booking-modal.final-step .multiple-appointments-summary .appointment-summary-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .booking-modal.final-step .multiple-appointments-summary .appointment-number {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+  .booking-modal.final-step .multiple-appointments-summary .remove-appointment-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+  .booking-modal.final-step .multiple-appointments-summary .appointment-details .appointment-meta {
+    white-space: normal;
+  }
 }
 
 .booking-progress {
@@ -3240,6 +3619,39 @@
   transform: scale(1.05);
 }
 
+/* ================= Booking Status Details (Light Card Styling) ================= */
+.booking-status-details {background:#ffffff;border:1px solid #e5e7eb;border-radius:22px;padding:28px 28px 16px;margin-bottom:24px;position:relative;box-shadow:0 8px 24px -6px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);overflow:hidden}
+.booking-status-details:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 0%,rgba(17,24,39,.05),transparent 65%);pointer-events:none}
+.booking-status-header{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.booking-status-avatar{width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,#f1f5f9,#e2e8f0);display:flex;align-items:center;justify-content:center;font-size:26px;color:#475569;font-weight:600;box-shadow:inset 0 2px 4px rgba(255,255,255,.6),0 2px 4px rgba(0,0,0,.08);flex-shrink:0}
+.booking-status-info h3{margin:0 0 4px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:#0f172a}
+.booking-status-info p{margin:0;font-size:14px;font-weight:500;color:#475569}
+.booking-status-badge{margin-left:auto;background:#f1f5f9;color:#0f172a;font-size:12px;font-weight:700;padding:8px 14px;border-radius:999px;border:1px solid #e2e8f0;letter-spacing:.5px;text-transform:uppercase;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.booking-status-badge.status-confirmed{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+.booking-status-badge.status-arrived{background:#eff6ff;color:#1e3a8a;border-color:#bfdbfe}
+.booking-status-badge.status-started{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.booking-status-badge.status-booked{background:#f1f5f9;color:#334155}
+.booking-status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:26px}
+.status-detail{display:flex;gap:12px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:1px solid #e2e8f0;padding:14px 16px;border-radius:14px;position:relative;transition:box-shadow .25s ease,transform .25s ease,background .25s ease}
+.status-detail:hover{background:#ffffff;box-shadow:0 4px 10px -2px rgba(0,0,0,.08);transform:translateY(-2px)}
+.detail-icon{width:38px;height:38px;border-radius:12px;background:#ffffff;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#475569;font-weight:600;flex-shrink:0}
+.detail-content{display:flex;flex-direction:column;gap:4px;min-width:0}
+.detail-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#64748b}
+.detail-value{font-size:14px;font-weight:600;color:#0f172a;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.booking-status-actions{background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:1px solid #e2e8f0;padding:22px 22px 18px;border-radius:18px;display:flex;flex-direction:column;gap:24px;position:relative}
+.status-actions-header{display:flex;flex-direction:column;gap:10px}
+.status-select-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#475569}
+.status-select-wrapper{position:relative}
+.status-select{width:100%;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600;color:#0f172a;appearance:none;background-image:linear-gradient(45deg,transparent 50%,#64748b 50%),linear-gradient(135deg,#64748b 50%,transparent 50%);background-position:calc(100% - 22px) calc(50% - 5px),calc(100% - 16px) calc(50% - 5px);background-size:7px 7px,7px 7px;background-repeat:no-repeat;transition:border-color .25s ease,box-shadow .25s ease}
+.status-select:focus{outline:none;border-color:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.25)}
+.booking-danger-zone{background:#fff1f2;border:1px solid #fecdd3;padding:18px 20px;border-radius:16px;display:flex;flex-direction:column;gap:14px;position:relative}
+.danger-zone-header h5{margin:0 0 4px;font-size:14px;font-weight:800;color:#9f1239;letter-spacing:-.02em}
+.danger-zone-header p{margin:0;font-size:12px;color:#be123c;font-weight:500}
+.delete-booking-btn{background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;color:#ffffff;font-weight:600;font-size:14px;padding:14px 20px;border-radius:12px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 12px -2px rgba(220,38,38,.4);transition:background .25s ease,transform .25s ease,box-shadow .25s ease}
+.delete-booking-btn:hover{background:linear-gradient(135deg,#b91c1c,#991b1b);transform:translateY(-2px);box-shadow:0 8px 18px -4px rgba(220,38,38,.5)}
+.delete-booking-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+@media (max-width:640px){.booking-status-details{padding:24px 22px 14px}.booking-status-header{flex-direction:column;align-items:flex-start}.booking-status-badge{margin-left:0}.booking-status-grid{grid-template-columns:1fr 1fr}.status-detail{padding:12px 14px}.detail-icon{width:34px;height:34px;font-size:16px}.booking-status-actions{padding:20px 20px 16px}.delete-booking-btn{width:100%;justify-content:center}}
+
 .booking-modal-close:focus {
   outline: 2px solid rgba(255, 255, 255, 0.5);
   outline-offset: 2px;
@@ -3321,46 +3733,13 @@
   line-height: 1.4;
 }
 
-.booking-modal-loading {
-  background: #f0f9ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  padding: 20px;
-  margin: 0 28px 20px 28px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #e0e7ff;
-  border-top: 3px solid #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.booking-modal-loading .loading-content strong {
-  display: block;
-  color: #1e40af;
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.booking-modal-loading .loading-content p {
-  color: #1e3a8a;
-  font-size: 14px;
-  margin: 0;
-  line-height: 1.4;
-}
+/* Minimal inline loader */
+.booking-modal-loading {margin:12px 28px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:#475569;letter-spacing:.2px}
+.booking-modal-loading:before{content:"";width:16px;height:16px;border-radius:50%;background:conic-gradient(#0f172a 0deg,#0f172a 120deg,rgba(15,23,42,.15) 120deg,rgba(15,23,42,.15) 360deg);-webkit-mask:radial-gradient(circle,transparent 55%,#000 56%);mask:radial-gradient(circle,transparent 55%,#000 56%);animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.booking-modal-loading .loading-content{display:flex;align-items:baseline;gap:6px}
+.booking-modal-loading .loading-content strong{font-size:13px;font-weight:600;color:#0f172a;margin:0}
+.booking-modal-loading .loading-content p{margin:0;font-size:12px;color:#64748b;font-weight:500}
 
 .booking-modal-success {
   background: #f0fdf4;
@@ -3614,7 +3993,7 @@
 }
 
 .add-new-client-btn {
-  background: #10b981;
+  background: black;
   color: white;
   border: none;
   border-radius: 6px;
@@ -3778,7 +4157,7 @@
 
 .booking-modal-next,
 .booking-modal-confirm {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: black;
   color: white;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
 }
@@ -4135,6 +4514,38 @@
   z-index: 1000;
   overflow: hidden;
   animation: teamPopupSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Close button for enhanced team popup */
+.team-popup-enhanced .team-popup-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #000;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.team-popup-enhanced .team-popup-close-btn:hover {
+  background: #000;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.team-popup-enhanced .team-popup-close-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.25);
 }
 
 @keyframes teamPopupSlideIn {
@@ -4855,7 +5266,7 @@
 
 /* Clean Add Service Button */
 .add-service-btn {
-  background: #ff8c42;
+  background: black;
   color: white;
   border: none;
   border-radius: 6px;
@@ -4871,7 +5282,7 @@
 }
 
 .add-service-btn:hover {
-  background: #e07a38;
+  background: #1a1a19;
 }
 
 .add-service-btn:disabled {
@@ -5078,7 +5489,7 @@
 }
 
 .add-another-service-btn {
-  background: #28a745;
+  background: black;
   color: white;
   border: none;
   border-radius: 6px;
@@ -5095,13 +5506,13 @@
 }
 
 .add-another-service-btn:hover {
-  background: #218838;
+  background: black;
 }
 
 .proceed-to-client-btn {
-  background: #ff8c42;
-  color: white;
-  border: none;
+  background: whitesmoke;
+  color: black;
+  border: 2px solid black;
   border-radius: 6px;
   padding: 12px 20px;
   font-size: 14px;
@@ -5116,7 +5527,7 @@
 }
 
 .proceed-to-client-btn:hover {
-  background: #e07a38;
+  background: #bbf7d0;
 }
 
 .no-services-message {

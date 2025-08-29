@@ -311,7 +311,15 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
   useEffect(() => {
     if (employee && employee.workSchedule) {
       // Create a proper default schedule with fallback values
- 
+      const defaultSchedule = {
+        sunday:    { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        monday:    { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        tuesday:   { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        wednesday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        thursday:  { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        friday:    { isWorking: false, startTime: '09:00', endTime: '17:00' },
+        saturday:  { isWorking: false, startTime: '09:00', endTime: '17:00' }
+      };
 
       // Merge with existing schedule but ensure times are valid
       const mergedSchedule = { ...defaultSchedule };
@@ -1008,15 +1016,16 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       };
     };
     // --- API Fetching ---
-    const fetchEmployees = useCallback(async (dateParam) => {
-      setLoading(true);
+    const fetchEmployees = useCallback(async (dateParam, options = {}) => {
+      const { silent = false } = options;
+      if (!silent) setLoading(true);
       setError(null);
       try {
         const token = localStorage.getItem('token');
         const targetDate = dateParam || currentDate;
         const weekStartDate = formatDateForAPI(getWeekStartDate(targetDate));
 
-        console.log('📅 Fetching employees for week starting:', weekStartDate);
+        console.log(`📅 Fetching employees for week starting: ${weekStartDate} (silent=${silent})`);
 
         const response = await fetch(`${Base_url}/employees?weekStartDate=${weekStartDate}`, {
           headers: {
@@ -1055,7 +1064,7 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       } catch (err) {
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     }, [currentDate]); // still depends on currentDate for default behavior
 
@@ -1156,8 +1165,8 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         dayName
       });
       setShiftEditorError(null); // Clear any previous error in editor
-      setShowShiftEditor(true);
-      fetchEmployees(); // Refresh to ensure latest data
+  setShowShiftEditor(true);
+  // Removed immediate fetch here to prevent overwriting soon-to-be edited local state.
     }, [teamMembers]); // Dependency on teamMembers to ensure it's always up-to-date
 
     const handleSaveShift = async (modalShifts) => {
@@ -1223,6 +1232,24 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
 
         };
 
+        // --- Optimistic UI update BEFORE network ---
+        const previousState = teamMembers; // capture for rollback
+        setTeamMembers(prev => prev.map(m => m.id === editingShift.memberId ? {
+          ...m,
+          workSchedule: {
+            ...m.workSchedule,
+            [editingShift.dayName]: {
+              isWorking: true,
+              startTime: primaryShift.startTime,
+              endTime: primaryShift.endTime,
+              shifts: shiftString,
+              shiftsData: validShifts,
+              multipleShifts: shiftString,
+              shiftCount: validShifts.length
+            }
+          }
+        } : m));
+
         console.log('📤 Sending PATCH request to backend:');
         console.log(`  URL: ${Base_url}/employees/${editingShift.memberId}`);
         console.log(`  Method: PATCH`);
@@ -1243,6 +1270,8 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         console.log(`  OK: ${response.ok}`);
 
         if (!response.ok) {
+          // rollback optimistic change
+          setTeamMembers(previousState);
           const errorData = await response.json();
           console.error('❌ PATCH failed with error response:', errorData);
           throw new Error(errorData.message || 'Failed to update shift');
@@ -1262,7 +1291,7 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         }
 
               // Prefer using backend returned employee to keep data consistent with server
-        if (responseData.data && responseData.data.employee) {
+  if (responseData.data && responseData.data.employee) {
           const savedEmployee = responseData.data.employee;
           setTeamMembers(prev => prev.map(m => m.id === (savedEmployee._id || savedEmployee.id) ? {
             ...m,
@@ -1293,23 +1322,17 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         // Close modal immediately since state is updated
         setShowShiftEditor(false);
 
-        // Only refetch if we want to verify backend persistence - but don't overwrite good UI state
-        // We'll comment this out for now to prevent overwriting the UI state
-        // setTimeout(() => {
-        //   console.log('🔄 Refetching employees to verify persistence...');
-        //   fetchEmployees();
-        // }, 1000);
+        // Silent refetch to sync with latest server state (user requested fresh data after save)
+        setTimeout(() => {
+          console.log('🔄 Performing silent refetch to confirm saved shift...');
+          fetchEmployees(currentDate, { silent: true });
+        }, 300);
 
-        console.log('🎉 Shift saved successfully! UI state updated without refetch.');
+        console.log('🎉 Shift saved successfully! Optimistic UI updated and silent refetch scheduled.');
       } catch (err) {
         console.error('❌ Save shift error:', err);
         setShiftEditorError(err.message); // Set error for modal
-
-        // If save failed, we should probably refetch to get accurate data
-        console.log('🔄 Save failed, refetching to get accurate data...');
-        setTimeout(() => {
-          fetchEmployees();
-        }, 500);
+  // Optionally could refetch here, but per requirement we avoid extra fetch.
       } finally {
         setSavingShift(false);
       }
@@ -1391,8 +1414,27 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       console.log('Updating employee schedule:', employeeId, newSchedule);
       const token = localStorage.getItem('token');
 
+      // Enrich each working day with the unified shift fields used elsewhere
+      const enrichedSchedule = Object.keys(newSchedule).reduce((acc, dayKey) => {
+        const day = newSchedule[dayKey] || {};
+        if (day.isWorking && day.startTime && day.endTime && day.startTime !== '00:00' && day.endTime !== '00:00') {
+          const shiftString = `${day.startTime} - ${day.endTime}`;
+            acc[dayKey] = {
+              ...day,
+              shifts: shiftString,
+              multipleShifts: shiftString,
+              shiftsData: [{ startTime: day.startTime, endTime: day.endTime }],
+              shiftCount: 1
+            };
+        } else {
+          acc[dayKey] = { ...day };
+        }
+        return acc;
+      }, {});
+
       const updateData = {
-        workSchedule: newSchedule
+        workSchedule: enrichedSchedule,
+        weekStartDate: formatDateForAPI(getWeekStartDate(currentDate))
       };
 
       const response = await fetch(`${Base_url}/employees/${employeeId}`, {
@@ -1410,24 +1452,22 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         throw new Error(errorData.message || 'Failed to update employee schedule');
       }
 
-      console.log('API update successful, updating local state...');
+      console.log('API update successful, updating local state & scheduling silent refetch...');
 
-      // Update local state
-      setTeamMembers(prevMembers => {
-        const updatedMembers = prevMembers.map(member =>
-          member.id === employeeId
-            ? {
-              ...member,
-              workSchedule: {
-                ...member.workSchedule, // Preserve existing schedule
-                ...newSchedule // Merge with new schedule
-              }
-            }
-            : member
-        );
-        console.log('Local state updated:', updatedMembers.find(m => m.id === employeeId)?.workSchedule);
-        return updatedMembers;
-      });
+      // Update local state immediately for responsive UI
+      setTeamMembers(prevMembers => prevMembers.map(member =>
+        member.id === employeeId
+          ? { ...member, workSchedule: { ...member.workSchedule, ...enrichedSchedule } }
+          : member
+      ));
+
+      // Silent refetch to ensure backend persistence (slight delay allows server to finalize write)
+      setTimeout(() => {
+        if (typeof fetchEmployees === 'function') {
+          console.log('🔄 Silent refetch after regular schedule save');
+          fetchEmployees(currentDate, { silent: true });
+        }
+      }, 300);
     };
 
     // Calculate total hours for a member in a week

@@ -3071,6 +3071,16 @@ useEffect(() => {
   <>
     <div className="popup-backdrop" onClick={() => setShowTeamPopup(false)} />
     <div className="team-popup-enhanced">
+      {/* Close button */}
+      <button
+        type="button"
+        className="team-popup-close-btn"
+        aria-label="Close team selector"
+        title="Close"
+        onClick={() => setShowTeamPopup(false)}
+      >
+        ×
+      </button>
       {/* Header with filters */}
       <div className="team-popup-header-enhanced">
         <div className="team-filters">
@@ -3516,7 +3526,7 @@ useEffect(() => {
       {showAddBookingModal && (
         <div className="modern-booking-modal">
           <div className="booking-modal-overlay booking-modal-fade-in" onClick={closeBookingModal}>
-            <div className="booking-modal booking-modal-animate-in" onClick={e => e.stopPropagation()}>
+            <div className={`booking-modal booking-modal-animate-in ${bookingStep === 6 ? 'final-step' : ''}`} onClick={e => e.stopPropagation()}>
               <button className="booking-modal-close" onClick={closeBookingModal}>×</button>
               <h2>New Appointment</h2>
 
