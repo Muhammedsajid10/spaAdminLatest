@@ -4043,7 +4043,7 @@ useEffect(() => {
 
                   {/* Client Information Display */}
                   <div className="client-summary">
-                    <h4>� Client Information</h4>
+                    <h4>  Client Information</h4>
                     <div className="summary-item">
                       <span>Client:</span>
                       <span>
@@ -4407,17 +4407,68 @@ const StaffColumn = ({
           const slotKey = `${dayKey}_${slot}`;
           const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
 
-          // Check if this slot is within employee's shift hours
-          const isWithinShift = hasShift && hasValidShifts && shiftHours.some(shift => {
-            const [slotHour, slotMinute] = slot.split(':').map(Number);
-            const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
-            const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
+          // ---- SHIFT OVERLAP / PARTIAL SHIFT LOGIC ----
+          // Each visual slot spans 30 minutes from slotStart to slotEnd
+          const [slotHour, slotMinute] = slot.split(':').map(Number);
+          const slotStartMinutes = slotHour * 60 + slotMinute;
+          const slotEndMinutes = slotStartMinutes + 30; // fixed 30‑min visual slot
 
-            const slotMinutes = slotHour * 60 + slotMinute;
-            const shiftStartMinutes = shiftStartHour * 60 + shiftStartMinute;
-            const shiftEndMinutes = shiftEndHour * 60 + shiftEndMinute;
-            return slotMinutes >= shiftStartMinutes && slotMinutes < shiftEndMinutes;
-          });
+          let isWithinShift = false;          // legacy: slot start lies within shift
+          let isFullyCoveredByShift = false;  // shift spans entire 30‑min cell
+          let isPartialShift = false;         // any overlap but not full
+          let partialGradientStyle = undefined; // inline style for partial visualisation
+          let partialOverlapLabel = '';
+          let overlapStartsAtSlotStart = false;
+          let overlapEndsAtSlotEnd = false;
+          let overlapMinutes = 0;
+          let percentStart = 0; // percentage start of overlap (vertical)
+          let percentEnd = 0;   // percentage end of overlap (vertical)
+
+          if (hasShift && hasValidShifts) {
+            for (const shift of shiftHours) {
+              const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
+              const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
+              const shiftStart = shiftStartHour * 60 + shiftStartMinute;
+              const shiftEnd = shiftEndHour * 60 + shiftEndMinute;
+
+              // Overlap minutes between [slotStart, slotEnd) and [shiftStart, shiftEnd)
+              const overlapStart = Math.max(slotStartMinutes, shiftStart);
+              const overlapEnd = Math.min(slotEndMinutes, shiftEnd);
+              const thisOverlapMinutes = Math.max(0, overlapEnd - overlapStart);
+
+              if (thisOverlapMinutes > 0) {
+                // Legacy isWithinShift (slot label itself lies inside shift)
+                if (slotStartMinutes >= shiftStart && slotStartMinutes < shiftEnd) {
+                  isWithinShift = true;
+                }
+                if (thisOverlapMinutes >= 30) {
+                  isFullyCoveredByShift = true;
+                } else {
+                  isPartialShift = true;
+                  overlapMinutes = thisOverlapMinutes;
+                  overlapStartsAtSlotStart = overlapStart === slotStartMinutes;
+                  overlapEndsAtSlotEnd = overlapEnd === slotEndMinutes;
+                  percentStart = ((overlapStart - slotStartMinutes) / 30) * 100;
+                  percentEnd = ((overlapEnd - slotStartMinutes) / 30) * 100;
+                  // Base background for partial cells (light grey)
+                  partialGradientStyle = { background: '#f3f4f6' };
+                  const toLabel = (mins) => {
+                    const h = Math.floor(mins / 60).toString().padStart(2, '0');
+                    const m = (mins % 60).toString().padStart(2, '0');
+                    return `${h}:${m}`;
+                  };
+                  partialOverlapLabel = `${toLabel(overlapStart)}-${toLabel(overlapEnd)}`;
+                }
+                // We can break early if full coverage achieved
+                if (isFullyCoveredByShift) break;
+              }
+            }
+          }
+          // If fully covered, treat as within shift
+          if (isFullyCoveredByShift) {
+            isWithinShift = true;
+            isPartialShift = false; // not partial if fully covered
+          }
 
           // FIXED: Check if this specific slot is covered by appointment
           const isCoveredByAppointment = processedSlots.has(slotKey);
@@ -4433,23 +4484,57 @@ const StaffColumn = ({
               }}
             >
               <div className={`time-slot ${(!hasShift || !hasValidShifts ? 'no-shift' :
-                (!isWithinShift ? 'outside-shift' :
-                  (unavailableReason ? 'unavailable' : 'empty')))
+                (isPartialShift ? 'partial-shift' :
+                  (!isWithinShift ? 'outside-shift' :
+                    (unavailableReason ? 'unavailable' : 'empty'))))
                 }`}
-                onClick={hasShift && hasValidShifts && isWithinShift && !isCoveredByAppointment ? () => handleTimeSlotClick(employee.id, slot, currentDate) : undefined}
+                // Only allow click for full or leading partial starting exactly at slot start
+                onClick={(() => {
+                  const minBookable = 10;
+                  if (!hasShift || !hasValidShifts || isCoveredByAppointment) return undefined;
+                  if (!isPartialShift && isWithinShift) return () => handleTimeSlotClick(employee.id, slot, currentDate);
+                  if (isPartialShift && overlapStartsAtSlotStart && overlapMinutes >= minBookable) return () => handleTimeSlotClick(employee.id, slot, currentDate);
+                  return undefined;
+                })()}
                 onMouseEnter={(e) => !isCoveredByAppointment && showTimeHoverHandler(e, slot)}
                 onMouseLeave={hideTimeHover}
                 style={{
-                  cursor: (hasShift && hasValidShifts && isWithinShift && !isCoveredByAppointment) ? 'pointer' : 'not-allowed',
-                  opacity: (!hasShift || !hasValidShifts || !isWithinShift) ? 0.3 : 1,
+                  cursor: (!hasShift || !hasValidShifts || isCoveredByAppointment) ? 'not-allowed' :
+                    (!isPartialShift && isWithinShift) ? 'pointer' :
+                      (isPartialShift && overlapStartsAtSlotStart && overlapMinutes >= 10 ? 'pointer' : 'default'),
+                  opacity: (!hasShift || !hasValidShifts || (!isWithinShift && !isPartialShift)) ? 0.3 : 1,
                   backgroundColor: (!hasShift || !hasValidShifts) ? 'gray' :
-                    (!isWithinShift ? 'gray' : '#ffffff')
+                    (isPartialShift ? '#f3f4f6' : (!isWithinShift ? 'gray' : '#ffffff')),
+                  ...(isPartialShift && partialGradientStyle ? partialGradientStyle : {})
                 }}>
 
                 {unavailableReason && isWithinShift && (
                   <div className="unavailable-text">
                     {unavailableReason.includes("Day Off") ? "DAY OFF" : (unavailableReason.includes("Block") ? "BLOCKED" : "UNAVAIL")}
                   </div>
+                )}
+                {isPartialShift && partialOverlapLabel && (
+                  <>
+                    <div
+                      className="partial-shift-available"
+                      style={{
+                        top: `${percentStart}%`,
+                        height: `${percentEnd - percentStart}%`,
+                        width: '100%',
+                        cursor: overlapStartsAtSlotStart ? 'pointer' : 'default'
+                      }}
+                      title={`Shift: ${partialOverlapLabel}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const minBookable = 10;
+                        if (overlapStartsAtSlotStart && overlapMinutes >= minBookable && !isCoveredByAppointment) {
+                          handleTimeSlotClick(employee.id, slot, currentDate);
+                        }
+                      }}
+                    >
+                      <span className="partial-shift-label">{partialOverlapLabel}</span>
+                    </div>
+                  </>
                 )}
                 {!hasShift && (
                   <div className="unavailable-text">
