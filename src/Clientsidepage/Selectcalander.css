@@ -786,19 +786,35 @@
 
 .date-picker-container {
   position: absolute;
-  top: 1px;
+  top: 189px; /* push below staff header */
   left: 50%;
-  /* height: 300px; */
   transform: translateX(-50%);
   background: #ffffff;
-  border: 2px solid #000000;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -8px rgba(0,0,0,0.18);
   z-index: 999;
-  min-width: 360px;
-  padding: 24px;
-  animation: datePickerSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-width: 300px;
+  padding: 14px 16px 12px;
+  animation: datePickerSlideIn 0.22s cubic-bezier(.4,.6,.3,1);
+  font-family: inherit;
 }
+
+/* Compact minimal date picker adjustments */
+.date-picker-container .date-picker-header {margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e2e8f0;}
+.date-picker-container .date-picker-month-year {font-size:15px;font-weight:600;min-width:auto;}
+.date-picker-container .date-picker-nav-btn {width:32px;height:32px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;}
+.date-picker-container .date-picker-weekdays {margin-bottom:6px;gap:2px;}
+.date-picker-container .date-picker-weekday {padding:6px 0;font-size:11px;background:#f8fafc;font-weight:600;}
+.date-picker-container .date-picker-days {gap:4px;}
+.date-picker-container .date-picker-day {width:36px;height:36px;font-size:13px;border-radius:10px;}
+.date-picker-container .date-picker-footer {margin-top:10px;padding-top:8px;gap:8px;}
+.date-picker-container .date-picker-today-btn,.date-picker-container .date-picker-close-btn {padding:8px 10px;font-size:12px;border:1px solid #cbd5e1;border-radius:8px;font-weight:600;}
+.date-picker-container .date-picker-today-btn {background:#0f172a;color:#fff;border-color:#0f172a;}
+.date-picker-container .date-picker-today-btn:hover {background:#1e293b;}
+.date-picker-container .date-picker-close-btn:hover {background:#f1f5f9;}
+.date-picker-container .date-picker-day.selected {box-shadow:0 0 0 2px #0f172a inset;}
+.date-picker-container .date-picker-day.today:not(.selected) {border:1px solid #0f172a;}
 
 @keyframes datePickerSlideIn {
   from {
