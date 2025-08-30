@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useDatePickerState, useBookingSession, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
+import { StaffColumn } from '../calendar/components/StaffColumn';
 import axios from 'axios';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
@@ -53,16 +55,7 @@ const formatTime = (time) => {
   // Return 24-hour format directly
   return time;
 };
-const formatDateLocal = (d) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-
-// IMPORTANT: Use local date (not UTC ISO) for calendar day keys to avoid off-by-one issues
-// Caused by toISOString() converting to UTC (shifts date backwards/forwards depending on timezone)
-const localDateKey = (date) => formatDateLocal(date instanceof Date ? date : new Date(date));
+// formatDateLocal / localDateKey now imported from calendar/dateUtils
 
 const getRandomColor = () => {
   const colors = ['#f97316', '#22c55e', '#0ea5e9', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981'];
@@ -99,184 +92,10 @@ const calculateAppointmentHeight = (startTime, endTime, timeSlotHeight = 80, slo
   return Math.max(Math.ceil(heightFloat), Math.round(timeSlotHeight));
 };
 
-// Utility function to get appointment color based on status
-const getAppointmentColorByStatus = (status, defaultColor) => {
-  if (!status) return defaultColor;
-
-  const statusLower = status.toLowerCase();
-
-  if (statusLower.includes('confirmed') || statusLower.includes('confirm')) {
-    return '#f59e0b'; // Professional yellow for confirmed
-  } else if (statusLower.includes('completed') || statusLower.includes('complete')) {
-    return '#6b7280'; // Professional grey for completed
-  } else {
-    return defaultColor; // Keep existing color for other statuses
-  }
-};
+// getAppointmentColorByStatus now imported from calendar/uiUtils
 
 // Helper function to check if an employee has a shift on a specific day
-const getDayName = (date) => {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return days[date.getDay()];
-};
-const parseShiftsFromSchedule = (schedule) => {
-  if (!schedule) return [];
-
-  const pad = (n) => String(n).padStart(2, '0');
-  const normalizeHM = (h, m = 0) => `${pad(Number(h))}:${pad(Number(m))}`;
-
-  // try to parse a time token (strings like "09:00", "9", ISO date etc.)
-  const parseTimeToken = (token) => {
-    if (!token && token !== 0) return null;
-    token = String(token).trim();
-    // ISO / full datetime -> extract local hours/minutes
-    if (token.includes('T') || token.includes('-') || token.includes('/')) {
-      const dt = new Date(token);
-      if (!isNaN(dt)) return normalizeHM(dt.getHours(), dt.getMinutes());
-    }
-    // plain "HH:MM" or "H:MM"
-    const m1 = token.match(/^(\d{1,2}):(\d{2})$/);
-    if (m1) return normalizeHM(m1[1], m1[2]);
-    // plain hour like "9" or "09"
-    const m2 = token.match(/^(\d{1,2})$/);
-    if (m2) return normalizeHM(m2[1], 0);
-    return null;
-  };
-
-  const pushShift = (s, e) => {
-    const start = parseTimeToken(s);
-    const end = parseTimeToken(e);
-    if (start && end) {
-      return { startTime: start, endTime: end };
-    }
-    return null;
-  };
-
-  const result = [];
-
-  // If schedule is a plain string, allow formats like "09:00-17:00,18:00-22:00" or "09-17"
-  if (typeof schedule === 'string') {
-    const parts = schedule.split(/[;,|]/).map(p => p.trim()).filter(Boolean);
-    for (const part of parts) {
-      const m = part.match(/(\S+)\s*[-–—]\s*(\S+)/);
-      if (m) {
-        const s = pushShift(m[1], m[2]);
-        if (s) result.push(s);
-      }
-    }
-    return result;
-  }
-
-  // If schedule is an array of shifts (strings or objects)
-  if (Array.isArray(schedule)) {
-    for (const it of schedule) {
-      if (!it) continue;
-      if (typeof it === 'string') {
-        const m = it.match(/(\S+)\s*[-–—]\s*(\S+)/);
-        if (m) {
-          const s = pushShift(m[1], m[2]);
-          if (s) result.push(s);
-        }
-      } else if (typeof it === 'object') {
-        const s = pushShift(it.startTime || it.start, it.endTime || it.end);
-        if (s) result.push(s);
-      }
-    }
-    return result;
-  }
-
-  // If schedule has common keys: shiftsData, shifts, startTime/endTime
-  if (schedule.shiftsData && Array.isArray(schedule.shiftsData)) {
-    for (const sh of schedule.shiftsData) {
-      const s = pushShift(sh.startTime || sh.start, sh.endTime || sh.end);
-      if (s) result.push(s);
-    }
-  }
-
-  if (schedule.shifts && Array.isArray(schedule.shifts)) {
-    for (const sh of schedule.shifts) {
-      if (typeof sh === 'string') {
-        const m = sh.match(/(\S+)\s*[-–—]\s*(\S+)/);
-        if (m) {
-          const s = pushShift(m[1], m[2]);
-          if (s) result.push(s);
-        }
-      } else if (typeof sh === 'object') {
-        const s = pushShift(sh.startTime || sh.start, sh.endTime || sh.end);
-        if (s) result.push(s);
-      }
-    }
-  }
-
-  if (schedule.shifts && typeof schedule.shifts === 'string') {
-    const parts = schedule.shifts.split(/[;,|]/).map(p => p.trim()).filter(Boolean);
-    for (const part of parts) {
-      const m = part.match(/(\S+)\s*[-–—]\s*(\S+)/);
-      if (m) {
-        const s = pushShift(m[1], m[2]);
-        if (s) result.push(s);
-      }
-    }
-  }
-
-  // Single start/end pair
-  if ((schedule.startTime || schedule.start) && (schedule.endTime || schedule.end)) {
-    const s = pushShift(schedule.startTime || schedule.start, schedule.endTime || schedule.end);
-    if (s) result.push(s);
-  }
-
-  // Some backends use { periods: [{ from:'09:00', to:'17:00' }] }
-  if (schedule.periods && Array.isArray(schedule.periods)) {
-    for (const p of schedule.periods) {
-      const s = pushShift(p.from || p.start, p.to || p.end);
-      if (s) result.push(s);
-    }
-  }
-
-  // Filter duplicates and invalid
-  const unique = [];
-  const seen = new Set();
-  for (const sh of result) {
-    const key = `${sh.startTime}_${sh.endTime}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(sh);
-    }
-  }
-
-  return unique;
-};
-
-const hasShiftOnDate = (employee, date) => {
-  if (!employee?.workSchedule) return false;
-  const dayName = getDayName(date);
-  const schedule = employee.workSchedule[dayName];
-  if (!schedule) return false;
-
-  // If explicit boolean flag exists, prefer it
-  if (typeof schedule.isWorking === 'boolean') {
-    if (schedule.isWorking) return true;
-    // if isWorking === false, still check for explicit shift entries (edge cases)
-  }
-
-  const parsed = parseShiftsFromSchedule(schedule);
-  return parsed.length > 0;
-};
-
-// NEW: Get employee's actual shift hours for a specific date
-const getEmployeeShiftHours = (employee, date) => {
-  if (!employee?.workSchedule) return [];
-  const dayName = getDayName(date);
-  const schedule = employee.workSchedule[dayName];
-  if (!schedule) return [];
-
-  const parsed = parseShiftsFromSchedule(schedule);
-  // Normalize times (ensure HH:MM strings)
-  return parsed.map(s => ({
-    startTime: String(s.startTime).padStart(5, '0'),
-    endTime: String(s.endTime).padStart(5, '0')
-  })).filter(s => s.startTime && s.endTime);
-};
+// Shift utilities now imported from calendar/shiftUtils
 // ENHANCED: Generate time slots ONLY for employee's actual shift hours
 const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDuration = 30, intervalMinutes = 30) => {
   // console.log('=== GENERATING TIME SLOTS FROM SHIFT ===');
@@ -701,43 +520,35 @@ const getDatePickerCalendarDays = (month) => {
   
   return days;
 };
-const handleDatePickerDateSelect = (date) => {
-  setCurrentDate(date);
-  setDatePickerSelectedDate(date);
-  setShowDatePicker(false);
-};
-
-const goToDatePickerPreviousMonth = () => {
-  setDatePickerCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-};
-
-const goToDatePickerNextMonth = () => {
-  setDatePickerCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-};
-
-const goToDatePickerToday = () => {
-  const today = new Date();
-  setDatePickerCurrentMonth(today);
-  setDatePickerSelectedDate(today);
-  setCurrentDate(today);
-  setShowDatePicker(false);
-};
 
 const SelectCalendar = () => {
-  const [datePickerView, setDatePickerView] = useState('date'); // 'date', 'week', 'month'
-const [weekRanges, setWeekRanges] = useState([]);
-const [selectedWeekRange, setSelectedWeekRange] = useState(null);
+  // Date / picker state consolidated
+  const {
+    currentDate, datePickerView, showDatePicker, datePickerCurrentMonth, datePickerSelectedDate,
+    weekRanges, selectedWeekRange,
+    setCurrentDate, setDatePickerView, setShowDatePicker, setDatePickerCurrentMonth,
+    setDatePickerSelectedDate, setWeekRanges, setSelectedWeekRange,
+  goToDatePickerPreviousMonth,
+  goToDatePickerNextMonth,
+  goToDatePickerToday,
+  handleDatePickerDateSelect
+  } = useDatePickerState(new Date());
+
+  // Booking session (multi services)
+  const {
+    multipleAppointments, currentAppointmentIndex, showServiceCatalog, isAddingAdditionalService,
+    setCurrentAppointmentIndex, setShowServiceCatalog, setIsAddingAdditionalService,
+    addAppointmentToSession, removeAppointmentFromSession, clearSession, getTotalSessionPrice
+  } = useBookingSession();
+
+  // Core scheduler state
   const [employees, setEmployees] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
   const [appointments, setAppointments] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('Day');
   const [selectedStaff, setSelectedStaff] = useState('All');
-const [showDatePicker, setShowDatePicker] = useState(false);
-const [datePickerCurrentMonth, setDatePickerCurrentMonth] = useState(new Date());
-const [datePickerSelectedDate, setDatePickerSelectedDate] = useState(new Date());
 
   // Enhanced Booking Flow States
   const [availableServices, setAvailableServices] = useState([]);
@@ -770,13 +581,9 @@ const [datePickerSelectedDate, setDatePickerSelectedDate] = useState(new Date())
   const [bookingError, setBookingError] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
 
-  // Multiple Appointments States
-  const [multipleAppointments, setMultipleAppointments] = useState([]);
-  const [currentAppointmentIndex, setCurrentAppointmentIndex] = useState(0);
-  const [isAddingAdditionalService, setIsAddingAdditionalService] = useState(false);
+  // Session UI extras
   const [giftCardCode, setGiftCardCode] = useState('');
   const [showAppointmentSummary, setShowAppointmentSummary] = useState(false);
-  const [showServiceCatalog, setShowServiceCatalog] = useState(false);
 
   // Month View More Appointments States
   const [showMoreAppointments, setShowMoreAppointments] = useState(false);
@@ -1038,7 +845,7 @@ const getEmployeeAppointmentCount = (employeeId) => {
         startTime,
         endTime
       };
-      setMultipleAppointments(prev => [...prev, newAppointment]);
+  addAppointmentToSession(newAppointment);
       // Persist selected professional for potential later use
       setSelectedProfessional(professionalObj);
       setSelectedService(null); // We store service in appointment card instead
@@ -1132,27 +939,6 @@ const getDatePickerCalendarDays = (month) => {
   return days;
 };
 
-const handleDatePickerDateSelect = (date) => {
-  setCurrentDate(date);
-  setDatePickerSelectedDate(date);
-  setShowDatePicker(false);
-};
-
-const goToDatePickerPreviousMonth = () => {
-  setDatePickerCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-};
-
-const goToDatePickerNextMonth = () => {
-  setDatePickerCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-};
-
-const goToDatePickerToday = () => {
-  const today = new Date();
-  setDatePickerCurrentMonth(today);
-  setDatePickerSelectedDate(today);
-  setCurrentDate(today);
-  setShowDatePicker(false);
-};
   const handleBookingStatusUpdate = async (newStatus) => {
     if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
       setBookingStatusError('Invalid booking selected');
@@ -1366,68 +1152,15 @@ const goToDatePickerToday = () => {
     return `❌ ${professionalName} is not available at this time.`;
   };
 
-  const addAppointmentToSession = (appointment) => {
-    const newAppointment = {
-      id: `temp_${Date.now()}_${Math.random()}`,
-      service: appointment.service,
-      professional: appointment.professional,
-      timeSlot: appointment.timeSlot,
-      date: appointment.date,
-      duration: appointment.service.duration,
-      price: appointment.service.price
-    };
-    
-    console.log('🔥 ADDING APPOINTMENT TO SESSION:');
-    console.log('Previous appointments count:', multipleAppointments.length);
-    console.log('Previous appointments:', multipleAppointments);
-    console.log('New appointment:', newAppointment);
-    
-    setMultipleAppointments(prev => {
-      const updated = [...prev, newAppointment];
-      console.log('🎯 UPDATED APPOINTMENTS ARRAY:', updated);
-      console.log('🎯 NEW TOTAL COUNT:', updated.length);
-      // Hide catalog after first successful add
-      if (updated.length === 1) {
-        setShowServiceCatalog(false);
-      }
-      return updated;
-    });
-    
-    return newAppointment;
-  };
-
-  const removeAppointmentFromSession = (appointmentId) => {
-    setMultipleAppointments(prev => {
-      const filtered = prev.filter(apt => apt.id !== appointmentId);
-      if (filtered.length === 0) {
-        // Reset to combined selection mode
-        setBookingDefaults(null);
-        setSelectedService(null);
-        setSelectedProfessional(null);
-        setAvailableTimeSlots([]);
-        setIsAddingAdditionalService(false);
-      }
-      return filtered;
-    });
-  };
-
-  const getTotalSessionPrice = () => {
-    return multipleAppointments.reduce((total, apt) => total + (apt.price || 0), 0);
-  };
+  // (Removed local add/remove/total functions — replaced by hook implementations)
 
   const clearAppointmentSession = () => {
-    setMultipleAppointments([]);
-    setCurrentAppointmentIndex(0);
-    setIsAddingAdditionalService(false);
+    clearSession();
     setGiftCardCode('');
     setShowAppointmentSummary(false);
   };
 
   const startAdditionalService = () => {
-    console.log('🚀 STARTING ADDITIONAL SERVICE');
-    console.log('Current multipleAppointments count before adding another:', multipleAppointments.length);
-    
-    // Reset booking form for next service
     setSelectedService(null);
     setSelectedProfessional(null);
     setSelectedTimeSlot(null);
@@ -1436,13 +1169,7 @@ const goToDatePickerToday = () => {
     setBookingStep(1);
     setIsAddingAdditionalService(true);
     setCurrentAppointmentIndex(multipleAppointments.length);
-    setBookingError(null);
-    setBookingSuccess(null);
-    
-    // CRITICAL: Clear booking defaults so new service selection doesn't use old time slot logic
     setBookingDefaults(null);
-    
-    console.log('✅ Additional service setup complete - should return to step 1');
   };
 
   // --- ENHANCED BOOKING FLOW FUNCTIONS ---
@@ -4306,566 +4033,18 @@ useEffect(() => {
       )}
 
       {/* More Appointments Dropdown */}
-      {showMoreAppointments && (
-        <>
-          <div className="more-appointments-backdrop" onClick={closeMoreAppointmentsDropdown}></div>
-          <div
-            className={`more-appointments-dropdown ${dropdownPositionedAbove ? 'positioned-above' : ''}`}
-            style={{
-              top: dropdownPosition.top,
-              left: dropdownPosition.left
-            }}
-          >
-            <div className="more-appointments-dropdown-header">
-              <span>All Appointments</span>
-              <span className="more-appointments-date">
-                {selectedDayDate?.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </span>
-            </div>
-            <div className="more-appointments-dropdown-list">
-              {selectedDayAppointments.map((app, index) => (
-                <div key={index} className="more-appointment-dropdown-item">
-                  <div className="more-appointment-color" style={{ backgroundColor: app.color }}></div>
-                  <div className="more-appointment-details">
-                    <div className="more-appointment-client">{app.client}</div>
-                    <div className="more-appointment-service">{app.service}</div>
-                  </div>
-                  <div className="more-appointment-time">
-                    {app.time || 'Time TBD'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+  <MoreAppointmentsDropdown visible={showMoreAppointments} appointments={selectedDayAppointments} dayDate={selectedDayDate} position={dropdownPosition} positionedAbove={dropdownPositionedAbove} onClose={closeMoreAppointmentsDropdown} />
 
       {/* Booking Tooltip */}
-      {showBookingTooltip && tooltipData && (
-        <div
-          className="booking-tooltip"
-          style={{
-            position: 'fixed',
-            top: tooltipPosition?.y,
-            left: tooltipPosition?.x,
-            zIndex: 10000,
-            backgroundColor: '#333',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            maxWidth: '200px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            pointerEvents: 'none',
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-8px'
-          }}
-        >
-          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{tooltipData.client}</div>
-          <div style={{ marginBottom: '2px' }}>{tooltipData.service}</div>
-          <div style={{ marginBottom: '2px' }}>Time: {formatTooltipTime(tooltipData.time)}</div>
-          <div style={{ marginBottom: '2px' }}>Professional: {tooltipData.professional}</div>
-          <div style={{ fontSize: '11px', color: '#ccc' }}>Status: {tooltipData.status}</div>
-          {tooltipData.notes && (
-            <div style={{ fontSize: '11px', color: '#ccc', marginTop: '4px' }}>
-              Notes: {tooltipData.notes}
-            </div>
-          )}
-        </div>
-      )}
+  {showBookingTooltip && tooltipData && (<BookingTooltip tooltipData={tooltipData} position={tooltipPosition} />)}
 
       {/* Time Hover Tooltip */}
-      {showTimeHover && hoverTimeData && (
-        <div
-          className="time-hover-tooltip"
-          style={{
-            position: 'fixed',
-            top: hoverTimePosition?.y,
-            left: hoverTimePosition?.x,
-            zIndex: 10000,
-            backgroundColor: '#1f2937',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            maxWidth: '200px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            pointerEvents: 'none',
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-8px',
-            border: '1px solid #374151'
-          }}
-        >
-          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-            Slot: {hoverTimeData.timeSlot}
-          </div>
-          <div style={{ marginBottom: '2px', color: '#e5e7eb' }}>
-            Current Time: {hoverTimeData.currentTime}
-          </div>
-          <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-            {hoverTimeData.date}
-          </div>
-        </div>
-      )}
+  {showTimeHover && hoverTimeData && (<TimeHoverTooltip hoverTimeData={hoverTimeData} position={hoverTimePosition} />)}
     </div>
   );
 };
-const computeAppointmentLayout = (
-  { startTime, endTime, durationMinutes },
-  timeSlotsOrFirstVisible = "00:00",
-  slotInterval = 30,
-  slotHeightPx = 80
-) => {
-  const parseHM = (t = "00:00") => {
-    if (!t) return 0;
-    if (typeof t !== "string") return 0;
-    if (t.includes("T") || t.includes("-") || t.endsWith("Z")) {
-      const d = new Date(t);
-      return d.getHours() * 60 + d.getMinutes();
-    }
-    const [hh = "0", mm = "0"] = t.split(":");
-    return (Number(hh) || 0) * 60 + (Number(mm) || 0);
-  };
+// computeAppointmentLayout now in calendar/dateUtils (used only in StaffColumn extraction)
 
-  const minutesToLabel = (mins) => {
-    mins = ((mins % (24 * 60)) + (24 * 60)) % (24 * 60);
-    const h = Math.floor(mins / 60).toString().padStart(2, "0");
-    const m = (mins % 60).toString().padStart(2, "0");
-    return `${h}:${m}`;
-  };
 
-  const startM = parseHM(startTime);
-  let endM = endTime
-    ? parseHM(endTime)
-    : startM + (Number(durationMinutes) || slotInterval);
-  if (endM <= startM) endM = startM + (Number(durationMinutes) || slotInterval);
-
-  const durationMins = Math.max(1, endM - startM);
-
-  let refM;
-  if (Array.isArray(timeSlotsOrFirstVisible)) {
-    const slotMs = timeSlotsOrFirstVisible
-      .map(s => parseHM(s))
-      .filter(n => Number.isFinite(n))
-      .sort((a, b) => a - b);
-    const candidate = slotMs.slice().reverse().find(m => m <= startM);
-    refM = (typeof candidate === 'number') ? candidate : (slotMs.length ? slotMs[0] : 0);
-  } else {
-    refM = parseHM(timeSlotsOrFirstVisible || "00:00");
-  }
-  if (!Number.isFinite(refM)) refM = 0;
-
-  // FIXED: Calculate position without extra offset
-  const topPx = Math.max(0, ((startM - refM) / slotInterval) * slotHeightPx);
-
-  // FIXED: Calculate height without extra padding
-  const heightPx = Math.max(
-    Math.ceil((durationMins / slotInterval) * slotHeightPx),
-    slotHeightPx
-  );
-
-  // build coveredSlots aligned to slotInterval - FIXED: Only include slots that START within appointment
-  const coveredSlots = [];
-  for (let s = startM; s < endM; s += slotInterval) {
-    // Only add slots whose start time is within the appointment duration
-    if (s >= startM && s < endM) {
-      coveredSlots.push(minutesToLabel(s));
-    }
-  }
-
-  return {
-    topPx,
-    heightPx,
-    durationMins,
-    startLabel: minutesToLabel(startM),
-    endLabel: minutesToLabel(endM),
-    coveredSlots
-  };
-};
-
-// Reusable components for cleaner rendering
-const StaffColumn = ({
-  employee,
-  timeSlots,
-  appointments,
-  currentDate,
-  isTimeSlotUnavailable,
-  handleTimeSlotClick,
-  showBookingTooltipHandler,
-  hideBookingTooltip,
-  showTimeHoverHandler,
-  hideTimeHover,
-  setSelectedBookingForStatus,
-  setShowBookingStatusModal
-}) => {
-  const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
-  const dayKey = localDateKey(currentDate);
-  const hasShift = hasShiftOnDate(employee, currentDate);
-  const shiftHours = getEmployeeShiftHours(employee, currentDate);
-  const hasValidShifts = shiftHours.length > 0;
-
-  const processAppointmentBlocks = () => {
-    const employeeAppointments = appointments[employee.id] || {};
-    const appointmentBlocks = [];
-    const processedSlots = new Set();
-    const firstVisibleSlot = (timeSlots && timeSlots.length) ? timeSlots[0] : '00:00';
-
-    Object.entries(employeeAppointments).forEach(([slotKey, appointment]) => {
-      if (!slotKey.startsWith(dayKey) || processedSlots.has(slotKey)) return;
-      if (!appointment.isMainSlot) return;
-
-      const durationMinutes = Number(appointment.duration) || 30;
-
-      // compute layout using helper
-      const layout = computeAppointmentLayout(
-        {
-          startTime: appointment.startISO || appointment.startTime,
-          endTime: appointment.endISO || appointment.endTime,
-          durationMinutes
-        },
-        firstVisibleSlot,
-        30,
-        timeSlotHeightPx
-      );
-
-      // FIXED: Mark covered slots properly - only slots that START within the appointment
-      layout.coveredSlots.forEach(coveredSlot => {
-        processedSlots.add(`${dayKey}_${coveredSlot}`);
-      });
-
-      appointmentBlocks.push({
-        startSlot: layout.startLabel,
-        durationMinutes: layout.durationMins,
-        durationSlots: Math.ceil(layout.durationMins / 30),
-        height: layout.heightPx,
-        topPx: layout.topPx,
-        appointment: { ...appointment, startTime: layout.startLabel, endTime: layout.endLabel },
-        coveredSlots: layout.coveredSlots
-      });
-    });
-
-    return { appointmentBlocks, processedSlots };
-  };
-
-  // FIXED: Get both appointment blocks and processed slots
-  const { appointmentBlocks, processedSlots } = processAppointmentBlocks();
-
-  return (
-    <div key={employee.id} className={`staff-column ${!hasShift ? 'staff-absent' : ''} ${!hasValidShifts ? 'no-shifts' : ''}`}>
-      <div className="staff-header">
-        <div className="staff-avatar" style={{
-          backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
-          opacity: hasShift && hasValidShifts ? 1 : 0.5
-        }}>
-          {employee.avatar ?
-            <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{
-              opacity: hasShift && hasValidShifts ? 1 : 0.5
-            }} /> :
-            employee.name.charAt(0)
-          }
-        </div>
-        <div className="staff-info">
-          <div className="staff-name" style={{
-            color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af'
-          }}>
-            {employee.name}
-          </div>
-          <div className="staff-position" style={{
-            color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af'
-          }}>
-            {employee.position}
-          </div>
-        </div>
-      </div>
-
-      <div className="time-slots-column" style={{ position: 'relative' }}>
-        {/* Render ALL time slots first (including those that will be covered) */}
-        {timeSlots.map((slot, index) => {
-          const slotKey = `${dayKey}_${slot}`;
-          const unavailableReason = isTimeSlotUnavailable(employee.id, slot);
-
-          // ---- SHIFT OVERLAP / PARTIAL SHIFT LOGIC ----
-          // Each visual slot spans 30 minutes from slotStart to slotEnd
-          const [slotHour, slotMinute] = slot.split(':').map(Number);
-          const slotStartMinutes = slotHour * 60 + slotMinute;
-          const slotEndMinutes = slotStartMinutes + 30; // fixed 30‑min visual slot
-
-          let isWithinShift = false;          // legacy: slot start lies within shift
-          let isFullyCoveredByShift = false;  // shift spans entire 30‑min cell
-          let isPartialShift = false;         // any overlap but not full
-          let partialGradientStyle = undefined; // inline style for partial visualisation
-          let partialOverlapLabel = '';
-          let overlapStartsAtSlotStart = false;
-          let overlapEndsAtSlotEnd = false;
-          let overlapMinutes = 0;
-          let percentStart = 0; // percentage start of overlap (vertical)
-          let percentEnd = 0;   // percentage end of overlap (vertical)
-
-          if (hasShift && hasValidShifts) {
-            for (const shift of shiftHours) {
-              const [shiftStartHour, shiftStartMinute] = shift.startTime.split(':').map(Number);
-              const [shiftEndHour, shiftEndMinute] = shift.endTime.split(':').map(Number);
-              const shiftStart = shiftStartHour * 60 + shiftStartMinute;
-              const shiftEnd = shiftEndHour * 60 + shiftEndMinute;
-
-              // Overlap minutes between [slotStart, slotEnd) and [shiftStart, shiftEnd)
-              const overlapStart = Math.max(slotStartMinutes, shiftStart);
-              const overlapEnd = Math.min(slotEndMinutes, shiftEnd);
-              const thisOverlapMinutes = Math.max(0, overlapEnd - overlapStart);
-
-              if (thisOverlapMinutes > 0) {
-                // Legacy isWithinShift (slot label itself lies inside shift)
-                if (slotStartMinutes >= shiftStart && slotStartMinutes < shiftEnd) {
-                  isWithinShift = true;
-                }
-                if (thisOverlapMinutes >= 30) {
-                  isFullyCoveredByShift = true;
-                } else {
-                  isPartialShift = true;
-                  overlapMinutes = thisOverlapMinutes;
-                  overlapStartsAtSlotStart = overlapStart === slotStartMinutes;
-                  overlapEndsAtSlotEnd = overlapEnd === slotEndMinutes;
-                  percentStart = ((overlapStart - slotStartMinutes) / 30) * 100;
-                  percentEnd = ((overlapEnd - slotStartMinutes) / 30) * 100;
-                  // Base background for partial cells (light grey)
-                  partialGradientStyle = { background: '#f3f4f6' };
-                  const toLabel = (mins) => {
-                    const h = Math.floor(mins / 60).toString().padStart(2, '0');
-                    const m = (mins % 60).toString().padStart(2, '0');
-                    return `${h}:${m}`;
-                  };
-                  partialOverlapLabel = `${toLabel(overlapStart)}-${toLabel(overlapEnd)}`;
-                }
-                // We can break early if full coverage achieved
-                if (isFullyCoveredByShift) break;
-              }
-            }
-          }
-          // If fully covered, treat as within shift
-          if (isFullyCoveredByShift) {
-            isWithinShift = true;
-            isPartialShift = false; // not partial if fully covered
-          }
-
-          // FIXED: Check if this specific slot is covered by appointment
-          const isCoveredByAppointment = processedSlots.has(slotKey);
-
-          return (
-            <div
-              key={slot}
-              className="time-slot-wrapper"
-              style={{
-                height: `${timeSlotHeightPx}px`,
-                // Hide covered slots but keep them in the layout to maintain spacing
-                visibility: isCoveredByAppointment ? 'hidden' : 'visible'
-              }}
-            >
-              <div className={`time-slot ${(!hasShift || !hasValidShifts ? 'no-shift' :
-                (isPartialShift ? 'partial-shift' :
-                  (!isWithinShift ? 'outside-shift' :
-                    (unavailableReason ? 'unavailable' : 'empty'))))
-                }`}
-                // Only allow click for full or leading partial starting exactly at slot start
-                onClick={(() => {
-                  const minBookable = 10;
-                  if (!hasShift || !hasValidShifts || isCoveredByAppointment) return undefined;
-                  if (!isPartialShift && isWithinShift) return () => handleTimeSlotClick(employee.id, slot, currentDate);
-                  if (isPartialShift && overlapStartsAtSlotStart && overlapMinutes >= minBookable) return () => handleTimeSlotClick(employee.id, slot, currentDate);
-                  return undefined;
-                })()}
-                onMouseEnter={(e) => !isCoveredByAppointment && showTimeHoverHandler(e, slot)}
-                onMouseLeave={hideTimeHover}
-                style={{
-                  cursor: (!hasShift || !hasValidShifts || isCoveredByAppointment) ? 'not-allowed' :
-                    (!isPartialShift && isWithinShift) ? 'pointer' :
-                      (isPartialShift && overlapStartsAtSlotStart && overlapMinutes >= 10 ? 'pointer' : 'default'),
-                  opacity: (!hasShift || !hasValidShifts || (!isWithinShift && !isPartialShift)) ? 0.3 : 1,
-                  backgroundColor: (!hasShift || !hasValidShifts) ? 'gray' :
-                    (isPartialShift ? '#f3f4f6' : (!isWithinShift ? 'gray' : '#ffffff')),
-                  ...(isPartialShift && partialGradientStyle ? partialGradientStyle : {})
-                }}>
-
-                {unavailableReason && isWithinShift && (
-                  <div className="unavailable-text">
-                    {unavailableReason.includes("Day Off") ? "DAY OFF" : (unavailableReason.includes("Block") ? "BLOCKED" : "UNAVAIL")}
-                  </div>
-                )}
-                {isPartialShift && partialOverlapLabel && (
-                  <>
-                    <div
-                      className="partial-shift-available"
-                      style={{
-                        top: `${percentStart}%`,
-                        height: `${percentEnd - percentStart}%`,
-                        width: '100%',
-                        cursor: overlapStartsAtSlotStart ? 'pointer' : 'default'
-                      }}
-                      title={`Shift: ${partialOverlapLabel}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const minBookable = 10;
-                        if (overlapStartsAtSlotStart && overlapMinutes >= minBookable && !isCoveredByAppointment) {
-                          handleTimeSlotClick(employee.id, slot, currentDate);
-                        }
-                      }}
-                    >
-                      <span className="partial-shift-label">{partialOverlapLabel}</span>
-                    </div>
-                  </>
-                )}
-                {!hasShift && (
-                  <div className="unavailable-text">
-                  </div>
-                )}
-                {hasShift && !hasValidShifts && (
-                  <div className="unavailable-text">
-                  </div>
-                )}
-                {hasShift && hasValidShifts && !isWithinShift && (
-                  <div className="unavailable-text off-shift-text">
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Render appointment blocks on top */}
-        {appointmentBlocks.map((block, index) => {
-          return (
-            <div
-              key={`block-${index}`}
-              className="appointment-block fresha-style"
-              style={{
-                position: 'absolute',
-                top: `${block.topPx}px`,
-                left: '4px',
-                right: '4px',
-                height: `${block.height}px`,
-                backgroundColor: getAppointmentColorByStatus(block.appointment.status, block.appointment.color),
-                borderRadius: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                padding: '8px 12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)',
-                cursor: 'pointer',
-                zIndex: 10,
-                border: '2px solid rgba(255,255,255,0.2)',
-                transition: 'all 0.2s ease',
-                overflow: 'hidden'
-              }}
-              onClick={() => {
-                const appointmentDetails = {
-                  ...block.appointment,
-                  employeeId: employee.id,
-                  employeeName: employee.name,
-                  slotTime: block.startSlot,
-                  date: dayKey,
-                  slotKey: `${dayKey}_${block.startSlot}`
-                };
-                setSelectedBookingForStatus(appointmentDetails);
-                setShowBookingStatusModal(true);
-              }}
-              onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                client: block.appointment.client,
-                service: block.appointment.service,
-                time: block.appointment.startTime,
-                professional: employee.name,
-                status: block.appointment.status || 'Confirmed',
-                notes: block.appointment.notes
-              })}
-              onMouseLeave={hideBookingTooltip}
-            >
-              <div className="appointment-client" style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>
-                {block.appointment.client}
-              </div>
-              <div className="appointment-service" style={{ color: '#fff', fontSize: 13, opacity: 0.95 }}>
-                {block.appointment.service}
-              </div>
-              <div className="appointment-time" style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
-                {block.appointment.startTime} - {block.appointment.endTime}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const WeekDayColumn = ({ day, employees, timeSlots, appointments, isTimeSlotUnavailable, handleTimeSlotClick, onShowMoreAppointments, showBookingTooltipHandler, hideBookingTooltip }) => {
-  const dayKey = day.toISOString().split('T')[0];
-  const isToday = day.toDateString() === new Date().toDateString();
-
-  // Get all appointments for this day from all employees (similar to month view)
-  const dayAppointments = [];
-
-  employees.forEach(emp => {
-    if (appointments[emp.id]) {
-      Object.entries(appointments[emp.id]).forEach(([slotKey, appointment]) => {
-        // Check if the appointment is for this day
-        if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-          // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
-          const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-          dayAppointments.push({
-            ...appointment,
-            time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
-            slotKey,
-            timeSlot: timeFromKey,
-
-          });
-        }
-      });
-    }
-  });
-
-  return (
-    <div key={dayKey} className="week-day-column">
-      <div className={`week-day-header ${isToday ? 'is-today' : ''}`}>
-        <span className="weekday-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
-        <span className="day-number">{day.getDate()}</span>
-      </div>
-      <div className="week-appointments">
-        {dayAppointments.length > 0 ? (
-          <>
-            {dayAppointments.slice(0, 3).map((app, index) => (
-              <div key={index}
-                className="week-appointment-entry"
-                style={{ backgroundColor: app.color }}
-                onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                  client: app.client,
-                  service: app.service,
-                  time: app.time,
-                  professional: app.employeeName,
-                  status: app.status || 'Confirmed',
-                  notes: app.notes
-                })}
-                onMouseLeave={hideBookingTooltip}>
-                <span className="appointment-client-name">{app.client}</span>
-                <span className="appointment-service-name">{app.service}</span>
-                <span className="appointment-time">{app.time}</span>
-              </div>
-            ))}
-            {dayAppointments.length > 3 && (
-              <div
-                className="week-more-appointments"
-                onClick={(event) => onShowMoreAppointments(dayAppointments, day, event)}
-              >
-                +{dayAppointments.length - 3} more
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="week-no-appointments">
-            <NoDataState/>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+// WeekDayColumn extracted
 export default SelectCalendar
