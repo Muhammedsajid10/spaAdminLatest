@@ -579,6 +579,52 @@ const timeToMinutes = (timeStr) => {
   return hours * 60 + mins;
 };
 
+// --- NEW: Conflict detection for auto-added services ---
+const detectProfessionalConflict = (professionalId, date, startTime, duration, appointments, multipleAppointments) => {
+  if (!professionalId || !startTime || !duration) return null;
+  const dayKey = localDateKey(date);
+  const desiredStart = timeToMinutes(startTime);
+  const desiredEnd = desiredStart + duration;
+
+  // 1. Check existing multipleAppointments in the current session
+  for (const apt of multipleAppointments) {
+    if ((apt.professional?._id === professionalId || apt.professional?.id === professionalId) && formatDateLocal(new Date(apt.date)) === dayKey) {
+      const s = timeToMinutes(apt.timeSlot);
+      const e = s + apt.duration;
+      if (desiredStart < e && desiredEnd > s) {
+        return { source: 'session', conflict: apt, start: s, end: e };
+      }
+    }
+  }
+
+  // 2. Check existing persisted appointments structure for that professional
+  const profAppointments = appointments?.[professionalId];
+  if (profAppointments) {
+    for (const key in profAppointments) {
+      if (!Object.prototype.hasOwnProperty.call(profAppointments, key)) continue;
+      if (!key.startsWith(dayKey + '_')) continue; // only same day
+      const existing = profAppointments[key];
+      const existingStartTime = existing.startTime || existing.timeSlot || key.split('_')[1];
+      if (!existingStartTime) continue;
+      const existingStart = timeToMinutes(existingStartTime);
+      let existingEnd;
+      if (existing.endTime) {
+        existingEnd = timeToMinutes(existing.endTime);
+      } else if (existing.duration) {
+        existingEnd = existingStart + existing.duration;
+      } else if (existing.service?.duration) {
+        existingEnd = existingStart + existing.service.duration;
+      } else {
+        existingEnd = existingStart + 30; // fallback 30m
+      }
+      if (desiredStart < existingEnd && desiredEnd > existingStart) {
+        return { source: 'persisted', conflict: existing, start: existingStart, end: existingEnd };
+      }
+    }
+  }
+  return null;
+};
+
 const getAvailableTimeSlotsWithAccumulatedBookings = (employee, date, serviceDuration, appointments, multipleAppointments) => {
   // Get base time slots for the employee
   const baseSlots = getValidTimeSlotsForProfessional(employee, date, serviceDuration, appointments);
@@ -730,6 +776,7 @@ const [datePickerSelectedDate, setDatePickerSelectedDate] = useState(new Date())
   const [isAddingAdditionalService, setIsAddingAdditionalService] = useState(false);
   const [giftCardCode, setGiftCardCode] = useState('');
   const [showAppointmentSummary, setShowAppointmentSummary] = useState(false);
+  const [showServiceCatalog, setShowServiceCatalog] = useState(false);
 
   // Month View More Appointments States
   const [showMoreAppointments, setShowMoreAppointments] = useState(false);
@@ -914,49 +961,96 @@ const getEmployeeAppointmentCount = (employeeId) => {
     console.log('🎯 SERVICE SELECTED:', service.name);
     console.log('isAddingAdditionalService:', isAddingAdditionalService);
     console.log('Current multipleAppointments count:', multipleAppointments.length);
-    
-    setSelectedService(service);
-    setBookingStep(2);
     setBookingError(null);
 
-    // Case 1: User clicked a time slot directly
+    // NEW LOGIC: If user clicked a time slot (bookingDefaults set), auto-assign professional & chained time without further steps
     if (bookingDefaults?.professional) {
-      console.log('📋 Using booking defaults (direct time slot click)');
-      const selectedProfessional = bookingDefaults.professional;
-      console.log("selected professional ", selectedProfessional);
+      const prof = bookingDefaults.professional;
+      // Normalize professional object to include _id
+      const professionalObj = { ...prof, _id: prof._id || prof.id };
 
-      setSelectedProfessional(selectedProfessional);
-
-      const employeeWithSchedule = employees.find(e => e.id === selectedProfessional.id);
-      if (employeeWithSchedule) {
-        // Correctly generate and filter time slots for the selected professional and service
-        const allPossibleSlots = generateTimeSlotsFromEmployeeShift(employeeWithSchedule, bookingDefaults.date, service.duration, 30);
-        const filteredSlots = filterOutBookedTimeSlots(allPossibleSlots, selectedProfessional.id, bookingDefaults.date);
-        setAvailableTimeSlots(filteredSlots);
-
-        // We have the professional and the time slot already selected from the click.
-        // We can skip directly to the client info step.
-        const [hour, minute] = bookingDefaults.time.split(':').map(Number);
-        const originalSlot = filteredSlots.find(slot => {
-          const d = new Date(slot.startTime);
-          return d.getHours() === hour && d.getMinutes() === minute;
-        });
-
-        if (originalSlot) {
-          setSelectedTimeSlot(originalSlot);
-          setBookingStep(4); // Skip to client info
-        } else {
-          setBookingError(`The selected service duration (${service.duration} mins) does not fit in the original time slot. Please choose a different time.`);
-          setBookingStep(3); // Stay on time selection, but with a warning.
-        }
+      // Determine start time (first service uses clicked slot; subsequent services chain from last end)
+      let startTime;
+      if (multipleAppointments.length === 0) {
+        startTime = bookingDefaults.time;
       } else {
-        setBookingError("Professional data is missing. Please try again.");
+        const last = multipleAppointments[multipleAppointments.length - 1];
+        startTime = addMinutesToTime(last.timeSlot, last.duration);
       }
+      const endTime = addMinutesToTime(startTime, service.duration);
+
+      // Conflict detection BEFORE shift fit check / creation
+      const conflict = detectProfessionalConflict(professionalObj._id || professionalObj.id, bookingDefaults.date || currentDate, startTime, service.duration, appointments, multipleAppointments);
+      if (conflict) {
+        const conflictStartStr = `${String(Math.floor(conflict.start / 60)).padStart(2,'0')}:${String(conflict.start % 60).padStart(2,'0')}`;
+        const conflictEndStr = `${String(Math.floor(conflict.end / 60)).padStart(2,'0')}:${String(conflict.end % 60).padStart(2,'0')}`;
+        setBookingError(`Time conflict: ${prof.name || 'Professional'} already has a booking from ${conflictStartStr} to ${conflictEndStr}. Choose another start time or remove the conflicting service.`);
+        return;
+      }
+
+      // Validate against professional shift blocks
+      const employeeFull = employees.find(e => (e.id === professionalObj.id) || (e._id === professionalObj._id));
+      const dayName = getDayName(bookingDefaults.date || currentDate);
+      const schedule = employeeFull?.workSchedule?.[dayName];
+
+      const fitsInShift = (() => {
+        if (!schedule) return false;
+        const blocks = [];
+        if (schedule.shifts && typeof schedule.shifts === 'string') {
+          schedule.shifts.split(',').map(s => s.trim()).filter(Boolean).forEach(seg => {
+            const parts = seg.split('-');
+            if (parts.length === 2) {
+              const sT = parts[0].trim();
+              const eT = parts[1].trim();
+              blocks.push({ start: sT, end: eT });
+            }
+          });
+        }
+        if (blocks.length === 0 && schedule.startTime && schedule.endTime) {
+          blocks.push({ start: schedule.startTime, end: schedule.endTime });
+        }
+        if (blocks.length === 0 && Array.isArray(schedule.shiftsData)) {
+          schedule.shiftsData.forEach(sh => blocks.push({ start: sh.startTime, end: sh.endTime }));
+        }
+        const startM = timeToMinutes(startTime);
+        const endM = timeToMinutes(endTime);
+        return blocks.some(b => {
+          const bStart = timeToMinutes(b.start);
+            const bEnd = timeToMinutes(b.end);
+            return startM >= bStart && endM <= bEnd;
+        });
+      })();
+
+      if (!fitsInShift) {
+        setBookingError(`Selected service (${service.duration}m) does not fit in available shift time starting at ${startTime}.`);
+        return;
+      }
+
+      // Build appointment object and add to session
+      const newAppointment = {
+        id: `temp_${Date.now()}_${Math.random()}`,
+        service,
+        professional: professionalObj,
+        timeSlot: startTime,
+        date: bookingDefaults.date || currentDate,
+        duration: service.duration,
+        price: service.price,
+        startTime,
+        endTime
+      };
+      setMultipleAppointments(prev => [...prev, newAppointment]);
+      // Persist selected professional for potential later use
+      setSelectedProfessional(professionalObj);
+      setSelectedService(null); // We store service in appointment card instead
+      // Remain on step 1 (service/cards view) for adding more services
+      setBookingStep(1);
+  setShowServiceCatalog(false);
       return;
     }
 
-    // Case 2: User clicked "Add Appointment" from the header OR adding additional service
-    console.log('📋 Using Case 2 - Professional selection flow');
+    // Fallback: original multi-step flow when no pre-selected professional/time
+    setSelectedService(service);
+    setBookingStep(2);
     const professionals = getAvailableProfessionalsForService(
       service._id,
       currentDate,
@@ -1174,6 +1268,7 @@ const goToDatePickerToday = () => {
     setBookingDefaults(null);
     setIsNewAppointment(true); // This is a new appointment
     setShowAddBookingModal(true);
+  setShowServiceCatalog(true); // Ensure service list visible when no preselected slot
   };
 
   const goToToday = () => {
@@ -1291,6 +1386,10 @@ const goToDatePickerToday = () => {
       const updated = [...prev, newAppointment];
       console.log('🎯 UPDATED APPOINTMENTS ARRAY:', updated);
       console.log('🎯 NEW TOTAL COUNT:', updated.length);
+      // Hide catalog after first successful add
+      if (updated.length === 1) {
+        setShowServiceCatalog(false);
+      }
       return updated;
     });
     
@@ -1298,7 +1397,18 @@ const goToDatePickerToday = () => {
   };
 
   const removeAppointmentFromSession = (appointmentId) => {
-    setMultipleAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
+    setMultipleAppointments(prev => {
+      const filtered = prev.filter(apt => apt.id !== appointmentId);
+      if (filtered.length === 0) {
+        // Reset to combined selection mode
+        setBookingDefaults(null);
+        setSelectedService(null);
+        setSelectedProfessional(null);
+        setAvailableTimeSlots([]);
+        setIsAddingAdditionalService(false);
+      }
+      return filtered;
+    });
   };
 
   const getTotalSessionPrice = () => {
@@ -1988,17 +2098,19 @@ useEffect(() => {
     }
   }, [showAddBookingModal]);
 
-  const handleAddToBookingSession = () => {
+  const handleAddToBookingSession = (overrideSlot = null) => {
+    const slotToUse = overrideSlot || selectedTimeSlot;
+
     // Validate required fields
-    if (!selectedService || !selectedProfessional || !selectedTimeSlot) {
+    if (!selectedService || !selectedProfessional || !slotToUse) {
       setBookingError('Please complete all booking steps: Service, Professional, and Time selection.');
-      return;
+      return false;
     }
 
     // Extract time slot properly
-    const timeSlot = selectedTimeSlot.startTime 
-      ? new Date(selectedTimeSlot.startTime).toTimeString().slice(0, 5)
-      : selectedTimeSlot.time || selectedTimeSlot;
+    const timeSlot = slotToUse.startTime 
+      ? new Date(slotToUse.startTime).toTimeString().slice(0, 5)
+      : slotToUse.time || slotToUse;
 
     // ENHANCED: Check for conflicts using the new smart validation
     const conflict = isProfessionalUnavailableInSession(
@@ -2012,7 +2124,7 @@ useEffect(() => {
       const professionalName = selectedProfessional.user?.firstName || selectedProfessional.name;
       const errorMessage = getUnavailabilityMessage(professionalName, conflict);
       setBookingError(errorMessage);
-      return;
+      return false;
     }
 
     // Store service name for success message before clearing
@@ -2042,6 +2154,7 @@ useEffect(() => {
     // Show success message and auto-focus on the session summary
     setBookingSuccess(`✅ "${serviceName}" added to booking session! Total services: ${multipleAppointments.length + 1}`);
     setTimeout(() => setBookingSuccess(null), 4000);
+    return true;
   };
 
   const handleCreateBooking = async () => {
@@ -3556,19 +3669,99 @@ useEffect(() => {
                   {console.log('isAddingAdditionalService:', isAddingAdditionalService)}
                   {console.log('availableServices count:', availableServices.length)}
                   {console.log('currentAppointmentIndex:', currentAppointmentIndex)}
-                  <h3>Select Your Service {isAddingAdditionalService ? `(Adding Service #${currentAppointmentIndex + 1})` : ''}</h3>
-                  <div className="booking-modal-list">
-                    {availableServices.map(service => (
+                  <h3 className="services-section-title">Services</h3>
+
+                  {/* SERVICE CARDS LIKE DESIGN */}
+                  {(bookingDefaults?.professional || multipleAppointments.length > 0) && (
+                    <div className="service-cards-stack">
+                      {multipleAppointments.map((apt, idx) => {
+                        const start = apt.timeSlot;
+                        const end = addMinutesToTime(apt.timeSlot, apt.duration);
+                        return (
+                          <div key={apt.id} className="service-card-mini">
+                            <div className="service-card-left-bar" />
+                            <div className="service-card-body">
+                              <div className="service-card-row1">
+                                <span className="svc-name">{apt.service.name}</span>
+                                <span className="svc-price">AED {apt.price}</span>
+                              </div>
+                              <div className="service-card-row2">
+                                <span className="svc-time">{start} - {end}</span>
+                                <span className="svc-dot">•</span>
+                                <span className="svc-duration">{Math.round(apt.duration/60) || 1}h{apt.duration % 60 ? ` ${apt.duration%60}m` : ''}</span>
+                                <span className="svc-dot">•</span>
+                                <span className="svc-prof">{apt.professional.user?.firstName || apt.professional.name}</span>
+                              </div>
+                            </div>
+                            <div className="service-card-actions">
+                              <button className="svc-edit-btn" title="Edit" onClick={() => { /* future inline edit */ }}>
+                                ✏️
+                              </button>
+                              <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSession(apt.id)}>
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {/* Placeholder when none added yet */}
+                      {multipleAppointments.length === 0 && bookingDefaults?.time && (
+                        <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
+                      )}
                       <button
-                        key={service._id}
-                        className={`booking-modal-list-item${selectedService && selectedService._id === service._id ? ' selected' : ''}`}
-                        onClick={() => handleServiceSelect(service)}
+                        type="button"
+                        className="add-service-inline-btn"
+                        onClick={() => { setShowServiceCatalog(true); setTimeout(()=>document.querySelector('.service-catalog-grid')?.scrollIntoView({behavior:'smooth'}),50); }}
+                        title="Add another service"
                       >
-                        <div className="booking-modal-item-name">{service.name}</div>
-                        <div className="booking-modal-list-desc">{service.duration} minutes • AED {service.price}</div>
+                        ➕ Add service
                       </button>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Service catalog list for selection */}
+                  {showServiceCatalog && (
+                    <div className="service-catalog-grid pro-theme">
+                      {availableServices.map(service => {
+                        const isSelected = selectedService && selectedService._id === service._id;
+                        return (
+                          <button
+                            key={service._id}
+                            className={`service-catalog-item pro-theme ${isSelected ? 'selected' : ''}`}
+                            onClick={() => handleServiceSelect(service)}
+                            type="button"
+                          >
+                            <span className="catalog-name">{service.name}</span>
+                            <span className="catalog-meta">{service.duration}m • AED {service.price}</span>
+                            <div className="badge-row">
+                              <span className="badge">⏱ {service.duration}m</span>
+                              <span className="badge">💰 AED {service.price}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Footer summary (total + actions) */}
+                  {bookingDefaults?.professional && (
+                    <div className="services-footer-summary">
+                      <div className="footer-left">
+                        <div className="footer-date-line">
+                          {currentDate.toLocaleDateString('en-US', { weekday:'short', day:'numeric', month:'short' })}
+                        </div>
+                        <div className="footer-total-line">
+                          <span className="footer-total-label">Total</span>
+                          <span className="footer-total-value">AED {getTotalSessionPrice()}</span>
+                        </div>
+                      </div>
+                      <div className="footer-actions">
+                        <button type="button" className="footer-btn secondary" onClick={closeBookingModal}>Cancel</button>
+                        <button type="button" className="footer-btn" disabled={multipleAppointments.length===0} onClick={()=> setBookingStep(5)}>Checkout</button>
+                        <button type="button" className="footer-btn primary" disabled={multipleAppointments.length===0} onClick={()=> setBookingStep(5)}>Save</button>
+                      </div>
+                    </div>
+                  )}
                   {/* <div className="booking-modal-actions">
                     <button className="booking-modal-cancel" onClick={closeBookingModal}>
                       Cancel
@@ -3677,9 +3870,12 @@ useEffect(() => {
                     {availableTimeSlots.filter(slot => slot.available).map(slot => (
                       <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => { 
                         console.log('🕐 TIME SLOT SELECTED:', slot);
-                        setSelectedTimeSlot(slot); 
-                        setBookingStep(4); 
-                        console.log('📋 MOVING TO STEP 4 - SERVICES HUB');
+                        // Set then immediately add to session (auto-add first service)
+                        setSelectedTimeSlot(slot);
+                        const added = handleAddToBookingSession(slot);
+                        // Move to multi-service management (step 4) after auto-add
+                        setBookingStep(4);
+                        console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
                       }}>
                         <div className="booking-modal-item-name">
                           {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -3702,39 +3898,13 @@ useEffect(() => {
                   {console.log('🎯 RENDERING STEP 4 - Current multipleAppointments:', multipleAppointments)}
                   <h3>📋 Service Selection Summary</h3>
                   
-                  {/* Current Service to Add - only show if selections are made */}
-                  {selectedService && selectedProfessional && selectedTimeSlot ? (
-                    <div className="current-service-summary">
-                      <h4>🎯 Ready to Add:</h4>
-                      <div className="service-card-to-add">
-                        <div className="service-main-info">
-                          <div className="service-name">{selectedService?.name}</div>
-                          <div className="service-details">
-                            <span className="professional-name">
-                              👨‍⚕️ {selectedProfessional?.user?.firstName || selectedProfessional?.name}
-                            </span>
-                            <span className="time-slot">
-                              🕐 {selectedTimeSlot ? new Date(selectedTimeSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}
-                            </span>
-                            <span className="duration">⏱️ {selectedService?.duration}min</span>
-                            <span className="price">💰 AED {selectedService?.price}</span>
-                          </div>
-                        </div>
-                        <button 
-                          className="add-service-btn"
-                          onClick={handleAddToBookingSession}
-                          disabled={bookingLoading}
-                        >
-                          ➕ Add Service
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
+                  {/* Auto-add now happens on time selection; show hint if user wants to add more */}
+                  {(!selectedService || !selectedProfessional || !selectedTimeSlot) && multipleAppointments.length === 0 && (
                     <div className="empty-service-selection">
                       <div className="empty-service-message">
                         <div className="empty-icon">➕</div>
-                        <h4>Ready to add services to your booking session</h4>
-                        <p>Click "Add Another Service" below to start selecting services for this booking.</p>
+                        <h4>No services added yet</h4>
+                        <p>Select a service to begin. When you pick a time it will be added automatically.</p>
                       </div>
                     </div>
                   )}
