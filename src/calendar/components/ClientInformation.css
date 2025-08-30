@@ -1,0 +1,56 @@
+.clientSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f8f9fa; /* A light gray background */
+  border: 1px solid #e9ecef; /* A subtle border */
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+}
+
+.clientSummaryItem {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Distributes space evenly */
+  padding: 5px;
+}
+
+.clientSummaryLabel {
+  font-weight: bold;
+  color: #495057; /* A darker gray for labels */
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.clientSummaryValue {
+  color: #212529; /* A dark color for the text */
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.vipIndicator {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: #28a745; /* A vibrant green for the VIP tag */
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  white-space: nowrap; /* Prevents the tag from wrapping */
+}
+
+@media (min-width: 768px) {
+  .clientSummaryItem {
+    flex-direction: row;
+    align-items: baseline;
+  }
+
+  .clientSummaryLabel {
+    margin-right: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+  }
+}

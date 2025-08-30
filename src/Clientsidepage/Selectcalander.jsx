@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Loading from '../states/Loading.jsx';
 import { useDatePickerState, useBookingSession, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
 import { StaffColumn } from '../calendar/components/StaffColumn';
 import axios from 'axios';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
 import './Selectcalander.css';
+import ClientSummary from '../calendar/components/ClientInformation.jsx';
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,7 +23,6 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
-import Loading from '../states/Loading';
 
 
 // --- API ENDPOINTS ---
@@ -953,9 +955,12 @@ const getDatePickerCalendarDays = (month) => {
       if (!token) {
         throw new Error('Authentication required');
       }
-      // Correct backend route (admin update booking): PATCH /bookings/admin/:id with body containing updated fields
       const bookingId = selectedBookingForStatus.bookingId;
-      const endpoint = `${Base_url}/bookings/admin/${bookingId}`;
+      const serviceEntryId = selectedBookingForStatus.serviceEntryId; // sub-document id
+      // Use per-service status endpoint if serviceEntryId present
+      const endpoint = serviceEntryId
+        ? `${Base_url}/bookings/admin/${bookingId}/service/${serviceEntryId}/status`
+        : `${Base_url}/bookings/admin/${bookingId}`; // fallback whole booking
       const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: {
@@ -969,17 +974,22 @@ const getDatePickerCalendarDays = (month) => {
         throw new Error(data.message || `Failed to update booking status (HTTP ${res.status})`);
       }
 
-      // Update local state optimistically with new status
-      setAppointments(prev => ({
-        ...prev,
-        [selectedBookingForStatus.employeeId]: {
-          ...prev[selectedBookingForStatus.employeeId],
-          [selectedBookingForStatus.slotKey]: {
-            ...prev[selectedBookingForStatus.employeeId][selectedBookingForStatus.slotKey],
-            status: newStatus
+      // Update only this slot locally
+      setAppointments(prev => {
+        const empId = selectedBookingForStatus.employeeId;
+        const slotKey = selectedBookingForStatus.slotKey;
+        if(!prev[empId] || !prev[empId][slotKey]) return prev;
+        return {
+          ...prev,
+          [empId]: {
+            ...prev[empId],
+            [slotKey]: {
+              ...prev[empId][slotKey],
+              status: newStatus
+            }
           }
-        }
-      }));
+        };
+      });
 
       // Close modal and refresh calendar
       closeBookingStatusModal();
@@ -1010,41 +1020,63 @@ const getDatePickerCalendarDays = (month) => {
       if (!token) {
         throw new Error('Authentication required');
       }
+      const id = selectedBookingForStatus.bookingId;
+      const serviceEntryId = selectedBookingForStatus.serviceEntryId;
+      // Decide endpoint: if serviceEntryId then per-service delete, else whole booking
+      const primaryUrl = serviceEntryId
+        ? `${Base_url}/bookings/admin/${id}/service/${serviceEntryId}`
+        : `${Base_url}/bookings/${id}`;
+      const altUrl = serviceEntryId
+        ? `${Base_url}/bookings/admin/${id}/service/${serviceEntryId}`
+        : `${Base_url}/bookings/admin/${id}`; // fallback (legacy)
 
-      const res = await fetch(`${Base_url}/bookings/${selectedBookingForStatus.bookingId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // Optimistic removal: only this slot if per-service; otherwise whole booking slots
+      setAppointments(prev => {
+        const updated = { ...prev };
+        if (serviceEntryId) {
+          const empId = selectedBookingForStatus.employeeId;
+          const slotKey = selectedBookingForStatus.slotKey;
+          if (updated[empId]) {
+            const empSlots = { ...updated[empId] };
+            delete empSlots[slotKey];
+            if (Object.keys(empSlots).length === 0) delete updated[empId]; else updated[empId] = empSlots;
+          }
+        } else {
+          // Remove every slot referencing bookingId
+          Object.keys(updated).forEach(empId => {
+            const empSlots = updated[empId];
+            const newEmp = { ...empSlots };
+            let changed = false;
+            Object.keys(newEmp).forEach(k => {
+              if (newEmp[k]?.bookingId === id) { delete newEmp[k]; changed = true; }
+            });
+            if (changed) {
+              if (Object.keys(newEmp).length === 0) delete updated[empId]; else updated[empId] = newEmp;
+            }
+          });
+        }
+        return updated;
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || `Failed to delete booking`);
+      let res = await fetch(primaryUrl, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 404) {
+        // Try alternate admin path
+        res = await fetch(altUrl, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       }
-
-      if (data.success) {
-        // Remove the appointment from local state
-        setAppointments(prev => {
-          const newAppointments = { ...prev };
-          if (newAppointments[selectedBookingForStatus.employeeId]) {
-            delete newAppointments[selectedBookingForStatus.employeeId][selectedBookingForStatus.slotKey];
-          }
-          return newAppointments;
-        });
-
-        // Close modal and refresh calendar
-        closeBookingStatusModal();
-        setTimeout(() => {
-          fetchCalendarData();
-        }, 500);
-      } else {
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to delete booking');
       }
+
+      closeBookingStatusModal();
+      // Refresh to sync any related derived state
+      fetchCalendarData();
     } catch (err) {
       console.error('Delete booking error:', err);
       setBookingStatusError(err.message);
+      // If optimistic removal happened but server failed, trigger refetch to restore
+      fetchCalendarData();
     } finally {
       setBookingStatusLoading(false);
     }
@@ -1149,7 +1181,7 @@ const getDatePickerCalendarDays = (month) => {
       const endTime = addMinutesToTime(conflict.conflictingTime, conflict.conflictingDuration);
       return `❌ ${professionalName} is busy with "${conflict.conflictingService}" from ${conflict.conflictingTime} to ${endTime}. Please select a different time slot.`;
     }
-    return `❌ ${professionalName} is not available at this time.`;
+    return ` ${professionalName} is not available at this time.`;
   };
 
   // (Removed local add/remove/total functions — replaced by hook implementations)
@@ -2181,10 +2213,11 @@ useEffect(() => {
               client: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
               service: service.service?.name || service.name || 'Service',
               duration: service.duration || 30,
-              color: getRandomAppointmentColor(),
+              color: getAppointmentColorByStatus(service.status || booking.status || 'booked'),
               date: appointmentLocalDate,
               bookingId: booking._id,
-              status: booking.status || 'confirmed',
+              status: service.status || booking.status || 'confirmed',
+              serviceEntryId: service._id, // sub-document id for per-service operations
               isMainSlot: true,
               // keep both ISO and local labels — ISO used for layout calculations
               startISO: startISO,
@@ -3235,7 +3268,7 @@ useEffect(() => {
       {showBookingStatusModal && selectedBookingForStatus && (
         <div className="modern-booking-modal">
           <div className="booking-modal-overlay booking-modal-fade-in">
-            <div className="booking-modal booking-modal-animate-in">
+            <div className="booking-modal booking-modal-animate-in pro-theme">
               <button className="booking-modal-close" onClick={closeBookingStatusModal}>×</button>
               <h2>Booking Management</h2>
 
@@ -3250,12 +3283,8 @@ useEffect(() => {
               )}
 
               {bookingStatusLoading && (
-                <div className="booking-modal-loading">
-                  <div className="loading-spinner"></div>
-                  <div className="loading-content">
-                    <strong>Processing</strong>
-                    <p>Updating booking status...</p>
-                  </div>
+                <div className="booking-modal-loading" style={{justifyContent:'center'}}>
+                  <Loading text="Updating status" />
                 </div>
               )}
 
@@ -3275,14 +3304,12 @@ useEffect(() => {
 
                 <div className="booking-status-grid">
                   <div className="status-detail">
-                    <div className="detail-icon">👨‍⚕️</div>
                     <div className="detail-content">
                       <span className="detail-label">Professional</span>
                       <span className="detail-value">{selectedBookingForStatus.employeeName}</span>
                     </div>
                   </div>
                   <div className="status-detail">
-                    <div className="detail-icon">📅</div>
                     <div className="detail-content">
                       <span className="detail-label">Date</span>
                       <span className="detail-value">
@@ -3296,20 +3323,18 @@ useEffect(() => {
                     </div>
                   </div>
                   <div className="status-detail">
-                    <div className="detail-icon">🕒</div>
                     <div className="detail-content">
-                      <span className="detail-label">{selectedBookingForStatus.slotTime}</span>
+                      <span className="detail-label">Time</span>
+                      <span className="detail-value">{selectedBookingForStatus.slotTime}</span>
                     </div>
                   </div>
                   <div className="status-detail">
-                    <div className="detail-icon">⏱️</div>
                     <div className="detail-content">
                       <span className="detail-label">Duration</span>
                       <span className="detail-value">{selectedBookingForStatus.duration} minutes</span>
                     </div>
                   </div>
                   <div className="status-detail">
-                    <div className="detail-icon">🆔</div>
                     <div className="detail-content">
                       <span className="detail-label">Booking ID</span>
                       <span className="detail-value">{selectedBookingForStatus.bookingId || 'N/A'}</span>
@@ -3319,35 +3344,38 @@ useEffect(() => {
 
                 <div className="booking-status-actions">
                   <div className="status-actions-header">
-                    <label htmlFor="booking-status-select" className="status-select-label">Update Status</label>
-                    <div className="status-select-wrapper">
-                      <select
-                        id="booking-status-select"
-                        className="status-select"
-                        disabled={bookingStatusLoading}
-                        value={(selectedBookingForStatus.status || 'booked').toLowerCase()}
-                        onChange={(e) => handleBookingStatusUpdate(e.target.value)}
-                      >
-                        <option value="booked">Booked</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="arrived">Arrived</option>
-                        <option value="started">Started</option>
-                      </select>
+                    <div className="status-options" role="radiogroup" aria-label="Update status">
+                      {['booked','confirmed','arrived','started','completed','no-show'].map(st => {
+                        const current = (selectedBookingForStatus.status || 'booked').toLowerCase();
+                        const isActive = current === st;
+                        const label = st === 'no-show' ? 'No-Show' : st.charAt(0).toUpperCase() + st.slice(1);
+                        return (
+                          <button
+                            key={st}
+                            type="button"
+                            className={`status-option ${isActive ? 'active' : ''}`}
+                            data-status={st}
+                            role="radio"
+                            aria-checked={isActive}
+                            disabled={bookingStatusLoading}
+                            onClick={() => !isActive && handleBookingStatusUpdate(st)}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div className="booking-danger-zone">
-                    <div className="danger-zone-header">
-                      <h5>Danger Zone</h5>
-                      <p>This action cannot be undone</p>
-                    </div>
                     <button
                       className="delete-booking-btn"
+                      title="Delete booking"
+                      aria-label="Delete booking"
                       onClick={handleDeleteBooking}
                       disabled={bookingStatusLoading}
                     >
                       <span className="btn-icon">🗑️</span>
-                      <span className="btn-text">Delete Booking</span>
                     </button>
                   </div>
                 </div>
@@ -3366,7 +3394,7 @@ useEffect(() => {
       {showAddBookingModal && (
         <div className="modern-booking-modal">
           <div className="booking-modal-overlay booking-modal-fade-in" onClick={closeBookingModal}>
-            <div className={`booking-modal booking-modal-animate-in ${bookingStep === 6 ? 'final-step' : ''}`} onClick={e => e.stopPropagation()}>
+            <div className={`booking-modal booking-modal-animate-in pro-theme ${bookingStep === 6 ? 'final-step' : ''}`} onClick={e => e.stopPropagation()}>
               <button className="booking-modal-close" onClick={closeBookingModal}>×</button>
               <h2>New Appointment</h2>
 
@@ -3413,7 +3441,7 @@ useEffect(() => {
                                 <span className="svc-price">AED {apt.price}</span>
                               </div>
                               <div className="service-card-row2">
-                                <span className="svc-time">{start} - {end}</span>
+                                <span className="svc-time">{start}</span>
                                 <span className="svc-dot">•</span>
                                 <span className="svc-duration">{Math.round(apt.duration/60) || 1}h{apt.duration % 60 ? ` ${apt.duration%60}m` : ''}</span>
                                 <span className="svc-dot">•</span>
@@ -3441,7 +3469,7 @@ useEffect(() => {
                         onClick={() => { setShowServiceCatalog(true); setTimeout(()=>document.querySelector('.service-catalog-grid')?.scrollIntoView({behavior:'smooth'}),50); }}
                         title="Add another service"
                       >
-                        ➕ Add service
+                         Add service
                       </button>
                     </div>
                   )}
@@ -3461,8 +3489,8 @@ useEffect(() => {
                             <span className="catalog-name">{service.name}</span>
                             <span className="catalog-meta">{service.duration}m • AED {service.price}</span>
                             <div className="badge-row">
-                              <span className="badge">⏱ {service.duration}m</span>
-                              <span className="badge">💰 AED {service.price}</span>
+                              <span className="badge"> {service.duration}m</span>
+                              <span className="badge"> AED {service.price}</span>
                             </div>
                           </button>
                         );
@@ -3500,7 +3528,7 @@ useEffect(() => {
               {/* Professional Selection Step */}
               {bookingStep === 2 && (
                 <>
-                  <h3>👨‍⚕️ Choose Your Professional</h3>
+                  <h3> Choose Your Professional</h3>
                   {availableProfessionals.length === 0 ? (
                     <div className="booking-modal-empty-state">
                       <p>No professionals are available for this service on {currentDate.toLocaleDateString('en-US', {
@@ -3557,23 +3585,15 @@ useEffect(() => {
                           >
                             <div className="booking-modal-item-name">
                               {prof.name}
-                              {sessionConflicts.length > 0 ? (
-                                <span className="professional-conflict-indicator">
-                                  ⚠️ {sessionConflicts.length} booking(s) in session
-                                </span>
-                              ) : (
+                              
                                 <span className="professional-shift-indicator">
-                                  ✓ Available
+                                   Available
                                 </span>
-                              )}
+                              
                             </div>
                             <div className="booking-modal-list-desc">
-                              {prof.position} • Shift: {shiftInfo}
-                              {sessionConflicts.length > 0 && (
-                                <div className="conflict-details">
-                                  Current bookings: {sessionConflicts.map(apt => `${apt.service.name} at ${apt.timeSlot}`).join(', ')}
-                                </div>
-                              )}
+                              {prof.position} 
+                             
                             </div>
                           </button>
                         );
@@ -3592,7 +3612,7 @@ useEffect(() => {
               {/* Time Selection Step */}
               {bookingStep === 3 && (
                 <>
-                  <h3>🕐 Pick Your Perfect Time</h3>
+                  <h3> Pick Your Perfect Time</h3>
                   <div className="booking-modal-list">
                     {availableTimeSlots.filter(slot => slot.available).map(slot => (
                       <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => { 
@@ -3623,7 +3643,6 @@ useEffect(() => {
               {bookingStep === 4 && (
                 <>
                   {console.log('🎯 RENDERING STEP 4 - Current multipleAppointments:', multipleAppointments)}
-                  <h3>📋 Service Selection Summary</h3>
                   
                   {/* Auto-add now happens on time selection; show hint if user wants to add more */}
                   {(!selectedService || !selectedProfessional || !selectedTimeSlot) && multipleAppointments.length === 0 && (
@@ -3639,17 +3658,17 @@ useEffect(() => {
                   {/* Multiple Appointments Summary */}
                   {multipleAppointments.length > 0 && (
                     <div className="services-session-summary">
-                      <h4>✨ Services in Your Booking Session ({multipleAppointments.length})</h4>
+                      <h4> Services in Your Booking Session ({multipleAppointments.length})</h4>
                       {console.log('🎯 RENDERING SERVICES SUMMARY:', multipleAppointments)}
                       <div className="services-list">
                         {multipleAppointments.map((apt, index) => (
                           <div key={apt.id} className="service-session-item">
-                            <div className="service-number">#{index + 1}</div>
+                            <div className="service-number">{index + 1}</div>
                             <div className="service-session-details">
                               <div className="service-session-name">{apt.service.name}</div>
                               <div className="service-session-meta">
-                                👨‍⚕️ {apt.professional.user?.firstName || apt.professional.name} • 
-                                🕐 {apt.timeSlot} • ⏱️ {apt.service.duration}min • 💰 AED {apt.service.price}
+                                 {apt.professional.user?.firstName || apt.professional.name} • 
+                                 {apt.timeSlot} •  {apt.service.duration}min •  AED {apt.service.price}
                               </div>
                             </div>
                             <button 
@@ -3687,7 +3706,7 @@ useEffect(() => {
                       onClick={startAdditionalService}
                       disabled={bookingLoading}
                     >
-                      ➕ Add Another Service
+                       Add Another Service
                     </button>
                     
                     {multipleAppointments.length > 0 && (
@@ -3696,13 +3715,13 @@ useEffect(() => {
                         onClick={() => setBookingStep(5)}
                         disabled={bookingLoading}
                       >
-                        👤 Proceed to Client Information →
+                         Proceed to Client Information →
                       </button>
                     )}
                     
                     {multipleAppointments.length === 0 && (
                       <div className="no-services-message">
-                        <p>ℹ️ Please add at least one service to proceed to client information.</p>
+                        <p> Please add at least one service to proceed to client information.</p>
                       </div>
                     )}
                   </div>
@@ -3716,11 +3735,11 @@ useEffect(() => {
               {/* Client Information Step */}
               {bookingStep === 5 && (
                 <>
-                  <h3>👤 Client Information</h3>
+                  <h3> Client Information</h3>
 
                   {/* Services Summary Header */}
-                  <div className="client-step-services-summary">
-                    <h4>📋 Selected Services ({multipleAppointments.length})</h4>
+                  {/* <div className="client-step-services-summary">
+                    <h4> Selected Services ({multipleAppointments.length})</h4>
                     <div className="mini-services-list">
                       {multipleAppointments.map((apt, index) => (
                         <div key={apt.id} className="mini-service-item">
@@ -3732,7 +3751,7 @@ useEffect(() => {
                     <div className="mini-total">
                       <strong>Total: AED {getTotalSessionPrice()}</strong>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Client Search Section */}
                   <div className="client-search-section">
@@ -3805,7 +3824,7 @@ useEffect(() => {
                             className="add-new-client-btn"
                             onClick={addNewClient}
                           >
-                            + Add New Client
+                             Add New Client
                           </button>
                         )}
                       </div>
@@ -3895,7 +3914,7 @@ useEffect(() => {
                         (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
                       }
                     >
-                      Continue to Payment →
+                      Continue to Payment 
                     </button>
                     <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back to Services</button>
                   </div>
@@ -3905,15 +3924,15 @@ useEffect(() => {
               {/* Payment & Confirmation Step */}
               {bookingStep === 6 && (
                 <>
-                  <h3>💳 Payment & Final Confirmation</h3>
+                  <h3> Payment & Final Confirmation</h3>
                   
                   {/* Multiple Appointments Summary */}
                   <div className="multiple-appointments-summary">
-                    <h4>📋 Appointment Session Summary</h4>
+                    <h4> Appointment Session Summary</h4>
                     <div className="appointments-list">
                       {multipleAppointments.map((apt, index) => (
                         <div key={apt.id} className="appointment-summary-item">
-                          <div className="appointment-number">#{index + 1}</div>
+                          <div className="appointment-number">{index + 1}</div>
                           <div className="appointment-details">
                             <div className="service-name">{apt.service.name}</div>
                             <div className="appointment-meta">
@@ -3964,7 +3983,7 @@ useEffect(() => {
                       </span>
                     </div>
                     <div className="summary-item">
-                      <span>📧 Email:</span>
+                      <span> Email:</span>
                       <span>
                         {selectedExistingClient
                           ? selectedExistingClient.email
@@ -3973,7 +3992,7 @@ useEffect(() => {
                       </span>
                     </div>
                     <div className="summary-item">
-                      <span>📱 Phone:</span>
+                      <span> Phone:</span>
                       <span>
                         {selectedExistingClient
                           ? selectedExistingClient.phone
@@ -3986,7 +4005,7 @@ useEffect(() => {
                   {/* Payment Information */}
                   <div className="booking-modal-form">
                     <div className="form-group">
-                      <label>💳 Select Payment Method:</label>
+                      <label> Select Payment Method:</label>
                       <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
@@ -3995,7 +4014,7 @@ useEffect(() => {
                     </div>
                     
                     <div className="form-group">
-                      <label>🎁 Gift Card Code (Optional):</label>
+                      <label> Gift Card Code (Optional):</label>
                       <input
                         type="text"
                         placeholder="Enter gift card code"
@@ -4005,7 +4024,7 @@ useEffect(() => {
                     </div>
 
                     <div className="form-group">
-                      <label>📝 Notes (Optional):</label>
+                      <label> Notes (Optional):</label>
                       <textarea
                         placeholder="Any special requests or notes..."
                         value={bookingForm.notes}
@@ -4021,7 +4040,7 @@ useEffect(() => {
                       onClick={handleCreateBooking}
                       disabled={bookingLoading || multipleAppointments.length === 0}
                     >
-                      {bookingLoading ? '✨ Creating Your Luxury Experience...' : `🎉 Confirm ${multipleAppointments.length} Service${multipleAppointments.length > 1 ? 's' : ''} - AED ${getTotalSessionPrice()}`}
+                      {bookingLoading ? ' Creating Your Luxury Experience...' : ` Confirm ${multipleAppointments.length} Service${multipleAppointments.length > 1 ? 's' : ''} - AED ${getTotalSessionPrice()}`}
                     </button>
                     <button className="booking-modal-back" onClick={() => setBookingStep(5)}>← Back</button>
                   </div>
