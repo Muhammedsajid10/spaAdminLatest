@@ -11,26 +11,9 @@ const CreateGiftCardModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
-    validFor: '6 months',
-    code: ''
+    validFor: '6 months'
   });
   const [loading, setLoading] = useState(false);
-
-  // Generate unique code when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      generateUniqueCode();
-    }
-  }, [isOpen]);
-
-  const generateUniqueCode = () => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    setFormData(prev => ({ ...prev, code }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,56 +38,24 @@ const CreateGiftCardModal = ({ isOpen, onClose, onSuccess }) => {
         throw new Error('Amount must be a positive number');
       }
 
-      let attempts = 0;
-      let created = null;
-      let currentCode = formData.code.trim().toUpperCase();
+      const templatePayload = {
+        name: formData.name.trim(),
+        description: `${formData.name.trim()} gift card`,
+        value: amountNum,
+        price: amountNum,
+        remainingValue: amountNum,
+        purchasePrice: amountNum,
+        currency: 'AED',
+  // no code passed; backend template endpoint auto-generates a code (unique) since we removed manual input
+        expiryDate,
+        isTemplate: true
+      };
 
-      while (attempts < 3 && !created) {
-        const templatePayload = {
-          name: formData.name.trim(),
-          description: `${formData.name.trim()} gift card`,
-          value: amountNum,
-          price: amountNum,
-            // Ensure template has starting remainingValue & purchasePrice (though model pre-save should handle)
-          remainingValue: amountNum,
-          purchasePrice: amountNum,
-          currency: 'AED',
-          code: currentCode,
-          expiryDate,
-          isTemplate: true
-        };
-        try {
-          const createRes = await api.post('/giftcards/template', templatePayload);
-          created = createRes.data?.data?.giftCard;
-        } catch (errInner) {
-          const msg = errInner.response?.data?.message || errInner.message || '';
-          const detail = errInner.response?.data?.error || '';
-          const combined = `${msg} ${detail}`.toLowerCase();
-          // Detect duplicate code error and retry with new code
-          if (combined.includes('duplicate') || combined.includes('code') && combined.includes('exists')) {
-            // generate new code and retry
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let newCode = '';
-            for (let i = 0; i < 8; i++) newCode += characters.charAt(Math.floor(Math.random()*characters.length));
-            currentCode = newCode;
-            attempts += 1;
-            if (attempts >= 3) {
-              throw new Error('Failed after multiple code attempts (duplicate codes). Please try again.');
-            }
-            continue; // retry loop
-          }
-          // Non-duplicate error: rethrow
-          throw errInner;
-        }
-      }
-
-      if (!created) {
-        throw new Error('Could not create gift card (unknown error)');
-      }
-
+      const createRes = await api.post('/giftcards/template', templatePayload);
+      const created = createRes.data?.data?.giftCard;
       onSuccess(created);
       onClose();
-      setFormData({ name: '', amount: '', validFor: '6 months', code: '' });
+      setFormData({ name: '', amount: '', validFor: '6 months' });
     } catch (err) {
       console.error('Failed to create gift card:', err);
       const serverMsg = err.response?.data?.message;
@@ -168,26 +119,7 @@ const CreateGiftCardModal = ({ isOpen, onClose, onSuccess }) => {
             </select>
           </div>
 
-          <div className="form-group">
-            <label>Unique Code</label>
-            <div className="code-input">
-              <input
-                type="text"
-                value={formData.code}
-                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                placeholder="Generated code"
-                maxLength="8"
-                required
-              />
-              <button 
-                type="button" 
-                className="regenerate-btn"
-                onClick={generateUniqueCode}
-              >
-                Generate
-              </button>
-            </div>
-          </div>
+          {/* Code input removed – code will be generated when assigning/purchasing */}
 
           <div className="modal-actions">
             <button type="button" className="cancel-btn" onClick={onClose}>
@@ -203,46 +135,41 @@ const CreateGiftCardModal = ({ isOpen, onClose, onSuccess }) => {
   );
 };
 
+// This page is now limited to creating and listing gift card templates only.
 const GiftCardPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [giftCards, setGiftCards] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const fetchGiftCards = async () => {
+  const fetchTemplates = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch template gift cards ONLY (creation scope)
-      const res = await api.get('/giftcards/templates');
-      const payload = res?.data || {};
-      const list = payload?.data?.giftCards || [];
-      setGiftCards(list);
+      const templatesRes = await api.get('/giftcards/templates');
+      const tpl = templatesRes?.data?.data?.giftCards || [];
+      setTemplates(tpl);
     } catch (err) {
-      console.error('Failed to load gift cards:', err);
-      setError(err.response?.data?.message || err.message || 'Network or server error while loading gift cards');
-      setGiftCards([]);
+      console.error('Failed to load gift card templates:', err);
+      setError(err.response?.data?.message || err.message || 'Error loading gift card templates');
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchGiftCards();
+    fetchTemplates();
   }, []);
 
-  const filteredGiftCards = giftCards.filter(card =>
+  const filteredGiftCards = templates.filter(card =>
     (card.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (card.code || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCreateSuccess = (created) => {
-    if (created) {
-      setGiftCards(prev => [created, ...prev]);
-    } else {
-      fetchGiftCards();
-    }
+    if (created) setTemplates(prev => [created, ...prev]); else fetchTemplates();
   };
 
   // Unified date formatter
@@ -278,7 +205,7 @@ const GiftCardPage = () => {
     );
   }
 
-  if (!loading && giftCards.length === 0) {
+  if (!loading && templates.length === 0) {
     return (
       <div className="giftcard-dashboard" style={{ padding: 24, textAlign: 'center' }}>
         <div className="dashboard-header">
@@ -297,7 +224,7 @@ const GiftCardPage = () => {
           </button>
           <button
             className='retry-button'
-            onClick={fetchGiftCards}
+            onClick={fetchTemplates}
             style={{ background: '#fff', color: '#111', padding: '8px 12px', borderRadius: 6, border: '1px solid #111', cursor: 'pointer' }}
           >
             Retry
@@ -320,10 +247,10 @@ const GiftCardPage = () => {
       <div className="dashboard-header">
         <div className="header-content">
           <h2 className="page-title">Gift Cards</h2>
-          <p className="page-subtitle">Create gift cards here</p>
+          <p className="page-subtitle">Create, assign and redeem gift cards</p>
         </div>
         <div className="action-buttons">
-          <button 
+          <button
             className='add-button'
             onClick={() => setShowCreateModal(true)}
           >
@@ -331,6 +258,7 @@ const GiftCardPage = () => {
           </button>
         </div>
       </div>
+      {/* No tabs needed now (templates only) */}
 
       {/* Search Section */}
       <div className="search-controls">
@@ -358,7 +286,7 @@ const GiftCardPage = () => {
               <div className="giftcard-amount">Value: AED {card.value}</div>
               <div className="giftcard-amount" style={{opacity:.8}}>Price: AED {card.price}</div>
               <div className="giftcard-validity">Expiry: {formatDate(card.expiryDate)}</div>
-              <div className="giftcard-status" style={{marginTop:4,fontSize:12,color:'#555'}}>{card.isTemplate ? 'Template' : card.status}</div>
+              <div className="giftcard-status" style={{marginTop:4,fontSize:12,color:'#555'}}>Template</div>
             </div>
           </div>
         ))}
@@ -378,6 +306,7 @@ const GiftCardPage = () => {
         onClose={() => setShowCreateModal(false)}
         onSuccess={handleCreateSuccess}
       />
+  {/* Assignment & redemption removed from this page */}
   <div className="giftcard-fab" onClick={() => setShowCreateModal(true)}>+</div>
     </div>
   );

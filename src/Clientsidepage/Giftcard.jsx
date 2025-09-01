@@ -11,51 +11,110 @@ import * as XLSX from "xlsx";
 
 const Giftcards = () => {
   const [search, setSearch] = useState('');
-  const [giftCards, setGiftCards] = useState([]);
+  const [giftCards, setGiftCards] = useState([]); // purchased gift cards
+  const [templates, setTemplates] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef(null);
 
-  useEffect(() => {
-    const fetchGiftCards = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Replace with actual gift cards API endpoint
-        const res = await api.get("/gift-cards/admin/all");
-        console.log("Gift Cards API result:", res.data);
-        
-        const giftCardsData = res.data?.data?.giftCards || [];
-        const mapped = giftCardsData.map((card) => ({
-          id: card._id,
-          code: card.code || card.giftCardNumber || "-",
-          status: card.status || "-",
-          sale: card.saleNumber || card.orderNumber || "-",
-          purchaser: card.purchaser ? 
-            `${card.purchaser.firstName || ''} ${card.purchaser.lastName || ''}`.trim() : 
-            "-",
-          owner: card.owner ? 
-            `${card.owner.firstName || ''} ${card.owner.lastName || ''}`.trim() : 
-            card.purchaser ? 
-            `${card.purchaser.firstName || ''} ${card.purchaser.lastName || ''}`.trim() : 
-            "-",
-          total: (card.amount || card.totalValue || 0) / 100, // Convert from cents
-          redeemed: (card.redeemedAmount || card.usedAmount || 0) / 100, // Convert from cents
-          createdAt: card.createdAt,
-          expiryDate: card.expiryDate,
-        }));
-        
-        setGiftCards(mapped);
-      } catch (err) {
-        console.error("Failed to fetch gift cards:", err);
-        setError(err.response?.data?.message || err.message || "Failed to load gift cards");
-      } finally {
-        setLoading(false);
+  // Assign (purchase) modal state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [assignError, setAssignError] = useState('');
+  const [form, setForm] = useState({
+    templateId: '',
+    purchasedBy: '',
+    recipientName: '',
+    recipientEmail: '',
+    personalMessage: ''
+  });
+
+  // Helper function to derive gift card status
+  const deriveStatus = (gc) => {
+    const value = gc.value ?? 0;
+    const now = Date.now();
+    const expTs = gc.expiryDate ? new Date(gc.expiryDate).getTime() : null;
+    if (expTs && expTs < now) return 'Expired';
+    const remaining = (gc.remainingValue !== undefined && gc.remainingValue !== null) ? gc.remainingValue : value;
+    // Treat any fully used, partially used, cancelled or negative remaining as Redeemed for simplified UI
+    const rawStatus = (gc.status || '').toLowerCase();
+    if (remaining <= 0 || ['used','partially used','cancelled'].includes(rawStatus)) return 'Redeemed';
+    return 'Active';
+  };
+
+  const fetchAll = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [purchasedRes, templatesRes, clientsRes] = await Promise.all([
+        api.get('/giftcards/purchased'),
+        api.get('/giftcards/templates'),
+        api.get('/admin/clients?fields=firstName,lastName,email')
+      ]);
+
+      const rawList = purchasedRes.data?.data?.giftCards || [];
+      // Debug: log raw backend status vs computed for diagnostics
+      if (rawList.length) {
+        console.debug('[Giftcards] Raw fetched gift cards:', rawList.map(r => ({ code: r.code, status: r.status, remainingValue: r.remainingValue, value: r.value })));
       }
-    };
-    
-    fetchGiftCards();
+      const purchased = rawList.map(gc => {
+        const value = gc.value ?? 0;
+        const remainingValue = (gc.remainingValue !== undefined && gc.remainingValue !== null) ? gc.remainingValue : value;
+        const redeemed = value - remainingValue;
+        const status = deriveStatus(gc);
+        return {
+          id: gc._id,
+          code: gc.code,
+          status, // derived status (Active, Redeemed, Expired)
+          purchaser: gc.purchasedBy ? `${gc.purchasedBy.firstName || ''} ${gc.purchasedBy.lastName || ''}`.trim() : '-',
+          owner: gc.recipientName || (gc.purchasedBy ? `${gc.purchasedBy.firstName || ''} ${gc.purchasedBy.lastName || ''}`.trim() : '-'),
+          total: value,
+          redeemed,
+          remaining: remainingValue,
+          expiryDate: gc.expiryDate,
+          purchaseDate: gc.purchaseDate
+        };
+      });
+
+      setGiftCards(purchased);
+      const rawTemplates = templatesRes.data?.data?.giftCards || [];
+      const normalizedTemplates = rawTemplates.map(t => {
+        const numericValue = Number(t.value);
+        const numericPrice = Number(t.price);
+        const invalid = (
+          t.value == null || t.price == null ||
+          t.value === '' || t.price === '' ||
+          Number.isNaN(numericValue) || Number.isNaN(numericPrice) ||
+          numericValue < 1 || numericPrice < 0
+        );
+        return {
+          ...t,
+            // Mark templates that are missing/invalid pricing so they can't be selected
+          __isLegacyMissingValue: invalid,
+          value: numericValue,
+          price: numericPrice
+        };
+      });
+      const invalidCount = normalizedTemplates.filter(t => t.__isLegacyMissingValue).length;
+      if (invalidCount > 0) {
+        console.warn(`⚠️ ${invalidCount} gift card template(s) are invalid (missing or bad value/price) and will be hidden from assignment.`);
+      }
+      setTemplates(normalizedTemplates);
+      const clientList = clientsRes.data?.data?.clients || [];
+      setClients(clientList);
+    } catch (err) {
+      console.error('Failed to fetch gift card data', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load gift cards');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // (Removed misplaced template normalization block)
+  useEffect(() => {
+    fetchAll();
   }, []);
 
   // Close export menu when clicking outside
@@ -76,13 +135,113 @@ const Giftcards = () => {
   }, [showExportMenu]);
 
   const filteredCards = giftCards.filter(card =>
-    card.code.toLowerCase().includes(search.toLowerCase()) ||
-    card.purchaser.toLowerCase().includes(search.toLowerCase()) ||
-    card.owner.toLowerCase().includes(search.toLowerCase())
+    card.code?.toLowerCase().includes(search.toLowerCase()) ||
+    card.purchaser?.toLowerCase().includes(search.toLowerCase()) ||
+    card.owner?.toLowerCase().includes(search.toLowerCase())
   );
 
   const calculateRemaining = (total, redeemed) => {
     return (total - redeemed).toFixed(2);
+  };
+
+  const openAssign = () => {
+    setAssignError('');
+    const validTemplate = templates.find(t => !t.__isLegacyMissingValue);
+    if (!validTemplate) {
+      setAssignError('No valid gift card templates with value & price. Please recreate templates.');
+    }
+    setForm(prev => ({
+      ...prev,
+      templateId: prev.templateId || (validTemplate?._id || ''),
+      purchasedBy: prev.purchasedBy || (clients[0]?._id || ''),
+      recipientName: prev.recipientName || (clients[0] ? `${clients[0].firstName || ''} ${clients[0].lastName || ''}`.trim() : ''),
+      recipientEmail: prev.recipientEmail || (clients[0]?.email || '')
+    }));
+    setShowAssignModal(true);
+  };
+
+  const closeAssign = () => {
+    setShowAssignModal(false);
+  };
+
+  const handleAssignChange = (e) => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
+  };
+
+  const handleClientChange = (e) => {
+    const selectedId = e.target.value;
+    const client = clients.find(c => c._id === selectedId);
+    setForm(f => ({
+      ...f,
+      purchasedBy: selectedId,
+      recipientName: client ? `${client.firstName || ''} ${client.lastName || ''}`.trim() : '',
+      recipientEmail: client?.email || ''
+    }));
+  };
+
+  const submitAssign = async (e) => {
+    e.preventDefault();
+    setAssignError('');
+    setAssignSubmitting(true);
+    try {
+      if (!form.templateId) throw new Error('Template is required');
+      if (!form.purchasedBy) throw new Error('Client is required');
+
+      const payload = {
+        templateId: form.templateId,
+        purchasedBy: form.purchasedBy,
+        recipientName: form.recipientName,
+        recipientEmail: form.recipientEmail,
+        personalMessage: form.personalMessage
+      };
+      const selectedTemplate = templates.find(t => t._id === form.templateId);
+      if (selectedTemplate && selectedTemplate.__isLegacyMissingValue) {
+        throw new Error('Selected template is missing value/price. Please recreate it.');
+      }
+      console.log('🧪 Submitting gift card purchase', {
+        payload,
+        selectedTemplateSimplified: selectedTemplate ? {
+          id: selectedTemplate._id,
+          value: selectedTemplate.value,
+          price: selectedTemplate.price,
+          legacyFlag: selectedTemplate.__isLegacyMissingValue
+        } : null
+      });
+      const res = await api.post('/giftcards/purchase', payload);
+      const newCard = res.data?.data?.giftCard;
+      if (newCard) {
+        setGiftCards(prev => {
+          const value = newCard.value ?? 0;
+          const remainingValue = (newCard.remainingValue !== undefined && newCard.remainingValue !== null) ? newCard.remainingValue : value;
+          const redeemed = value - remainingValue;
+          const status = deriveStatus(newCard);
+          const mapped = {
+            id: newCard._id,
+            code: newCard.code,
+            status,
+            purchaser: newCard.purchasedBy ? `${newCard.purchasedBy.firstName || ''} ${newCard.purchasedBy.lastName || ''}`.trim() : '-',
+            owner: newCard.recipientName || (newCard.purchasedBy ? `${newCard.purchasedBy.firstName || ''} ${newCard.purchasedBy.lastName || ''}`.trim() : '-'),
+            total: value,
+            redeemed,
+            remaining: remainingValue,
+            expiryDate: newCard.expiryDate,
+            purchaseDate: newCard.purchaseDate
+          };
+          return [mapped, ...prev];
+        });
+      }
+      setShowAssignModal(false);
+    } catch (err) {
+      console.error('Assign gift card failed', err);
+      const msg = err.response?.data?.message || err.message || 'Failed to assign gift card';
+      const detail = err.response?.data?.error;
+      const validation = err.response?.data?.validationErrors;
+      const combined = [msg, detail, validation?.join?.(', ')].filter(Boolean).join(' — ');
+      setAssignError(combined);
+    } finally {
+      setAssignSubmitting(false);
+    }
   };
 
   // Export Functions
@@ -192,17 +351,20 @@ const Giftcards = () => {
       <div className="gift-container">
         <div className="header-section">
           <h1>Gift cards sold</h1>
-          <button className="options-btn" disabled>
-            Export
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
+          <div className="header-actions">
+            <button className="primary-btn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+          </div>
         </div>
-        <p className="desc">
-          View, filter and export gift cards purchased by your clients.
-        </p>
+        <p className="desc">View, filter and export gift cards purchased by your clients.</p>
         <Loading />
+        {showAssignModal && (
+          <div className="modal-overlay" onClick={closeAssign}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <h2>Assign Gift Card</h2>
+              <p>Loading data...</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -213,16 +375,11 @@ const Giftcards = () => {
       <div className="gift-container">
         <div className="header-section">
           <h1>Gift cards sold</h1>
-          <button className="options-btn" disabled>
-            Export
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
+          <div className="header-actions">
+            <button className="primary-btn" onClick={openAssign} disabled>Assign gift card</button>
+          </div>
         </div>
-        <p className="desc">
-          View, filter and export gift cards purchased by your clients. 
-        </p>
+        <p className="desc">View, filter and export gift cards purchased by your clients.</p>
         <Error500Page />
       </div>
     );
@@ -234,21 +391,57 @@ const Giftcards = () => {
       <div className="gift-container">
         <div className="header-section">
           <h1>Gift cards sold</h1>
-          <button className="options-btn" disabled>
-            Export
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
+          <div className="header-actions">
+            <button className="primary-btn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+          </div>
         </div>
-        <p className="desc">
-          View, filter and export gift cards purchased by your clients.
-        </p>
+        <p className="desc">View, filter and export gift cards purchased by your clients.</p>
         <NoDataState
           message="No gift cards found"
-          description="There are no gift cards sold yet. When clients purchase gift cards, they will appear here."
+          description="There are no gift cards sold yet. Assign one to a client to get started."
           icon="🎁"
         />
+        {showAssignModal && (
+          <div className="modal-overlay" onClick={closeAssign}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              {/** Modal content duplicated for no-data state */}
+              <h2>Assign Gift Card</h2>
+              <form onSubmit={submitAssign} className="assign-form">
+                {assignError && <div className="form-error">{assignError}</div>}
+                <label>
+                  Template
+                  <select name="templateId" value={form.templateId} onChange={handleAssignChange} required>
+                    <option value="" disabled>Select template</option>
+                    {templates.filter(t=>!t.__isLegacyMissingValue).map(t => <option key={t._id} value={t._id}>{t.name} - {t.value} {t.currency}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Client
+                  <select name="purchasedBy" value={form.purchasedBy} onChange={handleClientChange} required>
+                    <option value="" disabled>Select client</option>
+                    {clients.map(c => <option key={c._id} value={c._id}>{c.firstName} {c.lastName} - {c.email}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Recipient name
+                  <input name="recipientName" value={form.recipientName} onChange={handleAssignChange} placeholder="Recipient full name" />
+                </label>
+                <label>
+                  Recipient email
+                  <input type="email" name="recipientEmail" value={form.recipientEmail} onChange={handleAssignChange} placeholder="Recipient email" />
+                </label>
+                <label>
+                  Personal message
+                  <textarea name="personalMessage" value={form.personalMessage} onChange={handleAssignChange} placeholder="Optional message" rows={3} />
+                </label>
+                <div className="modal-actions">
+                  <button type="button" className="secondary-btn" onClick={closeAssign}>Cancel</button>
+                  <button type="submit" className="primary-btn" disabled={assignSubmitting}>{assignSubmitting ? 'Assigning...' : 'Assign gift card'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -257,6 +450,9 @@ const Giftcards = () => {
     <div className="gift-container">
       <div className="header-section">
         <h1>Gift cards sold</h1>
+        <div className="header-actions">
+          <button className="primary-btn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+        </div>
         <div className="export-wrapper" ref={exportMenuRef}>
           {/* <button 
             className="options-btn"
@@ -307,29 +503,39 @@ const Giftcards = () => {
           <table className="gift-table">
             <thead>
               <tr>
-                <th>Gift card</th>
+                <th>Code</th>
                 <th>Status</th>
-                <th>Sale #</th>
                 <th>Purchaser</th>
                 <th>Owner</th>
                 <th>Total</th>
                 <th>Redeemed</th>
                 <th>Remaining</th>
+                <th>Expiry</th>
               </tr>
             </thead>
             <tbody>
               {filteredCards.map((card, index) => (
                 <tr key={card.id || index}>
                   <td>
-                    <span className="link">{card.code}</span>
+                    <div className="code-cell">
+                      <span className="code-badge" title="Gift card code">{card.code}</span>
+                      <button
+                        type="button"
+                        className="copy-code-btn"
+                        aria-label="Copy code"
+                        onClick={() => navigator.clipboard && navigator.clipboard.writeText(card.code)}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4c0-1.1.9-2 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                   <td>
                     <span className={card.status.toLowerCase()}>
                       {card.status}
                     </span>
-                  </td>
-                  <td>
-                    <span className="link">{card.sale}</span>
                   </td>
                   <td>
                     <span className="link">{card.purchaser}</span>
@@ -340,10 +546,51 @@ const Giftcards = () => {
                   <td>AED {card.total.toFixed(2)}</td>
                   <td>AED {card.redeemed.toFixed(2)}</td>
                   <td>AED {calculateRemaining(card.total, card.redeemed)}</td>
+                  <td>{card.expiryDate ? new Date(card.expiryDate).toLocaleDateString() : '-'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {showAssignModal && (
+        <div className="modal-overlay" onClick={closeAssign}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>Assign Gift Card</h2>
+            <form onSubmit={submitAssign} className="assign-form">
+              {assignError && <div className="form-error">{assignError}</div>}
+              <label>
+                Template
+                <select name="templateId" value={form.templateId} onChange={handleAssignChange} required>
+                  <option value="" disabled>Select template</option>
+                  {templates.filter(t=>!t.__isLegacyMissingValue).map(t => <option key={t._id} value={t._id}>{t.name} - {t.value} {t.currency}</option>)}
+                </select>
+              </label>
+              <label>
+                Client
+                <select name="purchasedBy" value={form.purchasedBy} onChange={handleClientChange} required>
+                  <option value="" disabled>Select client</option>
+                  {clients.map(c => <option key={c._id} value={c._id}>{c.firstName} {c.lastName} - {c.email}</option>)}
+                </select>
+              </label>
+              <label>
+                Recipient name
+                <input name="recipientName" value={form.recipientName} onChange={handleAssignChange} placeholder="Recipient full name" />
+              </label>
+              <label>
+                Recipient email
+                <input type="email" name="recipientEmail" value={form.recipientEmail} onChange={handleAssignChange} placeholder="Recipient email" />
+              </label>
+              <label>
+                Personal message
+                <textarea name="personalMessage" value={form.personalMessage} onChange={handleAssignChange} placeholder="Optional message" rows={3} />
+              </label>
+              <div className="modal-actions">
+                <button type="button" className="secondary-btn" onClick={closeAssign}>Cancel</button>
+                <button type="submit" className="primary-btn" disabled={assignSubmitting}>{assignSubmitting ? 'Assigning...' : 'Assign gift card'}</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

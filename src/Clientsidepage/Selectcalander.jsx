@@ -583,6 +583,17 @@ const SelectCalendar = () => {
   const [bookingError, setBookingError] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
 
+  // Payment detail & redemption states
+  const [cardDetails, setCardDetails] = useState({ number: '', name: '', expiry: '', cvv: '' });
+  const [upiId, setUpiId] = useState('');
+  const [availableGiftCards, setAvailableGiftCards] = useState([]); // [{_id, code, remainingValue}]
+  const [availableMemberships, setAvailableMemberships] = useState([]); // [{_id, name, status, expiresAt}]
+  const [selectedGiftCard, setSelectedGiftCard] = useState(null);
+  const [selectedMembership, setSelectedMembership] = useState(null);
+  const [redeemGiftCardAmount, setRedeemGiftCardAmount] = useState(0);
+  const [benefitsLoading, setBenefitsLoading] = useState(false);
+  const [benefitsError, setBenefitsError] = useState(null);
+
   // Session UI extras
   const [giftCardCode, setGiftCardCode] = useState('');
   const [showAppointmentSummary, setShowAppointmentSummary] = useState(false);
@@ -1988,22 +1999,53 @@ useEffect(() => {
         };
       });
 
-      // Calculate totals
+      // Calculate totals & apply payment adjustments
       const totalDuration = multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0);
       const totalAmount = getTotalSessionPrice();
-      const finalAmount = totalAmount; // TODO: Apply gift card discount if needed
+      let finalAmount = totalAmount;
+      const paymentDetails = {};
+
+      if (paymentMethod === 'giftcard' && selectedGiftCard) {
+        // Auto default to full possible redeem if user left amount blank or zero
+        const requested = Number(redeemGiftCardAmount);
+        const baseRedeem = (!requested || requested <= 0)
+          ? Math.min(selectedGiftCard.remainingValue || 0, totalAmount)
+          : requested;
+        const redeem = Math.min(baseRedeem, selectedGiftCard.remainingValue || 0, totalAmount);
+        finalAmount = Math.max(0, totalAmount - redeem);
+        paymentDetails.giftCardId = selectedGiftCard._id;
+        paymentDetails.redeemAmount = redeem;
+      }
+      if (paymentMethod === 'membership' && selectedMembership) {
+        // Simple assumption: membership covers full amount (adjust if partial rules apply)
+        finalAmount = 0;
+        paymentDetails.membershipId = selectedMembership._id;
+      }
+      if (paymentMethod === 'card') {
+        paymentDetails.card = { ...cardDetails };
+      }
+      if (paymentMethod === 'upi') {
+        paymentDetails.upiId = upiId;
+      }
+
+      // Gift card code field (legacy) fallback
+      let effectiveGiftCardCode = giftCardCode;
+      if (paymentMethod === 'giftcard' && selectedGiftCard?.code) {
+        effectiveGiftCardCode = selectedGiftCard.code;
+      }
 
       // Create the booking payload for multiple services
       const bookingPayload = {
-        services: services,
-        appointmentDate: services[0].startTime, // Use first appointment date as main date
-        totalDuration: totalDuration,
-        totalAmount: totalAmount,
-        finalAmount: finalAmount,
-        paymentMethod: paymentMethod,
+        services,
+        appointmentDate: services[0].startTime,
+        totalDuration,
+        totalAmount,
+        finalAmount,
+        paymentMethod,
+        paymentDetails,
         client: clientData,
         notes: bookingForm.notes || '',
-        giftCardCode: giftCardCode || '',
+        giftCardCode: effectiveGiftCardCode || '',
         bookingSource: 'admin'
       };
 
@@ -2037,6 +2079,11 @@ useEffect(() => {
       // Clear the appointments session after successful booking
       setTimeout(() => {
         clearAppointmentSession();
+  // Force refresh of benefits so redeemed gift card disappears
+  setAvailableGiftCards([]);
+  setSelectedGiftCard(null);
+  setRedeemGiftCardAmount(0);
+  loadBenefitsIfNeeded('giftcard', true);
       }, 1500);
 
       // Refresh calendar data after successful booking
@@ -2262,6 +2309,67 @@ useEffect(() => {
       fetchExistingClients();
     }
   }, [showAddBookingModal, fetchBookingServices, fetchExistingClients]);
+
+  // Load client benefits (gift cards / memberships) when entering payment step
+  const loadBenefitsIfNeeded = useCallback(async (type, force = false) => {
+    // type: 'membership' | 'giftcard' | 'both'
+    if (!selectedExistingClient) return;
+    const clientId = selectedExistingClient._id;
+    const wantMemberships = (type === 'membership' || type === 'both');
+    const wantGiftCards = (type === 'giftcard' || type === 'both');
+    if (!force && !wantMemberships && !wantGiftCards) return;
+    setBenefitsLoading(true);
+    setBenefitsError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      if (wantGiftCards) {
+        try {
+          const gcRes = await fetch(`${Base_url}/giftcards/purchased`, { headers });
+          const gcData = await gcRes.json();
+          if (gcRes.ok && Array.isArray(gcData.data?.giftCards)) {
+            const ownedRaw = gcData.data.giftCards.filter(g => (
+              g.purchasedBy?._id === clientId ||
+              g.recipientName?.toLowerCase?.().includes(selectedExistingClient.firstName?.toLowerCase() || '')
+            ));
+            const nowTs = Date.now();
+            const owned = ownedRaw.filter(g => {
+              const exp = g.expiryDate ? new Date(g.expiryDate).getTime() : null;
+              const expired = exp && exp < nowTs;
+              const remaining = typeof g.remainingValue === 'number' ? g.remainingValue : (g.value - (g.usedAmount || 0));
+              const fullyUsed = remaining <= 0;
+              const statusStr = (g.status || '').toLowerCase();
+              const unusableStatus = ['used','expired','cancelled','partially used'].includes(statusStr);
+              return !expired && !fullyUsed && !unusableStatus;
+            });
+            setAvailableGiftCards(owned);
+            // If previously selected gift card is no longer available, clear selection
+            if (selectedGiftCard && !owned.some(o => o._id === selectedGiftCard._id)) {
+              setSelectedGiftCard(null);
+              setRedeemGiftCardAmount(0);
+            }
+          }
+        } catch (_) { /* silent */ }
+      }
+      if (wantMemberships) {
+        try {
+          const memRes = await fetch(`${Base_url}/memberships/client/${clientId}`, { headers });
+          const memData = await memRes.json();
+          const list = memData.data?.memberships || memData.memberships;
+          if (memRes.ok && Array.isArray(list)) {
+            setAvailableMemberships(list);
+            if (selectedMembership && !list.some(m => m._id === selectedMembership._id)) {
+              setSelectedMembership(null);
+            }
+          }
+        } catch (_) { /* silent */ }
+      }
+    } catch (err) {
+      setBenefitsError('Failed to load benefits');
+    } finally {
+      setBenefitsLoading(false);
+    }
+  }, [selectedExistingClient, selectedGiftCard, selectedMembership]);
 
   // Auto-selection effects for booking modal (when defaults are available)
   useEffect(() => {
@@ -2503,8 +2611,15 @@ useEffect(() => {
           </div>
         )}
 
-     <div className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 6)}`}
-          // make columns equal share of available width; each column min 220px, otherwise scroll
+     <div 
+          className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 20)}`}
+          style={{
+            '--dynamic-employee-count': displayEmployees.length || 1,
+            '--dynamic-column-width': displayEmployees.length <= 6 
+              ? `${100 / (displayEmployees.length || 1)}%` 
+              : 'var(--staff-column-width)'
+          }}
+          // Dynamic width allocation: 1-6 employees get equal width, 7+ get fixed width with scroll
         >
           {currentView === 'Day' && displayEmployees.map(employee => (
             <StaffColumn
@@ -3399,19 +3514,41 @@ useEffect(() => {
               <h2>New Appointment</h2>
 
               {/* Step Indicator */}
-              <div className="step-indicator">
-                <div className={`step-dot ${bookingStep >= 1 ? 'active' : ''} ${bookingStep > 1 ? 'completed' : ''}`}></div>
-                <div className={`step-connector ${bookingStep > 1 ? 'active' : ''}`}></div>
-                <div className={`step-dot ${bookingStep >= 2 ? 'active' : ''} ${bookingStep > 2 ? 'completed' : ''}`}></div>
-                <div className={`step-connector ${bookingStep > 2 ? 'active' : ''}`}></div>
-                <div className={`step-dot ${bookingStep >= 3 ? 'active' : ''} ${bookingStep > 3 ? 'completed' : ''}`}></div>
-                <div className={`step-connector ${bookingStep > 3 ? 'active' : ''}`}></div>
-                <div className={`step-dot ${bookingStep >= 4 ? 'active' : ''} ${bookingStep > 4 ? 'completed' : ''}`}></div>
-                <div className={`step-connector ${bookingStep > 4 ? 'active' : ''}`}></div>
-                <div className={`step-dot ${bookingStep >= 5 ? 'active' : ''} ${bookingStep > 5 ? 'completed' : ''}`}></div>
-                <div className={`step-connector ${bookingStep > 5 ? 'active' : ''}`}></div>
-                <div className={`step-dot ${bookingStep >= 6 ? 'active' : ''}`}></div>
-              </div>
+              {/* <div className="step-indicator">
+                <div className="step-item">
+                  <div className={`step-number ${bookingStep >= 1 ? 'active' : ''} ${bookingStep > 1 ? 'completed' : ''}`}>
+                    {bookingStep > 1 ? '' : '1'}
+                  </div>
+                  <div className={`step-connector ${bookingStep > 1 ? 'active' : ''}`}></div>
+                </div>
+                <div className="step-item">
+                  <div className={`step-number ${bookingStep >= 2 ? 'active' : ''} ${bookingStep > 2 ? 'completed' : ''}`}>
+                    {bookingStep > 2 ? '' : '2'}
+                  </div>
+                  <div className={`step-connector ${bookingStep > 2 ? 'active' : ''}`}></div>
+                </div>
+                <div className="step-item">
+                  <div className={`step-number ${bookingStep >= 3 ? 'active' : ''} ${bookingStep > 3 ? 'completed' : ''}`}>
+                    {bookingStep > 3 ? '' : '3'}
+                  </div>
+                  <div className={`step-connector ${bookingStep > 3 ? 'active' : ''}`}></div>
+                </div>
+                <div className="step-item">
+                  <div className={`step-number ${bookingStep >= 4 ? 'active' : ''} ${bookingStep > 4 ? 'completed' : ''}`}>
+                    {bookingStep > 4 ? '' : '4'}
+                  </div>
+                  <div className={`step-connector ${bookingStep > 4 ? 'active' : ''}`}></div>
+                </div>
+                <div className="step-item">
+                  <div className={`step-number ${bookingStep >= 5 ? 'active' : ''} ${bookingStep > 5 ? 'completed' : ''}`}>
+                    {bookingStep > 5 ? '' : '5'}
+                  </div>
+                  <div className={`step-connector ${bookingStep > 5 ? 'active' : ''}`}></div>
+                </div>
+                <div className="step-item">
+                  <div className={`step-number ${bookingStep >= 6 ? 'active' : ''}`}>6</div>
+                </div>
+              </div> */}
 
               {bookingError && <div className="booking-modal-error">{bookingError}</div>}
               {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
@@ -3513,7 +3650,7 @@ useEffect(() => {
                       <div className="footer-actions">
                         <button type="button" className="footer-btn secondary" onClick={closeBookingModal}>Cancel</button>
                         <button type="button" className="footer-btn" disabled={multipleAppointments.length===0} onClick={()=> setBookingStep(5)}>Checkout</button>
-                        <button type="button" className="footer-btn primary" disabled={multipleAppointments.length===0} onClick={()=> setBookingStep(5)}>Save</button>
+                        {/* <button type="button" className="footer-btn primary" disabled={multipleAppointments.length===0} onClick={()=> setBookingStep(5)}>Save</button> */}
                       </div>
                     </div>
                   )}
@@ -4006,22 +4143,141 @@ useEffect(() => {
                   <div className="booking-modal-form">
                     <div className="form-group">
                       <label> Select Payment Method:</label>
-                      <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-                        <option value="cash">Cash</option>
-                        <option value="card">Card</option>
-                        <option value="online">Online</option>
-                      </select>
+                      <div className="payment-method-grid">
+                        {['cash','card','upi','membership','giftcard'].map(method => {
+                          const labels = { cash:'Cash', card:'Card', upi:'UPI', membership:'Membership', giftcard:'Gift Card' };
+                          return (
+                            <button
+                              type="button"
+                              key={method}
+                              className={`payment-method-tile ${paymentMethod === method ? 'selected' : ''}`}
+                              onClick={() => {
+                                setPaymentMethod(method);
+                                if (method === 'membership') loadBenefitsIfNeeded('membership', true);
+                                if (method === 'giftcard') loadBenefitsIfNeeded('giftcard', true);
+                              }}
+                            >
+                              <span className="pm-label">{labels[method]}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    
-                    <div className="form-group">
-                      <label> Gift Card Code (Optional):</label>
-                      <input
-                        type="text"
-                        placeholder="Enter gift card code"
-                        value={giftCardCode}
-                        onChange={e => setGiftCardCode(e.target.value)}
-                      />
-                    </div>
+
+                    {/* Conditional Inputs */}
+                    {paymentMethod === 'card' && (
+                      <div className="payment-conditional card-details">
+                        <h5>Card Details</h5>
+                        <div className="card-grid">
+                          <input
+                            type="text"
+                            placeholder="Card Number"
+                            value={cardDetails.number}
+                            onChange={e => setCardDetails(d => ({ ...d, number: e.target.value }))}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Name on Card"
+                            value={cardDetails.name}
+                            onChange={e => setCardDetails(d => ({ ...d, name: e.target.value }))}
+                          />
+                          <input
+                            type="text"
+                            placeholder="MM/YY"
+                            value={cardDetails.expiry}
+                            onChange={e => setCardDetails(d => ({ ...d, expiry: e.target.value }))}
+                            style={{ maxWidth:'110px' }}
+                          />
+                          <input
+                            type="password"
+                            placeholder="CVV"
+                            value={cardDetails.cvv}
+                            onChange={e => setCardDetails(d => ({ ...d, cvv: e.target.value }))}
+                            style={{ maxWidth:'90px' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {paymentMethod === 'upi' && (
+                      <div className="payment-conditional upi-details">
+                        <h5>UPI Payment</h5>
+                        <input
+                          type="text"
+                          placeholder="Customer UPI ID (e.g. name@bank)"
+                          value={upiId}
+                          onChange={e => setUpiId(e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    {paymentMethod === 'membership' && (
+                      <div className="payment-conditional membership-section">
+                        <h5>Redeem Membership</h5>
+                        {benefitsLoading && <div className="mini-loading">Loading memberships...</div>}
+                        {(!benefitsLoading && availableMemberships.length === 0) && <div className="empty-benefits">No active memberships for this client.</div>}
+                        <div className="benefit-list">
+                          {availableMemberships.map(mem => (
+                            <button
+                              key={mem._id}
+                              type="button"
+                              className={`benefit-item ${selectedMembership?._id === mem._id ? 'selected' : ''}`}
+                              onClick={() => setSelectedMembership(mem)}
+                            >
+                              <div className="benefit-name">{mem.name || 'Membership'}</div>
+                              <div className="benefit-meta">{mem.status || 'active'} {mem.expiresAt ? `• Expires ${new Date(mem.expiresAt).toLocaleDateString()}` : ''}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {paymentMethod === 'giftcard' && (
+                      <div className="payment-conditional giftcard-section">
+                        <h5>Redeem Gift Card</h5>
+                        {benefitsLoading && <div className="mini-loading">Loading gift cards...</div>}
+                        {(!benefitsLoading && availableGiftCards.length === 0) && <div className="empty-benefits">No gift cards assigned to this client.</div>}
+                        <div className="benefit-list">
+                          {availableGiftCards.map(gc => (
+                            <button
+                              key={gc._id}
+                              type="button"
+                              className={`benefit-item ${selectedGiftCard?._id === gc._id ? 'selected' : ''}`}
+                              onClick={() => { setSelectedGiftCard(gc); setRedeemGiftCardAmount(Math.min(gc.remainingValue || 0, getTotalSessionPrice())); }}
+                            >
+                              <div className="benefit-name">Code: {gc.code || gc.giftCardCode || 'N/A'}</div>
+                              <div className="benefit-meta">Remaining: AED {gc.remainingValue}</div>
+                            </button>
+                          ))}
+                        </div>
+                        {selectedGiftCard && (
+                          <div className="redeem-input-row">
+                            <label>Redeem Amount (AED):</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={Math.min(selectedGiftCard.remainingValue || 0, getTotalSessionPrice())}
+                              value={redeemGiftCardAmount}
+                              onChange={e => setRedeemGiftCardAmount(Number(e.target.value))}
+                              style={{ maxWidth:'140px' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Optional manual gift card code (legacy) */}
+                    {paymentMethod !== 'giftcard' && (
+                      <div className="form-group">
+                        <label> Gift Card Code (Optional):</label>
+                        <input
+                          type="text"
+                          placeholder="Enter gift card code"
+                          value={giftCardCode}
+                          onChange={e => setGiftCardCode(e.target.value)}
+                        />
+                      </div>
+                    )}
 
                     <div className="form-group">
                       <label> Notes (Optional):</label>
@@ -4032,15 +4288,53 @@ useEffect(() => {
                         rows={3}
                       />
                     </div>
+
+                    {/* Payment Summary */}
+                    <div className="payment-summary-box">
+                      <div className="summary-row"><span>Subtotal:</span><span>AED {getTotalSessionPrice()}</span></div>
+                      {paymentMethod === 'giftcard' && selectedGiftCard && redeemGiftCardAmount > 0 && (
+                        <div className="summary-row discount"><span>Gift Card:</span><span>- AED {Math.min(redeemGiftCardAmount, getTotalSessionPrice())}</span></div>
+                      )}
+                      {paymentMethod === 'membership' && selectedMembership && (
+                        <div className="summary-row discount"><span>Membership:</span><span>- AED {getTotalSessionPrice()}</span></div>
+                      )}
+                      <div className="summary-row total"><span>Total Due:</span><span>
+                        AED {(() => {
+                          // Business rules:
+                          // 1. Gift Card: subtract redeemed amount (capped by remainingValue & subtotal)
+                          // 2. Membership: assumes full coverage of services (set to 0). If partial coverage needed later, adjust here.
+                          let total = getTotalSessionPrice();
+                          if (paymentMethod === 'giftcard' && selectedGiftCard) {
+                            const redeemable = Math.min(redeemGiftCardAmount || 0, selectedGiftCard.remainingValue || 0, total);
+                            total = Math.max(0, total - redeemable);
+                          }
+                          if (paymentMethod === 'membership' && selectedMembership) {
+                            total = 0;
+                          }
+                          return total;
+                        })()}
+                      </span></div>
+                    </div>
                   </div>
 
                   <div className="booking-modal-actions">
                     <button
                       className="booking-modal-confirm"
                       onClick={handleCreateBooking}
-                      disabled={bookingLoading || multipleAppointments.length === 0}
+                      disabled={
+                        bookingLoading || multipleAppointments.length === 0 ||
+                        (paymentMethod === 'card' && (!cardDetails.number || cardDetails.number.replace(/\s+/g,'').length < 12 || !cardDetails.expiry || !cardDetails.cvv)) ||
+                        (paymentMethod === 'upi' && (!upiId || !upiId.includes('@'))) ||
+                        (paymentMethod === 'membership' && availableMemberships.length > 0 && !selectedMembership) ||
+                        (paymentMethod === 'giftcard' && availableGiftCards.length > 0 && (!selectedGiftCard || redeemGiftCardAmount <= 0))
+                      }
                     >
-                      {bookingLoading ? ' Creating Your Luxury Experience...' : ` Confirm ${multipleAppointments.length} Service${multipleAppointments.length > 1 ? 's' : ''} - AED ${getTotalSessionPrice()}`}
+                      {bookingLoading ? ' Processing Payment...' : (() => {
+                        let total = getTotalSessionPrice();
+                        if (paymentMethod === 'giftcard' && selectedGiftCard) total = Math.max(0, total - Math.min(redeemGiftCardAmount, total));
+                        if (paymentMethod === 'membership' && selectedMembership) total = 0;
+                        return `Confirm ${multipleAppointments.length} Service${multipleAppointments.length > 1 ? 's' : ''} - AED ${total}`;
+                      })()}
                     </button>
                     <button className="booking-modal-back" onClick={() => setBookingStep(5)}>← Back</button>
                   </div>

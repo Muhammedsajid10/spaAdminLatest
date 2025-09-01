@@ -7,21 +7,21 @@ export const minutesToLabel = (mins)=>{
   return `${h}:${m}`;
 };
 
-export const getAppointmentColorByStatus = (status, fallback='#6366f1') => {
+export const getAppointmentColorByStatus = (status, fallback='#e0e7ff') => {
   if(!status) return fallback;
   const s = status.toLowerCase();
-  // Define a stable palette (WCAG mindful contrast on light background)
+  // Define a light palette for appointment cards
   const map = {
-    booked: '#6366f1',        // Indigo
-    pending: '#6366f1',       // Treat legacy pending same as booked
-    confirmed: '#0ea5e9',     // Sky blue
-    arrived: '#0891b2',       // Teal / darker cyan
-    started: '#f59e0b',       // Amber indicates in-progress
-    'in-progress': '#f59e0b', // Legacy synonym
-    completed: '#16a34a',     // Green
-    cancelled: '#dc2626',     // Red
-    'no-show': '#9333ea',     // Purple distinct
-    rescheduled: '#fb7185'    // Rose
+    booked: '#e0e7ff',        // Light indigo
+    pending: '#e0e7ff',       // Light indigo
+    confirmed: '#e0f2fe',     // Light sky blue
+    arrived: '#cffafe',       // Light cyan
+    started: '#fef3c7',       // Light amber
+    'in-progress': '#fef3c7', // Light amber
+    completed: '#dcfce7',     // Light green
+    cancelled: '#fee2e2',     // Light red
+    'no-show': '#f3e8ff',     // Light purple
+    rescheduled: '#fce7f3'    // Light rose
   };
   // fuzzy contains fallbacks
   if(map[s]) return map[s];

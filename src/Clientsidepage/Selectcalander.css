@@ -10,12 +10,73 @@
 /* === Professional Pro Theme Enhancements === */
 .booking-modal.pro-theme {background:#ffffff;border:1px solid #e2e8f0;border-radius:28px;padding:28px 30px 24px;box-shadow:0 12px 40px -8px rgba(15,23,42,.15),0 4px 8px rgba(15,23,42,.08);max-width:760px;width:100%;font-family:Inter,system-ui,sans-serif;}
 .booking-modal.pro-theme h2 {margin:0 0 10px;font-size:24px;font-weight:700;letter-spacing:-.5px;color:#0f172a;}
-.booking-modal.pro-theme .step-indicator {display:flex;align-items:center;margin:12px 0 24px;gap:6px;}
-.booking-modal.pro-theme .step-dot {width:14px;height:14px;border-radius:50%;background:#e2e8f0;position:relative;transition:.25s;}
-.booking-modal.pro-theme .step-dot.active {background:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.15);}
-.booking-modal.pro-theme .step-dot.completed {background:#0f172a;}
-.booking-modal.pro-theme .step-connector {flex:1;height:4px;background:#f1f5f9;border-radius:4px;position:relative;overflow:hidden;}
-.booking-modal.pro-theme .step-connector.active {background:linear-gradient(90deg,#6366f1,#4338ca);}
+/* Professional Step Indicator */
+.booking-modal.pro-theme .step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0 24px;
+  padding: 0 20px;
+}
+
+.booking-modal.pro-theme .step-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.booking-modal.pro-theme .step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.booking-modal.pro-theme .step-number.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: white;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.booking-modal.pro-theme .step-number.completed {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.booking-modal.pro-theme .step-number.completed::after {
+  content: "✓";
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.booking-modal.pro-theme .step-connector {
+  width: 40px;
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0 8px;
+  transition: all 0.3s ease;
+}
+
+.booking-modal.pro-theme .step-connector.active {
+  background: #6366f1;
+}
+
+/* Hide connector after last step */
+.booking-modal.pro-theme .step-item:last-child .step-connector {
+  display: none;
+}
 
 /* Grid selections */
 .booking-modal.pro-theme .service-catalog-grid.pro-theme {grid-template-columns:repeat(auto-fill,minmax(210px,1fr));display:grid;background:#f8fafc;padding:14px;border:1px solid #e2e8f0;border-radius:20px;gap:12px;margin-bottom:20px;}
@@ -515,10 +576,12 @@
   gap: 8px;
   padding: 8px 16px;
   transition: background 0.2s ease;
+  border-radius: 6px;
+  margin: 2px 8px;
 }
 
 .appointment-popup-item:hover {
-  background: #f9fafb;
+  background: #f8fafc;
 }
 
 .appointment-color-dot {
@@ -527,6 +590,7 @@
   border-radius: 50%;
   margin-top: 4px;
   flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .appointment-popup-details {
@@ -1219,6 +1283,140 @@
   position: relative; /* Important for sticky children */
 }
 
+/* === DYNAMIC RESPONSIVE COLUMN WIDTH CLASSES === */
+/* Dynamic width allocation for any number of employees using CSS custom properties */
+
+/* Base dynamic approach - uses JavaScript-calculated width */
+.staff-grid {
+  --dynamic-employee-count: 1;
+  --dynamic-column-width: 100%;
+}
+
+/* For 1-6 employees: use equal width distribution */
+.staff-grid[style*="--dynamic-column-width"] .staff-column {
+  width: var(--dynamic-column-width);
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Specific overrides for better control */
+/* 1 employee - full width */
+.staff-grid.cols-1 {
+  overflow-x: hidden;
+}
+.staff-grid.cols-1 .staff-column {
+  width: 100%;
+  min-width: 300px;
+  flex: 1;
+}
+
+/* 2 employees - 50% each */
+.staff-grid.cols-2 {
+  overflow-x: hidden;
+}
+.staff-grid.cols-2 .staff-column {
+  width: 50%;
+  min-width: 280px;
+  flex: 1;
+}
+
+/* 3 employees - 33.33% each */
+.staff-grid.cols-3 {
+  overflow-x: hidden;
+}
+.staff-grid.cols-3 .staff-column {
+  width: 33.33%;
+  min-width: 250px;
+  flex: 1;
+}
+
+/* 4 employees - 25% each */
+.staff-grid.cols-4 {
+  overflow-x: hidden;
+}
+.staff-grid.cols-4 .staff-column {
+  width: 25%;
+  min-width: 220px;
+  flex: 1;
+}
+
+/* 5 employees - 20% each */
+.staff-grid.cols-5 {
+  overflow-x: hidden;
+}
+.staff-grid.cols-5 .staff-column {
+  width: 20%;
+  min-width: 200px;
+  flex: 1;
+}
+
+/* 6 employees - 16.66% each */
+.staff-grid.cols-6 {
+  overflow-x: hidden;
+}
+.staff-grid.cols-6 .staff-column {
+  width: 16.66%;
+  min-width: 180px;
+  flex: 1;
+}
+
+/* 7+ employees - fixed width with horizontal scroll */
+.staff-grid.cols-7,
+.staff-grid.cols-8,
+.staff-grid.cols-9,
+.staff-grid.cols-10,
+.staff-grid.cols-11,
+.staff-grid.cols-12,
+.staff-grid.cols-13,
+.staff-grid.cols-14,
+.staff-grid.cols-15,
+.staff-grid.cols-16,
+.staff-grid.cols-17,
+.staff-grid.cols-18,
+.staff-grid.cols-19,
+.staff-grid.cols-20 {
+  overflow-x: auto;
+}
+
+.staff-grid.cols-7 .staff-column,
+.staff-grid.cols-8 .staff-column,
+.staff-grid.cols-9 .staff-column,
+.staff-grid.cols-10 .staff-column,
+.staff-grid.cols-11 .staff-column,
+.staff-grid.cols-12 .staff-column,
+.staff-grid.cols-13 .staff-column,
+.staff-grid.cols-14 .staff-column,
+.staff-grid.cols-15 .staff-column,
+.staff-grid.cols-16 .staff-column,
+.staff-grid.cols-17 .staff-column,
+.staff-grid.cols-18 .staff-column,
+.staff-grid.cols-19 .staff-column,
+.staff-grid.cols-20 .staff-column {
+  width: var(--staff-column-width);
+  min-width: var(--staff-column-width);
+  flex-shrink: 0;
+}
+
+/* Mobile responsive - force scroll for 4+ employees on small screens */
+@media (max-width: 768px) {
+  .staff-grid.cols-4,
+  .staff-grid.cols-5,
+  .staff-grid.cols-6,
+  .staff-grid[class*="cols-"] {
+    overflow-x: auto;
+  }
+  
+  .staff-grid.cols-4 .staff-column,
+  .staff-grid.cols-5 .staff-column,
+  .staff-grid.cols-6 .staff-column,
+  .staff-grid[class*="cols-"] .staff-column {
+    width: var(--staff-column-width);
+    min-width: var(--staff-column-width);
+    flex-shrink: 0;
+  }
+}
+
+/* Default staff column styling (fallback) */
 .staff-column {
   width: var(--staff-column-width);
   flex-shrink: 0; /* Prevent individual columns from shrinking */
@@ -1294,13 +1492,13 @@
 }
 
 .time-slot-wrapper {
-  border-bottom: 1px solid #4b5563; /* Changed from black to dark grey */
+      border-bottom: 1px solid #9f9c9c; /* Changed from black to dark grey */
   position: relative;
 }
 
 .time-slot-wrapper:hover {
   background-color: #f8fafc;
-  border-bottom: 1px solid #000000; /* Keep black border on hover */
+  border-bottom: 1px solid #454444; /* Keep black border on hover */
 }
 
 .time-slot {
@@ -1313,6 +1511,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border-right: 1px solid #f3f4f6;
+  /* background: rgb(220, 222, 225) !important;   */
 }
 
 .time-slot.empty {
@@ -1326,10 +1525,12 @@
 }
 
 .time-slot.appointment {
-  color: white;
-  font-weight: 600;
+  color: #000000;
+  font-weight: 500;
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 /* 15-minute mid-slot support */
@@ -1357,8 +1558,8 @@
 
 .appointment-text {
   font-size: 10px;
-  font-weight: 600;
-  color: #ffffff;
+  font-weight: 500;
+  color: #000000;
   text-align: center;
   padding: 2px 4px;
   line-height: 1.2;
@@ -1366,7 +1567,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 .time-slot-label.hour-start {
   font-weight: 600;
@@ -1422,7 +1622,7 @@
 }
 
 .time-slot.no-shift {
-  background-color: #f3f4f6; /* Light grey background */
+  background-color: #a19f9f !important; /* Light grey background */
   cursor: not-allowed;
   opacity: 0.6;
   position: relative;
@@ -1744,6 +1944,39 @@
     overflow-x: auto; /* Explicitly allow horizontal scroll for staff */
     overflow-y: hidden; /* Prevent vertical scroll within staff grid itself */
     flex-grow: 1;
+  }
+
+  /* Mobile responsive column adjustments */
+  .staff-grid.cols-1,
+  .staff-grid.cols-2 {
+    overflow-x: hidden; /* Still no scroll for 1-2 employees on mobile */
+  }
+
+  .staff-grid.cols-1 .staff-column {
+    width: 100%;
+    min-width: 250px; /* Smaller min-width on mobile */
+  }
+
+  .staff-grid.cols-2 .staff-column {
+    width: 50%;
+    min-width: 180px; /* Smaller min-width on mobile */
+  }
+
+  /* Force scroll for 3+ employees on mobile */
+  .staff-grid.cols-3,
+  .staff-grid.cols-4,
+  .staff-grid.cols-5,
+  .staff-grid.cols-6 {
+    overflow-x: auto;
+  }
+
+  .staff-grid.cols-3 .staff-column,
+  .staff-grid.cols-4 .staff-column,
+  .staff-grid.cols-5 .staff-column,
+  .staff-grid.cols-6 .staff-column {
+    width: var(--staff-column-width);
+    min-width: 180px;
+    flex-shrink: 0;
   }
 
   .staff-column {
@@ -4681,17 +4914,19 @@
   font-size: 11px;
   line-height: 1.2;
   overflow: hidden;
+  color: #000000;
 }
 
 .appointment-client {
   font-weight: 600;
-  color: white;
+  color: black !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .appointment-service {
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.9);
+  /* color: rgba(255, 255, 255, 0.9); */
+  color: black !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   font-size: 10px;
   margin-top: 1px;
@@ -5437,6 +5672,7 @@
 .appointment-block.fresha-style .appointment-time {
   font-size: 11px !important;
   font-weight: 500 !important;
+  color: black !important;
   opacity: 0.8 !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
 }
@@ -6122,3 +6358,520 @@
     padding: 12px;
   }
 }
+/* ===================================
+   PAYMENT STEP - MINIMAL PROFESSIONAL STYLES
+   =================================== */
+
+/* Grid of payment method options */
+.payment-method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  margin: 18px 0 8px 0;
+}
+
+.payment-method-tile {
+  position: relative;
+  background: #ffffff;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 16px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  transition: all .18s ease;
+  font-family: inherit;
+  min-height: 90px;
+}
+
+.payment-method-tile:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+
+.payment-method-tile.selected {
+  border-color: #000000;
+  background: #000000;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+}
+
+.payment-method-tile .method-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.25px;
+}
+
+.payment-method-tile .method-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.payment-method-tile.selected .method-sub {
+  color: rgba(255,255,255,0.85);
+}
+
+/* Subtle radio/check indicator */
+.payment-method-tile::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #94a3b8;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: all .2s ease;
+}
+
+.payment-method-tile.selected::after {
+  border-color: #000000;
+  background: #000000;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
+}
+
+/* Container for conditional sections (card / upi / membership / gift card) */
+.payment-conditional {
+  margin-top: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 20px 22px 22px 22px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.payment-conditional h4 {
+  margin: 0 0 14px 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.25px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+}
+
+.payment-conditional .form-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.payment-conditional .form-field {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.payment-conditional .form-field label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #475569;
+}
+
+.payment-conditional .form-field input {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all .15s ease;
+}
+
+.payment-conditional .form-field input:focus {
+  outline: none;
+  border-color: #000000;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
+}
+
+/* Card Details Styling */
+.card-details h5 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-details h5:before {
+  content: "💳";
+  font-size: 16px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.card-grid input {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all .2s ease;
+  color: #1f2937;
+}
+
+.card-grid input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.card-grid input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* UPI Details Styling */
+.upi-details h5 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upi-details h5:before {
+  content: "📱";
+  font-size: 16px;
+}
+
+.upi-details input {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all .2s ease;
+  color: #1f2937;
+  width: 100%;
+}
+
+.upi-details input:focus {
+  outline: none;
+  border-color: #10b981;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  transform: translateY(-1px);
+}
+
+.upi-details input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Benefits (gift cards / memberships) */
+.benefits-section-heading {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: #475569;
+  margin: 4px 0 10px 0;
+  text-transform: uppercase;
+}
+
+.benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.benefit-item {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: all .18s ease;
+  position: relative;
+}
+
+.benefit-item:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.benefit-item.selected {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+}
+
+.benefit-item .benefit-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.benefit-item .benefit-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.25px;
+  color: #0f172a;
+}
+
+.benefit-item.selected .benefit-title {
+  color: #ffffff;
+}
+
+.benefit-item .benefit-meta {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.benefit-item.selected .benefit-meta {
+  color: rgba(255,255,255,0.75);
+}
+
+.benefit-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.benefit-item.selected .benefit-amount {
+  color: #ffffff;
+}
+
+/* Redemption input row */
+.redeem-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin: 6px 0 4px 0;
+  flex-wrap: wrap;
+}
+
+.redeem-input-row .redeem-field {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.redeem-input-row .redeem-field label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #475569;
+}
+
+.redeem-input-row .redeem-field input {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all .15s ease;
+}
+
+.redeem-input-row .redeem-field input:focus {
+  outline: none;
+  border-color: #000000;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
+}
+
+.redeem-apply-btn {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 120px;
+  transition: all .18s ease;
+}
+
+.redeem-apply-btn:hover:not(:disabled) {
+  background: #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.redeem-apply-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  opacity: .7;
+}
+
+/* Payment summary inside payment step */
+.payment-summary-box {
+  margin-top: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.payment-summary-box .summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 0;
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: .25px;
+}
+
+.payment-summary-box .summary-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.payment-summary-box .summary-row.total {
+  font-size: 15px;
+  font-weight: 700;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 2px solid #000000;
+  border-bottom: none;
+}
+
+.payment-summary-box .amount-positive { color: #16a34a; font-weight: 600; }
+.payment-summary-box .amount-negative { color: #dc2626; font-weight: 600; }
+
+/* Loading / empty */
+.benefits-loading,
+.benefits-empty,
+.benefits-error-msg {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+.benefits-error-msg { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+
+/* Responsive tweaks */
+@media (max-width: 680px) {
+  .payment-method-grid { grid-template-columns: repeat(2, 1fr); }
+  .payment-conditional { padding: 16px 16px 18px 16px; }
+  .payment-conditional .form-row { gap: 10px; }
+  .payment-method-tile { padding: 14px 10px; min-height: 84px; }
+  .redeem-input-row { flex-direction: column; align-items: stretch; }
+  .redeem-apply-btn { width: 100%; }
+  
+  /* Card grid responsive */
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .card-grid input {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  
+  .upi-details input {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+}
+
+/* Dark mode support (if parent sets dark class) */
+.dark .payment-method-tile { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+.dark .payment-method-tile:hover { background: #273549; border-color: #3b4a5c; }
+.dark .payment-method-tile.selected { background: #000000; border-color: #000000; }
+.dark .payment-method-tile .method-sub { color: #94a3b8; }
+.dark .payment-method-tile.selected .method-sub { color: rgba(255,255,255,0.7); }
+.dark .payment-conditional { background: #1e293b; border-color: #334155; }
+.dark .payment-conditional h4 { color: #f1f5f9; }
+.dark .payment-conditional .form-field label { color: #94a3b8; }
+.dark .payment-conditional .form-field input { background: #273549; border-color: #334155; color: #f1f5f9; }
+.dark .payment-conditional .form-field input:focus { background: #1e293b; }
+
+/* Dark mode for card and UPI inputs */
+.dark .card-details h5,
+.dark .upi-details h5 { 
+  color: #f1f5f9; 
+}
+
+.dark .card-grid input,
+.dark .upi-details input {
+  background: #273549;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark .card-grid input:focus {
+  background: #1e293b;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.dark .upi-details input:focus {
+  background: #1e293b;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.dark .card-grid input::placeholder,
+.dark .upi-details input::placeholder {
+  color: #64748b;
+}
+.dark .benefit-item { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+.dark .benefit-item:hover { background: #273549; border-color: #3b4a5c; }
+.dark .benefit-item .benefit-title { color: #f1f5f9; }
+.dark .benefit-item .benefit-meta { color: #94a3b8; }
+.dark .benefit-item .benefit-amount { color: #f1f5f9; }
+.dark .benefit-item.selected { background: #000000; border-color: #000000; }
+.dark .payment-summary-box { background: #1e293b; border-color: #334155; }
+.dark .payment-summary-box .summary-row { border-color: #334155; }
+/* End payment step styles */
