@@ -90,7 +90,7 @@ const DailySales = () => {
         // Fetch both APIs in parallel
         const [cashMovementRes, paymentsRes] = await Promise.all([
           api.get(`/admin/cash-movement-summary?date=${dateStr}`),
-          api.get(`/payments/admin/all?page=1&limit=1000`) // Get all payments to filter by date
+          api.get(`/payments/admin/all?page=1&limit=1000&date=${dateStr}`) // Server filters by date now
         ]);
 
         // Process cash movement summary
@@ -107,8 +107,8 @@ const DailySales = () => {
         }));
 
         // Process payments data for transaction summary
-        const paymentsData = paymentsRes.data?.data?.payments || [];
-        const processedTransactions = processPaymentsData(paymentsData);
+  const paymentsData = paymentsRes.data?.data?.payments || [];
+  const processedTransactions = processPaymentsData(paymentsData); // Already date-filtered by API
 
         setTransactionSummary(processedTransactions);
         setCashMovementSummary(processedCashMovement);

@@ -35,34 +35,81 @@ const CreateGiftCardModal = ({ isOpen, onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
     try {
-      const payload = {
-        name: formData.name,
-        amount: parseFloat(formData.amount),
-        code: formData.code,
-        validFor: formData.validFor,
-        status: 'Available', // Not assigned to any client yet
-        assignedTo: null,
-        purchaseDate: null,
-        expiryDate: null // Will be set when assigned to client
-      };
+      // Derive expiryDate from selection (templates need an expiry)
+      let expiryDate = null;
+      const now = new Date();
+      if (formData.validFor === '6 months') {
+        expiryDate = new Date(now);
+        expiryDate.setMonth(expiryDate.getMonth() + 6);
+      } else if (formData.validFor === '1 year') {
+        expiryDate = new Date(now);
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+      } else if (formData.validFor === '2 years') {
+        expiryDate = new Date(now);
+        expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+      }
 
-      // Replace with your actual API endpoint
-      await api.post('/giftcards/admin/create', payload);
-      onSuccess();
+      const amountNum = parseFloat(formData.amount);
+      if (Number.isNaN(amountNum) || amountNum <= 0) {
+        throw new Error('Amount must be a positive number');
+      }
+
+      let attempts = 0;
+      let created = null;
+      let currentCode = formData.code.trim().toUpperCase();
+
+      while (attempts < 3 && !created) {
+        const templatePayload = {
+          name: formData.name.trim(),
+          description: `${formData.name.trim()} gift card`,
+          value: amountNum,
+          price: amountNum,
+            // Ensure template has starting remainingValue & purchasePrice (though model pre-save should handle)
+          remainingValue: amountNum,
+          purchasePrice: amountNum,
+          currency: 'AED',
+          code: currentCode,
+          expiryDate,
+          isTemplate: true
+        };
+        try {
+          const createRes = await api.post('/giftcards/template', templatePayload);
+          created = createRes.data?.data?.giftCard;
+        } catch (errInner) {
+          const msg = errInner.response?.data?.message || errInner.message || '';
+          const detail = errInner.response?.data?.error || '';
+          const combined = `${msg} ${detail}`.toLowerCase();
+          // Detect duplicate code error and retry with new code
+          if (combined.includes('duplicate') || combined.includes('code') && combined.includes('exists')) {
+            // generate new code and retry
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let newCode = '';
+            for (let i = 0; i < 8; i++) newCode += characters.charAt(Math.floor(Math.random()*characters.length));
+            currentCode = newCode;
+            attempts += 1;
+            if (attempts >= 3) {
+              throw new Error('Failed after multiple code attempts (duplicate codes). Please try again.');
+            }
+            continue; // retry loop
+          }
+          // Non-duplicate error: rethrow
+          throw errInner;
+        }
+      }
+
+      if (!created) {
+        throw new Error('Could not create gift card (unknown error)');
+      }
+
+      onSuccess(created);
       onClose();
-      
-      // Reset form
-      setFormData({
-        name: '',
-        amount: '',
-        validFor: '6 months',
-        code: ''
-      });
+      setFormData({ name: '', amount: '', validFor: '6 months', code: '' });
     } catch (err) {
       console.error('Failed to create gift card:', err);
-      alert('Failed to create gift card. Please try again.');
+      const serverMsg = err.response?.data?.message;
+      const serverDetail = err.response?.data?.error;
+      alert(serverMsg || serverDetail || err.message || 'Failed to create gift card.');
     } finally {
       setLoading(false);
     }
@@ -163,72 +210,15 @@ const GiftCardPage = () => {
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Updated mock data to reflect new structure
-  // const mockGiftCards = [
-  //   {
-  //     _id: '1',
-  //     name: 'Relaxation Package',
-  //     amount: 150,
-  //     code: 'RELAX150',
-  //     status: 'Available',
-  //     validFor: '1 year',
-  //     assignedTo: null,
-  //     purchaseDate: null,
-  //     expiryDate: null,
-  //     createdAt: '2025-01-15'
-  //   },
-  //   {
-  //     _id: '2',
-  //     name: 'Spa Day Special',
-  //     amount: 300,
-  //     code: 'SPA300',
-  //     status: 'Active',
-  //     validFor: '6 months',
-  //     assignedTo: 'John Doe',
-  //     purchaseDate: '2025-01-10',
-  //     expiryDate: '2025-07-10',
-  //     createdAt: '2025-01-05'
-  //   },
-  //   {
-  //     _id: '3',
-  //     name: 'Weekend Treat',
-  //     amount: 75,
-  //     code: 'WEEKEND75',
-  //     status: 'Expired',
-  //     validFor: '1 year',
-  //     assignedTo: 'Jane Smith',
-  //     purchaseDate: '2023-12-01',
-  //     expiryDate: '2024-12-01',
-  //     createdAt: '2023-11-25'
-  //   }
-  // ];
-
   const fetchGiftCards = async () => {
     setLoading(true);
     setError(null);
     try {
-      // real API call
-      const res = await api.get('/giftcards/admin/all');
-      // normalized extraction: backend may nest differently
+      // Fetch template gift cards ONLY (creation scope)
+      const res = await api.get('/giftcards/templates');
       const payload = res?.data || {};
-      const successFlag = payload?.success;
-      const candidate = payload?.data?.giftCards ?? payload?.data ?? payload?.giftCards ?? [];
-
-      // If API explicitly returned an error
-      if (successFlag === false) {
-        const msg = payload?.message || 'No gift cards available';
-        setGiftCards([]);
-        setError(msg);
-        return;
-      }
-
-      // Accept only arrays as valid list
-      if (!Array.isArray(candidate)) {
-        console.warn('Unexpected giftcards response shape — treating as no data', candidate);
-        setGiftCards([]);
-      } else {
-        setGiftCards(candidate);
-      }
+      const list = payload?.data?.giftCards || [];
+      setGiftCards(list);
     } catch (err) {
       console.error('Failed to load gift cards:', err);
       setError(err.response?.data?.message || err.message || 'Network or server error while loading gift cards');
@@ -247,27 +237,20 @@ const GiftCardPage = () => {
     (card.code || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateSuccess = () => {
-    fetchGiftCards(); // Refresh the list
-  };
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'available': return '#3b82f6'; // Blue for available
-      case 'active': return '#10b981'; // Green for active (assigned)
-      case 'expired': return '#ef4444'; // Red for expired
-      case 'redeemed': return '#6b7280'; // Gray for redeemed
-      default: return '#6b7280';
+  const handleCreateSuccess = (created) => {
+    if (created) {
+      setGiftCards(prev => [created, ...prev]);
+    } else {
+      fetchGiftCards();
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  // Unified date formatter
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString();
   };
 
   // --- Global states handling ---
@@ -278,6 +261,7 @@ const GiftCardPage = () => {
           <h2 className="page-title">Gift Cards</h2>
         </div>
         <Loading />
+  <div className="giftcard-fab" onClick={() => setShowCreateModal(true)}>+</div>
       </div>
     );
   }
@@ -289,6 +273,7 @@ const GiftCardPage = () => {
           <h2 className="page-title">Gift Cards</h2>
         </div>
         <Error500Page message={error} />
+  <div className="giftcard-fab" onClick={() => setShowCreateModal(true)}>+</div>
       </div>
     );
   }
@@ -324,6 +309,7 @@ const GiftCardPage = () => {
           onClose={() => setShowCreateModal(false)}
           onSuccess={handleCreateSuccess}
         />
+  <div className="giftcard-fab" onClick={() => setShowCreateModal(true)}>+</div>
       </div>
     );
   }
@@ -365,19 +351,14 @@ const GiftCardPage = () => {
               <div className="giftcard-icon">
                 <FaGift />
               </div>
-            
             </div>
-            
             <div className="giftcard-content">
               <h3 className="giftcard-name">{card.name}</h3>
               <div className="giftcard-code">Code: {card.code}</div>
-              <div className="giftcard-amount">AED {card.amount}</div>
-              <div className="giftcard-validity">Valid for: {card.validFor}</div>
-              
-              {/* Only show expiry date if card is assigned to client */}
-         
-              
-        
+              <div className="giftcard-amount">Value: AED {card.value}</div>
+              <div className="giftcard-amount" style={{opacity:.8}}>Price: AED {card.price}</div>
+              <div className="giftcard-validity">Expiry: {formatDate(card.expiryDate)}</div>
+              <div className="giftcard-status" style={{marginTop:4,fontSize:12,color:'#555'}}>{card.isTemplate ? 'Template' : card.status}</div>
             </div>
           </div>
         ))}
@@ -397,6 +378,7 @@ const GiftCardPage = () => {
         onClose={() => setShowCreateModal(false)}
         onSuccess={handleCreateSuccess}
       />
+  <div className="giftcard-fab" onClick={() => setShowCreateModal(true)}>+</div>
     </div>
   );
 };

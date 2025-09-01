@@ -193,3 +193,75 @@
     gap: 1rem;
   }
 }
+
+/* --- MODAL STYLES --- */
+.mem-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17,24,39,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+.mem-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: memFadeIn 0.25s ease;
+}
+@keyframes memFadeIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
+.mem-modal-header { padding: 20px 24px 12px; display:flex; justify-content: space-between; align-items:center; }
+.mem-modal-header h2 { margin:0; font-size:1.25rem; font-weight:600; color:#111827; }
+.mem-modal-close { background:none; border:none; font-size:1.25rem; cursor:pointer; color:#6b7280; }
+.mem-modal-close:hover { color:#111827; }
+.mem-modal-body { padding: 4px 24px 8px; max-height:60vh; overflow-y:auto; }
+.mem-form-group { display:flex; flex-direction:column; margin-bottom:14px; }
+.mem-form-group label { font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:#475569; margin-bottom:6px; }
+.mem-form-group select, .mem-form-group input { padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.9rem; background:#fff; }
+.mem-form-group select:focus, .mem-form-group input:focus { outline:2px solid #3b82f6; outline-offset:1px; }
+.mem-modal-footer { padding: 16px 24px 24px; display:flex; justify-content:flex-end; gap:12px; }
+.mem-btn-secondary, .mem-btn-primary { padding:10px 18px; font-size:0.85rem; font-weight:500; border-radius:8px; border:1px solid transparent; cursor:pointer; transition:.18s; }
+.mem-btn-secondary { background:#f1f5f9; color:#334155; border-color:#e2e8f0; }
+.mem-btn-secondary:hover { background:#e2e8f0; }
+.mem-btn-primary { background:#111827; color:#fff; }
+.mem-btn-primary:hover { background:#374151; }
+.mem-btn-primary:disabled, .mem-btn-secondary:disabled { opacity:.55; cursor:not-allowed; }
+
+/* Spinner (reuse container) */
+.spinner-container { display:flex; justify-content:center; padding:8px 0; }
+.spinner { width:20px; height:20px; border:3px solid #e5e7eb; border-top-color:#3b82f6; border-radius:50%; animation: memSpin .7s linear infinite; }
+@keyframes memSpin { to { transform: rotate(360deg);} }
+
+/* --- THEME VARIANTS --- */
+/* Minimal theme: lighter borders, more whitespace */
+.mem-theme-minimal .mem-table-container { border-color:#f1f5f9; }
+.mem-theme-minimal .mem-table-header th { background:#fafafa; }
+.mem-theme-minimal .mem-export-btn { background:#1e293b; }
+.mem-theme-minimal .mem-modal { box-shadow:0 4px 18px -4px rgba(0,0,0,0.15); }
+
+/* Professional theme: neutral palette, subtle accents */
+.mem-theme-professional .mem-title { color:#0f172a; }
+.mem-theme-professional .mem-export-btn { background:#0f172a; }
+.mem-theme-professional .mem-export-btn:hover { background:#1e293b; }
+.mem-theme-professional .mem-status-active { background:#e6f9ef; color:#0f5132; }
+.mem-theme-professional .mem-status-used { background:#fff4e5; color:#9a5b13; }
+.mem-theme-professional .mem-modal-header h2 { color:#0f172a; }
+
+/* Business theme: brand accent (blue) */
+.mem-theme-business .mem-export-btn { background:#1d4ed8; }
+.mem-theme-business .mem-export-btn:hover { background:#1e40af; }
+.mem-theme-business .mem-link-text, .mem-theme-business .mem-card-title { color:#1d4ed8; }
+.mem-theme-business .mem-btn-primary { background:#1d4ed8; }
+.mem-theme-business .mem-btn-primary:hover { background:#1e40af; }
+.mem-theme-business .mem-status-active { background:#dbeafe; color:#1e3a8a; }
+.mem-theme-business .mem-status-used { background:#fef3c7; color:#92400e; }
+
+/* Utility: apply theme by adding class to container wrapper */
+/* Example: <div class="mem-container mem-theme-professional"> */

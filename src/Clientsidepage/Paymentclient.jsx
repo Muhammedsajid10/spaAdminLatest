@@ -42,24 +42,27 @@ const PaymentClient = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get("/payment/transactions");
-        console.log("Payment API result:", res.data);
-        
+        // Hitting admin payments endpoint (requires admin token)
+        const page = 1;
+        const limit = 500; // generous upper bound; adjust if pagination added later
+        const res = await api.get(`/payments/admin/all?page=${page}&limit=${limit}`);
+        console.log("Payments (admin/all) API result:", res.data);
+
         const paymentsData = res.data?.data?.payments || [];
         const mapped = paymentsData.map((p) => ({
           id: p._id,
-          date: new Date(p.createdAt),
+          date: p.createdAt ? new Date(p.createdAt) : new Date(),
+            // bookingNumber populated as 'bookingNumber' in booking select
           reference: p.booking?.bookingNumber || p._id || "-",
-          amount: (p.amount || 0) / 100, // Convert from cents to AED
+          amount: typeof p.amount === 'number' ? p.amount / 100 : 0,
           status: p.status || "-",
           paymentMethod: p.paymentMethod || "-",
           user: `${p.user?.firstName || ''} ${p.user?.lastName || ''}`.trim() || "-",
-          // Additional fields for better data handling
           gateway: p.paymentGateway || "-",
           bookingStatus: p.booking?.status || "-",
           refundAmount: p.refundAmount ? (p.refundAmount / 100) : 0,
         }));
-        
+
         setPayments(mapped);
       } catch (err) {
         console.error("Failed to fetch payments:", err);
