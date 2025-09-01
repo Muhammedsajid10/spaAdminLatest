@@ -33,6 +33,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) 
     // A generic handler for regular input fields
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        console.log('Field changed:', name, 'New value:', value);
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -43,7 +44,15 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) 
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onUpdate(member.id, formData);
+        // Only send employee-specific fields that can be updated
+        const updatePayload = {
+            employeeId: formData.employeeId,
+            position: formData.position,
+            department: formData.department,
+            hireDate: formData.hireDate
+        };
+        console.log('Submitting update payload:', updatePayload);
+        onUpdate(member.id, updatePayload);
     };
 
     return (
@@ -70,55 +79,68 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) 
                                         <circle cx="12" cy="7" r="4"></circle>
                                     </svg>
                                 </div>
-                                <h3 className="professional-section-title">Employee Details</h3>
+                                <h3 className="professional-section-title">Personal Information</h3>
+                                <span className="professional-readonly-badge">Read-only</span>
                             </div>
                             <div className="professional-form-grid">
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">First Name</label>
                                     <input
                                         type="text"
-                                        className="professional-input-field"
+                                        className="professional-input-field professional-input-readonly"
                                         name="firstName"
                                         value={formData.firstName || ''}
-                                        onChange={handleInputChange}
-                                        required
+                                        disabled
+                                        title="Personal information can only be updated by the user"
                                     />
                                 </div>
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">Last Name</label>
                                     <input
                                         type="text"
-                                        className="professional-input-field"
+                                        className="professional-input-field professional-input-readonly"
                                         name="lastName"
                                         value={formData.lastName || ''}
-                                        onChange={handleInputChange}
-                                        required
+                                        disabled
+                                        title="Personal information can only be updated by the user"
                                     />
                                 </div>
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">Email Address</label>
                                     <input
                                         type="email"
-                                        className="professional-input-field"
+                                        className="professional-input-field professional-input-readonly"
                                         name="email"
                                         value={formData.email || ''}
-                                        onChange={handleInputChange}
-                                        required
+                                        disabled
+                                        title="Personal information can only be updated by the user"
                                     />
                                 </div>
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">Phone Number</label>
-                                    <PhoneInput
-                                        country={"ae"}
+                                    <input
+                                        type="text"
+                                        className="professional-input-field professional-input-readonly"
                                         value={formData.phone || ''}
-                                        onChange={handlePhoneChange}
-                                        inputProps={{
-                                            name: "phone",
-                                            required: true,
-                                            autoFocus: false,
-                                        }}
+                                        disabled
+                                        title="Personal information can only be updated by the user"
                                     />
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <div className="professional-form-section">
+                            <div className="professional-section-header">
+                                <div className="professional-section-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                </div>
+                                <h3 className="professional-section-title">Employment Information</h3>
+                            </div>
+                            <div className="professional-form-grid">
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">Position</label>
                                     <select
@@ -180,6 +202,11 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) 
                             </div>
                         </div>
                     </div>
+                    {error && (
+                        <div className="professional-error-message">
+                            {error}
+                        </div>
+                    )}
                     <div className="professional-modal-actions">
                         <button type="button" className="professional-btn-secondary" onClick={onClose} disabled={loading}>
                             Cancel
@@ -736,9 +763,15 @@ const TeamMembers = () => {
 
             // Check if API call was successful
             if (empUpdateRes.status === 200) {
-                // Update the state with the new member data
+                // Update the state with the new member data (only employee-specific fields)
                 setTeamMembers(prev => prev.map(member =>
-                    member.id === memberId ? { ...member, ...updatedData, name: `${updatedData.firstName} ${updatedData.lastName}` } : member
+                    member.id === memberId ? { 
+                        ...member, 
+                        employeeId: updatedData.employeeId,
+                        position: updatedData.position,
+                        department: updatedData.department,
+                        hireDate: updatedData.hireDate
+                    } : member
                 ));
 
                 // Close the modal

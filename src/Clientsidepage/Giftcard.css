@@ -244,8 +244,8 @@
 .modal {
   background: #ffffff;
   width: 100%;
-  max-width: 560px;
-  max-height: 85vh;
+  max-width: 420px;
+  max-height: 60vh;
   border-radius: 12px;
   box-shadow: 
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
@@ -256,13 +256,13 @@
 }
 
 .modal-header {
-  padding: 20px 24px 0 24px;
+  padding: 20px 20px 0 20px;
   border-bottom: 1px solid #f3f4f6;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .modal h2 {
-  margin: 0 0 6px 0;
+  margin: 0 0 8px 0;
   font-size: 20px;
   font-weight: 600;
   color: #111827;
@@ -276,8 +276,8 @@
 }
 
 .modal-body {
-  padding: 0 24px 20px 24px;
-  max-height: 60vh;
+  padding: 0 20px 20px 20px;
+  max-height: 40vh;
   overflow-y: auto;
 }
 
@@ -300,46 +300,25 @@
 .assign-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-/* Two-column layout for form fields */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.form-row-single {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
-/* Responsive: Stack on smaller screens */
-@media (max-width: 640px) {
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+  gap: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .form-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 2px;
 }
 
 .form-input,
 .form-select,
 .form-textarea {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
@@ -367,7 +346,7 @@
 }
 
 .client-search-input {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
@@ -398,7 +377,7 @@
 }
 
 .client-option {
-  padding: 10px 12px;
+  padding: 12px 14px;
   cursor: pointer;
   border-bottom: 1px solid #f3f4f6;
   transition: background-color 0.15s ease;
@@ -429,7 +408,7 @@
 }
 
 .no-clients-found {
-  padding: 12px 12px;
+  padding: 16px 14px;
   text-align: center;
   color: #6b7280;
   font-size: 14px;
@@ -439,7 +418,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -480,7 +459,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid #f3f4f6;
 }

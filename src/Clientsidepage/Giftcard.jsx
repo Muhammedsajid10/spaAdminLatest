@@ -486,123 +486,115 @@ const Giftcards = () => {
                 <form onSubmit={submitAssign} className="assign-form">
                   {assignError && <div className="form-error">{assignError}</div>}
                   
-                  <div className="form-row-single">
-                    <div className="form-group">
-                      <label className="form-label">Gift Card Template</label>
-                      <select 
-                        name="templateId" 
-                        value={form.templateId} 
-                        onChange={handleAssignChange} 
-                        required
-                        className="form-select"
-                      >
-                        <option value="" disabled>Select template</option>
-                        {templates.filter(t=>!t.__isLegacyMissingValue).map(t => (
-                          <option key={t._id} value={t._id}>
-                            {t.name} - {t.value} {t.currency}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="form-group">
+                    <label className="form-label">Gift Card Template</label>
+                    <select 
+                      name="templateId" 
+                      value={form.templateId} 
+                      onChange={handleAssignChange} 
+                      required
+                      className="form-select"
+                    >
+                      <option value="" disabled>Select template</option>
+                      {templates.filter(t=>!t.__isLegacyMissingValue).map(t => (
+                        <option key={t._id} value={t._id}>
+                          {t.name} - {t.value} {t.currency}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  <div className="form-row-single">
-                    <div className="form-group">
-                      <label className="form-label">Client</label>
-                      {selectedClient ? (
-                        <div className="selected-client">
-                          <div className="selected-client-info">
-                            <div className="selected-client-name">
-                              {selectedClient.firstName} {selectedClient.lastName}
-                            </div>
-                            <div className="selected-client-email">{selectedClient.email}</div>
+                  <div className="form-group">
+                    <label className="form-label">Client</label>
+                    {selectedClient ? (
+                      <div className="selected-client">
+                        <div className="selected-client-info">
+                          <div className="selected-client-name">
+                            {selectedClient.firstName} {selectedClient.lastName}
                           </div>
-                          <button 
-                            type="button" 
-                            className="clear-selection-btn"
-                            onClick={clearClientSelection}
-                            title="Clear selection"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <line x1="18" y1="6" x2="6" y2="18"></line>
-                              <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                          </button>
+                          <div className="selected-client-email">{selectedClient.email}</div>
                         </div>
-                      ) : (
-                        <div className="client-search-container">
-                          <input
-                            type="text"
-                            placeholder="Search clients by name or email..."
-                            value={clientSearch}
-                            onChange={handleClientSearchChange}
-                            className="client-search-input"
-                            autoComplete="off"
-                          />
-                          {showClientDropdown && (
-                            <div className="client-dropdown">
-                              {filteredClients.length > 0 ? (
-                                filteredClients.map(client => (
-                                  <div
-                                    key={client._id}
-                                    className="client-option"
-                                    onClick={() => selectClient(client)}
-                                  >
-                                    <div className="client-name">
-                                      {client.firstName} {client.lastName}
-                                    </div>
-                                    <div className="client-email">{client.email}</div>
+                        <button 
+                          type="button" 
+                          className="clear-selection-btn"
+                          onClick={clearClientSelection}
+                          title="Clear selection"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="client-search-container">
+                        <input
+                          type="text"
+                          placeholder="Search clients by name or email..."
+                          value={clientSearch}
+                          onChange={handleClientSearchChange}
+                          className="client-search-input"
+                          autoComplete="off"
+                        />
+                        {showClientDropdown && (
+                          <div className="client-dropdown">
+                            {filteredClients.length > 0 ? (
+                              filteredClients.map(client => (
+                                <div
+                                  key={client._id}
+                                  className="client-option"
+                                  onClick={() => selectClient(client)}
+                                >
+                                  <div className="client-name">
+                                    {client.firstName} {client.lastName}
                                   </div>
-                                ))
-                              ) : (
-                                <div className="no-clients-found">
-                                  No clients found matching your search
+                                  <div className="client-email">{client.email}</div>
                                 </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                              ))
+                            ) : (
+                              <div className="no-clients-found">
+                                No clients found matching your search
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Recipient Name</label>
-                      <input 
-                        name="recipientName" 
-                        value={form.recipientName} 
-                        onChange={handleAssignChange} 
-                        placeholder="Recipient full name"
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Recipient Email</label>
-                      <input 
-                        type="email" 
-                        name="recipientEmail" 
-                        value={form.recipientEmail} 
-                        onChange={handleAssignChange} 
-                        placeholder="Recipient email"
-                        className="form-input"
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label className="form-label">Recipient Name</label>
+                    <input 
+                      name="recipientName" 
+                      value={form.recipientName} 
+                      onChange={handleAssignChange} 
+                      placeholder="Recipient full name"
+                      className="form-input"
+                    />
                   </div>
 
-                  <div className="form-row-single">
-                    <div className="form-group">
-                      <label className="form-label">Personal Message (Optional)</label>
-                      <textarea 
-                        name="personalMessage" 
-                        value={form.personalMessage} 
-                        onChange={handleAssignChange} 
-                        placeholder="Add a personal message for the recipient..."
-                        rows={3}
-                        className="form-textarea"
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label className="form-label">Recipient Email</label>
+                    <input 
+                      type="email" 
+                      name="recipientEmail" 
+                      value={form.recipientEmail} 
+                      onChange={handleAssignChange} 
+                      placeholder="Recipient email"
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Personal Message (Optional)</label>
+                    <textarea 
+                      name="personalMessage" 
+                      value={form.personalMessage} 
+                      onChange={handleAssignChange} 
+                      placeholder="Add a personal message for the recipient..."
+                      rows={3}
+                      className="form-textarea"
+                    />
                   </div>
 
                   <div className="modal-actions">
@@ -740,123 +732,115 @@ const Giftcards = () => {
               <form onSubmit={submitAssign} className="assign-form">
                 {assignError && <div className="form-error">{assignError}</div>}
                 
-                <div className="form-row-single">
-                  <div className="form-group">
-                    <label className="form-label">Gift Card Template</label>
-                    <select 
-                      name="templateId" 
-                      value={form.templateId} 
-                      onChange={handleAssignChange} 
-                      required
-                      className="form-select"
-                    >
-                      <option value="" disabled>Select template</option>
-                      {templates.filter(t=>!t.__isLegacyMissingValue).map(t => (
-                        <option key={t._id} value={t._id}>
-                          {t.name} - {t.value} {t.currency}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Gift Card Template</label>
+                  <select 
+                    name="templateId" 
+                    value={form.templateId} 
+                    onChange={handleAssignChange} 
+                    required
+                    className="form-select"
+                  >
+                    <option value="" disabled>Select template</option>
+                    {templates.filter(t=>!t.__isLegacyMissingValue).map(t => (
+                      <option key={t._id} value={t._id}>
+                        {t.name} - {t.value} {t.currency}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="form-row-single">
-                  <div className="form-group">
-                    <label className="form-label">Client</label>
-                    {selectedClient ? (
-                      <div className="selected-client">
-                        <div className="selected-client-info">
-                          <div className="selected-client-name">
-                            {selectedClient.firstName} {selectedClient.lastName}
-                          </div>
-                          <div className="selected-client-email">{selectedClient.email}</div>
+                <div className="form-group">
+                  <label className="form-label">Client</label>
+                  {selectedClient ? (
+                    <div className="selected-client">
+                      <div className="selected-client-info">
+                        <div className="selected-client-name">
+                          {selectedClient.firstName} {selectedClient.lastName}
                         </div>
-                        <button 
-                          type="button" 
-                          className="clear-selection-btn"
-                          onClick={clearClientSelection}
-                          title="Clear selection"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                          </svg>
-                        </button>
+                        <div className="selected-client-email">{selectedClient.email}</div>
                       </div>
-                    ) : (
-                      <div className="client-search-container">
-                        <input
-                          type="text"
-                          placeholder="Search clients by name or email..."
-                          value={clientSearch}
-                          onChange={handleClientSearchChange}
-                          className="client-search-input"
-                          autoComplete="off"
-                        />
-                        {showClientDropdown && (
-                          <div className="client-dropdown">
-                            {filteredClients.length > 0 ? (
-                              filteredClients.map(client => (
-                                <div
-                                  key={client._id}
-                                  className="client-option"
-                                  onClick={() => selectClient(client)}
-                                >
-                                  <div className="client-name">
-                                    {client.firstName} {client.lastName}
-                                  </div>
-                                  <div className="client-email">{client.email}</div>
+                      <button 
+                        type="button" 
+                        className="clear-selection-btn"
+                        onClick={clearClientSelection}
+                        title="Clear selection"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="client-search-container">
+                      <input
+                        type="text"
+                        placeholder="Search clients by name or email..."
+                        value={clientSearch}
+                        onChange={handleClientSearchChange}
+                        className="client-search-input"
+                        autoComplete="off"
+                      />
+                      {showClientDropdown && (
+                        <div className="client-dropdown">
+                          {filteredClients.length > 0 ? (
+                            filteredClients.map(client => (
+                              <div
+                                key={client._id}
+                                className="client-option"
+                                onClick={() => selectClient(client)}
+                              >
+                                <div className="client-name">
+                                  {client.firstName} {client.lastName}
                                 </div>
-                              ))
-                            ) : (
-                              <div className="no-clients-found">
-                                No clients found matching your search
+                                <div className="client-email">{client.email}</div>
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                            ))
+                          ) : (
+                            <div className="no-clients-found">
+                              No clients found matching your search
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Recipient Name</label>
-                    <input 
-                      name="recipientName" 
-                      value={form.recipientName} 
-                      onChange={handleAssignChange} 
-                      placeholder="Recipient full name"
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Recipient Email</label>
-                    <input 
-                      type="email" 
-                      name="recipientEmail" 
-                      value={form.recipientEmail} 
-                      onChange={handleAssignChange} 
-                      placeholder="Recipient email"
-                      className="form-input"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Recipient Name</label>
+                  <input 
+                    name="recipientName" 
+                    value={form.recipientName} 
+                    onChange={handleAssignChange} 
+                    placeholder="Recipient full name"
+                    className="form-input"
+                  />
                 </div>
 
-                <div className="form-row-single">
-                  <div className="form-group">
-                    <label className="form-label">Personal Message (Optional)</label>
-                    <textarea 
-                      name="personalMessage" 
-                      value={form.personalMessage} 
-                      onChange={handleAssignChange} 
-                      placeholder="Add a personal message for the recipient..."
-                      rows={3}
-                      className="form-textarea"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Recipient Email</label>
+                  <input 
+                    type="email" 
+                    name="recipientEmail" 
+                    value={form.recipientEmail} 
+                    onChange={handleAssignChange} 
+                    placeholder="Recipient email"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Personal Message (Optional)</label>
+                  <textarea 
+                    name="personalMessage" 
+                    value={form.personalMessage} 
+                    onChange={handleAssignChange} 
+                    placeholder="Add a personal message for the recipient..."
+                    rows={3}
+                    className="form-textarea"
+                  />
                 </div>
 
                 <div className="modal-actions">

@@ -1975,3 +1975,35 @@ z-index: 1021;  display: flex;
   height: 6px;
   border-radius: 50%;
 }
+
+/* Readonly input styling */
+.professional-input-readonly {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  border-color: #e2e8f0 !important;
+}
+
+.professional-input-readonly:hover,
+.professional-input-readonly:focus {
+  border-color: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+/* Readonly badge */
+.professional-readonly-badge {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.professional-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
