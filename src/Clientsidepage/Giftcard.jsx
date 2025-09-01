@@ -31,6 +31,12 @@ const Giftcards = () => {
     personalMessage: ''
   });
 
+  // Client search state
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [filteredClients, setFilteredClients] = useState([]);
+
   // Helper function to derive gift card status
   const deriveStatus = (gc) => {
     const value = gc.value ?? 0;
@@ -134,6 +140,23 @@ const Giftcards = () => {
     };
   }, [showExportMenu]);
 
+  // Close client dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showClientDropdown && !event.target.closest('.client-search-container')) {
+        setShowClientDropdown(false);
+      }
+    };
+
+    if (showClientDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showClientDropdown]);
+
   const filteredCards = giftCards.filter(card =>
     card.code?.toLowerCase().includes(search.toLowerCase()) ||
     card.purchaser?.toLowerCase().includes(search.toLowerCase()) ||
@@ -153,20 +176,71 @@ const Giftcards = () => {
     setForm(prev => ({
       ...prev,
       templateId: prev.templateId || (validTemplate?._id || ''),
-      purchasedBy: prev.purchasedBy || (clients[0]?._id || ''),
-      recipientName: prev.recipientName || (clients[0] ? `${clients[0].firstName || ''} ${clients[0].lastName || ''}`.trim() : ''),
-      recipientEmail: prev.recipientEmail || (clients[0]?.email || '')
+      purchasedBy: '',
+      recipientName: '',
+      recipientEmail: '',
+      personalMessage: ''
     }));
+    setSelectedClient(null);
+    setClientSearch('');
+    setShowClientDropdown(false);
+    setFilteredClients([]);
     setShowAssignModal(true);
   };
 
   const closeAssign = () => {
     setShowAssignModal(false);
+    setSelectedClient(null);
+    setClientSearch('');
+    setShowClientDropdown(false);
   };
 
   const handleAssignChange = (e) => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
+  };
+
+  const handleClientSearchChange = (e) => {
+    const value = e.target.value;
+    setClientSearch(value);
+    
+    if (value.trim()) {
+      const filtered = clients.filter(client => {
+        const fullName = `${client.firstName || ''} ${client.lastName || ''}`.trim().toLowerCase();
+        const email = (client.email || '').toLowerCase();
+        const searchTerm = value.toLowerCase();
+        
+        return fullName.includes(searchTerm) || email.includes(searchTerm);
+      });
+      setFilteredClients(filtered);
+      setShowClientDropdown(true);
+    } else {
+      setFilteredClients([]);
+      setShowClientDropdown(false);
+    }
+  };
+
+  const selectClient = (client) => {
+    setSelectedClient(client);
+    setClientSearch(`${client.firstName || ''} ${client.lastName || ''}`.trim());
+    setShowClientDropdown(false);
+    setForm(f => ({
+      ...f,
+      purchasedBy: client._id,
+      recipientName: `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+      recipientEmail: client.email || ''
+    }));
+  };
+
+  const clearClientSelection = () => {
+    setSelectedClient(null);
+    setClientSearch('');
+    setForm(f => ({
+      ...f,
+      purchasedBy: '',
+      recipientName: '',
+      recipientEmail: ''
+    }));
   };
 
   const handleClientChange = (e) => {
@@ -404,41 +478,143 @@ const Giftcards = () => {
         {showAssignModal && (
           <div className="modal-overlay" onClick={closeAssign}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              {/** Modal content duplicated for no-data state */}
-              <h2>Assign Gift Card</h2>
-              <form onSubmit={submitAssign} className="assign-form">
-                {assignError && <div className="form-error">{assignError}</div>}
-                <label>
-                  Template
-                  <select name="templateId" value={form.templateId} onChange={handleAssignChange} required>
-                    <option value="" disabled>Select template</option>
-                    {templates.filter(t=>!t.__isLegacyMissingValue).map(t => <option key={t._id} value={t._id}>{t.name} - {t.value} {t.currency}</option>)}
-                  </select>
-                </label>
-                <label>
-                  Client
-                  <select name="purchasedBy" value={form.purchasedBy} onChange={handleClientChange} required>
-                    <option value="" disabled>Select client</option>
-                    {clients.map(c => <option key={c._id} value={c._id}>{c.firstName} {c.lastName} - {c.email}</option>)}
-                  </select>
-                </label>
-                <label>
-                  Recipient name
-                  <input name="recipientName" value={form.recipientName} onChange={handleAssignChange} placeholder="Recipient full name" />
-                </label>
-                <label>
-                  Recipient email
-                  <input type="email" name="recipientEmail" value={form.recipientEmail} onChange={handleAssignChange} placeholder="Recipient email" />
-                </label>
-                <label>
-                  Personal message
-                  <textarea name="personalMessage" value={form.personalMessage} onChange={handleAssignChange} placeholder="Optional message" rows={3} />
-                </label>
-                <div className="modal-actions">
-                  <button type="button" className="secondary-btn" onClick={closeAssign}>Cancel</button>
-                  <button type="submit" className="primary-btn" disabled={assignSubmitting}>{assignSubmitting ? 'Assigning...' : 'Assign gift card'}</button>
-                </div>
-              </form>
+              <div className="modal-header">
+                <h2>Assign Gift Card</h2>
+                <p className="modal-subtitle">Select a template and assign it to a client</p>
+              </div>
+              <div className="modal-body">
+                <form onSubmit={submitAssign} className="assign-form">
+                  {assignError && <div className="form-error">{assignError}</div>}
+                  
+                  <div className="form-row-single">
+                    <div className="form-group">
+                      <label className="form-label">Gift Card Template</label>
+                      <select 
+                        name="templateId" 
+                        value={form.templateId} 
+                        onChange={handleAssignChange} 
+                        required
+                        className="form-select"
+                      >
+                        <option value="" disabled>Select template</option>
+                        {templates.filter(t=>!t.__isLegacyMissingValue).map(t => (
+                          <option key={t._id} value={t._id}>
+                            {t.name} - {t.value} {t.currency}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-row-single">
+                    <div className="form-group">
+                      <label className="form-label">Client</label>
+                      {selectedClient ? (
+                        <div className="selected-client">
+                          <div className="selected-client-info">
+                            <div className="selected-client-name">
+                              {selectedClient.firstName} {selectedClient.lastName}
+                            </div>
+                            <div className="selected-client-email">{selectedClient.email}</div>
+                          </div>
+                          <button 
+                            type="button" 
+                            className="clear-selection-btn"
+                            onClick={clearClientSelection}
+                            title="Clear selection"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="client-search-container">
+                          <input
+                            type="text"
+                            placeholder="Search clients by name or email..."
+                            value={clientSearch}
+                            onChange={handleClientSearchChange}
+                            className="client-search-input"
+                            autoComplete="off"
+                          />
+                          {showClientDropdown && (
+                            <div className="client-dropdown">
+                              {filteredClients.length > 0 ? (
+                                filteredClients.map(client => (
+                                  <div
+                                    key={client._id}
+                                    className="client-option"
+                                    onClick={() => selectClient(client)}
+                                  >
+                                    <div className="client-name">
+                                      {client.firstName} {client.lastName}
+                                    </div>
+                                    <div className="client-email">{client.email}</div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="no-clients-found">
+                                  No clients found matching your search
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Recipient Name</label>
+                      <input 
+                        name="recipientName" 
+                        value={form.recipientName} 
+                        onChange={handleAssignChange} 
+                        placeholder="Recipient full name"
+                        className="form-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Recipient Email</label>
+                      <input 
+                        type="email" 
+                        name="recipientEmail" 
+                        value={form.recipientEmail} 
+                        onChange={handleAssignChange} 
+                        placeholder="Recipient email"
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row-single">
+                    <div className="form-group">
+                      <label className="form-label">Personal Message (Optional)</label>
+                      <textarea 
+                        name="personalMessage" 
+                        value={form.personalMessage} 
+                        onChange={handleAssignChange} 
+                        placeholder="Add a personal message for the recipient..."
+                        rows={3}
+                        className="form-textarea"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="modal-actions">
+                    <button type="button" className="secondary-btn" onClick={closeAssign}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="primary-btn" disabled={assignSubmitting}>
+                      {assignSubmitting ? 'Assigning...' : 'Assign Gift Card'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         )}
@@ -556,40 +732,143 @@ const Giftcards = () => {
       {showAssignModal && (
         <div className="modal-overlay" onClick={closeAssign}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2>Assign Gift Card</h2>
-            <form onSubmit={submitAssign} className="assign-form">
-              {assignError && <div className="form-error">{assignError}</div>}
-              <label>
-                Template
-                <select name="templateId" value={form.templateId} onChange={handleAssignChange} required>
-                  <option value="" disabled>Select template</option>
-                  {templates.filter(t=>!t.__isLegacyMissingValue).map(t => <option key={t._id} value={t._id}>{t.name} - {t.value} {t.currency}</option>)}
-                </select>
-              </label>
-              <label>
-                Client
-                <select name="purchasedBy" value={form.purchasedBy} onChange={handleClientChange} required>
-                  <option value="" disabled>Select client</option>
-                  {clients.map(c => <option key={c._id} value={c._id}>{c.firstName} {c.lastName} - {c.email}</option>)}
-                </select>
-              </label>
-              <label>
-                Recipient name
-                <input name="recipientName" value={form.recipientName} onChange={handleAssignChange} placeholder="Recipient full name" />
-              </label>
-              <label>
-                Recipient email
-                <input type="email" name="recipientEmail" value={form.recipientEmail} onChange={handleAssignChange} placeholder="Recipient email" />
-              </label>
-              <label>
-                Personal message
-                <textarea name="personalMessage" value={form.personalMessage} onChange={handleAssignChange} placeholder="Optional message" rows={3} />
-              </label>
-              <div className="modal-actions">
-                <button type="button" className="secondary-btn" onClick={closeAssign}>Cancel</button>
-                <button type="submit" className="primary-btn" disabled={assignSubmitting}>{assignSubmitting ? 'Assigning...' : 'Assign gift card'}</button>
-              </div>
-            </form>
+            <div className="modal-header">
+              <h2>Assign Gift Card</h2>
+              <p className="modal-subtitle">Select a template and assign it to a client</p>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={submitAssign} className="assign-form">
+                {assignError && <div className="form-error">{assignError}</div>}
+                
+                <div className="form-row-single">
+                  <div className="form-group">
+                    <label className="form-label">Gift Card Template</label>
+                    <select 
+                      name="templateId" 
+                      value={form.templateId} 
+                      onChange={handleAssignChange} 
+                      required
+                      className="form-select"
+                    >
+                      <option value="" disabled>Select template</option>
+                      {templates.filter(t=>!t.__isLegacyMissingValue).map(t => (
+                        <option key={t._id} value={t._id}>
+                          {t.name} - {t.value} {t.currency}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row-single">
+                  <div className="form-group">
+                    <label className="form-label">Client</label>
+                    {selectedClient ? (
+                      <div className="selected-client">
+                        <div className="selected-client-info">
+                          <div className="selected-client-name">
+                            {selectedClient.firstName} {selectedClient.lastName}
+                          </div>
+                          <div className="selected-client-email">{selectedClient.email}</div>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="clear-selection-btn"
+                          onClick={clearClientSelection}
+                          title="Clear selection"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="client-search-container">
+                        <input
+                          type="text"
+                          placeholder="Search clients by name or email..."
+                          value={clientSearch}
+                          onChange={handleClientSearchChange}
+                          className="client-search-input"
+                          autoComplete="off"
+                        />
+                        {showClientDropdown && (
+                          <div className="client-dropdown">
+                            {filteredClients.length > 0 ? (
+                              filteredClients.map(client => (
+                                <div
+                                  key={client._id}
+                                  className="client-option"
+                                  onClick={() => selectClient(client)}
+                                >
+                                  <div className="client-name">
+                                    {client.firstName} {client.lastName}
+                                  </div>
+                                  <div className="client-email">{client.email}</div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="no-clients-found">
+                                No clients found matching your search
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Recipient Name</label>
+                    <input 
+                      name="recipientName" 
+                      value={form.recipientName} 
+                      onChange={handleAssignChange} 
+                      placeholder="Recipient full name"
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Recipient Email</label>
+                    <input 
+                      type="email" 
+                      name="recipientEmail" 
+                      value={form.recipientEmail} 
+                      onChange={handleAssignChange} 
+                      placeholder="Recipient email"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-single">
+                  <div className="form-group">
+                    <label className="form-label">Personal Message (Optional)</label>
+                    <textarea 
+                      name="personalMessage" 
+                      value={form.personalMessage} 
+                      onChange={handleAssignChange} 
+                      placeholder="Add a personal message for the recipient..."
+                      rows={3}
+                      className="form-textarea"
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" className="secondary-btn" onClick={closeAssign}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="primary-btn" disabled={assignSubmitting}>
+                    {assignSubmitting ? 'Assigning...' : 'Assign Gift Card'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
