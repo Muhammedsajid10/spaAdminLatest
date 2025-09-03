@@ -42,17 +42,26 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) 
         setFormData(prev => ({ ...prev, phone: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Only send employee-specific fields that can be updated
+        // Include editable personal and employee-specific fields
         const updatePayload = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
             employeeId: formData.employeeId,
             position: formData.position,
             department: formData.department,
             hireDate: formData.hireDate
         };
-        console.log('Submitting update payload:', updatePayload);
-        onUpdate(member.id, updatePayload);
+        console.log('Submitting update payload for member:', member.id, updatePayload);
+        try {
+            const result = await onUpdate(member.id, updatePayload);
+            console.log('onUpdate result for', member.id, result);
+        } catch (err) {
+            console.error('onUpdate error for', member.id, err);
+        }
     };
 
     return (
@@ -80,50 +89,47 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) 
                                     </svg>
                                 </div>
                                 <h3 className="professional-section-title">Personal Information</h3>
-                                <span className="professional-readonly-badge">Read-only</span>
+                                <span className="professional-readonly-badge">Editable</span>
                             </div>
                             <div className="professional-form-grid">
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">First Name</label>
                                     <input
                                         type="text"
-                                        className="professional-input-field professional-input-readonly"
+                                        className="professional-input-field"
                                         name="firstName"
                                         value={formData.firstName || ''}
-                                        disabled
-                                        title="Personal information can only be updated by the user"
+                                        onChange={handleInputChange}
                                     />
                                 </div>
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">Last Name</label>
                                     <input
                                         type="text"
-                                        className="professional-input-field professional-input-readonly"
+                                        className="professional-input-field"
                                         name="lastName"
                                         value={formData.lastName || ''}
-                                        disabled
-                                        title="Personal information can only be updated by the user"
+                                        onChange={handleInputChange}
                                     />
                                 </div>
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">Email Address</label>
                                     <input
                                         type="email"
-                                        className="professional-input-field professional-input-readonly"
+                                        className="professional-input-field"
                                         name="email"
                                         value={formData.email || ''}
-                                        disabled
-                                        title="Personal information can only be updated by the user"
+                                        onChange={handleInputChange}
                                     />
                                 </div>
                                 <div className="professional-input-group">
                                     <label className="professional-input-label">Phone Number</label>
                                     <input
                                         type="text"
-                                        className="professional-input-field professional-input-readonly"
+                                        className="professional-input-field"
+                                        name="phone"
                                         value={formData.phone || ''}
-                                        disabled
-                                        title="Personal information can only be updated by the user"
+                                        onChange={(e) => handlePhoneChange(e.target.value)}
                                     />
                                 </div>
                             </div>
@@ -276,7 +282,7 @@ const TeamMembers = () => {
             const data = res.data;
 
             const members = (data.data.employees || []).map(emp => {
-                const userIsActive = emp.user?.isActive;
+                const userIsActive = emp.isActive;
                 return {
                     id: emp._id,
                     employeeId: emp.employeeId || '',
@@ -295,6 +301,7 @@ const TeamMembers = () => {
                     status: userIsActive === true ? 'Active' : 'Inactive',
                 };
             });
+            // Only show active employees in the team members list
             setTeamMembers(members);
         } catch (err) {
             console.error("Failed to fetch team members:", err);
@@ -469,6 +476,52 @@ const TeamMembers = () => {
     const handleRegeneratePassword = () => {
         setAddForm(f => ({ ...f, password: generateRandomPassword() }));
     };
+      // Toggle member active status (update server and local state)
+        async function toggleMemberStatus(memberId, currentIsActive) {
+            console.log("somethign sinside ")
+            setToggleLoading(memberId);
+            try {
+                const payload = { isActive: !currentIsActive };
+
+                // Find the member locally to get associated userId if available
+                const memberRecord = teamMembers.find(m => m.id === memberId);
+                const userId = memberRecord?.userId;
+
+                let resp;
+                // Prefer updating the employees endpoint because memberId is employee._id
+                try {
+                    console.log(`toggleMemberStatus: attempting PATCH /employees/${memberId}`, payload);
+                    resp = await api.patch(`/employees/${memberId}`, payload);
+                } catch (empErr) {
+                    console.warn('employees PATCH failed, will try users endpoint if available', empErr);
+                    // If we have a linked userId, try updating the users endpoint next
+                    if (userId) {
+                        console.log(`toggleMemberStatus: attempting PATCH /users/${userId}`, payload);
+                        resp = await api.patch(`/users/${userId}`, payload);
+                    } else {
+                        // As a last resort, try using the same id against /users
+                        console.log(`toggleMemberStatus: attempting PATCH /users/${memberId} (no userId available)`);
+                        resp = await api.patch(`/users/${memberId}`, payload);
+                    }
+                }
+
+                // Optimistically update UI state
+                setTeamMembers(prev => prev.map(m => {
+                    if (m.id === memberId || m.userId === memberId || m.id === (memberId)) {
+                        return { ...m, isActive: !currentIsActive, status: !currentIsActive ? 'Active' : 'Inactive' };
+                    }
+                    return m;
+                }));
+
+                Swal.fire('Success', `Member ${!currentIsActive ? 'activated' : 'deactivated'} successfully.`, 'success');
+            } catch (err) {
+                console.error('Failed to toggle member status:', err);
+                const errMsg = err.response?.data?.message || err.message || 'Failed to update status';
+                Swal.fire('Error', errMsg, 'error');
+            } finally {
+                setToggleLoading(null);
+            }
+        }
     const handleStatusToggleClick = async (member) => {
         const newStatus = !member.isActive;
         const action = newStatus ? 'activate' : 'deactivate';
@@ -513,6 +566,8 @@ const TeamMembers = () => {
             await toggleMemberStatus(member.id || member._id, member.isActive);
         }
     };
+    
+      
     // Export Functions
     const convertToCSV = (data) => {
         const headers = ['Name', 'Email', 'Phone', 'Position', 'Department', 'Status', 'Rating', 'Review Count'];
@@ -744,29 +799,54 @@ const TeamMembers = () => {
     const handleUpdateEmployee = async (memberId, updatedData) => {
         setEditLoading(true);
         setEditError(null);
+        console.log('handleUpdateEmployee called for', memberId, updatedData);
+        let empUpdateRes = null;
+        let userUpdateRes = null;
         try {
             // Check network connectivity
             if (!navigator.onLine) {
                 throw new Error('No internet connection. Please check your network and try again.');
             }
 
-            // Update employee profile details (employeeId, position, department, hireDate)
-            const empUpdateRes = await api.patch(
-                `/employees/${memberId}`,
-                {
-                    employeeId: updatedData.employeeId,
-                    position: updatedData.position,
-                    department: updatedData.department,
-                    hireDate: updatedData.hireDate,
-                }
-            );
+            // Prepare employee payload
+            const empPayload = {
+                employeeId: updatedData.employeeId,
+                position: updatedData.position,
+                department: updatedData.department,
+                hireDate: updatedData.hireDate,
+            };
 
-            // Check if API call was successful
-            if (empUpdateRes.status === 200) {
-                // Update the state with the new member data (only employee-specific fields)
+            console.log('Patching /employees/', memberId, empPayload);
+            empUpdateRes = await api.patch(`/employees/${memberId}`, empPayload);
+
+            // If personal fields were provided, try to update the linked user record
+            const memberRecord = teamMembers.find(m => m.id === memberId);
+            const userId = memberRecord?.userId;
+            const userPayload = {};
+            if (updatedData.firstName !== undefined) userPayload.firstName = updatedData.firstName;
+            if (updatedData.lastName !== undefined) userPayload.lastName = updatedData.lastName;
+            if (updatedData.email !== undefined) userPayload.email = updatedData.email;
+            if (updatedData.phone !== undefined) userPayload.phone = updatedData.phone;
+
+            if (userId && Object.keys(userPayload).length > 0) {
+                try {
+                    userUpdateRes = await api.patch(`/employees/${userId}`, userPayload);
+                } catch (userErr) {
+                    console.warn('Failed to update user profile; continuing with employee update', userErr);
+                }
+            }
+
+            // Check if employee API call was successful
+            if (empUpdateRes && (empUpdateRes.status === 200 || empUpdateRes.status === 204)) {
+                // Update the local state with both personal and employee fields
                 setTeamMembers(prev => prev.map(member =>
-                    member.id === memberId ? { 
-                        ...member, 
+                    member.id === memberId ? {
+                        ...member,
+                        firstName: updatedData.firstName !== undefined ? updatedData.firstName : member.firstName,
+                        lastName: updatedData.lastName !== undefined ? updatedData.lastName : member.lastName,
+                        email: updatedData.email !== undefined ? updatedData.email : member.email,
+                        phone: updatedData.phone !== undefined ? updatedData.phone : member.phone,
+                        name: `${updatedData.firstName !== undefined ? updatedData.firstName : member.firstName} ${updatedData.lastName !== undefined ? updatedData.lastName : member.lastName}`.trim(),
                         employeeId: updatedData.employeeId,
                         position: updatedData.position,
                         department: updatedData.department,
@@ -779,9 +859,11 @@ const TeamMembers = () => {
 
                 // Show a success message
                 Swal.fire('Updated!', 'Employee details have been updated successfully.', 'success');
+
+                return { empUpdateRes, userUpdateRes };
             } else {
                 // Handle cases where the call failed but didn't throw an error
-                throw new Error('API request failed with an unexpected status.');
+                throw new Error('Employee API request failed with an unexpected status.');
             }
         } catch (err) {
             console.error('Error updating employee:', err);
@@ -797,6 +879,7 @@ const TeamMembers = () => {
 
             // Show a detailed error message
             Swal.fire('Error!', errorMessage, 'error');
+            throw err; // rethrow so callers (modal) can see it
         } finally {
             setEditLoading(false);
         }
