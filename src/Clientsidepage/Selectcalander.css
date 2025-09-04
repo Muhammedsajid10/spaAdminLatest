@@ -268,119 +268,6 @@
   width: 280px;
   z-index: 1000;
 }
-/* Add these styles to your existing CSS */
-
-/* Week Ranges Container */
-.week-ranges-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 0;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.week-range-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 12px 16px;
-  background: #ffffff;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-  width: 100%;
-}
-
-.week-range-item:hover {
-  background: #f8f9fa;
-  border-color: #000000;
-  transform: translateY(-1px);
-}
-
-.week-range-item.selected {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
-}
-
-.week-range-label {
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.week-range-dates {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-/* Month Grid Container */
-.month-grid-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 8px 0;
-}
-
-.month-picker-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 8px;
-  background: #ffffff;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.month-picker-item:hover {
-  background: #f8f9fa;
-  border-color: #000000;
-  transform: scale(1.02);
-}
-
-.month-picker-item.selected {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
-}
-
-.month-picker-item.today {
-  background: #f8f9fa;
-  border-color: #ff6b35;
-  color: #ff6b35;
-  font-weight: 700;
-}
-
-.month-picker-item.today.selected {
-  background: #000000;
-  color: #ffffff;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 2px #ff6b35;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .month-grid-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .week-range-item {
-    padding: 10px 12px;
-  }
-  
-  .month-picker-item {
-    padding: 12px 6px;
-    font-size: 12px;
-  }
-}
 .team-popup-header {
   padding: 12px 16px;
   border-bottom: 1px solid #e5e7eb;
@@ -829,6 +716,16 @@
   background: #f8f9fa;
 }
 
+.date-display-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.date-display-button.disabled:hover {
+  background: transparent;
+}
+
 .date-picker-icon {
   color: #000000;
   transition: transform 0.2s ease;
@@ -862,6 +759,9 @@
   padding: 14px 16px 12px;
   animation: datePickerSlideIn 0.22s cubic-bezier(.4,.6,.3,1);
   font-family: inherit;
+  /* Ensure clicks inside the picker are registered and the container sits above nearby overlays */
+  pointer-events: auto;
+  z-index: 10002;
 }
 
 /* Compact minimal date picker adjustments */
@@ -1692,6 +1592,15 @@
 .week-day-cell.no-shift {
   background-color: #f3f4f6;
   opacity: 0.7;
+}
+
+/* Make the week-day cell fill its grid area and allow the entire area to be clickable */
+.week-day-cell {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 80px; /* ensure tappable area */
+  padding: 6px;
 }
 
 .week-no-shift {
@@ -2945,6 +2854,15 @@
     padding: 8px;
     position: relative;
     overflow: hidden;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.month-day-cell:hover {
+    background-color: #f8faff;
+    border-color: #60a5fa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
 }
 
 .month-day-header {
@@ -2958,6 +2876,18 @@
 .month-day-date {
     font-size: 14px;
     color: var(--text-primary);
+}
+
+.month-add-appointment-hint {
+    font-size: 16px;
+    color: #60a5fa;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    font-weight: bold;
+}
+
+.month-day-cell:hover .month-add-appointment-hint {
+    opacity: 1;
 }
 
 .month-day-weekday {
@@ -2980,6 +2910,26 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     background-color: var(--primary-color);
+}
+
+.month-empty-day {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.month-day-cell:hover .month-empty-day {
+    opacity: 1;
+}
+
+.add-appointment-text {
+    font-size: 11px;
+    color: #60a5fa;
+    text-align: center;
+    font-weight: 500;
 }
 
 .month-more-appointments {
@@ -4738,7 +4688,7 @@
 
 .week-employee-row {
   display: flex;
-  border-bottom: 1px solid var(--border-light);
+    border-bottom: 1px solid #bdbdbd;
   min-height: 120px;
   background: var(--bg-primary);
   transition: all 0.2s ease;
@@ -4758,12 +4708,20 @@
 .week-day-cell {
   flex: 1; /* Take equal space for each day */
   min-width: 0; /* Allow shrinking */
-  border-right: 1px solid var(--border-light);
+  border-right: 1px solid #e0e0e0;
+  border: 2px solid transparent;
   padding: 12px 8px;
   min-height: 120px;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+}
+
+.week-day-cell:hover {
+  background-color: #f8faff;
+  border-color: #60a5fa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
 }
 
 .week-day-cell:last-child {
@@ -4887,20 +4845,87 @@
 .week-appointments-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   height: 100%;
   width: 100%;
+  padding: 4px;
+}
+
+.week-add-appointment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 100%);
+  border: 2px dashed #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 32px;
+  margin-top: 2px;
+}
+
+.week-add-appointment-btn:hover {
+  background: linear-gradient(135deg, #f8faff 0%, #ecf4ff 100%);
+  border-color: #60a5fa;
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.15);
+}
+
+.add-appointment-icon {
+  font-size: 14px;
+  color: #60a5fa;
+  font-weight: bold;
+}
+
+.add-appointment-text {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.week-add-appointment-btn:hover .add-appointment-text {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.week-add-appointment-btn[style*="cursor: not-allowed"] {
+  opacity: 0.5;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.week-add-appointment-btn[style*="cursor: not-allowed"]:hover {
+  transform: none;
+  box-shadow: none;
+  border-style: dashed;
+}
+
+.week-add-appointment-btn[style*="cursor: not-allowed"] .add-appointment-icon,
+.week-add-appointment-btn[style*="cursor: not-allowed"] .add-appointment-text {
+  color: #94a3b8;
 }
 
 .week-appointment-block {
   background: var(--primary-color);
   color: white;
   padding: 8px;
+  margin: 2px;
   border-radius: 6px;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  border: 2px solid transparent;
+}
+
+.week-appointment-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .week-appointment-block:hover {
@@ -5322,8 +5347,9 @@
 
 .team-member-card.selected {
   /* border-color: #000000; */
-  background: #f8f9fa;
-  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
+  background: #f8faff;
+  border-color: #60a5fa;
+  box-shadow: 0 2px 12px rgba(96, 165, 250, 0.15);
 }
 
 .team-member-card.no-shift {
@@ -5336,10 +5362,18 @@
   flex-direction: column;
   text-align: center;
   padding: 16px 12px;
+  position: relative;
 }
 
 .team-members-list.grid-view .member-info-section {
   width: 100%;
+  margin-bottom: 12px;
+}
+
+.team-members-list.grid-view .member-checkbox-section {
+  margin-left: 0;
+  padding-left: 0;
+  justify-content: center;
 }
 
 .team-members-list.grid-view .member-actions {
@@ -5392,33 +5426,48 @@
   border: 2px solid #ffffff;
 }
 
-.selection-indicator {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
+/* Member checkbox section - moved to right side */
+.member-checkbox-section {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  padding-left: 12px;
 }
 
 .checkbox-custom {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   background: #ffffff;
   border: 2px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.checkbox-custom:hover {
+  border-color: #60a5fa;
+  transform: scale(1.05);
 }
 
 .checkbox-custom.checked {
-  background: #000000;
-  border-color: #000000;
+  background: #ffffff;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
 }
 
 .checkbox-custom .checkmark {
-  color: #ffffff;
-  font-size: 12px;
+  color: #60a5fa;
+  font-size: 14px;
   font-weight: 700;
+  transform: scale(1.2);
+}
+
+/* Remove old selection indicator styles */
+.selection-indicator {
+  display: none;
 }
 
 /* Member info section */
@@ -5439,6 +5488,69 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.member-role {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.member-status-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shift-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.shift-status.available .status-dot {
+  background: #22c55e;
+}
+
+.shift-status.unavailable .status-dot {
+  background: #ef4444;
+}
+
+.status-text {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.member-stats {
+  display: flex;
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .member-role {
@@ -6875,3 +6987,451 @@
 .dark .payment-summary-box { background: #1e293b; border-color: #334155; }
 .dark .payment-summary-box .summary-row { border-color: #334155; }
 /* End payment step styles */
+
+/* === Booking Date Picker Styles === */
+.booking-date-selection {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.booking-date-selection h3 {
+  margin: 0 0 15px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.selected-date-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.selected-date-display span {
+  font-size: 16px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.change-date-btn, .select-date-btn {
+  padding: 8px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.change-date-btn:hover, .select-date-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+/* Pre-selection Info Card */
+.booking-preselection-info {
+  margin: 20px 0;
+}
+
+.preselection-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.preselection-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.preselection-icon {
+  font-size: 16px;
+}
+
+.preselection-header span:last-child {
+  font-weight: 600;
+  color: #0c4a6e;
+  font-size: 16px;
+}
+
+.preselection-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.preselection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preselection-item .label {
+  font-weight: 500;
+  color: #0369a1;
+  font-size: 14px;
+}
+
+.preselection-item .value {
+  font-weight: 600;
+  color: #0c4a6e;
+  font-size: 14px;
+}
+
+/* Date Picker Modal Styles */
+.date-picker-section {
+  padding: 20px 0;
+}
+
+.date-picker-section h3 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #60a5fa;
+  text-align: center;
+}
+
+/* Week Days Grid for Week View */
+.week-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.week-day-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 8px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 80px;
+}
+
+.week-day-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.week-day-btn.today {
+  background: #ecfdf5;
+  border-color: #22c55e;
+}
+
+.week-day-btn.selected {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: white;
+}
+
+.week-day-btn .day-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  color: #64748b;
+}
+
+.week-day-btn.selected .day-name {
+  color: #e2e8f0;
+}
+
+.week-day-btn .day-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.week-day-btn.selected .day-number {
+  color: white;
+}
+
+/* Month Calendar Grid for Other Views */
+.calendar-day-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0 8px;
+}
+
+.calendar-day-header {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #60a5fa;
+  padding: 8px 0;
+  text-transform: uppercase;
+}
+
+.day-header {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #60a5fa;
+  padding: 8px 0;
+  text-transform: uppercase;
+}
+
+.month-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 8px;
+}
+
+.calendar-day-btn {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  min-height: 40px;
+  position: relative;
+}
+
+.calendar-day-btn:hover:not(:disabled) {
+  background: #60a5fa;
+  border-color: #60a5fa;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+}
+
+.calendar-day-btn.today {
+  background: #ecfdf5;
+  border-color: #22c55e;
+  font-weight: 700;
+}
+
+.calendar-day-btn.today:hover:not(:disabled) {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: white;
+}
+
+.calendar-day-btn.selected {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: white;
+}
+
+.calendar-day-btn.other-month {
+  color: #cbd5e1;
+  background: transparent;
+}
+
+.calendar-day-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark mode support for booking date picker */
+.dark .booking-date-selection {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark .booking-date-selection h3 {
+  color: #f1f5f9;
+}
+
+.dark .selected-date-display span {
+  color: #cbd5e1;
+}
+
+.dark .preselection-card {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-color: #475569;
+}
+
+.dark .preselection-header span:last-child {
+  color: #e2e8f0;
+}
+
+.dark .preselection-item .label {
+  color: #94a3b8;
+}
+
+.dark .preselection-item .value {
+  color: #f1f5f9;
+}
+
+.dark .week-day-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark .week-day-btn:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+.dark .week-day-btn .day-name {
+  color: #94a3b8;
+}
+
+.dark .week-day-btn .day-number {
+  color: #f1f5f9;
+}
+
+.dark .calendar-day-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark .calendar-day-btn:hover:not(:disabled) {
+  background: #334155;
+  border-color: #475569;
+}
+
+.dark .calendar-day-btn.other-month {
+  color: #475569;
+}
+
+/* Enhanced Week View Clickable Slots */
+.week-empty-cell.clickable-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  background: #f8fafc;
+  border: 2px dashed #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  margin: 4px;
+
+  /* Expand to fill parent container so clicks anywhere are captured */
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  pointer-events: auto;
+}
+
+.week-empty-cell.clickable-slot:hover {
+  background: #f8faff;
+  border-color: #60a5fa;
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+}
+
+.book-appointment-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  text-align: center;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.week-time-slots-hint {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.plus-icon {
+  font-size: 16px;
+  color: #60a5fa;
+  font-weight: bold;
+}
+
+.week-empty-cell.clickable-slot:hover .book-appointment-text {
+  color: #60a5fa;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.week-empty-cell.clickable-slot:hover .week-time-slots-hint {
+  opacity: 1;
+}
+
+/* Add hover hint similar to month view */
+.week-empty-cell.clickable-slot:hover::before {
+  content: "";
+}
+
+/* When no shift is available */
+.week-empty-cell:not(.clickable-slot) .book-appointment-text {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+/* Enhanced booking preselection info */
+.booking-preselection-info {
+  margin-bottom: 20px;
+}
+
+.preselection-card {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.preselection-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.preselection-icon {
+  font-size: 18px;
+}
+
+.preselection-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preselection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preselection-item .label {
+  font-weight: 500;
+  color: #047857;
+}
+
+.preselection-item .value {
+  font-weight: 600;
+  color: #064e3b;
+}

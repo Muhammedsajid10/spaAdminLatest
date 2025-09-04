@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Loading from '../states/Loading.jsx';
 import { useDatePickerState, useBookingSession, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
 import { StaffColumn } from '../calendar/components/StaffColumn';
@@ -218,91 +218,6 @@ const paymentMethods = [
 ];
 // Add these functions after your existing date picker functions (around line 400)
 
-// Generate week ranges for a given month
-const generateWeekRangesForMonth = (month) => {
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
-  
-  // Get first day of month
-  const firstDay = new Date(year, monthIndex, 1);
-  // Get last day of month  
-  const lastDay = new Date(year, monthIndex + 1, 0);
-  
-  const weeks = [];
-  let currentWeekStart = new Date(firstDay);
-  
-  // Start from Monday of the week containing the first day
-  while (currentWeekStart.getDay() !== 1) {
-    currentWeekStart.setDate(currentWeekStart.getDate() - 1);
-  }
-  
-  let weekNumber = 1;
-  
-  while (currentWeekStart <= lastDay) {
-    const weekEnd = new Date(currentWeekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    
-    // Check if this week has any days in the current month
-    const hasMonthDays = (currentWeekStart <= lastDay && weekEnd >= firstDay);
-    
-    if (hasMonthDays) {
-      weeks.push({
-        number: weekNumber,
-        startDate: new Date(currentWeekStart),
-        endDate: new Date(weekEnd),
-        label: `Week ${weekNumber}`,
-        dateRange: `${currentWeekStart.getDate()} ${currentWeekStart.toLocaleDateString('en-US', { month: 'short' })} - ${weekEnd.getDate()} ${weekEnd.toLocaleDateString('en-US', { month: 'short' })}`
-      });
-      weekNumber++;
-    }
-    
-    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-  }
-  
-  return weeks;
-};
-
-// Get current week range based on selected date
-const getCurrentWeekRange = (date) => {
-  const startOfWeek = new Date(date);
-  const day = startOfWeek.getDay();
-  const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday as first day
-  startOfWeek.setDate(diff);
-  
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  
-  return {
-    startDate: startOfWeek,
-    endDate: endOfWeek,
-    label: `Week of ${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-    dateRange: `${startOfWeek.getDate()} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleDateString('en-US', { month: 'short' })}`
-  };
-};
-
-// Handle week range selection
-const handleWeekRangeSelect = (weekRange) => {
-  setCurrentDate(weekRange.startDate); // Set to start of selected week
-  setSelectedWeekRange(weekRange);
-  setShowDatePicker(false);
-};
-
-// Handle month selection
-const handleMonthSelect = (month, year) => {
-  const newDate = new Date(year, month, 1);
-  setCurrentDate(newDate);
-  setDatePickerCurrentMonth(newDate);
-  setShowDatePicker(false);
-};
-
-// Navigate months in month-only picker
-const goToDatePickerPreviousYear = () => {
-  setDatePickerCurrentMonth(prev => new Date(prev.getFullYear() - 1, prev.getMonth(), 1));
-};
-
-const goToDatePickerNextYear = () => {
-  setDatePickerCurrentMonth(prev => new Date(prev.getFullYear() + 1, prev.getMonth(), 1));
-};
 // --- ENHANCED: Utility to get valid time slots for a professional and service ---
 const getValidTimeSlotsForProfessional = (employee, date, serviceDuration, appointments) => {
   const shifts = getEmployeeShiftHours(employee, date);
@@ -325,7 +240,9 @@ const getValidTimeSlotsForProfessional = (employee, date, serviceDuration, appoi
       const employeeAppointments = appointments[employee.id] || {};
       const overlaps = Object.entries(employeeAppointments).some(([appKey, app]) => {
         if (!appKey.startsWith(localDateKey(date))) return false;
-        const [appHour, appMinute] = appKey.split('_')[1].split(':').map(Number);
+        const timeFromKey = appKey.split('_')[1];
+        if (!timeFromKey) return false;
+        const [appHour, appMinute] = timeFromKey.split(':').map(Number);
         const appStart = new Date(date);
         appStart.setHours(appHour, appMinute, 0, 0);
         const appEnd = new Date(appStart.getTime() + (app.duration || 30) * 60000);
@@ -501,23 +418,39 @@ const getDatePickerCalendarDays = (month) => {
   const endPadding = totalCells - (totalDays + startPadding);
   
   const days = [];
+  const today = new Date();
   
   // Add padding days from previous month
   for (let i = startPadding; i > 0; i--) {
-    const day = new Date(year, monthIndex, 1 - i);
-    days.push({ date: day, isCurrentMonth: false });
+    const date = new Date(year, monthIndex, 1 - i);
+    days.push({ 
+      date: date, 
+      day: date.getDate(),
+      isCurrentMonth: false,
+      isToday: formatDateLocal(date) === formatDateLocal(today)
+    });
   }
   
   // Add current month days
   for (let day = 1; day <= totalDays; day++) {
     const date = new Date(year, monthIndex, day);
-    days.push({ date, isCurrentMonth: true });
+    days.push({ 
+      date: date, 
+      day: day,
+      isCurrentMonth: true,
+      isToday: formatDateLocal(date) === formatDateLocal(today)
+    });
   }
   
   // Add padding days from next month
   for (let i = 1; i <= endPadding; i++) {
-    const day = new Date(year, monthIndex + 1, i);
-    days.push({ date: day, isCurrentMonth: false });
+    const date = new Date(year, monthIndex + 1, i);
+    days.push({ 
+      date: date, 
+      day: date.getDate(),
+      isCurrentMonth: false,
+      isToday: formatDateLocal(date) === formatDateLocal(today)
+    });
   }
   
   return days;
@@ -527,9 +460,8 @@ const SelectCalendar = () => {
   // Date / picker state consolidated
   const {
     currentDate, datePickerView, showDatePicker, datePickerCurrentMonth, datePickerSelectedDate,
-    weekRanges, selectedWeekRange,
     setCurrentDate, setDatePickerView, setShowDatePicker, setDatePickerCurrentMonth,
-    setDatePickerSelectedDate, setWeekRanges, setSelectedWeekRange,
+    setDatePickerSelectedDate,
   goToDatePickerPreviousMonth,
   goToDatePickerNextMonth,
   goToDatePickerToday,
@@ -582,6 +514,10 @@ const SelectCalendar = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  
+  // Date selection for booking modal (especially for week view)
+  const [selectedBookingDate, setSelectedBookingDate] = useState(null);
+  const [showBookingDatePicker, setShowBookingDatePicker] = useState(false);
 
   // Payment detail & redemption states
   const [cardDetails, setCardDetails] = useState({ number: '', name: '', expiry: '', cvv: '' });
@@ -626,6 +562,10 @@ const getFilteredAndSearchedEmployees = () => {
   // Apply team filter
   if (teamFilter === 'scheduled') {
     filtered = filtered.filter(emp => hasShiftOnDate(emp, currentDate));
+  } else if (teamFilter === 'active') {
+    filtered = filtered.filter(emp => emp.isActive !== false);
+  } else if (teamFilter === 'inactive') {
+    filtered = filtered.filter(emp => emp.isActive === false);
   }
   
   // Apply search query
@@ -722,11 +662,11 @@ const getEmployeeAppointmentCount = (employeeId) => {
   //   setShowAddBookingModal(true);
   // };
   const handleTimeSlotClick = (employeeId, slotTime, day) => {
-    // ... (existing logic for checking existing appointments and unavailable periods)
-  const dayKey = localDateKey(day || currentDate);
+    const dayKey = localDateKey(day || currentDate);
     const slotKey = `${dayKey}_${slotTime}`;
     const existingAppointment = appointments[employeeId]?.[slotKey];
-    console.log('this is the employee id ', employeeId, slotTime)
+    console.log('Time slot clicked - Employee:', employeeId, 'Time:', slotTime, 'Day:', day);
+
     if (existingAppointment) {
       // Show booking status modal for existing appointment
       const employee = employees.find(emp => emp.id === employeeId);
@@ -759,18 +699,36 @@ const getEmployeeAppointmentCount = (employeeId) => {
       setShowUnavailablePopup(true);
       return;
     }
-    // Store the clicked employee and time slot as defaults for pre-selection
+
+    // Store the clicked employee, time slot, and date as defaults for pre-selection
     const staff = employees.find(emp => emp.id === employeeId);
     if (!staff) {
       console.error('Employee not found in state for ID:', employeeId);
       return;
     }
+
+    const bookingDate = day || currentDate;
+    
+    // Enhanced booking defaults with normalized professional object
     setBookingDefaults({
-      professional: staff,
+      professional: {
+        _id: staff._id || staff.id,
+        id: staff.id,
+        user: { 
+          firstName: staff.name.split(' ')[0], 
+          lastName: staff.name.split(' ')[1] || '' 
+        },
+        name: staff.name,
+        position: staff.position,
+        ...staff
+      },
       time: slotTime,
-      date: day || currentDate
+      date: bookingDate,
+      isDirectTimeSlotSelection: true // Flag to indicate this was a direct time slot click
     });
 
+    // Set the booking date for the modal
+    setSelectedBookingDate(bookingDate);
     setIsNewAppointment(true);
     setShowAddBookingModal(true);
   };
@@ -783,8 +741,8 @@ const getEmployeeAppointmentCount = (employeeId) => {
     console.log('Current multipleAppointments count:', multipleAppointments.length);
     setBookingError(null);
 
-    // NEW LOGIC: If user clicked a time slot (bookingDefaults set), auto-assign professional & chained time without further steps
-    if (bookingDefaults?.professional) {
+    // NEW LOGIC: If user clicked a time slot (bookingDefaults set with time), auto-assign professional & chained time without further steps
+    if (bookingDefaults?.professional && bookingDefaults?.time) {
       const prof = bookingDefaults.professional;
       // Normalize professional object to include _id
       const professionalObj = { ...prof, _id: prof._id || prof.id };
@@ -800,7 +758,8 @@ const getEmployeeAppointmentCount = (employeeId) => {
       const endTime = addMinutesToTime(startTime, service.duration);
 
       // Conflict detection BEFORE shift fit check / creation
-      const conflict = detectProfessionalConflict(professionalObj._id || professionalObj.id, bookingDefaults.date || currentDate, startTime, service.duration, appointments, multipleAppointments);
+      const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
+      const conflict = detectProfessionalConflict(professionalObj._id || professionalObj.id, bookingDate, startTime, service.duration, appointments, multipleAppointments);
       if (conflict) {
         const conflictStartStr = `${String(Math.floor(conflict.start / 60)).padStart(2,'0')}:${String(conflict.start % 60).padStart(2,'0')}`;
         const conflictEndStr = `${String(Math.floor(conflict.end / 60)).padStart(2,'0')}:${String(conflict.end % 60).padStart(2,'0')}`;
@@ -810,7 +769,7 @@ const getEmployeeAppointmentCount = (employeeId) => {
 
       // Validate against professional shift blocks
       const employeeFull = employees.find(e => (e.id === professionalObj.id) || (e._id === professionalObj._id));
-      const dayName = getDayName(bookingDefaults.date || currentDate);
+      const dayName = getDayName(bookingDate);
       const schedule = employeeFull?.workSchedule?.[dayName];
 
       const fitsInShift = (() => {
@@ -852,28 +811,39 @@ const getEmployeeAppointmentCount = (employeeId) => {
         service,
         professional: professionalObj,
         timeSlot: startTime,
-        date: bookingDefaults.date || currentDate,
+        date: bookingDate,
         duration: service.duration,
         price: service.price,
         startTime,
         endTime
       };
-  addAppointmentToSession(newAppointment);
+      addAppointmentToSession(newAppointment);
       // Persist selected professional for potential later use
       setSelectedProfessional(professionalObj);
       setSelectedService(null); // We store service in appointment card instead
       // Remain on step 1 (service/cards view) for adding more services
       setBookingStep(1);
-  setShowServiceCatalog(false);
+      setShowServiceCatalog(false);
+      return;
+    }
+
+    // NEW LOGIC: If user selected employee but no specific time (from week view cell click), skip professional selection
+    if (bookingDefaults?.professional && bookingDefaults?.isDirectEmployeeSelection) {
+      setSelectedService(service);
+      setSelectedProfessional(bookingDefaults.professional);
+      setBookingStep(3); // Skip professional selection, go directly to time selection
+      const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
+      fetchBookingTimeSlots(bookingDefaults.professional._id || bookingDefaults.professional.id, service._id, bookingDate);
       return;
     }
 
     // Fallback: original multi-step flow when no pre-selected professional/time
     setSelectedService(service);
     setBookingStep(2);
+    const bookingDate = selectedBookingDate || currentDate;
     const professionals = getAvailableProfessionalsForService(
       service._id,
-      currentDate,
+      bookingDate,
       employees,
       appointments,
       availableServices
@@ -901,6 +871,8 @@ const getEmployeeAppointmentCount = (employeeId) => {
     setShowClientSearch(false);
     setIsAddingNewClient(false);
     setBookingDefaults(null);
+    setSelectedBookingDate(null);
+    setShowBookingDatePicker(false);
     
     // Don't clear multiple appointments session here - only clear on successful booking
     setBookingForm({
@@ -918,39 +890,6 @@ const getEmployeeAppointmentCount = (employeeId) => {
     setSelectedBookingForStatus(null);
     setBookingStatusError(null);
   };
-// Add these functions inside the SelectCalendar component, after your existing functions
-
-const getDatePickerCalendarDays = (month) => {
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
-  
-  const firstDay = new Date(year, monthIndex, 1);
-  const lastDay = new Date(year, monthIndex + 1, 0);
-  
-  const startPadding = (firstDay.getDay() + 6) % 7;
-  const totalDays = lastDay.getDate();
-  const totalCells = Math.ceil((totalDays + startPadding) / 7) * 7;
-  const endPadding = totalCells - (totalDays + startPadding);
-  
-  const days = [];
-  
-  for (let i = startPadding; i > 0; i--) {
-    const day = new Date(year, monthIndex, 1 - i);
-    days.push({ date: day, isCurrentMonth: false });
-  }
-  
-  for (let day = 1; day <= totalDays; day++) {
-    const date = new Date(year, monthIndex, day);
-    days.push({ date, isCurrentMonth: true });
-  }
-  
-  for (let i = 1; i <= endPadding; i++) {
-    const day = new Date(year, monthIndex + 1, i);
-    days.push({ date: day, isCurrentMonth: false });
-  }
-  
-  return days;
-};
 
   const handleBookingStatusUpdate = async (newStatus) => {
     if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
@@ -1096,8 +1035,38 @@ const getDatePickerCalendarDays = (month) => {
   const handleAddAppointment = () => {
     setBookingDefaults(null);
     setIsNewAppointment(true); // This is a new appointment
+    
+    // For week view and month view, show date picker to select which day to book
+    if (currentView === 'Week' || currentView === 'Month') {
+      setSelectedBookingDate(null);
+      setShowBookingDatePicker(true);
+    } else {
+      // For day view, use current date
+      setSelectedBookingDate(currentDate);
+      setShowAddBookingModal(true);
+      setShowServiceCatalog(true); // Ensure service list visible when no preselected slot
+    }
+  };
+
+  // Month view day click handler for booking
+  const handleMonthDayClick = (selectedDay) => {
+    console.log('🗓️ Month day clicked:', selectedDay.toLocaleDateString());
+    
+    // Store the selected day for booking
+    setSelectedBookingDate(selectedDay);
+    
+    // Clear any existing booking defaults (since this is a fresh booking from month view)
+    setBookingDefaults(null);
+    
+    // Set up for new appointment booking starting with service selection
+    setIsNewAppointment(true);
+    setBookingStep(1); // Start at service selection step
+    
+    // Open the booking modal
     setShowAddBookingModal(true);
-  setShowServiceCatalog(true); // Ensure service list visible when no preselected slot
+    setShowServiceCatalog(true);
+    
+    console.log('📅 Booking modal opened for date:', selectedDay.toLocaleDateString());
   };
 
   const goToToday = () => {
@@ -1296,7 +1265,7 @@ const getDatePickerCalendarDays = (month) => {
 
         // Filter professionals with shifts on this date and available time slots
         const professionalsWithShifts = allProfessionals.filter(prof => {
-          const isActive = prof.user?.isActive !== false;
+          const isActive = prof.isActive !== false;
 
           // Create employee object for shift checking
           const employeeForShiftCheck = {
@@ -1744,10 +1713,14 @@ useEffect(() => {
       if (teamFilter === 'scheduled') {
         // Only show employees who have shifts today
         filteredByTeam = employees.filter(emp => hasShiftOnDate(emp, currentDate));
+      } else if (teamFilter === 'active') {
+        filteredByTeam = employees.filter(emp => emp.isActive !== false);
+      } else if (teamFilter === 'inactive') {
+        filteredByTeam = employees.filter(emp => emp.isActive === false);
       }
 
       // Then filter by selected employees
-      return filteredByTeam.filter(emp => selectedEmployees.has(emp.id));
+    return filteredByTeam.filter(emp => selectedEmployees.has(emp.id));
     };
     // NEW: Team management functions
     const handleEmployeeToggle = (employeeId) => {
@@ -1790,6 +1763,16 @@ useEffect(() => {
           newSelected.add(employeesWithShifts[0].id);
         }
         setSelectedEmployees(newSelected);
+      } else if (filter === 'active' || filter === 'inactive') {
+        // Narrow selectedEmployees to only those matching the active/inactive filter
+        const matched = employees.filter(emp => filter === 'active' ? emp.isActive !== false : emp.isActive === false);
+        const newSet = new Set();
+        matched.forEach(emp => {
+          if (selectedEmployees.has(emp.id)) newSet.add(emp.id);
+        });
+        // If none selected, pick first matching employee to keep UI sane
+        if (newSet.size === 0 && matched.length > 0) newSet.add(matched[0].id);
+        setSelectedEmployees(newSet);
       }
     };
     // NEW: Get appointments for calendar popup
@@ -1826,6 +1809,43 @@ useEffect(() => {
     const handleRefreshToNow = () => {
       setCurrentDate(new Date());
       fetchCalendarData();
+    };
+
+    // Booking date picker functions
+    const getBookingDatePickerDays = () => {
+      if (currentView === 'Week') {
+        // For week view, show only the days of the current week
+        const weekStart = new Date(currentDate);
+        const day = weekStart.getDay();
+        const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Monday as first day
+        weekStart.setDate(diff);
+
+        const weekDays = [];
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(weekStart);
+          day.setDate(weekStart.getDate() + i);
+          weekDays.push({
+            date: day,
+            day: day.getDate(),
+            isCurrentMonth: true,
+            isToday: formatDateLocal(day) === formatDateLocal(new Date()),
+            dayName: day.toLocaleDateString('en-US', { weekday: 'short' })
+          });
+        }
+        return weekDays;
+      } else {
+        // For other views, show a full month calendar - pass the correct month object
+        const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        return getDatePickerCalendarDays(monthDate);
+      }
+    };
+
+    const handleBookingDateSelect = (day) => {
+      setSelectedBookingDate(day.date);
+      setShowBookingDatePicker(false);
+      // Automatically open booking modal with service selection
+      setShowAddBookingModal(true);
+      setShowServiceCatalog(true);
     };
  useEffect(() => {
   const handleClickOutside = (event) => {
@@ -1882,11 +1902,14 @@ useEffect(() => {
       ? new Date(slotToUse.startTime).toTimeString().slice(0, 5)
       : slotToUse.time || slotToUse;
 
+    // Use the correct booking date - priority: bookingDefaults.date > selectedBookingDate > currentDate
+    const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
+
     // ENHANCED: Check for conflicts using the new smart validation
     const conflict = isProfessionalUnavailableInSession(
       selectedProfessional._id, 
       timeSlot, 
-      currentDate, 
+      bookingDate, 
       selectedService.duration
     );
 
@@ -1900,18 +1923,29 @@ useEffect(() => {
     // Store service name for success message before clearing
     const serviceName = selectedService.name;
 
+    // Ensure date is stored in a consistent format (YYYY-MM-DD string)
+    const appointmentDate = bookingDate instanceof Date 
+      ? formatDateLocal(bookingDate) 
+      : bookingDate;
+
     // Add current appointment to session
     const appointment = {
       service: selectedService,
       professional: selectedProfessional,
       timeSlot: timeSlot,
-      date: currentDate,
+      date: appointmentDate, // Store as consistent YYYY-MM-DD string
     };
 
-    console.log('Adding appointment to session:', appointment);
+    console.log('Adding appointment to session with date:', {
+      originalBookingDate: bookingDate,
+      bookingDateType: typeof bookingDate,
+      isDateObject: bookingDate instanceof Date,
+      finalAppointmentDate: appointmentDate,
+      formatDateLocalResult: bookingDate instanceof Date ? formatDateLocal(bookingDate) : 'N/A'
+    });
+    console.log('Full appointment:', appointment);
     const newAppointment = addAppointmentToSession(appointment);
     console.log('New appointment added:', newAppointment);
-    console.log('Updated session:', [...multipleAppointments, newAppointment]);
     
     // Clear the current selection to show empty "Ready to Add" section
     setSelectedService(null);
@@ -1981,13 +2015,33 @@ useEffect(() => {
       }
 
       // Create services array from multiple appointments
-      const services = multipleAppointments.map(apt => {
-        const startTime = new Date(apt.date);
+      const services = multipleAppointments.map(apt => {        
+        // Ensure we have a valid date object
+        let appointmentDate;
+        if (apt.date instanceof Date) {
+          appointmentDate = new Date(apt.date);
+        } else if (typeof apt.date === 'string') {
+          appointmentDate = new Date(apt.date);
+        } else {
+          // Fallback to current date if date is invalid
+          console.warn('Invalid date in appointment, using current date:', apt.date);
+          appointmentDate = new Date();
+        }
+        
+        // Ensure the date is valid
+        if (isNaN(appointmentDate.getTime())) {
+          console.error('Invalid date created from:', apt.date);
+          appointmentDate = new Date(); // Fallback to current date
+        }
+        
         const [hours, minutes] = apt.timeSlot.split(':');
+        const startTime = new Date(appointmentDate);
         startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         
         const endTime = new Date(startTime);
         endTime.setMinutes(endTime.getMinutes() + apt.service.duration);
+
+        console.log(`📅 Booking: ${apt.service.name} on ${appointmentDate.toDateString()} at ${apt.timeSlot}`);
 
         return {
           service: apt.service._id,
@@ -2119,6 +2173,8 @@ useEffect(() => {
     setShowClientSearch(false);
     setIsAddingNewClient(false);
     setBookingDefaults(null);
+    setSelectedBookingDate(null);
+    setShowBookingDatePicker(false);
     
     // Only clear appointments session if explicitly requested
     if (clearSession) {
@@ -2204,8 +2260,8 @@ useEffect(() => {
           setAvailableServices(servicesResponse.data.data.services || []);
         }
 
-        // Filter out inactive employees from calendar display and booking interfaces
-        const activeEmployees = employees.filter(emp => emp.user?.isActive !== false);
+  // Filter out inactive employees from calendar display and booking interfaces
+  const activeEmployees = employees.filter(emp => emp.isActive !== false);
 
         const transformedEmployees = activeEmployees.map(emp => ({
           id: emp._id, // Always use backend _id
@@ -2214,7 +2270,7 @@ useEffect(() => {
           avatar: emp.user?.avatar || emp.avatar,
           avatarColor: getRandomColor(),
           unavailablePeriods: emp.unavailablePeriods || [],
-          isActive: emp.user?.isActive !== false,
+          isActive: emp.isActive !== false,
           workSchedule: emp.workSchedule || {}
         }));
 
@@ -2378,10 +2434,11 @@ useEffect(() => {
       if (defaultProf) {
         setSelectedProfessional(defaultProf);
         setBookingStep(3);
-        fetchBookingTimeSlots(defaultProf._id, selectedService._id, currentDate);
+        const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
+        fetchBookingTimeSlots(defaultProf._id, selectedService._id, bookingDate);
       }
     }
-  }, [bookingStep, bookingDefaults, availableProfessionals, selectedService, currentDate, fetchBookingTimeSlots]);
+  }, [bookingStep, bookingDefaults, availableProfessionals, selectedService, selectedBookingDate, currentDate, fetchBookingTimeSlots]);
 
   useEffect(() => {
     if (bookingStep === 3 && bookingDefaults?.time && availableTimeSlots.length > 0) {
@@ -2413,7 +2470,8 @@ useEffect(() => {
     }
 
     const timeSlotHeightPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--time-slot-height')) || 20;
-    const firstSlotTimeMinutes = (parseFloat(timeSlots[0]?.split(':')[0]) * 60) + parseFloat(timeSlots[0]?.split(':')[1]);
+    const firstSlotTime = timeSlots[0] || '00:00';
+    const firstSlotTimeMinutes = (parseFloat(firstSlotTime.split(':')[0]) * 60) + parseFloat(firstSlotTime.split(':')[1]);
     const currentTimeMinutes = (now.getHours() * 60) + now.getMinutes();
     const minutesIntoSchedule = currentTimeMinutes - firstSlotTimeMinutes; 
 
@@ -2443,6 +2501,40 @@ useEffect(() => {
   }, []);
 
   const displayEmployees = getFilteredEmployees();
+
+  // Merge persisted appointments with current session appointments
+  const mergedAppointments = useMemo(() => {
+    const merged = { ...appointments };
+    
+    // Add session appointments to the merged object
+    multipleAppointments.forEach(sessionApt => {
+      const employeeId = sessionApt.professional._id || sessionApt.professional.id;
+      
+      // Since we now store dates consistently as YYYY-MM-DD strings, use directly
+      const dayKey = sessionApt.date;
+      const slotKey = `${dayKey}_${sessionApt.timeSlot}`;
+      
+      if (!merged[employeeId]) {
+        merged[employeeId] = {};
+      }
+      
+      // Add session appointment with a distinctive styling
+      merged[employeeId][slotKey] = {
+        client: 'Pending Session',
+        service: sessionApt.service.name,
+        duration: sessionApt.service.duration,
+        startTime: sessionApt.timeSlot,
+        endTime: addMinutesToTime(sessionApt.timeSlot, sessionApt.service.duration),
+        color: '#ff6b35', // Orange color for session appointments
+        status: 'pending',
+        isSessionAppointment: true,
+        isMainSlot: true,
+        sessionId: sessionApt.id
+      };
+    });
+    
+    return merged;
+  }, [appointments, multipleAppointments]);
 
   const getCalendarDays = () => {
     if (currentView === 'Day') {
@@ -2488,8 +2580,8 @@ useEffect(() => {
 
             // Get appointments for this day from all employees
             displayEmployees.forEach(emp => {
-              if (appointments[emp.id]) {
-                Object.entries(appointments[emp.id]).forEach(([slotKey, appointment]) => {
+              if (mergedAppointments[emp.id]) {
+                Object.entries(mergedAppointments[emp.id]).forEach(([slotKey, appointment]) => {
                   // Check if the appointment is for this day
                   if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
                     // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
@@ -2507,9 +2599,16 @@ useEffect(() => {
             });
 
             return (
-              <div key={dayKey} className="month-day-cell">
+              <div 
+                key={dayKey} 
+                className="month-day-cell"
+                onClick={() => handleMonthDayClick(day)}
+                style={{ cursor: 'pointer' }}
+                title={`Click to add appointment on ${day.toLocaleDateString()}`}
+              >
                 <div className="month-day-header">
                   <span className="month-day-date">{day.getDate()}</span>
+                  <span className="month-add-appointment-hint">+</span>
                 </div>
                 <div className="month-appointments">
                   {dayAppointments.length > 0 ? (
@@ -2519,7 +2618,7 @@ useEffect(() => {
                           className="month-appointment-entry"
                           style={{ backgroundColor: app.color }}
                           onClick={(e) => {
-                            e.stopPropagation();
+                            e.stopPropagation(); // Prevent day click when clicking on appointment
                             if (app.bookingId) {
                               // Show booking status for existing appointment
                               const appointmentDetails = {
@@ -2550,13 +2649,20 @@ useEffect(() => {
                       {dayAppointments.length > 3 && (
                         <div
                           className="month-more-appointments"
-                          onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
+                          onClick={(event) => {
+                            event.stopPropagation(); // Prevent day click when clicking on "more"
+                            handleShowMoreAppointments(dayAppointments, day, event);
+                          }}
                         >
                           +{dayAppointments.length - 3} more
                         </div>
                       )}
                     </>
-                  ) : null}
+                  ) : (
+                    <div className="month-empty-day">
+                      <span className="add-appointment-text">Click to add appointment</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -2626,7 +2732,7 @@ useEffect(() => {
               key={employee.id}
               employee={employee}
               timeSlots={timeSlots}
-              appointments={appointments}
+              appointments={mergedAppointments}
               currentDate={currentDate}
               isTimeSlotUnavailable={isTimeSlotUnavailable}
               handleTimeSlotClick={handleTimeSlotClick}
@@ -2669,13 +2775,13 @@ useEffect(() => {
 
                   {/* Daily appointment cells for this employee */}
                   {calendarDays.map(day => {
-                    const dayKey = day.toISOString().split('T')[0];
+                    const dayKey = formatDateLocal(day); // Use same format as session appointments
                     const hasShift = hasShiftOnDate(employee, day);
 
                     // Get appointments for this employee on this day
                     const dayAppointments = [];
-                    if (appointments[employee.id]) {
-                      Object.entries(appointments[employee.id]).forEach(([slotKey, appointment]) => {
+                    if (mergedAppointments[employee.id]) {
+                      Object.entries(mergedAppointments[employee.id]).forEach(([slotKey, appointment]) => {
                         if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
                           const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
                           dayAppointments.push({
@@ -2702,7 +2808,10 @@ useEffect(() => {
                                 key={index}
                                 className="week-appointment-block"
                                 style={{ backgroundColor: app.color }}
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent event bubbling
+                                  console.log('Week appointment clicked:', app);
+                                  
                                   if (app.timeSlot && app.bookingId) {
                                     // Show booking status for existing appointment
                                     const appointmentDetails = {
@@ -2713,11 +2822,38 @@ useEffect(() => {
                                       date: dayKey,
                                       slotKey: app.slotKey
                                     };
+                                    console.log('Opening booking status modal:', appointmentDetails);
                                     setSelectedBookingForStatus(appointmentDetails);
                                     setShowBookingStatusModal(true);
                                   } else if (app.timeSlot) {
                                     // Fallback to regular time slot click
+                                    console.log('Fallback to time slot click');
                                     handleTimeSlotClick(employee.id, app.timeSlot, day);
+                                  } else {
+                                    // No time slot info, show general appointment booking
+                                    console.log('No time slot, showing add appointment modal');
+                                    const staff = employees.find(emp => emp.id === employee.id);
+                                    if (staff) {
+                                      setBookingDefaults({
+                                        professional: {
+                                          _id: staff._id || staff.id,
+                                          id: staff.id,
+                                          user: { 
+                                            firstName: staff.name.split(' ')[0], 
+                                            lastName: staff.name.split(' ')[1] || '' 
+                                          },
+                                          name: staff.name,
+                                          position: staff.position,
+                                          ...staff
+                                        },
+                                        date: day,
+                                        isDirectEmployeeSelection: true
+                                      });
+                                      setSelectedBookingDate(day);
+                                      setIsNewAppointment(true);
+                                      setShowAddBookingModal(true);
+                                      setShowServiceCatalog(true);
+                                    }
                                   }
                                 }}
                                 onMouseEnter={(e) => showBookingTooltipHandler(e, {
@@ -2734,6 +2870,50 @@ useEffect(() => {
                                 <div className="appointment-service">{app.service}</div>
                               </div>
                             ))}
+                            
+                            {/* Add appointment button for days with existing appointments */}
+                            <div
+                              className="week-add-appointment-btn"
+                              onClick={hasShift ? (e) => {
+                                e.stopPropagation(); // Prevent event bubbling
+                                console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+                                
+                                // Show service selection for this employee and day
+                                const staff = employees.find(emp => emp.id === employee.id);
+                                if (staff) {
+                                  setBookingDefaults({
+                                    professional: {
+                                      _id: staff._id || staff.id,
+                                      id: staff.id,
+                                      user: { 
+                                        firstName: staff.name.split(' ')[0], 
+                                        lastName: staff.name.split(' ')[1] || '' 
+                                      },
+                                      name: staff.name,
+                                      position: staff.position,
+                                      ...staff
+                                    },
+                                    date: day,
+                                    isDirectEmployeeSelection: true // Flag for skipping professional selection
+                                  });
+                                  setSelectedBookingDate(day);
+                                  setIsNewAppointment(true);
+                                  setShowAddBookingModal(true);
+                                  setShowServiceCatalog(true); // Show service selection first
+                                  console.log('Opening booking modal with defaults:', {
+                                    professional: staff.name,
+                                    date: day.toLocaleDateString(),
+                                    isDirectEmployeeSelection: true
+                                  });
+                                }
+                              } : undefined}
+                              style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                              title={hasShift ? `Add another appointment with ${employee.name}` : 'No shift scheduled'}
+                            >
+                              <span className="add-appointment-icon">+</span>
+                              <span className="add-appointment-text">Add Appointment</span>
+                            </div>
+                            
                             {dayAppointments.length > 3 && (
                               <div
                                 className="week-more-appointments"
@@ -2745,14 +2925,51 @@ useEffect(() => {
                           </div>
                         ) : (
                           <div
-                            className="week-empty-cell"
-                          // onClick={hasShift ? () => {
-                          //   const defaultTime = "09:00";
-                          //   handleTimeSlotClick(employee.id, defaultTime, day);
-                          // } : undefined}
-                          // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                            className="week-empty-cell clickable-slot"
+                            onClick={hasShift ? (e) => {
+                              e.stopPropagation(); // Prevent event bubbling
+                              console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+                              
+                              // Show service selection for this employee and day
+                              const staff = employees.find(emp => emp.id === employee.id);
+                              if (staff) {
+                                setBookingDefaults({
+                                  professional: {
+                                    _id: staff._id || staff.id,
+                                    id: staff.id,
+                                    user: { 
+                                      firstName: staff.name.split(' ')[0], 
+                                      lastName: staff.name.split(' ')[1] || '' 
+                                    },
+                                    name: staff.name,
+                                    position: staff.position,
+                                    ...staff
+                                  },
+                                  date: day,
+                                  isDirectEmployeeSelection: true // Flag for skipping professional selection
+                                });
+                                setSelectedBookingDate(day);
+                                setIsNewAppointment(true);
+                                setShowAddBookingModal(true);
+                                setShowServiceCatalog(true); // Show service selection first
+                                console.log('Opening booking modal with defaults:', {
+                                  professional: staff.name,
+                                  date: day.toLocaleDateString(),
+                                  isDirectEmployeeSelection: true
+                                });
+                              }
+                            } : undefined}
+                            style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                            title={hasShift ? `Book appointment with ${employee.name} on ${day.toLocaleDateString()}` : 'No shift scheduled'}
                           >
-                            {/* <span className="add-appointment-plus">{hasShift ? '+' : ''}</span> */}
+                            <span className="book-appointment-text">
+                              {hasShift ? 'Click to Book' : 'No Shift'}
+                            </span>
+                            {hasShift && (
+                              <div className="week-time-slots-hint">
+                                <span className="plus-icon">+</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2787,21 +3004,16 @@ useEffect(() => {
     <ChevronLeft size={16} />
   </button>
 <button 
-  className="date-display-button"
+  className={`date-display-button ${currentView !== 'Day' ? 'disabled' : ''}`}
   onClick={() => {
+    // Only allow date picker in Day view
+    if (currentView !== 'Day') return;
+    
     setDatePickerCurrentMonth(currentDate);
     setDatePickerSelectedDate(currentDate);
     
-    // Set picker view based on current calendar view
-    if (currentView === 'Week') {
-      setDatePickerView('week');
-      setWeekRanges(generateWeekRangesForMonth(currentDate));
-      setSelectedWeekRange(getCurrentWeekRange(currentDate));
-    } else if (currentView === 'Month') {
-      setDatePickerView('month');
-    } else {
-      setDatePickerView('date');
-    }
+    // Always show date view regardless of current calendar view
+    setDatePickerView('date');
     
     setShowDatePicker(!showDatePicker);
   }}
@@ -2904,142 +3116,6 @@ useEffect(() => {
           </div>
         </>
       )}
-
-      {/* WEEK VIEW (Week View) */}
-      {datePickerView === 'week' && (
-        <>
-          <div className="date-picker-header">
-            <button 
-              className="date-picker-nav-btn"
-              onClick={() => {
-                const prevMonth = new Date(datePickerCurrentMonth);
-                prevMonth.setMonth(prevMonth.getMonth() - 1);
-                setDatePickerCurrentMonth(prevMonth);
-                setWeekRanges(generateWeekRangesForMonth(prevMonth));
-              }}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <div className="date-picker-month-year">
-              Week Ranges - {datePickerCurrentMonth.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long' 
-              })}
-            </div>
-            <button 
-              className="date-picker-nav-btn"
-              onClick={() => {
-                const nextMonth = new Date(datePickerCurrentMonth);
-                nextMonth.setMonth(nextMonth.getMonth() + 1);
-                setDatePickerCurrentMonth(nextMonth);
-                setWeekRanges(generateWeekRangesForMonth(nextMonth));
-              }}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-          
-          <div className="week-ranges-container">
-            {weekRanges.map((weekRange, index) => {
-              const isCurrentWeek = selectedWeekRange && 
-                weekRange.startDate.toDateString() === selectedWeekRange.startDate.toDateString();
-              
-              return (
-                <button
-                  key={index}
-                  className={`week-range-item ${isCurrentWeek ? 'selected' : ''}`}
-                  onClick={() => handleWeekRangeSelect(weekRange)}
-                >
-                  <div className="week-range-label">{weekRange.label}</div>
-                  <div className="week-range-dates">{weekRange.dateRange}</div>
-                </button>
-              );
-            })}
-          </div>
-          
-          <div className="date-picker-footer">
-            <button 
-              className="date-picker-today-btn"
-              onClick={() => {
-                const thisWeek = getCurrentWeekRange(new Date());
-                handleWeekRangeSelect(thisWeek);
-              }}
-            >
-              This Week
-            </button>
-            <button 
-              className="date-picker-close-btn"
-              onClick={() => setShowDatePicker(false)}
-            >
-              Close
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* MONTH VIEW (Month View) */}
-      {datePickerView === 'month' && (
-        <>
-          <div className="date-picker-header">
-            <button 
-              className="date-picker-nav-btn"
-              onClick={goToDatePickerPreviousYear}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <div className="date-picker-month-year">
-              {datePickerCurrentMonth.getFullYear()}
-            </div>
-            <button 
-              className="date-picker-nav-btn"
-              onClick={goToDatePickerNextYear}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-          
-          <div className="month-grid-container">
-            {[
-              'January', 'February', 'March', 'April', 
-              'May', 'June', 'July', 'August', 
-              'September', 'October', 'November', 'December'
-            ].map((monthName, monthIndex) => {
-              const isCurrentMonth = currentDate.getMonth() === monthIndex && 
-                                   currentDate.getFullYear() === datePickerCurrentMonth.getFullYear();
-              const isToday = new Date().getMonth() === monthIndex && 
-                             new Date().getFullYear() === datePickerCurrentMonth.getFullYear();
-              
-              return (
-                <button
-                  key={monthIndex}
-                  className={`month-picker-item ${isCurrentMonth ? 'selected' : ''} ${isToday ? 'today' : ''}`}
-                  onClick={() => handleMonthSelect(monthIndex, datePickerCurrentMonth.getFullYear())}
-                >
-                  {monthName}
-                </button>
-              );
-            })}
-          </div>
-          
-          <div className="date-picker-footer">
-            <button 
-              className="date-picker-today-btn"
-              onClick={() => {
-                const today = new Date();
-                handleMonthSelect(today.getMonth(), today.getFullYear());
-              }}
-            >
-              This Month
-            </button>
-            <button 
-              className="date-picker-close-btn"
-              onClick={() => setShowDatePicker(false)}
-            >
-              Close
-            </button>
-          </div>
-        </>
-      )}
       
     </div>
   </>
@@ -3076,7 +3152,6 @@ useEffect(() => {
             className={`team-filter-pill ${teamFilter === 'all' ? 'active' : ''}`}
             onClick={() => handleTeamFilterChange('all')}
           >
-            {/* <span className="filter-icon">👥</span> */}
             All Team
             <span className="filter-count">{employees.length}</span>
           </button>
@@ -3084,12 +3159,12 @@ useEffect(() => {
             className={`team-filter-pill ${teamFilter === 'scheduled' ? 'active' : ''}`}
             onClick={() => handleTeamFilterChange('scheduled')}
           >
-            {/* <span className="filter-icon">📅</span> */}
             Scheduled Today
             <span className="filter-count">
               {employees.filter(emp => hasShiftOnDate(emp, currentDate)).length}
             </span>
           </button>
+         
         </div>
         <div className="team-actions">
           <button 
@@ -3131,28 +3206,7 @@ useEffect(() => {
 
       {/* Team members list */}
       <div className="team-members-container">
-        <div className="team-members-header">
-          <h4 className="members-title">
-            Team Members
-            <span className="selected-count">
-              {selectedEmployees.size} selected
-            </span>
-          </h4>
-          <div className="view-toggle">
-            <button 
-              className={`view-btn ${teamViewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setTeamViewMode('grid')}
-            >
-              ⚏
-            </button>
-            <button 
-              className={`view-btn ${teamViewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setTeamViewMode('list')}
-            >
-              ☰
-            </button>
-          </div>
-        </div>
+      
 
         <div className={`team-members-list ${teamViewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
           {getFilteredAndSearchedEmployees().map(employee => {
@@ -3176,45 +3230,20 @@ useEffect(() => {
                     }
                     {!hasShift && <div className="no-shift-indicator">!</div>}
                   </div>
-                  <div className="selection-indicator">
-                    <div className={`checkbox-custom ${isSelected ? 'checked' : ''}`}>
-                      {isSelected && <span className="checkmark">✓</span>}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="member-info-section">
                   <div className="member-primary-info">
                     <h5 className="member-name">{employee.name}</h5>
-                    <span className="member-role">{employee.position}</span>
+                 
                   </div>
-                  
-                  <div className="member-status-info">
-                    {hasShift ? (
-                      <div className="shift-status available">
-                        <span className="status-dot"></span>
-                        <span className="status-text">Available Today</span>
-                      </div>
-                    ) : (
-                      <div className="shift-status unavailable">
-                        <span className="status-dot"></span>
-                        <span className="status-text">No Shift</span>
-                      </div>
-                    )}
-                    
-                    <div className="member-stats">
-                      <span className="stat-item">
-                        <span className="stat-value">{getEmployeeAppointmentCount(employee.id)}</span>
-                        <span className="stat-label">appointments</span>
-                      </span>
-                    </div>
-                  </div>
+                
                 </div>
 
-                <div className="member-actions">
-                  <button className="quick-action-btn" title="View Schedule">
-                    📅
-                  </button>
+                <div className="member-checkbox-section">
+                  <div className={`checkbox-custom ${isSelected ? 'checked' : ''}`}>
+                    {isSelected && <span className="checkmark">✓</span>}
+                  </div>
                 </div>
               </div>
             );
@@ -3554,8 +3583,31 @@ useEffect(() => {
               {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
               {bookingSuccess && <div className="booking-modal-success">{bookingSuccess}</div>}
 
+              {/* Date Selection for Week View */}
+              {currentView === 'Week' && !bookingDefaults?.isDirectTimeSlotSelection && !selectedBookingDate && (
+                <div className="booking-date-selection">
+                  <h3>Select Date</h3>
+                  <div className="selected-date-display">
+                    <button 
+                      type="button" 
+                      className="select-date-btn"
+                      onClick={() => setShowBookingDatePicker(true)}
+                    >
+                      Select Date
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Direct Time Slot Selection Info */}
+              {bookingDefaults?.isDirectTimeSlotSelection && (
+                <div className="booking-preselection-info">
+              
+                </div>
+              )}
+
               {/* Service Selection Step */}
-              {bookingStep === 1 && (
+              {bookingStep === 1 && (currentView !== 'Week' || bookingDefaults?.isDirectTimeSlotSelection || selectedBookingDate) && (
                 <>
                   {console.log('🎯 RENDERING STEP 1 - Service Selection')}
                   {console.log('isAddingAdditionalService:', isAddingAdditionalService)}
@@ -3668,7 +3720,7 @@ useEffect(() => {
                   <h3> Choose Your Professional</h3>
                   {availableProfessionals.length === 0 ? (
                     <div className="booking-modal-empty-state">
-                      <p>No professionals are available for this service on {currentDate.toLocaleDateString('en-US', {
+                      <p>No professionals are available for this service on {(selectedBookingDate || currentDate).toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
                         day: 'numeric'
@@ -3678,18 +3730,19 @@ useEffect(() => {
                   ) : (
                     <div className="booking-modal-list">
                       {availableProfessionals.map(prof => {
+                        const bookingDate = selectedBookingDate || currentDate;
                         // FIXED: Create proper employee object for shift checking
                         const employeeForShiftCheck = {
                           workSchedule: prof.workSchedule || {}
                         };
-                        const hasShift = hasShiftOnDate(employeeForShiftCheck, currentDate);
-                        const dayName = getDayName(currentDate);
+                        const hasShift = hasShiftOnDate(employeeForShiftCheck, bookingDate);
+                        const dayName = getDayName(bookingDate);
                         const todaySchedule = prof.workSchedule?.[dayName];
 
                         // Check if this professional has conflicts in current session
                         const sessionConflicts = multipleAppointments.filter(apt => 
                           apt.professional._id === prof._id && 
-                          formatDateLocal(new Date(apt.date)) === formatDateLocal(currentDate)
+                          formatDateLocal(new Date(apt.date)) === formatDateLocal(bookingDate)
                         );
 
                         // FIXED: Better shift info display
@@ -3716,7 +3769,8 @@ useEffect(() => {
                               setSelectedProfessional(prof); // Correctly sets the professional from the map
                               setBookingStep(3);
                               const service = selectedService;
-                              const slots = getValidTimeSlotsForProfessional(prof, currentDate, service.duration, appointments);
+                              const bookingDate = selectedBookingDate || currentDate;
+                              const slots = getValidTimeSlotsForProfessional(prof, bookingDate, service.duration, appointments);
                               setAvailableTimeSlots(slots);
                             }}
                           >
@@ -4267,7 +4321,7 @@ useEffect(() => {
                     )}
 
                     {/* Optional manual gift card code (legacy) */}
-                    {paymentMethod !== 'giftcard' && (
+                    {/* {paymentMethod !== 'giftcard' && (
                       <div className="form-group">
                         <label> Gift Card Code (Optional):</label>
                         <input
@@ -4277,7 +4331,7 @@ useEffect(() => {
                           onChange={e => setGiftCardCode(e.target.value)}
                         />
                       </div>
-                    )}
+                    )} */}
 
                     <div className="form-group">
                       <label> Notes (Optional):</label>
@@ -4353,6 +4407,76 @@ useEffect(() => {
 
       {/* Time Hover Tooltip */}
   {showTimeHover && hoverTimeData && (<TimeHoverTooltip hoverTimeData={hoverTimeData} position={hoverTimePosition} />)}
+
+      {/* Booking Date Picker Modal */}
+      {showBookingDatePicker && (
+        <div className="modern-booking-modal">
+          <div className="booking-modal-overlay booking-modal-fade-in" onClick={() => setShowBookingDatePicker(false)}>
+            <div className="booking-modal booking-modal-animate-in pro-theme" onClick={e => e.stopPropagation()}>
+              <button className="booking-modal-close" onClick={() => setShowBookingDatePicker(false)}>×</button>
+              <h2>Select Appointment Date</h2>
+              
+              <div className="date-picker-section">
+                {currentView === 'Week' ? (
+                  <>
+                    <h3>Choose a day from this week:</h3>
+                    <div className="week-days-grid">
+                      {getBookingDatePickerDays().map((day, index) => (
+                        <button
+                          key={index}
+                          className={`week-day-btn ${day.isToday ? 'today' : ''} ${
+                            selectedBookingDate && formatDateLocal(selectedBookingDate) === formatDateLocal(day.date) ? 'selected' : ''
+                          }`}
+                          onClick={() => handleBookingDateSelect(day)}
+                        >
+                          <div className="day-name">{day.dayName}</div>
+                          <div className="day-number">{day.day}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3>Click any day to schedule an appointment:</h3>
+                    
+                    {/* Day headers */}
+                    <div className="calendar-day-headers">
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                        <div key={day} className="calendar-day-header">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="month-calendar-grid">
+                      {getBookingDatePickerDays().map((day, index) => (
+                        <button
+                          key={index}
+                          className={`calendar-day-btn ${!day.isCurrentMonth ? 'other-month' : ''} ${
+                            day.isToday ? 'today' : ''
+                          } ${
+                            selectedBookingDate && formatDateLocal(selectedBookingDate) === formatDateLocal(day.date) ? 'selected' : ''
+                          }`}
+                          onClick={() => handleBookingDateSelect(day)}
+                          disabled={!day.isCurrentMonth}
+                        >
+                          {String(day.day).padStart(2, '0')}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="booking-modal-actions">
+                <button className="booking-modal-back" onClick={() => setShowBookingDatePicker(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1044,7 +1044,11 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
 
         console.log('📋 Raw employee data from backend:', employees);
 
-        const transformedMembers = employees.map(emp => {
+        // Only include employees who are active (top-level emp.isActive boolean)
+        const activeEmployees = employees.filter(emp => emp.isActive !== false);
+        console.log(`🔄 Processing ${activeEmployees.length} active employees out of ${employees.length} fetched`);
+
+        const transformedMembers = activeEmployees.map(emp => {
           console.log('🔄 Processing employee:', emp.user?.firstName, 'workSchedule:', emp.workSchedule);
 
           return {
