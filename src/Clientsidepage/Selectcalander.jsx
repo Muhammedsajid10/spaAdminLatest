@@ -892,6 +892,13 @@ const getEmployeeAppointmentCount = (employeeId) => {
   };
 
   const handleBookingStatusUpdate = async (newStatus) => {
+    console.log('🔄 Status update initiated:', {
+      newStatus,
+      selectedBooking: selectedBookingForStatus,
+      bookingId: selectedBookingForStatus?.bookingId,
+      serviceEntryId: selectedBookingForStatus?.serviceEntryId
+    });
+
     if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
       setBookingStatusError('Invalid booking selected');
       return;
@@ -905,12 +912,22 @@ const getEmployeeAppointmentCount = (employeeId) => {
       if (!token) {
         throw new Error('Authentication required');
       }
+      
       const bookingId = selectedBookingForStatus.bookingId;
       const serviceEntryId = selectedBookingForStatus.serviceEntryId; // sub-document id
+      
       // Use per-service status endpoint if serviceEntryId present
       const endpoint = serviceEntryId
         ? `${Base_url}/bookings/admin/${bookingId}/service/${serviceEntryId}/status`
         : `${Base_url}/bookings/admin/${bookingId}`; // fallback whole booking
+      
+      console.log('🚀 API Request:', {
+        endpoint,
+        method: 'PATCH',
+        body: { status: newStatus },
+        hasToken: !!token
+      });
+      
       const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: {
@@ -919,12 +936,39 @@ const getEmployeeAppointmentCount = (employeeId) => {
         },
         body: JSON.stringify({ status: newStatus })
       });
+      
+      console.log('📡 API Response:', {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok
+      });
+      
       const data = await res.json();
+      console.log('📄 Response Data:', data);
+      
       if (!res.ok || data.success === false) {
         throw new Error(data.message || `Failed to update booking status (HTTP ${res.status})`);
       }
 
-      // Update only this slot locally
+      // BACKEND STATUS MAPPING: Service-level vs Booking-level status handling
+      // Service level uses: scheduled, confirmed, arrived, in-progress, completed, cancelled, no-show
+      // Booking level uses: booked, confirmed, arrived, started, in-progress, completed, cancelled, no-show
+      // When we send 'confirmed' it stays as 'confirmed' at both levels
+      const backendStatusMapping = {
+        'booked': 'booked',           // Maps to booking-level 'booked'
+        'confirmed': 'confirmed',     // Maps to booking-level 'confirmed'  
+        'arrived': 'arrived',         // Maps to booking-level 'arrived'
+        'started': 'started',         // Maps to booking-level 'started'
+        'in-progress': 'started',     // Maps to booking-level 'started'
+        'completed': 'completed',     // Maps to booking-level 'completed'
+        'cancelled': 'cancelled',     // Maps to booking-level 'cancelled'
+        'no-show': 'no-show'          // Maps to booking-level 'no-show'
+      };
+      
+      const actualBackendStatus = backendStatusMapping[newStatus] || newStatus;
+      console.log('📝 Status mapping:', newStatus, '→', actualBackendStatus);
+
+      // Update only this slot locally with the backend status
       setAppointments(prev => {
         const empId = selectedBookingForStatus.employeeId;
         const slotKey = selectedBookingForStatus.slotKey;
@@ -935,17 +979,27 @@ const getEmployeeAppointmentCount = (employeeId) => {
             ...prev[empId],
             [slotKey]: {
               ...prev[empId][slotKey],
-              status: newStatus
+              status: actualBackendStatus // Use backend status for consistency
             }
           }
         };
       });
 
-      // Close modal and refresh calendar
-      closeBookingStatusModal();
-      setTimeout(() => { fetchCalendarData(); }, 300);
+      // Update the selected booking status for immediate UI feedback
+      setSelectedBookingForStatus(prev => ({
+        ...prev,
+        status: actualBackendStatus
+      }));
+
+      console.log('✅ Status update successful');
+      
+      // Close modal and refresh calendar after a brief delay to show the update
+      setTimeout(() => {
+        closeBookingStatusModal();
+        fetchCalendarData();
+      }, 500);
     } catch (err) {
-      console.error('Status update error:', err);
+      console.error('❌ Status update error:', err);
       setBookingStatusError(err.message);
     } finally {
       setBookingStatusLoading(false);
@@ -2627,7 +2681,8 @@ useEffect(() => {
                                 employeeName: app.employeeName,
                                 slotTime: app.time,
                                 date: dayKey,
-                                slotKey: `${dayKey}_${app.time}`
+                                slotKey: `${dayKey}_${app.time}`,
+                                serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
                               };
                               setSelectedBookingForStatus(appointmentDetails);
                               setShowBookingStatusModal(true);
@@ -2820,7 +2875,8 @@ useEffect(() => {
                                       employeeName: employee.name,
                                       slotTime: app.timeSlot,
                                       date: dayKey,
-                                      slotKey: app.slotKey
+                                      slotKey: app.slotKey,
+                                      serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
                                     };
                                     console.log('Opening booking status modal:', appointmentDetails);
                                     setSelectedBookingForStatus(appointmentDetails);
@@ -3489,10 +3545,27 @@ useEffect(() => {
                 <div className="booking-status-actions">
                   <div className="status-actions-header">
                     <div className="status-options" role="radiogroup" aria-label="Update status">
-                      {['booked','confirmed','arrived','started','completed','no-show'].map(st => {
-                        const current = (selectedBookingForStatus.status || 'booked').toLowerCase();
-                        const isActive = current === st;
+                      {['confirmed','started','completed','no-show'].map(st => {
+                        const current = (selectedBookingForStatus.status || 'confirmed').toLowerCase();
+                        
+                        // UPDATED STATUS LOGIC: Handle booking-level statuses returned from backend
+                        let isActive = current === st;
+                        
+                        // Handle booking-level status mappings:
+                        // Backend returns booking-level status which can be: booked, confirmed, arrived, started, completed, etc.
+                        
+                        // Handle in-progress mapping (started maps to in-progress in backend, shows as 'started' button)
+                        if ((current === 'in-progress' || current === 'started') && st === 'started') {
+                          isActive = true;
+                        }
+                        
+                        // Handle legacy scheduled/booked status (fallback)
+                        if ((current === 'scheduled' || current === 'booked') && st === 'confirmed') {
+                          isActive = true;
+                        }
+                        
                         const label = st === 'no-show' ? 'No-Show' : st.charAt(0).toUpperCase() + st.slice(1);
+                        
                         return (
                           <button
                             key={st}
@@ -3502,7 +3575,7 @@ useEffect(() => {
                             role="radio"
                             aria-checked={isActive}
                             disabled={bookingStatusLoading}
-                            onClick={() => !isActive && handleBookingStatusUpdate(st)}
+                            onClick={() => handleBookingStatusUpdate(st)}
                           >
                             {label}
                           </button>
