@@ -29,13 +29,14 @@ export const StaffColumn = ({
     const employeeAppointments = appointments[employeeId] || {};
     const appointmentBlocks=[]; const processed=new Set();
     const firstVisibleSlot = (timeSlots && timeSlots.length)? timeSlots[0] : '00:00';
+    
     Object.entries(employeeAppointments).forEach(([slotKey, appointment])=>{
       if(!slotKey.startsWith(dayKey) || processed.has(slotKey)) return;
       if(!appointment.isMainSlot) return;
       const durationMinutes = Number(appointment.duration)||30;
       const layout = computeAppointmentLayout({
-        startTime: appointment.startISO || appointment.startTime,
-        endTime: appointment.endISO || appointment.endTime,
+        startTime: appointment.startTime || appointment.timeSlot,
+        endTime: appointment.endTime,
         durationMinutes
       }, firstVisibleSlot, 30, timeSlotHeightPx);
       layout.coveredSlots.forEach(cs=> processed.add(`${dayKey}_${cs}`));

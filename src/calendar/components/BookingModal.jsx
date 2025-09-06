@@ -255,7 +255,15 @@ export const BookingModal = ({
                     setBookingStep(4);
                   }}>
                     <div className="booking-modal-item-name">
-                      {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                      {(() => {
+                        const startDate = new Date(slot.startTime);
+                        const endDate = new Date(slot.endTime);
+                        const startHours = startDate.getUTCHours().toString().padStart(2, '0');
+                        const startMinutes = startDate.getUTCMinutes().toString().padStart(2, '0');
+                        const endHours = endDate.getUTCHours().toString().padStart(2, '0');
+                        const endMinutes = endDate.getUTCMinutes().toString().padStart(2, '0');
+                        return `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
+                      })()}
                     </div>
                     <div className="booking-modal-list-desc">
                       {selectedService?.duration} minutes with {selectedProfessional?.name}

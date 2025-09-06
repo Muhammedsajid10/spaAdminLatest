@@ -24,7 +24,10 @@ export const computeAppointmentLayout = (
   const parseHM = (t='00:00') => {
     if(!t) return 0;
     if(typeof t!=='string') return 0;
-    if(t.includes('T')||t.includes('-')||t.endsWith('Z')) { const d=new Date(t); return d.getHours()*60+d.getMinutes(); }
+    if(t.includes('T')||t.includes('-')||t.endsWith('Z')) { 
+      const d=new Date(t); 
+      return d.getUTCHours()*60+d.getUTCMinutes(); 
+    }
     const [hh='0',mm='0']=t.split(':');
     return (Number(hh)||0)*60 + (Number(mm)||0);
   };

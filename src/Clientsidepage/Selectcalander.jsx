@@ -76,7 +76,7 @@ const calculateAppointmentHeight = (startTime, endTime, timeSlotHeight = 80, slo
     // Accept "HH:MM", "H:MM", ISO datetime, Date string
     if (t.includes('T') || t.includes('-') || t.endsWith('Z')) {
       const d = new Date(t);
-      return d.getHours() * 60 + d.getMinutes();
+      return d.getUTCHours() * 60 + d.getUTCMinutes();
     }
     const parts = String(t).trim().split(':');
     const h = Number(parts[0] || 0);
@@ -373,8 +373,11 @@ const getAvailableTimeSlotsWithAccumulatedBookings = (employee, date, serviceDur
   
   // Filter out conflicting slots
   return baseSlots.filter(slot => {
-    // Extract time properly from slot object
-    const slotTime = slot.startTime ? new Date(slot.startTime).toTimeString().slice(0, 5) : slot.time || slot;
+    // Extract time properly from slot object using UTC to avoid timezone conversion
+    const slotTime = slot.startTime ? (() => {
+      const dt = new Date(slot.startTime);
+      return `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
+    })() : slot.time || slot;
     return !isTimeSlotConflicting(slotTime, serviceDuration, employeeAccumulatedBookings);
   });
 };
@@ -1499,16 +1502,18 @@ const getEmployeeAppointmentCount = (employeeId) => {
       
       if (employeeAccumulatedBookings.length > 0) {
         availableSlots = availableSlots.filter(slot => {
-          const slotTime = new Date(slot.startTime).toTimeString().slice(0, 5);
+          const dt = new Date(slot.startTime);
+          const slotTime = `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
           return !isTimeSlotConflicting(slotTime, serviceDuration, employeeAccumulatedBookings);
         });
         console.log('🚫 Filtered out accumulated bookings, remaining slots:', availableSlots.length);
       }
 
       console.log('✅ Available slots after filtering:', availableSlots.length);
-      console.log('📅 Sample available times:', availableSlots.slice(0, 5).map(slot =>
-        new Date(slot.startTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
-      ));
+      console.log('📅 Sample available times:', availableSlots.slice(0, 5).map(slot => {
+        const dt = new Date(slot.startTime);
+        return `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
+      }));
 
       if (availableSlots.length === 0) {
         setBookingError(`All time slots are already booked for ${employee.name} on ${date.toLocaleDateString()}. Please select a different date or professional.`);
@@ -1951,9 +1956,12 @@ useEffect(() => {
       return false;
     }
 
-    // Extract time slot properly
+    // Extract time slot properly using UTC to avoid timezone conversion
     const timeSlot = slotToUse.startTime 
-      ? new Date(slotToUse.startTime).toTimeString().slice(0, 5)
+      ? (() => {
+          const dt = new Date(slotToUse.startTime);
+          return `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
+        })()
       : slotToUse.time || slotToUse;
 
     // Use the correct booking date - priority: bookingDefaults.date > selectedBookingDate > currentDate
@@ -2088,21 +2096,53 @@ useEffect(() => {
           appointmentDate = new Date(); // Fallback to current date
         }
         
-        const [hours, minutes] = apt.timeSlot.split(':');
-        const startTime = new Date(appointmentDate);
-        startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        // const [hours, minutes] = apt.timeSlot.split(':');
         
-        const endTime = new Date(startTime);
-        endTime.setMinutes(endTime.getMinutes() + apt.service.duration);
+        // TIMEZONE FIX: Create UTC datetime that represents the exact date/time user selected
+        // This ensures the appointment appears on the correct date regardless of server timezone
+        
+        let dateStr;
+        if (typeof apt.date === 'string' && apt.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          dateStr = apt.date;
+        } else {
+          const year = appointmentDate.getFullYear();
+          const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
+          const day = String(appointmentDate.getDate()).padStart(2, '0');
+          dateStr = `${year}-${month}-${day}`;
+        }
+        
+        const timeStr = apt.timeSlot;
+        
+        // Validate inputs
+        if (!dateStr || !timeStr) {
+          console.error('❌ Invalid appointment data:', { dateStr, timeStr });
+          throw new Error(`Invalid appointment: date=${dateStr}, time=${timeStr}`);
+        }
+        
+        // Create UTC datetime directly using the date string and time
+        // This prevents any local timezone interference
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const appointmentDateTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`);
+        
+        const endTime = new Date(appointmentDateTime);
+        endTime.setUTCMinutes(endTime.getUTCMinutes() + apt.service.duration);
+        
+        // Validate that the dates were created successfully
+        if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {
+          console.error('❌ Invalid date created');
+          throw new Error('Failed to create valid dates');
+        }
 
-        console.log(`📅 Booking: ${apt.service.name} on ${appointmentDate.toDateString()} at ${apt.timeSlot}`);
+        console.log(`📅 Booking: ${apt.service.name} on ${dateStr} at ${timeStr}`);
+        console.log(`🕐 Created UTC datetime: ${appointmentDateTime.toISOString()}`);
+        console.log(`✅ Time will display correctly as: ${timeStr}`);
 
         return {
           service: apt.service._id,
           employee: apt.professional._id || apt.professional.id,
           duration: apt.service.duration,
           price: apt.service.price,
-          startTime: startTime.toISOString(),
+          startTime: appointmentDateTime.toISOString(),
           endTime: endTime.toISOString(),
         };
       });
@@ -2194,10 +2234,13 @@ useEffect(() => {
   loadBenefitsIfNeeded('giftcard', true);
       }, 1500);
 
-      // Refresh calendar data after successful booking
+      // Refresh calendar data immediately to see the new booking
+      console.log('🔄 Refreshing calendar to show new booking...');
+      fetchCalendarData();
+
+      // Close modal after a short delay
       setTimeout(() => {
         closeBookingModal();
-        fetchCalendarData(); // Refresh the calendar
       }, 3000);
 
     } catch (err) {
@@ -2251,9 +2294,14 @@ useEffect(() => {
     let startDate, endDate;
 
     if (currentView === 'Day') {
-      // For day view, use the exact currentDate
+      // For day view, fetch a wider range to ensure we don't miss appointments due to timezone issues
+      // This fetches the day before and after to account for any server-side timezone filtering
       startDate = new Date(currentDate);
+      startDate.setDate(startDate.getDate() - 1); // Day before
+      startDate.setHours(0, 0, 0, 0);
       endDate = new Date(currentDate);
+      endDate.setDate(endDate.getDate() + 1); // Day after  
+      endDate.setHours(23, 59, 59, 999);
     } else if (currentView === 'Week') {
       const startOfWeek = new Date(currentDate);
       startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
@@ -2292,7 +2340,9 @@ useEffect(() => {
         view: currentView,
         currentDate: currentDate.toLocaleDateString(),
         startDateParam,
-        endDateParam
+        endDateParam,
+        startDateObj: startDate,
+        endDateObj: endDate
       });
 
       // For employees API, send the week start date for proper schedule context
@@ -2348,23 +2398,41 @@ useEffect(() => {
               endISO = new Date(sDt.getTime() + (service.duration * 60000)).toISOString();
             }
 
-            // Build local YYYY-MM-DD using local timezone (avoid UTC iso string)
+            // Build YYYY-MM-DD using UTC methods to avoid timezone date shifts
             const startDateTime = startISO ? new Date(startISO) : new Date();
-            const localYear = startDateTime.getFullYear();
-            const localMonth = String(startDateTime.getMonth() + 1).padStart(2, '0');
-            const localDay = String(startDateTime.getDate()).padStart(2, '0');
+            const localYear = startDateTime.getUTCFullYear();
+            const localMonth = String(startDateTime.getUTCMonth() + 1).padStart(2, '0');
+            const localDay = String(startDateTime.getUTCDate()).padStart(2, '0');
             const appointmentLocalDate = `${localYear}-${localMonth}-${localDay}`;
 
-            // Local HH:MM labels for display
-            const timeSlot = startISO ? startDateTime.toLocaleTimeString('en-US', {
-              hour12: false,
-              hour: '2-digit',
-              minute: '2-digit'
-            }) : (service.startTime || '');
+            // TIMEZONE FIX: Extract time from UTC datetime without timezone conversion
+            // Use UTC methods to preserve the exact time that was stored
+            const timeSlot = startISO ? (() => {
+              const dt = new Date(startISO);
+              const hours = String(dt.getUTCHours()).padStart(2, '0');
+              const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
+              return `${hours}:${minutes}`;
+            })() : (service.startTime || '');
 
-            const endTimeLabel = endISO ? new Date(endISO).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) : null;
+            const endTimeLabel = endISO ? (() => {
+              const dt = new Date(endISO);
+              const hours = String(dt.getUTCHours()).padStart(2, '0');
+              const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
+              return `${hours}:${minutes}`;
+            })() : null;
 
             const slotKey = `${appointmentLocalDate}_${timeSlot}`;
+
+            console.log('🔍 Processing appointment:', {
+              startISO,
+              appointmentLocalDate,
+              timeSlot,
+              slotKey,
+              clientName: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
+              serviceName: service.service?.name || service.name || 'Service',
+              startTime: timeSlot,
+              endTime: endTimeLabel
+            });
 
             transformedAppointments[employeeId][slotKey] = {
               client: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
@@ -2376,11 +2444,17 @@ useEffect(() => {
               status: service.status || booking.status || 'confirmed',
               serviceEntryId: service._id, // sub-document id for per-service operations
               isMainSlot: true,
-              // keep both ISO and local labels — ISO used for layout calculations
+              // TIMEZONE FIX: Use the corrected time values for display
               startISO: startISO,
               endISO: endISO,
-              startTime: timeSlot,   // local HH:MM for display
-              endTime: endTimeLabel  // local HH:MM for display
+              startTime: timeSlot,   // This is our corrected UTC-extracted time
+              endTime: endTimeLabel, // This is our corrected UTC-extracted time
+              // Override display times to ensure components show correct values
+              displayStartTime: timeSlot,
+              displayEndTime: endTimeLabel,
+              // Legacy compatibility - some components might use these
+              time: timeSlot,
+              timeSlot: timeSlot
             };
           });
         });
@@ -2389,6 +2463,21 @@ useEffect(() => {
           employees: transformedEmployees.length,
           appointments: Object.keys(transformedAppointments).length,
           dateRange: `${startDateParam} to ${endDateParam}`
+        });
+
+        // Debug: Log all appointments for current date
+        const currentDateKey = formatDateForAPI(currentDate);
+        console.log('🔍 Debug - Current date key:', currentDateKey);
+        Object.entries(transformedAppointments).forEach(([empId, empAppts]) => {
+          Object.entries(empAppts).forEach(([slotKey, apt]) => {
+            if (slotKey.includes(currentDateKey)) {
+              console.log('📅 Found appointment for current date:', {
+                employeeId: empId,
+                slotKey,
+                appointment: apt
+              });
+            }
+          });
         });
 
         setEmployees(transformedEmployees);
@@ -2499,7 +2588,7 @@ useEffect(() => {
       const [hour, minute] = bookingDefaults.time.split(':').map(Number);
       const defaultSlot = availableTimeSlots.find(slot => {
         const d = new Date(slot.startTime);
-        return slot.available && d.getHours() === hour && d.getMinutes() === minute;
+        return slot.available && d.getUTCHours() === hour && d.getUTCMinutes() === minute;
       });
       if (defaultSlot) {
         setSelectedTimeSlot(defaultSlot);
@@ -3889,7 +3978,15 @@ useEffect(() => {
                         console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
                       }}>
                         <div className="booking-modal-item-name">
-                          {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          {(() => {
+                            const startTime = new Date(slot.startTime);
+                            const endTime = new Date(slot.endTime);
+                            const startHours = String(startTime.getUTCHours()).padStart(2, '0');
+                            const startMinutes = String(startTime.getUTCMinutes()).padStart(2, '0');
+                            const endHours = String(endTime.getUTCHours()).padStart(2, '0');
+                            const endMinutes = String(endTime.getUTCMinutes()).padStart(2, '0');
+                            return `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
+                          })()}
                         </div>
                         <div className="booking-modal-list-desc">
                           {selectedService?.duration} minutes with {selectedProfessional?.name}
