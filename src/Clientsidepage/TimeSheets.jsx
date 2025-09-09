@@ -310,26 +310,31 @@ const TimesheetApp = () => {
       setLoading(true);
       setError(null);
 
-      const response = await api.get('/employees');
+  // Request employees with attendance merged for the selected date
+  const response = await api.get(`/employees?includeAttendance=true&date=${dateFilter}`);
 
       if (response.data && response.data.success) {
-        const employees = response.data.data.employees || [];
+  const employees = response.data.data.employees || [];
         setAllEmployees(employees);
 
         // Generate timesheet rows (may contain "No data" placeholders)
-        const generatedTimesheets = generateTimesheetFromEmployees(employees, dateFilter);
+        // Ensure clockIn/clockOut fields are strings in HH:MM or '-' format
+        const normalizedEmployees = employees.map(emp => ({
+          ...emp,
+          clockIn: emp.clockIn || '-',
+          clockOut: emp.clockOut || '-',
+          breaks: emp.breaks || '-'
+        }));
+
+        const generatedTimesheets = generateTimesheetFromEmployees(normalizedEmployees, dateFilter);
 
         // If none of the generated rows have real clock-in AND clock-out, treat as "no data"
         const hasAnyRecorded = generatedTimesheets.some(entry =>
           entry.clockIn && entry.clockOut && entry.clockIn !== '-' && entry.clockOut !== '-'
         );
 
-        if (hasAnyRecorded) {
-          setTimesheetData(generatedTimesheets);
-        } else {
-          // No real timesheet records -> show NoData component
-          setTimesheetData([]); // empty triggers NoData UI
-        }
+  // Always show timesheet rows (use '-' placeholders when attendance missing)
+  setTimesheetData(generatedTimesheets);
       } else {
         // Server responded but with failure flag -> show error component
         setAllEmployees([]);

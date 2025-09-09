@@ -1856,12 +1856,40 @@ useEffect(() => {
         });
       });
 
-      return appointmentsList.filter(app => {
-        if (calendarPopupTab === 'confirmed') return app.status === 'confirmed' || !app.status;
-        if (calendarPopupTab === 'started') return app.status === 'started';
-        if (calendarPopupTab === 'completed') return app.status === 'completed';
-        return true;
+      console.log('📊 Calendar Popup Debug:', {
+        tab: calendarPopupTab,
+        totalAppointments: appointmentsList.length,
+        appointmentStatuses: appointmentsList.map(app => ({ 
+          client: app.client, 
+          status: app.status || 'no-status',
+          time: app.timeSlot 
+        }))
       });
+
+      // 🔧 FIXED: Improved status filtering with proper mapping
+      const filtered = appointmentsList.filter(app => {
+        const status = (app.status || 'confirmed').toLowerCase();
+        
+        if (calendarPopupTab === 'confirmed') {
+          // Include: confirmed, booked, scheduled, or no status (default)
+          return ['confirmed', 'booked', 'scheduled'].includes(status) || !app.status;
+        }
+        
+        if (calendarPopupTab === 'started') {
+          // Include: started, in-progress, arrived
+          return ['started', 'in-progress', 'arrived'].includes(status);
+        }
+        
+        if (calendarPopupTab === 'completed') {
+          // Include: completed
+          return status === 'completed';
+        }
+        
+        return true; // Default: show all
+      });
+
+      console.log(`📋 Filtered ${filtered.length} appointments for "${calendarPopupTab}" tab`);
+      return filtered;
     };
 
     // NEW: Refresh calendar to current time
