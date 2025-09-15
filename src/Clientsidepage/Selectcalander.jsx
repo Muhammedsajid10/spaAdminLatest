@@ -1393,55 +1393,75 @@ const getEmployeeAppointmentCount = (employeeId) => {
 
 
   const filterOutBookedTimeSlots = (timeSlots, employeeId, date) => {
-  const dayKey = localDateKey(date);
+  console.log('[DEBUG] filterOutBookedTimeSlots: employeeId', employeeId, 'appointments keys', Object.keys(appointments[employeeId]||{}));
+    const dayKey = localDateKey(date);
     const employeeAppointments = appointments[employeeId] || {};
 
-    // console.log(`🔍 Filtering time slots for employee ${employeeId} on ${dayKey}`);
-    // console.log('📅 Employee appointments:', employeeAppointments);
+    // Build concrete appointment ranges (Date objects) for this employee on the target day
+    const appointmentRanges = [];
+    Object.entries(employeeAppointments).forEach(([slotKey, appointment]) => {
+      try {
+        // Restrict to same day when possible
+        if (slotKey && typeof slotKey === 'string' && !slotKey.startsWith(dayKey)) {
+          // If appointment has explicit ISO start we still allow it below, otherwise skip
+          if (!appointment || !appointment.startISO) return;
+        }
 
+        // Prefer explicit ISO times returned from backend/ui
+        let apptStart = appointment?.startISO ? new Date(appointment.startISO) : null;
+        let apptEnd = appointment?.endISO ? new Date(appointment.endISO) : null;
+
+        // Fallback: some entries store startTime/endTime as ISO strings
+        if ((!apptStart || isNaN(apptStart)) && appointment?.startTime && appointment.startTime.includes('T')) {
+          apptStart = new Date(appointment.startTime);
+        }
+        if ((!apptEnd || isNaN(apptEnd)) && appointment?.endTime && appointment.endTime.includes('T')) {
+          apptEnd = new Date(appointment.endTime);
+        }
+
+        // Last fallback: parse the slotKey (YYYY-MM-DD_HH:MM) into a local Date on the requested day
+        if ((!apptStart || isNaN(apptStart)) && slotKey && slotKey.includes('_')) {
+          const parts = slotKey.split('_');
+          const timePart = parts[1];
+          if (parts[0] === dayKey && timePart) {
+            const [hh, mm] = timePart.split(':').map(Number);
+            const d = new Date(date);
+            d.setHours(hh || 0, mm || 0, 0, 0);
+            apptStart = d;
+          }
+        }
+
+        if ((!apptEnd || isNaN(apptEnd)) && apptStart) {
+          const dur = Number(appointment?.duration) || 30;
+          apptEnd = new Date(apptStart.getTime() + dur * 60000);
+        }
+
+        if (apptStart && !isNaN(apptStart) && apptEnd && !isNaN(apptEnd)) {
+          appointmentRanges.push({ start: apptStart, end: apptEnd });
+        }
+      } catch (e) {
+        // ignore malformed appointment entries
+      }
+    });
+
+    // Now filter slots by overlap with any appointment ranges
+  console.log('[DEBUG] appointmentRanges', appointmentRanges);
     return timeSlots.filter(slot => {
       const slotStartTime = new Date(slot.startTime);
       const slotEndTime = new Date(slot.endTime);
 
-      // Check if this time slot conflicts with any existing appointment
-      const hasConflict = Object.entries(employeeAppointments).some(([slotKey, appointment]) => {
-        // Only check appointments for the same date
-        if (!slotKey.startsWith(dayKey)) return false;
-
-        // Extract time from slot key (YYYY-MM-DD_HH:MM)
-        const appointmentTimeStr = slotKey.split('_')[1];
-        if (!appointmentTimeStr) return false;
-
-        // Create appointment time range
-        const [hours, minutes] = appointmentTimeStr.split(':').map(Number);
-        const appointmentStart = new Date(date);
-        appointmentStart.setHours(hours, minutes, 0, 0);
-
-        // Use appointment duration to calculate end time
-        const appointmentDuration = appointment.duration || 30; // minutes
-        const appointmentEnd = new Date(appointmentStart.getTime() + (appointmentDuration * 60000));
-
-        // Check for time conflict
-        const conflict = (slotStartTime >= appointmentStart && slotStartTime < appointmentEnd) ||
-          (slotEndTime > appointmentStart && slotEndTime <= appointmentEnd) ||
-          (slotStartTime <= appointmentStart && slotEndTime >= appointmentEnd);
-
-        if (conflict) {
-          // console.log(`❌ Slot ${slotStartTime.toLocaleTimeString()} conflicts with appointment ${appointmentTimeStr} (${appointmentDuration}min)`);
-        }
-
-        return conflict;
+      const hasConflict = appointmentRanges.some(r => {
+        // overlap if slotStart < apptEnd && slotEnd > apptStart
+        return slotStartTime < r.end && slotEndTime > r.start;
       });
-
-      if (!hasConflict) {
-        // console.log(`✅ Slot ${slotStartTime.toLocaleTimeString()} is available`);
-      }
 
       return !hasConflict && slot.available !== false;
     });
   };
 
   const fetchBookingTimeSlots = useCallback(async (employeeId, serviceId, date) => {
+  console.log('[DEBUG] fetchBookingTimeSlots: employeeId', employeeId);
+  console.log('[DEBUG] appointments keys', Object.keys(appointments[employeeId]||{}));
     console.log('=== ENHANCED TIME SLOT FETCHING ===');
     console.log('Employee ID:', employeeId);
     console.log('Service ID:', serviceId);
@@ -1995,18 +2015,20 @@ useEffect(() => {
     // Use the correct booking date - priority: bookingDefaults.date > selectedBookingDate > currentDate
     const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
 
-    // ENHANCED: Check for conflicts using the new smart validation
-    const conflict = isProfessionalUnavailableInSession(
-      selectedProfessional._id, 
-      timeSlot, 
-      bookingDate, 
-      selectedService.duration
+    // Use unified conflict detection for both session and persisted appointments
+    const professionalId = selectedProfessional._id;
+    const dateKey = bookingDate instanceof Date ? formatDateLocal(bookingDate) : bookingDate;
+    const conflictObj = detectProfessionalConflict(
+      professionalId,
+      bookingDate,
+      timeSlot,
+      selectedService.duration,
+      appointments,
+      multipleAppointments
     );
-
-    if (conflict) {
+    if (conflictObj) {
       const professionalName = selectedProfessional.user?.firstName || selectedProfessional.name;
-      const errorMessage = getUnavailabilityMessage(professionalName, conflict);
-      setBookingError(errorMessage);
+      setBookingError(`Time conflict: ${professionalName} already has a booking at this time. Please select a different slot.`);
       return false;
     }
 
@@ -2018,13 +2040,28 @@ useEffect(() => {
       ? formatDateLocal(bookingDate) 
       : bookingDate;
 
-    // Add current appointment to session
+    // Add current appointment to session, using strict duration and time format
     const appointment = {
       service: selectedService,
       professional: selectedProfessional,
       timeSlot: timeSlot,
       date: appointmentDate, // Store as consistent YYYY-MM-DD string
+      duration: selectedService.duration // ensure duration is present for conflict check
     };
+
+    // Double-check for session conflict before adding
+    const sessionConflict = detectProfessionalConflict(
+      selectedProfessional._id,
+      bookingDate,
+      timeSlot,
+      selectedService.duration,
+      appointments,
+      [...multipleAppointments, appointment] // include the new appointment for strict check
+    );
+    if (sessionConflict) {
+      setBookingError('Time conflict: This professional already has a booking at this time. Please select a different slot.');
+      return false;
+    }
 
     console.log('Adding appointment to session with date:', {
       originalBookingDate: bookingDate,
