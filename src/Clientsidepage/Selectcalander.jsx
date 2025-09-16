@@ -4031,7 +4031,7 @@ const SelectCalendar = () => {
                   <h3> Pick Your Perfect Time</h3>
                   <div className="booking-modal-list">
                     {availableTimeSlots.filter(slot => slot.available).map(slot => (
-                      <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => {
+                      <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => { 
                         console.log('🕐 TIME SLOT SELECTED:', slot);
                         // Set then immediately add to session (auto-add first service)
                         setSelectedTimeSlot(slot);
@@ -4041,15 +4041,7 @@ const SelectCalendar = () => {
                         console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
                       }}>
                         <div className="booking-modal-item-name">
-                          {(() => {
-                            const startTime = new Date(slot.startTime);
-                            const endTime = new Date(slot.endTime);
-                            const startHours = String(startTime.getUTCHours()).padStart(2, '0');
-                            const startMinutes = String(startTime.getUTCMinutes()).padStart(2, '0');
-                            const endHours = String(endTime.getUTCHours()).padStart(2, '0');
-                            const endMinutes = String(endTime.getUTCMinutes()).padStart(2, '0');
-                            return `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
-                          })()}
+                          {formatUTCToLocal(slot.startTime, { hour: '2-digit', minute: '2-digit', hour12: false })} - {formatUTCToLocal(slot.endTime, { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
                         <div className="booking-modal-list-desc">
                           {selectedService?.duration} minutes with {selectedProfessional?.name}
