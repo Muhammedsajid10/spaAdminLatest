@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Loginpage.css';
 import { Base_url } from '../Service/Base_url';
+import alloraLogo from '../assets/alloraLogo.jpg';
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
@@ -60,8 +61,9 @@ const LoginPage = () => {
         <div className="login-container">
             <div className="left-section">
                 <div className="brand-content">
+                    <img src={alloraLogo} alt="Allora" className="brand-logo" />
                     <h1 className="brand-title">Allora</h1>
-                    <p className="brand-subtitle">The most popular media centre</p>
+                    <p className="brand-subtitle">Premium wellness and beauty management</p>
                     <button className="read-more-btn">Read More</button>
                 </div>
             </div>
@@ -71,9 +73,7 @@ const LoginPage = () => {
                     <div className="form-header">
                         <h2 className="form-title">Hello Again!</h2>
                         <p className="form-subtitle">Welcome Back</p>
-                        <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
-                            Demo credentials pre-filled - just click Login!
-                        </p>
+                       
                     </div>
                     
                     <form className="login-form" onSubmit={handleSubmit}>
