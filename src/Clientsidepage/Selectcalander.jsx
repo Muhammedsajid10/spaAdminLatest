@@ -32,6 +32,12 @@ const EMPLOYEES_API_URL = `${Base_url}/employees`;
 const CLIENTS_API_URL = `${Base_url}/clients`;
 
 // --- HELPER FUNCTIONS ---
+// Convert UTC ISO string to user's local time display string
+const formatUTCToLocal = (utcString, opts = {}) => {
+  if (!utcString) return '';
+  const dt = new Date(utcString);
+  return dt.toLocaleString(undefined, opts); // undefined uses user's browser locale/timezone
+};
 const generateTimeSlots = (startTime, endTime, intervalMinutes = 30) => {
   const slots = [];
   let currentHour = parseInt(startTime.split(':')[0]);
@@ -3889,7 +3895,7 @@ useEffect(() => {
                         console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
                       }}>
                         <div className="booking-modal-item-name">
-                          {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          {formatUTCToLocal(slot.startTime, { hour: '2-digit', minute: '2-digit', hour12: false })} - {formatUTCToLocal(slot.endTime, { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
                         <div className="booking-modal-list-desc">
                           {selectedService?.duration} minutes with {selectedProfessional?.name}
