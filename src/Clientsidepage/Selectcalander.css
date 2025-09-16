@@ -3473,6 +3473,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 600;
+   color: rgb(37, 37, 37);
 }
 
 .appointment-service-name {
@@ -3482,6 +3483,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: rgb(37, 37, 37);
 }
 
 /* Week View More Appointments Indicator */

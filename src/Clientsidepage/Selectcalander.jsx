@@ -31,6 +31,12 @@ const SERVICES_API_URL = `${Base_url}/services`;
 const EMPLOYEES_API_URL = `${Base_url}/employees`;
 const CLIENTS_API_URL = `${Base_url}/clients`;
 
+const formatUTCToLocal = (utcString, opts = {}) => {
+  if (!utcString) return '';
+  const dt = new Date(utcString);
+  return dt.toLocaleString(undefined, opts); // undefined uses user's browser locale/timezone
+};
+
 // --- HELPER FUNCTIONS ---
 const generateTimeSlots = (startTime, endTime, intervalMinutes = 30) => {
   const slots = [];
@@ -2004,13 +2010,16 @@ const SelectCalendar = () => {
       return false;
     }
 
-    // Extract time slot properly using UTC to avoid timezone conversion
-    const timeSlot = slotToUse.startTime
-      ? (() => {
+    // Extract time slot preserving the user's selected local time (not UTC)
+    const timeSlot = (() => {
+      if (slotToUse?.label) return slotToUse.label; // preferred if provided by slot generator
+      if (slotToUse?.startTime) {
         const dt = new Date(slotToUse.startTime);
-        return `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
-      })()
-      : slotToUse.time || slotToUse;
+        // Use local hours/minutes to reflect the user's intended selection
+        return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+      }
+      return slotToUse.time || slotToUse;
+    })();
 
     // Use the correct booking date - priority: bookingDefaults.date > selectedBookingDate > currentDate
     const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
@@ -3084,44 +3093,45 @@ const SelectCalendar = () => {
                             {/* Add appointment button for days with existing appointments */}
                             <div
                               className="week-add-appointment-btn"
-                              onClick={hasShift ? (e) => {
-                                e.stopPropagation(); // Prevent event bubbling
-                                console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+                              // onClick={hasShift ? (e) => {
+                              //   e.stopPropagation(); // Prevent event bubbling
+                              //   console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
 
-                                // Show service selection for this employee and day
-                                const staff = employees.find(emp => emp.id === employee.id);
-                                if (staff) {
-                                  setBookingDefaults({
-                                    professional: {
-                                      _id: staff._id || staff.id,
-                                      id: staff.id,
-                                      user: {
-                                        firstName: staff.name.split(' ')[0],
-                                        lastName: staff.name.split(' ')[1] || ''
-                                      },
-                                      name: staff.name,
-                                      position: staff.position,
-                                      ...staff
-                                    },
-                                    date: day,
-                                    isDirectEmployeeSelection: true // Flag for skipping professional selection
-                                  });
-                                  setSelectedBookingDate(day);
-                                  setIsNewAppointment(true);
-                                  setShowAddBookingModal(true);
-                                  setShowServiceCatalog(true); // Show service selection first
-                                  console.log('Opening booking modal with defaults:', {
-                                    professional: staff.name,
-                                    date: day.toLocaleDateString(),
-                                    isDirectEmployeeSelection: true
-                                  });
-                                }
-                              } : undefined}
+                              //   // Show service selection for this employee and day
+                              //   const staff = employees.find(emp => emp.id === employee.id);
+                              //   if (staff) {
+                              //     setBookingDefaults({
+                              //       professional: {
+                              //         _id: staff._id || staff.id,
+                              //         id: staff.id,
+                              //         user: {
+                              //           firstName: staff.name.split(' ')[0],
+                              //           lastName: staff.name.split(' ')[1] || ''
+                              //         },
+                              //         name: staff.name,
+                              //         position: staff.position,
+                              //         ...staff
+                              //       },
+                              //       date: day,
+                              //       isDirectEmployeeSelection: true // Flag for skipping professional selection
+                              //     });
+                              //     setSelectedBookingDate(day);
+                              //     setIsNewAppointment(true);
+                              //     setShowAddBookingModal(true);
+                              //     setShowServiceCatalog(true); // Show service selection first
+                              //     console.log('Opening booking modal with defaults:', {
+                              //       professional: staff.name,
+                              //       date: day.toLocaleDateString(),
+                              //       isDirectEmployeeSelection: true
+                              //     });
+                              //   }
+                              // }
+                              //   : undefined}
                               style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
                               title={hasShift ? `Add another appointment with ${employee.name}` : 'No shift scheduled'}
                             >
-                              <span className="add-appointment-icon">+</span>
-                              <span className="add-appointment-text">Add Appointment</span>
+                              {/* <span className="add-appointment-icon">+</span>
+                              <span className="add-appointment-text">Add Appointment</span> */}
                             </div>
 
                             {dayAppointments.length > 3 && (
@@ -3136,50 +3146,50 @@ const SelectCalendar = () => {
                         ) : (
                           <div
                             className="week-empty-cell clickable-slot"
-                            onClick={hasShift ? (e) => {
-                              e.stopPropagation(); // Prevent event bubbling
-                              console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+                            // onClick={hasShift ? (e) => {
+                            //   e.stopPropagation(); // Prevent event bubbling
+                            //   console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
 
-                              // Show service selection for this employee and day
-                              const staff = employees.find(emp => emp.id === employee.id);
-                              if (staff) {
-                                setBookingDefaults({
-                                  professional: {
-                                    _id: staff._id || staff.id,
-                                    id: staff.id,
-                                    user: {
-                                      firstName: staff.name.split(' ')[0],
-                                      lastName: staff.name.split(' ')[1] || ''
-                                    },
-                                    name: staff.name,
-                                    position: staff.position,
-                                    ...staff
-                                  },
-                                  date: day,
-                                  isDirectEmployeeSelection: true // Flag for skipping professional selection
-                                });
-                                setSelectedBookingDate(day);
-                                setIsNewAppointment(true);
-                                setShowAddBookingModal(true);
-                                setShowServiceCatalog(true); // Show service selection first
-                                console.log('Opening booking modal with defaults:', {
-                                  professional: staff.name,
-                                  date: day.toLocaleDateString(),
-                                  isDirectEmployeeSelection: true
-                                });
-                              }
-                            } : undefined}
-                            style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                            //   // Show service selection for this employee and day
+                            //   const staff = employees.find(emp => emp.id === employee.id);
+                            //   if (staff) {
+                            //     setBookingDefaults({
+                            //       professional: {
+                            //         _id: staff._id || staff.id,
+                            //         id: staff.id,
+                            //         user: {
+                            //           firstName: staff.name.split(' ')[0],
+                            //           lastName: staff.name.split(' ')[1] || ''
+                            //         },
+                            //         name: staff.name,
+                            //         position: staff.position,
+                            //         ...staff
+                            //       },
+                            //       date: day,
+                            //       isDirectEmployeeSelection: true // Flag for skipping professional selection
+                            //     });
+                            //     setSelectedBookingDate(day);
+                            //     setIsNewAppointment(true);
+                            //     setShowAddBookingModal(true);
+                            //     setShowServiceCatalog(true); // Show service selection first
+                            //     console.log('Opening booking modal with defaults:', {
+                            //       professional: staff.name,
+                            //       date: day.toLocaleDateString(),
+                            //       isDirectEmployeeSelection: true
+                            //     });
+                            //   }
+                            // } : undefined}
+                            // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
                             title={hasShift ? `Book appointment with ${employee.name} on ${day.toLocaleDateString()}` : 'No shift scheduled'}
                           >
-                            <span className="book-appointment-text">
+                            {/* <span className="book-appointment-text">
                               {hasShift ? 'Click to Book' : 'No Shift'}
                             </span>
                             {hasShift && (
                               <div className="week-time-slots-hint">
                                 <span className="plus-icon">+</span>
                               </div>
-                            )}
+                            )} */}
                           </div>
                         )}
                       </div>
@@ -4031,7 +4041,7 @@ const SelectCalendar = () => {
                   <h3> Pick Your Perfect Time</h3>
                   <div className="booking-modal-list">
                     {availableTimeSlots.filter(slot => slot.available).map(slot => (
-                      <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => { 
+                      <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => {
                         console.log('🕐 TIME SLOT SELECTED:', slot);
                         // Set then immediately add to session (auto-add first service)
                         setSelectedTimeSlot(slot);
