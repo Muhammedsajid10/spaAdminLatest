@@ -12,6 +12,7 @@ const LoginPage = () => {
     });
     
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleInputChange = (e) => {
@@ -25,6 +26,7 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log('🔄 Attempting real login with backend...');
+        setIsLoading(true);
         
         try {
             const response = await fetch(`${Base_url}/auth/login`, {
@@ -54,6 +56,8 @@ const LoginPage = () => {
             console.log('🔧 Using fallback - redirecting to dashboard');
             // Fallback: just redirect to dashboard
             navigate('/');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -116,8 +120,15 @@ const LoginPage = () => {
                             </button>
                         </div>
                         
-                        <button type="submit" className="login-btn">
-                            Login
+                        <button type="submit" className="login-btn" disabled={isLoading} aria-busy={isLoading} aria-live="polite">
+                            {isLoading ? (
+                                <span className="btn-loading">
+                                    <span className="btn-spinner" aria-hidden="true"></span>
+                                    Logging in...
+                                </span>
+                            ) : (
+                                'Login'
+                            )}
                         </button>
                         
                         <a href="#" className="forgot-password">

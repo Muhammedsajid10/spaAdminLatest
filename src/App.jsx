@@ -3,6 +3,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardLayout from "./Clientsidepage/DashboardLayout";
 import LoginPage from "./Clientsidepage/Loginpage";
+import ProtectedRoute from "./ProtectedRoute";
 
 // Import all page components
 import DashboardPage from "./Clientsidepage/HomePage";
@@ -33,8 +34,15 @@ function App() {
         {/* Unauthenticated Route */}
         <Route path="/login" element={<LoginPage />} />
         
-        {/* All authenticated routes are nested inside the main layout */}
-        <Route path="/" element={<DashboardLayout />}>
+        {/* All authenticated routes are nested inside the main layout and protected */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
 
           {/* Top-level pages */}
           <Route index element={<DashboardPage />} />
