@@ -7,8 +7,8 @@ import alloraLogo from '../assets/alloraLogo.jpg';
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
-        email: 'admin@spa.com',
-        password: 'Admin@123'
+        email: '',
+        password: ''
     });
     
     const [showPassword, setShowPassword] = useState(false);
@@ -35,8 +35,8 @@ const LoginPage = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    email: formData.email || 'admin@spa.com',
-                    password: formData.password || 'Admin@123'
+                    email: formData.email,
+                    password: formData.password
                 })
             });
             
@@ -53,9 +53,7 @@ const LoginPage = () => {
             }
         } catch (error) {
             console.log('❌ Login error:', error);
-            console.log('🔧 Using fallback - redirecting to dashboard');
-            // Fallback: just redirect to dashboard
-            navigate('/');
+            alert('Unable to login. Please try again.');
         } finally {
             setIsLoading(false);
         }
