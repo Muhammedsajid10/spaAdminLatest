@@ -129,9 +129,9 @@ const LoginPage = () => {
                             )}
                         </button>
                         
-                        <a href="#" className="forgot-password">
+                        {/* <a href="#" className="forgot-password">
                             Forgot Password
-                        </a>
+                        </a> */}
                     </form>
                 </div>
             </div>

@@ -74,7 +74,7 @@ const ServiceMenu = () => {
   // Fetch categories from the API for dropdown
   const fetchAvailableCategories = async () => {
     try {
-      const response = await api.get('/categories');
+      const response = await api.get('/services/categories');
       if (response.data.success) {
         setAvailableCategories(response.data.data.categories || []);
       }
@@ -196,7 +196,7 @@ const ServiceMenu = () => {
   // Create new category
   const createCategory = async (categoryData) => {
     try {
-      const response = await api.post('/categories', categoryData);
+    const response = await api.post('/categories/categories', categoryData);
 
       if (response.data.success) {
         setShowAddCategoryModal(false);
@@ -222,7 +222,7 @@ const ServiceMenu = () => {
     }
 
     try {
-      const response = await api.delete(`/categories/${categoryId}`);
+      const response = await api.delete(`/categories/categories/${categoryId}`);
 
       if (response.data.success) {
         await fetchServices();
@@ -239,8 +239,18 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to delete category:', err);
-      setError(err.response?.data?.message || err.message);
-      setTimeout(() => setError(null), 4000);
+      let userMessage = 'Failed to delete category.';
+      if (err.response?.data?.message) {
+        if (err.response.data.message.includes('Please reassign or delete the services first')) {
+          userMessage = `Cannot delete category "${categoryName}" because it still has services assigned. Please reassign or delete those services first.`;
+        } else {
+          userMessage = err.response.data.message;
+        }
+      } else if (err.message) {
+        userMessage = err.message;
+      }
+      setError(userMessage);
+      setTimeout(() => setError(null), 5000);
     }
   };
 
