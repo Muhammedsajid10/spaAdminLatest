@@ -38,26 +38,41 @@ const formatDate = (dateString) => {
 };
 
 const calculateHoursWorked = (clockIn, clockOut) => {
-  if (!clockIn || !clockOut || clockOut === '-' || clockIn === '-' ) return '-';
+  // If either time is missing or has the placeholder value '-', return placeholder
+  if (!clockIn || !clockOut || clockOut === '-' || clockIn === '-') return '-';
+  
+  // Parse time string in HH:MM format to total minutes
   const parseTime = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return null;
     const [hours, minutes] = timeStr.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return null;
     return hours * 60 + minutes;
   };
+  
   try {
     const clockInMinutes = parseTime(clockIn);
     let clockOutMinutes = parseTime(clockOut);
+    
+    // If parsing failed for either time, return placeholder
+    if (clockInMinutes === null || clockOutMinutes === null) return '-';
+    
+    // Handle overnight shifts (when clock out is earlier than clock in)
     if (clockOutMinutes < clockInMinutes) {
-      clockOutMinutes += 24 * 60;
+      clockOutMinutes += 24 * 60; // Add 24 hours in minutes
     }
+    
     const totalMinutes = clockOutMinutes - clockInMinutes;
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
+    
+    // Format the output based on whether there are minutes to show
     if (minutes === 0) {
       return `${hours}h`;
     } else {
       return `${hours}h ${minutes}min`;
     }
   } catch (error) {
+    console.error('Error calculating hours worked:', error);
     return '-';
   }
 };
@@ -71,9 +86,17 @@ const generateTimesheetFromEmployees = (employees, date) => {
     const fullName = `${firstName} ${lastName}`.trim() || 'Unknown Employee';
 
     // If check-in/check-out data isn't available, mark as No data
-    const clockIn = employee.clockIn || '-' ;
+    const clockIn = employee.clockIn || '-';
     const clockOut = employee.clockOut || '-';
-    const hoursWorked = calculateHoursWorked(clockIn, clockOut);
+    
+    // Use pre-calculated hoursWorked from the backend if available
+    // Otherwise, calculate it from clock-in and clock-out times
+    let hoursWorked = employee.hoursWorked;
+    if (!hoursWorked || hoursWorked === '-') {
+      hoursWorked = calculateHoursWorked(clockIn, clockOut);
+    }
+    
+    // Determine if this entry has actual attendance data
     const hasData = clockIn !== '-' && clockOut !== '-';
     const status = hasData ? 'Recorded' : 'No data';
     const statusColor = hasData ? 'green' : 'gray';
@@ -319,12 +342,23 @@ const TimesheetApp = () => {
 
         // Generate timesheet rows (may contain "No data" placeholders)
         // Ensure clockIn/clockOut fields are strings in HH:MM or '-' format
-        const normalizedEmployees = employees.map(emp => ({
-          ...emp,
-          clockIn: emp.clockIn || '-',
-          clockOut: emp.clockOut || '-',
-          breaks: emp.breaks || '-'
-        }));
+        const normalizedEmployees = employees.map(emp => {
+          // Format hours worked properly if it came as a number from the backend
+          let formattedHoursWorked = emp.hoursWorked;
+          if (typeof emp.actualHours === 'number' && emp.actualHours > 0) {
+            const hours = Math.floor(emp.actualHours);
+            const minutes = Math.round((emp.actualHours - hours) * 60);
+            formattedHoursWorked = minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+          }
+          
+          return {
+            ...emp,
+            clockIn: emp.clockIn || '-',
+            clockOut: emp.clockOut || '-',
+            breaks: emp.breaks || '-',
+            hoursWorked: formattedHoursWorked || '-'
+          };
+        });
 
         const generatedTimesheets = generateTimesheetFromEmployees(normalizedEmployees, dateFilter);
 
@@ -529,7 +563,9 @@ const TimesheetApp = () => {
                     {item.clockOut === '-' ? item.clockIn : `${item.clockIn} - ${item.clockOut}`}
                   </td>
                   <td className="timesheet-table-cell" style={{ padding: '10px' }}>{item.breaks}</td>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }}>{item.hoursWorked}</td>
+                  <td className="timesheet-table-cell" style={{ padding: '10px' }} title={item.hasData ? "Hours calculated from check-in/out times" : "No hours recorded"}>
+                    {item.hoursWorked || '-'}
+                  </td>
                   <td className="timesheet-table-cell" style={{ padding: '10px' }}>
                     <span style={{
                       padding: '6px 8px',

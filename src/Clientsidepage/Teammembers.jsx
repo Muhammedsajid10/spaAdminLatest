@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './Teammembers.css';
+import './PasswordResetModal.css'; // Import our new CSS for the password reset modal
 import { FiSearch } from 'react-icons/fi';
 import { FaStar } from 'react-icons/fa';
 import { MdKeyboardArrowDown } from 'react-icons/md';
@@ -13,6 +14,150 @@ import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import generateRandomPassword from '../utils/passwordUtils';
+
+// --- Password Reset Modal Component ---
+const PasswordResetModal = ({ isOpen, onClose, member, onReset, loading, error }) => {
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [copySuccess, setCopySuccess] = useState(false);
+
+    useEffect(() => {
+        // Generate a random password when the modal opens
+        if (isOpen) {
+            handleGeneratePassword();
+        }
+    }, [isOpen]);
+
+    const handleGeneratePassword = async () => {
+        setIsGenerating(true);
+        try {
+            const response = await api.get('/password/generate');
+            if (response.data && response.data.success) {
+                setPassword(response.data.data.password);
+            } else {
+                // Fallback to client-side generation if API call fails
+                setPassword(generateRandomPassword());
+            }
+        } catch (error) {
+            console.error('Failed to generate password from API:', error);
+            setPassword(generateRandomPassword());
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onReset(member.userId, password);
+    };
+
+    const handleCopyPassword = () => {
+        navigator.clipboard.writeText(password);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Copied!',
+            text: 'Password copied to clipboard.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    };
+
+    if (!isOpen || !member) return null;
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-container">
+                <div className="modal-header">
+                    <h2 className="modal-title">Reset Password</h2>
+                    <button className="modal-close-btn" onClick={onClose} aria-label="Close">&times;</button>
+                </div>
+                <form onSubmit={handleSubmit} className="modal-form">
+                    <div className="modal-body">
+                        <div className="form-section">
+                            <p className="form-info">
+                                Reset password for: <strong>{member.name}</strong>
+                            </p>
+                            
+                            {error && <div className="error-message">{error}</div>}
+                            
+                            <div className="form-group">
+                                <label htmlFor="password" className="form-label">New Password</label>
+                                <div className="password-input-group">
+                                    <input
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        className="form-control"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        autoComplete="new-password"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? "Hide" : "Show"}
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className="password-copy-btn"
+                                        onClick={handleCopyPassword}
+                                        aria-label="Copy password to clipboard"
+                                    >
+                                        {copySuccess ? "Copied!" : "Copy"}
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <button
+                                type="button"
+                                className="generate-password-btn"
+                                onClick={handleGeneratePassword}
+                                disabled={isGenerating}
+                            >
+                                {isGenerating ? "Generating..." : "Generate New Password"}
+                            </button>
+                            
+                            <div className="password-info-note">
+                                <p>
+                                    <strong>Important:</strong> Make sure to share this new password with the employee.
+                                    They will need it to log in to their account.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="modal-footer">
+                        <button 
+                            type="button" 
+                            className="btn-secondary"
+                            onClick={onClose}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="btn-primary"
+                            disabled={loading || !password}
+                        >
+                            {loading ? "Resetting..." : "Reset Password"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
 
 // --- NEW Edit Member Modal Component ---
 const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) => {
@@ -234,16 +379,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, loading, error }) 
     );
 };
 
-// --- Helper Functions ---
-const generateRandomPassword = (length = 10) => {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-};
-
 // --- Main TeamMembers Component ---
 const TeamMembers = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -273,6 +408,12 @@ const TeamMembers = () => {
 
     const [editLoading, setEditLoading] = useState(false);
     const [editError, setEditError] = useState(null);
+    
+    // Password reset state
+    const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+    const [passwordResetMember, setPasswordResetMember] = useState(null);
+    const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+    const [passwordResetError, setPasswordResetError] = useState(null);
 
     const fetchEmployees = async () => {
         setLoading(true);
@@ -822,6 +963,42 @@ const TeamMembers = () => {
         setEditingMember(member);
         setShowEditModal(true);
     };
+    
+    const handlePasswordResetClick = (member) => {
+        setPasswordResetMember(member);
+        setShowPasswordResetModal(true);
+        setPasswordResetError(null);
+    };
+    
+    const handlePasswordReset = async (userId, newPassword) => {
+        if (!userId) {
+            setPasswordResetError('User ID is missing');
+            return;
+        }
+        
+        setPasswordResetLoading(true);
+        try {
+            const response = await api.post(`/password/reset/${userId}`, { 
+                newPassword 
+            });
+            
+            if (response.data && response.data.success) {
+                setShowPasswordResetModal(false);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Password Reset Successful',
+                    text: response.data.message || 'The password has been reset successfully. An email notification has been sent to the employee.'
+                });
+            } else {
+                throw new Error(response.data?.message || 'Failed to reset password');
+            }
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            setPasswordResetError(error.response?.data?.message || error.message || 'Failed to reset password');
+        } finally {
+            setPasswordResetLoading(false);
+        }
+    };
 
     const handleUpdateEmployee = async (memberId, updatedData) => {
         setEditLoading(true);
@@ -857,7 +1034,7 @@ const TeamMembers = () => {
 
             if (userId && Object.keys(userPayload).length > 0) {
                 try {
-                    userUpdateRes = await api.patch(`/employees/${userId}`, userPayload);
+                    userUpdateRes = await api.patch(`/auth/admin/users/${userId}`, userPayload);
                 } catch (userErr) {
                     console.warn('Failed to update user profile; continuing with employee update', userErr);
                 }
@@ -1879,6 +2056,17 @@ const TeamMembers = () => {
                                                                 </svg>
                                                                 <span>Edit Details</span>
                                                             </button>
+                                                            <button 
+                                                                className="team-action-item" 
+                                                                onClick={() => { handlePasswordResetClick(member); setEditingMember(null); }}
+                                                                disabled={!member.userId}
+                                                            >
+                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                                </svg>
+                                                                <span>Reset Password</span>
+                                                            </button>
                                                             <button className="team-action-item" onClick={() => { handleStatusToggleClick(member); setEditingMember(null); }}>
                                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                                     <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
@@ -1905,6 +2093,15 @@ const TeamMembers = () => {
                 onUpdate={handleUpdateEmployee}
                 loading={editLoading}
                 error={editError}
+            />
+            
+            <PasswordResetModal
+                isOpen={showPasswordResetModal}
+                onClose={() => setShowPasswordResetModal(false)}
+                member={passwordResetMember}
+                onReset={handlePasswordReset}
+                loading={passwordResetLoading}
+                error={passwordResetError}
             />
         </div>
     );
