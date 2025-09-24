@@ -1,0 +1,648 @@
+/* Fresha Dashboard CSS Styles */
+
+/* Layout Container */
+.fresha-layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+/* Top Navigation */
+.fresha-top-navigation {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  z-index: 10;
+}
+
+.fresha-nav-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.fresha-logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a202c;
+  letter-spacing: -0.025em;
+}
+
+.fresha-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fresha-activate-plan-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #1a202c;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.fresha-activate-plan-btn:hover {
+  background-color: #2d3748;
+}
+
+.fresha-nav-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fresha-nav-icon-btn {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.fresha-nav-icon-btn:hover {
+  background-color: #f7fafc;
+}
+
+.fresha-search-icon,
+.fresha-bell-icon,
+.fresha-settings-icon {
+  width: 20px;
+  height: 20px;
+  color: #64748b;
+}
+
+.fresha-user-avatar {
+  width: 32px;
+  height: 32px;
+  background-color: #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fresha-user-icon {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+}
+
+/* Layout Body */
+.fresha-layout-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Primary Sidebar */
+.fresha-primary-sidebar {
+  width: 64px;
+  background-color: #1a202c;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+
+.fresha-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  gap: 8px;
+  align-items: center;
+}
+
+.fresha-sidebar-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.fresha-sidebar-item-active {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.fresha-sidebar-item-inactive {
+  color: #9ca3af;
+}
+
+.fresha-sidebar-item-inactive:hover {
+  background-color: #374151;
+  color: #ffffff;
+}
+
+.fresha-sidebar-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Secondary Sidebar */
+.fresha-secondary-sidebar {
+  width: 256px;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  overflow-y: auto;
+}
+
+.fresha-secondary-sidebar-content {
+  padding: 24px;
+}
+
+.fresha-secondary-sidebar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 16px;
+}
+
+.fresha-secondary-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fresha-secondary-nav-item {
+  display: block;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.fresha-secondary-nav-item-active {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.fresha-secondary-nav-item-inactive {
+  color: #374151;
+}
+
+.fresha-secondary-nav-item-inactive:hover {
+  background-color: #f8fafc;
+  color: #1a202c;
+}
+
+/* Main Content */
+.fresha-main-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f8fafc;
+}
+
+
+/* Dashboard Styles */
+.fresha-dashboard-container {
+  padding: 24px;
+}
+
+.fresha-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .fresha-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fresha-dashboard-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.fresha-dashboard-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a202c;
+  padding: 24px 24px 16px;
+  margin: 0;
+}
+
+.fresha-dashboard-card-content {
+  padding: 0 24px 24px;
+}
+
+/* Table Styles */
+.fresha-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.fresha-table-header-cell {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.fresha-table-header-actions {
+  display: flex;
+  gap: 32px;
+}
+
+.fresha-table-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.fresha-table-row:last-child {
+  border-bottom: none;
+}
+
+.fresha-table-cell-service {
+  font-size: 14px;
+  color: #1a202c;
+  font-weight: 500;
+}
+
+.fresha-table-row-actions {
+  display: flex;
+  gap: 32px;
+}
+
+.fresha-table-cell-current,
+.fresha-table-cell-previous {
+  font-size: 14px;
+  color: #64748b;
+  width: 64px;
+  text-align: right;
+}
+
+/* Sales Styles */
+.fresha-sales-container {
+  padding: 24px;
+}
+
+.fresha-sales-header {
+  margin-bottom: 24px;
+}
+
+.fresha-sales-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.fresha-sales-title-section {
+  flex: 1;
+}
+
+.fresha-sales-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 8px 0;
+}
+
+.fresha-sales-subtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+.fresha-sales-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.fresha-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fresha-export-btn:hover {
+  background-color: #f9fafb;
+}
+
+.fresha-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fresha-add-btn:hover {
+  background-color: #2563eb;
+}
+
+.fresha-export-icon,
+.fresha-add-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Sales Controls */
+.fresha-sales-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fresha-nav-control {
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fresha-nav-control:hover {
+  background-color: #f9fafb;
+}
+
+.fresha-nav-icon {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+}
+
+.fresha-today-btn {
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fresha-date-display {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1a202c;
+}
+
+/* Sales Content Grid */
+.fresha-sales-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .fresha-sales-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fresha-sales-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.fresha-sales-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a202c;
+  padding: 24px 24px 16px;
+  margin: 0;
+}
+
+.fresha-sales-card-content {
+  padding: 0 24px 24px;
+}
+
+/* Transaction Table */
+.fresha-transaction-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.fresha-transaction-header-cell {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.fresha-transaction-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.fresha-transaction-row:last-child {
+  border-bottom: none;
+}
+
+.fresha-transaction-cell {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.fresha-transaction-cell:first-child {
+  color: #1a202c;
+  font-weight: 500;
+}
+
+/* Cash Movement Table */
+.fresha-cash-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.fresha-cash-header-cell {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.fresha-cash-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.fresha-cash-row:last-child {
+  border-bottom: none;
+}
+
+.fresha-cash-cell {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.fresha-cash-cell:first-child {
+  color: #1a202c;
+  font-weight: 500;
+}
+
+/* Default Page */
+.fresha-default-page {
+  padding: 24px;
+}
+
+.fresha-page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 16px 0;
+}
+
+.fresha-page-description {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .fresha-secondary-sidebar {
+    position: fixed;
+    top: 64px;
+    left: 64px;
+    height: calc(100vh - 64px);
+    z-index: 10;
+  }
+  
+  .fresha-sales-header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .fresha-sales-actions {
+    align-self: flex-start;
+  }
+  
+  .fresha-sales-controls {
+    flex-wrap: wrap;
+  }
+  
+  .fresha-transaction-header,
+  .fresha-transaction-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .fresha-cash-header,
+  .fresha-cash-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+/* Scrollbar Styling */
+.fresha-secondary-sidebar::-webkit-scrollbar,
+.fresha-main-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fresha-secondary-sidebar::-webkit-scrollbar-track,
+.fresha-main-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.fresha-secondary-sidebar::-webkit-scrollbar-thumb,
+.fresha-main-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.fresha-secondary-sidebar::-webkit-scrollbar-thumb:hover,
+.fresha-main-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animation */
+.fresha-sidebar-item,
+.fresha-secondary-nav-item,
+.fresha-nav-icon-btn,
+.fresha-export-btn,
+.fresha-add-btn,
+.fresha-nav-control {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Focus States */
+.fresha-sidebar-item:focus,
+.fresha-secondary-nav-item:focus,
+.fresha-nav-icon-btn:focus,
+.fresha-export-btn:focus,
+.fresha-add-btn:focus,
+.fresha-nav-control:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .fresha-primary-sidebar,
+  .fresha-secondary-sidebar,
+  .fresha-top-navigation {
+    display: none;
+  }
+  
+  .fresha-main-content {
+    margin: 0;
+    padding: 0;
+  }
+}

@@ -1,0 +1,351 @@
+/* Admin Membership Checker Styles */
+.admin-membership-checker {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.membership-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.membership-icon {
+  font-size: 20px;
+}
+
+/* Loading State */
+.membership-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Info Messages */
+.membership-info-message,
+.no-memberships,
+.membership-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.membership-info-message {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+}
+
+.no-memberships {
+  background: #f9fafb;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.membership-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.error-icon,
+.info-icon {
+  font-size: 16px;
+}
+
+/* No Eligible Memberships */
+.no-eligible-memberships {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.ineligible-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Membership Cards */
+.memberships-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.membership-item {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.membership-item.eligible {
+  border: 1px solid #d1fae5;
+  background: #f0fdf4;
+}
+
+.membership-item.ineligible {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.membership-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.membership-details {
+  flex: 1;
+}
+
+.membership-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.membership-service {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.membership-sessions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #059669;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.sessions-count {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.sessions-label {
+  color: #6b7280;
+}
+
+.membership-validity {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Apply Membership Button */
+.apply-membership-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.apply-membership-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+}
+
+/* Applied Membership State */
+.applied-membership {
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+}
+
+.applied-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  color: #047857;
+  font-size: 16px;
+}
+
+.success-icon {
+  font-size: 20px;
+}
+
+.applied-membership-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.applied-details {
+  flex: 1;
+}
+
+.applied-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.applied-service {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.applied-sessions {
+  font-size: 14px;
+  color: #047857;
+  font-weight: 500;
+}
+
+.remaining {
+  color: #6b7280;
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+.remove-membership-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-membership-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.membership-benefit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #047857;
+}
+
+/* Membership Info */
+.membership-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  color: #0369a1;
+  margin-top: 16px;
+}
+
+/* Ineligible Reason */
+.ineligible-reason {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-membership-checker {
+    padding: 16px;
+  }
+  
+  .membership-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .apply-membership-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .applied-membership-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .remove-membership-btn {
+    width: 100%;
+  }
+}
+
+/* Animation for membership application */
+@keyframes membershipApplied {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+  }
+}
+
+.applied-membership {
+  animation: membershipApplied 0.6s ease-out;
+}

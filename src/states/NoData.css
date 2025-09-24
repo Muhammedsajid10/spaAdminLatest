@@ -1,0 +1,43 @@
+.no-teamdata-card {
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(255, 255, 255, 0.06),
+              0 1px 2px rgba(255, 255, 255, 0.1);
+  padding: 60px 20px;
+  max-width: 600px;
+  margin: 20px auto;
+}
+.no-teamdata-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.no-teamdata-text {
+  font-size: 28px;
+  font-weight: 600;
+  color: #111827; /* dark gray/black */
+  margin: 0;
+}
+
+.no-teamdata-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-teamdata-icon-svg {
+  width: 38px;
+  height: 38px;
+  color: #6b7280; /* muted gray */
+}

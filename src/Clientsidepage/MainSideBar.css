@@ -1,0 +1,241 @@
+/* --- CORE STYLES & VARIABLES (from previous refactor, should be globally available) --- */
+:root {
+  /* Using the professional deep purple theme */
+  --primary-color: #6a0dad; 
+  --primary-light: #e9d5ff; /* Lighter shade for accents */
+  
+  /* Background Colors */
+  --bg-primary: #ffffff; 
+  --bg-secondary: #f8fafb; 
+  --bg-hover: #f1f5f9; 
+  
+  /* Text Colors */
+  --text-color-dark: #333;
+  --text-color-medium: #555;
+  --text-color-light: #888;
+  --text-primary: #1e293b; 
+  --text-secondary: #475569; 
+  --text-muted: #64748b; 
+  
+  /* Border Colors */
+  --border-color: #e0e0e0;
+  --border-light: #f1f5f9; 
+  
+  /* Error Color */
+  --error-color: #ef4444; 
+
+  /* Status Colors */
+  --status-confirmed-bg: #d4edda; 
+  --status-confirmed-text: #155724; 
+  --status-pending-bg: #fff3cd; 
+  --status-pending-text: #856404; 
+  --status-cancelled-bg: #f8d7da; 
+  --status-cancelled-text: #721c24; 
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+
+  /* Border Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 24px; 
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 30px; 
+}
+
+/* Global Box Sizing & Font for Consistency */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color-dark);
+  background-color: var(--bg-light);
+  margin: 0;
+  padding: 0;
+  overflow: hidden; 
+}
+
+
+/* --- Professional Sidebar (Aligned with spa5.jpeg) --- */
+.sb-sidebar {
+  width: 60px;
+  background-color: black; /* Clean white/light background */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg); /* Use theme spacing */
+  align-items: center;
+  height: 100%; 
+  padding-top: var(--spacing-lg); 
+  box-shadow: var(--shadow-sm); /* Subtle shadow, like the reference image */
+  border-right: 1px solid var(--border-color); /* Clean border */
+  z-index: 100;
+  overflow: hidden; /* Contains icons for initial positioning if needed */
+  transition: all 0.2s ease; /* Faster, simple transitions */
+  position: relative; /* Context for children */
+  color:#d4edda;
+}
+
+/* Removed: Animated background gradient (sb-sidebar::before) - not in business theme */
+/* Removed: @keyframes gradientShift */
+
+
+/* Icon wrapper - A single navigation item */
+.sb-icon-wrapper {
+  width: 48px; /* Slightly adjusted size */
+  height: 48px;
+  color:white; /* Muted icon color by default */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border-radius: var(--radius-md); /* Consistent radius */
+  text-decoration: none;
+  position: relative;
+  background-color: transparent; /* Transparent by default */
+  backdrop-filter: none; /* No blur effect */
+  border: 1px solid transparent; /* No border by default */
+  transition: all 0.2s ease; /* Fast, subtle transitions */
+  overflow: hidden; 
+  opacity: 1; /* Icons are immediately visible, no entrance animation */
+  transform: none; /* No initial transform from entrance animation */
+  animation: none; /* Remove entrance animation */
+}
+
+/* Removed: Ripple effect (sb-icon-wrapper::before) - not in business theme */
+/* Removed: :active::before rule */
+
+/* Hover effects (minimalist) */
+.sb-icon-wrapper:hover {
+  background-color: var(--bg-hover); /* Subtle hover background */
+  /* Remove aggressive transforms and shadows from hover */
+  transform: none; /* No movement on hover */
+  box-shadow: none; /* No shadow changes on hover */
+  color: var(--primary-color); /* Primary accent color on hover */
+}
+
+/* Removed: Hover glow effect (sb-icon-wrapper:hover::after and @keyframes glow) - not in business theme */
+
+
+/* Active state (when a link is selected/current page) */
+.sb-icon-wrapper.sb-active {
+  background-color: blue; /* Light primary background for active state */
+  /* Or use a left border like in the reference image's sidebar */
+  /* border-left: 3px solid var(--primary-color); */ 
+  border-color: var(--primary-light); /* Keep border color consistent with background */
+  color: white; /* Primary accent color for active icon */
+  transform: none; /* No movement for active state */
+  box-shadow: none; /* No shadow for active state */
+}
+
+/* Removed: Active state pulse animation (sb-icon-wrapper.sb-active::after and @keyframes activePulse) - not in business theme */
+
+/* Icon styling */
+.sb-icon {
+  font-size: 22px; /* Consistent size */
+  transition: all 0.2s ease; /* Fast transition */
+  filter: none; /* No drop shadow on icons */
+  z-index: 1; 
+  position: relative; 
+  /* Removed: All icon-specific animations (iconBounce, activeIconPulse) */
+  animation: none !important; /* Force removal of any lingering animations */
+  transform: none !important; /* Force removal of any lingering transforms */
+}
+
+/* Icon hover animation (minimalist) */
+.sb-icon-wrapper:hover .sb-icon {
+  transform: none; /* No movement on hover */
+  filter: none; /* No shadow on hover */
+}
+
+/* Active icon styling */
+.sb-icon-wrapper.sb-active .sb-icon {
+  transform: none; /* No movement for active state */
+  filter: none; /* No shadow for active state */
+}
+
+
+/* Tooltip-like label on hover (for collapsed sidebar) */
+.sb-icon-wrapper::after {
+  content: attr(title);
+  position: absolute;
+  left: 68px; /* Position closer to the sidebar */
+  top: 50%;
+  transform: translateY(-50%) translateX(0px); /* Initial position, no slide-out */
+  background: var(--text-color-dark); /* Solid dark background */
+  color: #ffffff;
+  padding: 6px 10px; /* More compact */
+  border-radius: var(--radius-sm); /* Sharper edges for business */
+  font-size: 13px; /* Slightly smaller font */
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.1s ease, transform 0.1s ease; /* Faster, simpler transition */
+  box-shadow: var(--shadow-sm); /* Subtle shadow */
+  border: none; /* No border for tooltip */
+  z-index: 1000;
+  pointer-events: none; 
+}
+.sb-icon-wrapper:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0px); /* Just appear, no slide */
+}
+
+
+/* Smooth scrollbar for the sidebar if needed */
+.sb-sidebar::-webkit-scrollbar { width: 4px; }
+.sb-sidebar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); } /* Very light track */
+.sb-sidebar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 2px; } /* Muted thumb */
+.sb-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.4); }
+
+/* --- Responsive design for Sidebar --- */
+@media (max-width: 768px) {
+  .sb-sidebar {
+    width: 50px; /* Slightly narrower sidebar on smaller screens */
+    padding-top: var(--spacing-md); /* Reduced padding */
+    gap: var(--spacing-md); /* Reduced gap between icons */
+    box-shadow: var(--shadow-sm); /* Consistent shadow */
+  }
+  
+  .sb-icon-wrapper {
+    width: 40px; /* Smaller icon wrapper */
+    height: 40px;
+  }
+  
+  .sb-icon {
+    font-size: 18px; /* Smaller icon font size */
+  }
+  
+  .sb-icon-wrapper:hover {
+    transform: none; /* No transforms on hover for small screens */
+    box-shadow: none; 
+  }
+  
+  .sb-icon-wrapper.sb-active {
+    transform: none; /* No transforms on active for small screens */
+    box-shadow: none;
+  }
+
+  /* Tooltip adjustments for smaller screens */
+  .sb-icon-wrapper::after {
+    left: 55px; /* Adjust tooltip position relative to new width */
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    box-shadow: var(--shadow-sm);
+  }
+}

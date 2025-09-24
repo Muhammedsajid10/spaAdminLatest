@@ -1,0 +1,145 @@
+.sp-container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.sp-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sp-title {
+  font-size: 24px;
+  margin: 0;
+}
+
+.sp-subtext {
+  margin: 5px 0 0 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.sp-subtext a {
+  color: #7c3aed;
+  text-decoration: none;
+}
+
+.sp-btn-back {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.sp-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sp-tab {
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.sp-tab.active {
+  background-color: black;
+  color: white;
+}
+
+.sp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 30px;
+  align-items: center;
+}
+
+.sp-search {
+  flex: 1 1 200px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.sp-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  border: none;
+}
+
+.sp-btn-light {
+  background-color: #f3f4f6;
+}
+
+.sp-btn-dark {
+  background-color: black;
+  color: white;
+}
+
+.sp-empty-state {
+  text-align: center;
+  margin-top: 100px;
+}
+
+.sp-empty-icon {
+  font-size: 40px;
+  margin-bottom: 20px;
+  color: rgb(254, 185, 101);
+}
+
+.sp-empty-title {
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+
+.sp-btn-create {
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sp-actions {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .sp-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sp-search {
+    width: 100%;
+  }
+
+  .sp-actions {
+    flex-direction: column;
+    top: 10px;
+    right: 10px;
+  }
+}
