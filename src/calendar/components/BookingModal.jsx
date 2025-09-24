@@ -1,5 +1,6 @@
 import React from 'react';
 import { hasShiftOnDate, getDayName, formatDateLocal } from '..';
+import AdminMembershipChecker from './AdminMembershipChecker';
 
 // Extracted Booking Modal component to reduce size of SelectCalendar
 export const BookingModal = ({
@@ -52,6 +53,10 @@ export const BookingModal = ({
   bookingForm,
   setBookingForm,
   handleCreateBooking,
+  // Membership integration props
+  appliedMembership,
+  onMembershipApplied,
+  onMembershipRemoved,
 }) => {
   return (
     <div className="modern-booking-modal">
@@ -501,7 +506,7 @@ export const BookingModal = ({
                 </div>
               </div>
               <div className="client-summary">
-                <h4>  Client Information</h4>
+                <h4>👤 Client Information</h4>
                 <div className="summary-item">
                   <span>Client:</span>
                   <span>
@@ -518,6 +523,15 @@ export const BookingModal = ({
                   <span>{selectedExistingClient ? selectedExistingClient.phone : clientInfo.phone}</span>
                 </div>
               </div>
+
+              {/* Membership Integration */}
+              <AdminMembershipChecker
+                selectedClient={selectedExistingClient || (clientInfo.name ? { _id: 'new', ...clientInfo } : null)}
+                selectedServices={multipleAppointments.map(apt => apt.service)}
+                onMembershipApplied={onMembershipApplied}
+                onMembershipRemoved={onMembershipRemoved}
+                appliedMembership={appliedMembership}
+              />
               <div className="booking-modal-form">
                 <div className="form-group">
                   <label>💳 Select Payment Method:</label>

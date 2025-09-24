@@ -4,6 +4,11 @@ import api from '../Service/Api';
 import { SearchCheck, SearchXIcon } from 'lucide-react';
 import Loading from '../states/Loading';
 import Error500Page from '../states/ErrorPage';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+// Initialize Stripe
+const stripePromise = loadStripe('pk_test_51RpSYD5FOF6KgbFpVgzOspHQuZYVwLuawvNXCAI60gDNuyEFdfvwd9UnhHMqal5RfWh3N4WPv5uzLn3GEFiRTm1D00rpI5BXPQ');
 
 // Spinner component
 const Spinner = () => (
@@ -11,6 +16,144 @@ const Spinner = () => (
     <div className="spinner"></div>
   </div>
 );
+
+// Stripe Payment Form Component
+const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuccess, onCancel, onError }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const selectedTemplate = templates.find(t => t._id === assignForm.templateId);
+  const selectedClient = clients.find(c => c._id === assignForm.clientId) || { _id: assignForm.clientId };
+  const finalPrice = assignForm.price && assignForm.price !== '' ? Number(assignForm.price) : selectedTemplate?.price;
+
+  // Safety check
+  if (!assignForm?.templateId || !assignForm?.clientId) {
+    return (
+      <div className="membership-payment-error">
+        <p>Missing required information for payment processing.</p>
+        <button onClick={onCancel} className="btn btn-secondary">Go Back</button>
+      </div>
+    );
+  }
+
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    
+    if (!stripe || !elements) {
+      onError('Stripe not loaded. Please try again.');
+      return;
+    }
+
+    if (!finalPrice || finalPrice <= 0) {
+      onError('Invalid price amount.');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Create a temporary booking ID for membership purchase
+      const tempBookingId = `membership-purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create payment intent through existing payment API
+      const paymentPayload = {
+        bookingId: tempBookingId,
+        amount: finalPrice,
+        currency: 'AED',
+        paymentMethod: 'card',
+        gateway: 'stripe',
+        metadata: {
+          type: 'membership_purchase',
+          templateId: selectedTemplate?._id || assignForm.templateId,
+          clientId: selectedClient?._id || assignForm.clientId
+        }
+      };
+
+      console.log('🔄 Creating payment intent for membership...', paymentPayload);
+      const paymentResponse = await api.post('/payments/create', paymentPayload);
+      
+      if (!paymentResponse.data.success) {
+        throw new Error(paymentResponse.data.message || 'Failed to create payment intent');
+      }
+
+      const { clientSecret } = paymentResponse.data.data;
+      console.log('✅ Payment intent created, client secret received');
+
+      // Confirm payment with Stripe
+      const cardElement = elements.getElement(CardElement);
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        // Payment successful, now create membership
+        const membershipPayload = { 
+          templateId: assignForm.templateId, 
+          clientId: assignForm.clientId,
+          paymentIntentId: paymentIntent.id
+        };
+        if (assignForm.startDate) membershipPayload.startDate = assignForm.startDate;
+        if (assignForm.paymentType) membershipPayload.paymentType = assignForm.paymentType;
+        if (assignForm.price !== '' && assignForm.price != null) membershipPayload.price = Number(assignForm.price);
+        
+        const membershipResponse = await api.post('/memberships/purchase', membershipPayload);
+        onSuccess(membershipResponse.data.data.membership);
+      } else {
+        throw new Error('Payment was not successful');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      onError(error.message || 'Payment failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePayment} className="payment-form">
+      <div className="payment-summary">
+        <h3>Payment Summary</h3>
+        <div className="summary-row">
+          <span>Membership: {selectedTemplate?.name}</span>
+          <span>AED {finalPrice}</span>
+        </div>
+      </div>
+      
+      <div className="card-element-container">
+        <label>Card Details</label>
+        <CardElement
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
+                },
+              },
+            },
+          }}
+        />
+      </div>
+
+      <div className="payment-actions">
+        <button type="button" className="mem-btn-secondary" onClick={onCancel} disabled={isProcessing}>
+          Cancel
+        </button>
+        <button type="submit" className="mem-btn-primary" disabled={isProcessing || !stripe}>
+          {isProcessing ? 'Processing...' : `Pay AED ${finalPrice}`}
+        </button>
+      </div>
+    </form>
+  );
+};
 
 const Membership = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,53 +167,56 @@ const Membership = () => {
   const [assignForm, setAssignForm] = useState({ templateId: '', clientId: '', startDate: '', price: '', paymentType: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [assignStep, setAssignStep] = useState('details'); // 'details' or 'payment'
+  const [paymentError, setPaymentError] = useState(null);
+
+  const fetchMemberships = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Purchased memberships
+      const purchasedRes = await api.get('/memberships/purchased');
+      let purchased = purchasedRes.data.data.memberships || [];
+      console.log('DEBUG purchased memberships raw:', purchased);
+      // If some memberships lack populated client, attempt to fetch individually (lightweight enrichment)
+      const unenriched = purchased.filter(m => m.client && (typeof m.client === 'string' || (m.client && !m.client.firstName)) );
+      if (unenriched.length) {
+        // Attempt batch fetch via hypothetical admin users endpoint; fallback skip
+        try {
+          const ids = unenriched.map(u => typeof u.client === 'string' ? u.client : u.client._id).join(',');
+          const clientsRes = await api.get(`/admin/clients?ids=${ids}`);
+          const clientList = clientsRes.data.data?.clients || clientsRes.data.data?.users || [];
+          const clientMap = Object.fromEntries(clientList.map(c => [c._id, c]));
+          purchased = purchased.map(m => {
+            const id = m.client && (typeof m.client === 'string' ? m.client : m.client._id);
+            if (id && clientMap[id]) {
+              return { ...m, client: clientMap[id] };
+            }
+            return m;
+          });
+        } catch (e) {
+          console.warn('Client enrichment skipped:', e.message);
+        }
+      }
+      setMemberships(purchased);
+      // Templates
+      const templateRes = await api.get('/memberships/templates');
+      setTemplates(templateRes.data.data.memberships || []);
+      // Clients (reuse employees or users endpoint?) -> assume admin users endpoint exists
+      try {
+        const usersRes = await api.get('/admin/clients');
+        setClients(usersRes.data.data?.clients || usersRes.data.data?.users || []);
+      } catch (e) {
+        console.warn('Could not load clients list:', e.message);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load memberships');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchMemberships = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Purchased memberships
-        const purchasedRes = await api.get('/memberships/purchased');
-        let purchased = purchasedRes.data.data.memberships || [];
-        console.log('DEBUG purchased memberships raw:', purchased);
-        // If some memberships lack populated client, attempt to fetch individually (lightweight enrichment)
-        const unenriched = purchased.filter(m => m.client && (typeof m.client === 'string' || (m.client && !m.client.firstName)) );
-        if (unenriched.length) {
-          // Attempt batch fetch via hypothetical admin users endpoint; fallback skip
-          try {
-            const ids = unenriched.map(u => typeof u.client === 'string' ? u.client : u.client._id).join(',');
-            const clientsRes = await api.get(`/admin/clients?ids=${ids}`);
-            const clientList = clientsRes.data.data?.clients || clientsRes.data.data?.users || [];
-            const clientMap = Object.fromEntries(clientList.map(c => [c._id, c]));
-            purchased = purchased.map(m => {
-              const id = m.client && (typeof m.client === 'string' ? m.client : m.client._id);
-              if (id && clientMap[id]) {
-                return { ...m, client: clientMap[id] };
-              }
-              return m;
-            });
-          } catch (e) {
-            console.warn('Client enrichment skipped:', e.message);
-          }
-        }
-        setMemberships(purchased);
-        // Templates
-        const templateRes = await api.get('/memberships/templates');
-        setTemplates(templateRes.data.data.memberships || []);
-        // Clients (reuse employees or users endpoint?) -> assume admin users endpoint exists
-        try {
-          const usersRes = await api.get('/admin/clients');
-          setClients(usersRes.data.data?.clients || usersRes.data.data?.users || []);
-        } catch (e) {
-          console.warn('Could not load clients list:', e.message);
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Failed to load memberships');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchMemberships();
   }, []);
 
@@ -115,17 +261,20 @@ const Membership = () => {
   const toggleExportDropdown = () => setShowExportDropdown(!showExportDropdown);
 
   const handleExportCSV = () => {
-    const headers = ['Name', 'Client', 'Type', 'Start Date', 'End Date', 'Status', 'Total Charged'];
+    const headers = ['Name', 'Client', 'Type', 'Sessions Remaining', 'Start Date', 'End Date', 'Status', 'Total Charged'];
     const csvContent = [
       headers.join(','),
       ...filteredMemberships.map(m => [
         m.name,
         m.client?.firstName + ' ' + m.client?.lastName,
-        m.type,
+        m.type || m.serviceType || m.paymentType || '-',
+        m.serviceType === 'Unlimited' 
+          ? 'Unlimited' 
+          : `${(m.numberOfSessions || 0) - (m.usedSessions || 0)}/${m.numberOfSessions || 0}`,
         m.startDate ? new Date(m.startDate).toLocaleDateString() : '',
         m.endDate ? new Date(m.endDate).toLocaleDateString() : '',
         m.status,
-        'AED ' + m.totalCharged
+        'AED ' + (m.totalCharged ?? m.price ?? '-')
       ].join(','))
     ].join('\n');
 
@@ -166,6 +315,7 @@ const Membership = () => {
               <th>Name</th>
               <th>Client</th>
               <th>Type</th>
+              <th>Sessions Remaining</th>
               <th>Start Date</th>
               <th>End Date</th>
               <th>Status</th>
@@ -177,11 +327,14 @@ const Membership = () => {
               <tr>
                 <td>${m.name}</td>
                 <td>${m.client?.firstName} ${m.client?.lastName}</td>
-                <td>${m.type}</td>
+                <td>${m.type || m.serviceType || m.paymentType || '-'}</td>
+                <td>${m.serviceType === 'Unlimited' 
+                  ? 'Unlimited' 
+                  : `${(m.numberOfSessions || 0) - (m.usedSessions || 0)}/${m.numberOfSessions || 0}`}</td>
                 <td>${m.startDate ? new Date(m.startDate).toLocaleDateString() : ''}</td>
                 <td>${m.endDate ? new Date(m.endDate).toLocaleDateString() : ''}</td>
                 <td><span class="status-${m.status.toLowerCase()}">${m.status}</span></td>
-                <td class="total">AED ${m.totalCharged}</td>
+                <td class="total">AED ${m.totalCharged ?? m.price ?? '-'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -208,15 +361,18 @@ const Membership = () => {
   const handleExportExcel = () => {
     // Create worksheet data
     const wsData = [
-      ['Name', 'Client', 'Type', 'Start Date', 'End Date', 'Status', 'Total Charged'],
+      ['Name', 'Client', 'Type', 'Sessions Remaining', 'Start Date', 'End Date', 'Status', 'Total Charged'],
       ...filteredMemberships.map(m => [
         m.name,
         m.client?.firstName + ' ' + m.client?.lastName,
-        m.type,
+        m.type || m.serviceType || m.paymentType || '-',
+        m.serviceType === 'Unlimited' 
+          ? 'Unlimited' 
+          : `${(m.numberOfSessions || 0) - (m.usedSessions || 0)}/${m.numberOfSessions || 0}`,
         m.startDate ? new Date(m.startDate).toLocaleDateString() : '',
         m.endDate ? new Date(m.endDate).toLocaleDateString() : '',
         m.status,
-        'AED ' + m.totalCharged
+        'AED ' + (m.totalCharged ?? m.price ?? '-')
       ])
     ];
 
@@ -265,17 +421,25 @@ const Membership = () => {
           </div>
           <div className="mem-export-container">
             <button
-              className="mem-export-btn"
-              style={{ marginRight: '8px' }}
+              className="mem-export-btn primary"
               onClick={() => {
                 setAssignForm({ templateId: '', clientId: '', startDate: '', price: '', paymentType: '' });
+                setAssignStep('details');
+                setPaymentError(null);
                 setShowAssignModal(true);
               }}
             >
-              Assign
+              Assign Membership
+            </button>
+            <button
+              className="mem-export-btn secondary"
+              onClick={fetchMemberships}
+              disabled={loading}
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
             <button 
-              className="mem-export-btn"
+              className="mem-export-btn dropdown"
               onClick={toggleExportDropdown}
             >
               <DownloadIcon />
@@ -326,6 +490,7 @@ const Membership = () => {
                       <th>Name</th>
                       <th>Client</th>
                       <th>Type</th>
+                      <th>Sessions</th>
                       <th>Start date</th>
                       <th>End date</th>
                       <th>Status</th>
@@ -342,6 +507,12 @@ const Membership = () => {
                           <a href="#" className="mem-link-text">{membership.client?.firstName} {membership.client?.lastName}</a>
                         </td>
                         <td className="mem-table-cell">{membership.type || membership.serviceType || membership.paymentType || '-'}</td>
+                        <td className="mem-table-cell">
+                          {membership.serviceType === 'Unlimited' 
+                            ? 'Unlimited' 
+                            : `${(membership.numberOfSessions || 0) - (membership.usedSessions || 0)}/${membership.numberOfSessions || 0}`
+                          }
+                        </td>
                         <td className="mem-table-cell mem-date-text">{membership.startDate ? new Date(membership.startDate).toLocaleDateString() : ''}</td>
                         <td className="mem-table-cell mem-date-text">{membership.endDate ? new Date(membership.endDate).toLocaleDateString() : ''}</td>
                         <td className="mem-table-cell">
@@ -376,6 +547,15 @@ const Membership = () => {
                       <div className="mem-card-value">{membership.type || membership.serviceType || membership.paymentType || '-'}</div>
                     </div>
                     <div className="mem-card-field">
+                      <div className="mem-card-label">Sessions Remaining</div>
+                      <div className="mem-card-value">
+                        {membership.serviceType === 'Unlimited' 
+                          ? 'Unlimited' 
+                          : `${(membership.numberOfSessions || 0) - (membership.usedSessions || 0)}/${membership.numberOfSessions || 0}`
+                        }
+                      </div>
+                    </div>
+                    <div className="mem-card-field">
                       <div className="mem-card-label">Start date</div>
                       <div className="mem-card-value mem-date-text">{membership.startDate ? new Date(membership.startDate).toLocaleDateString() : ''}</div>
                     </div>
@@ -401,71 +581,105 @@ const Membership = () => {
         )}
       </div>
       {showAssignModal && (
-        <div className="mem-modal-overlay">
-          <div className="mem-modal">
-            <div className="mem-modal-header">
-              <h2>Assign membership</h2>
-              <button className="mem-modal-close" onClick={()=> setShowAssignModal(false)}>×</button>
-            </div>
-            <div className="mem-modal-body">
-              <div className="mem-form-group">
-                <label>Client</label>
-                <select value={assignForm.clientId} onChange={e=> setAssignForm(f=>({...f, clientId:e.target.value}))}>
-                  <option value="">Select client</option>
-                  {clients.map(c=> (
-                    <option key={c._id} value={c._id}>{c.firstName} {c.lastName} ({c.email})</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mem-form-group">
-                <label>Template</label>
-                <select value={assignForm.templateId} onChange={e=> setAssignForm(f=>({...f, templateId:e.target.value, price: templates.find(t=> t._id===e.target.value)?.price || '' }))}>
-                  <option value="">Select template</option>
-                  {templates.map(t=> (
-                    <option key={t._id} value={t._id}>{t.name} - AED {t.price}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mem-form-group">
-                <label>Start date</label>
-                <input type="date" value={assignForm.startDate} onChange={e=> setAssignForm(f=>({...f, startDate:e.target.value}))} />
-              </div>
-              <div className="mem-form-group">
-                <label>Payment type</label>
-                <select value={assignForm.paymentType} onChange={e=> setAssignForm(f=>({...f, paymentType:e.target.value}))}>
-                  <option value="">Default (template)</option>
-                  <option value="One-time">One-time</option>
-                  <option value="Recurring">Recurring</option>
-                </select>
-              </div>
-              <div className="mem-form-group">
-                <label>Price (override)</label>
-                <input type="number" placeholder="Leave blank to use template price" value={assignForm.price} onChange={e=> setAssignForm(f=>({...f, price:e.target.value}))} />
-              </div>
-              {assignSubmitting && <Spinner />}
-            </div>
-            <div className="mem-modal-footer">
-              <button className="mem-btn-secondary" onClick={()=> setShowAssignModal(false)} disabled={assignSubmitting}>Cancel</button>
-              <button className="mem-btn-primary" disabled={assignSubmitting || !assignForm.clientId || !assignForm.templateId} onClick={async ()=>{
-                setAssignSubmitting(true);
-                try {
-                  const payload = { templateId: assignForm.templateId, clientId: assignForm.clientId };
-                  if (assignForm.startDate) payload.startDate = assignForm.startDate;
-                  if (assignForm.paymentType) payload.paymentType = assignForm.paymentType;
-                  if (assignForm.price !== '' && assignForm.price != null) payload.price = Number(assignForm.price);
-                  const res = await api.post('/memberships/purchase', payload);
-                  // Add new membership to list
-                  setMemberships(m=> [res.data.data.membership, ...m]);
+        <Elements stripe={stripePromise}>
+          <div className="mem-modal-overlay">
+            <div className="mem-modal">
+              <div className="mem-modal-header">
+                <h2>
+                  {assignStep === 'details' ? 'Assign Membership' : 'Payment'}
+                </h2>
+                <button className="mem-modal-close" onClick={()=> {
                   setShowAssignModal(false);
-                } catch (e) {
-                  alert(e.response?.data?.message || e.message || 'Failed to assign membership');
-                } finally {
-                  setAssignSubmitting(false);
-                }
-              }}>Assign</button>
+                  setAssignStep('details');
+                  setPaymentError(null);
+                }}>×</button>
+              </div>
+              
+              <div className="mem-modal-body">
+                {assignStep === 'details' ? (
+                  <>
+                    <div className="mem-form-group">
+                      <label>Client</label>
+                      <select value={assignForm.clientId} onChange={e=> setAssignForm(f=>({...f, clientId:e.target.value}))}>
+                        <option value="">Select client</option>
+                        {clients.map(c=> (
+                          <option key={c._id} value={c._id}>{c.firstName} {c.lastName} ({c.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mem-form-group">
+                      <label>Template</label>
+                      <select value={assignForm.templateId} onChange={e=> setAssignForm(f=>({...f, templateId:e.target.value, price: templates.find(t=> t._id===e.target.value)?.price || '' }))}>
+                        <option value="">Select template</option>
+                        {templates.map(t=> (
+                          <option key={t._id} value={t._id}>{t.name} - AED {t.price}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mem-form-group">
+                      <label>Start date</label>
+                      <input type="date" value={assignForm.startDate} onChange={e=> setAssignForm(f=>({...f, startDate:e.target.value}))} />
+                    </div>
+                    <div className="mem-form-group">
+                      <label>Payment type</label>
+                      <select value={assignForm.paymentType} onChange={e=> setAssignForm(f=>({...f, paymentType:e.target.value}))}>
+                        <option value="">Default (template)</option>
+                        <option value="One-time">One-time</option>
+                        <option value="Recurring">Recurring</option>
+                      </select>
+                    </div>
+                    <div className="mem-form-group">
+                      <label>Price (override)</label>
+                      <input type="number" placeholder="Leave blank to use template price" value={assignForm.price} onChange={e=> setAssignForm(f=>({...f, price:e.target.value}))} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {paymentError && (
+                      <div className="payment-error">
+                        <p>Payment Error: {paymentError}</p>
+                      </div>
+                    )}
+                    <MembershipPaymentForm
+                      assignForm={assignForm}
+                      templates={templates}
+                      onSuccess={(membership) => {
+                        setMemberships(m => [membership, ...m]);
+                        setShowAssignModal(false);
+                        setAssignStep('details');
+                        setPaymentError(null);
+                      }}
+                      onCancel={() => {
+                        setAssignStep('details');
+                        setPaymentError(null);
+                      }}
+                      onError={(error) => {
+                        setPaymentError(error);
+                      }}
+                    />
+                  </>
+                )}
+              </div>
+              
+              {assignStep === 'details' && (
+                <div className="mem-modal-footer">
+                  <button className="mem-btn-secondary" onClick={()=> {
+                    setShowAssignModal(false);
+                    setAssignStep('details');
+                  }} disabled={assignSubmitting}>Cancel</button>
+                  <button className="mem-btn-primary" 
+                          disabled={assignSubmitting || !assignForm.clientId || !assignForm.templateId} 
+                          onClick={() => {
+                            setAssignStep('payment');
+                            setPaymentError(null);
+                          }}>
+                    Continue to Payment
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        </Elements>
       )}
     </div>
   );

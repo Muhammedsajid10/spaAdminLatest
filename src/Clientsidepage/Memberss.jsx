@@ -60,9 +60,9 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    selectedServices: [], // objects: { _id, id, name, service, sessionsAllowed }
+    selectedService: null, // single service object: { _id, name, price, duration }
     sessionType: 'limited', // 'limited'|'unlimited'
-    sessionCount: '',
+    sessionCount: '1',
     paymentType: 'one-time',
     validFor: '1 month',
     price: '',
@@ -73,7 +73,6 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [services, setServices] = useState([]);
   const [serviceSearch, setServiceSearch] = useState('');
-  const [selectedServiceIds, setSelectedServiceIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -106,50 +105,24 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
     return acc;
   }, {});
 
-  const handleCategorySelect = (category, isSelected) => {
-    const ids = groupedServices[category].map(s => s._id || s.id);
-    const newSet = new Set(selectedServiceIds);
-    if (isSelected) ids.forEach(i => newSet.add(i)); else ids.forEach(i => newSet.delete(i));
-    setSelectedServiceIds(newSet);
-  };
-
-  const handleServiceSelect = (id, isSelected) => {
-    const newSet = new Set(selectedServiceIds);
-    if (isSelected) newSet.add(id); else newSet.delete(id);
-    setSelectedServiceIds(newSet);
-  };
-
-  const saveSelectedServices = () => {
-    const selected = services
-      .filter(s => selectedServiceIds.has(s._id || s.id))
-      .map(s => ({
-        _id: s._id,
-        id: s._id || s.id,
-        service: s._id || s.id,
-        name: s.name,
-        sessionsAllowed: 1 // default, editable in form
-      }));
-    setFormData(prev => ({ ...prev, selectedServices: selected }));
+  const handleServiceSelect = (service) => {
+    setFormData(prev => ({ ...prev, selectedService: service }));
     setShowServiceModal(false);
   };
 
-  const updateServiceSessions = (serviceId, sessionsAllowed) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedServices: (prev.selectedServices || []).map(s => s._id === serviceId || s.id === serviceId ? { ...s, sessionsAllowed: Number(sessionsAllowed) || 0 } : s)
-    }));
-  };
-
   const parseValidFor = (str) => {
-    if (!str) return { validityPeriod: undefined, validityUnit: undefined };
-    const parts = str.split(/\s+/);
-    const num = Number(parts[0]) || undefined;
+    if (!str) return { validityPeriod: 1, validityUnit: 'months' };
+    const parts = str.trim().split(/\s+/);
+    const num = Number(parts[0]);
     const unit = (parts[1] || '').toLowerCase();
-    if (!num) return { validityPeriod: undefined, validityUnit: undefined };
+    
+    if (!num || num <= 0) return { validityPeriod: 1, validityUnit: 'months' };
+    
     if (unit.startsWith('month')) return { validityPeriod: num, validityUnit: 'months' };
     if (unit.startsWith('year')) return { validityPeriod: num, validityUnit: 'years' };
     if (unit.startsWith('day')) return { validityPeriod: num, validityUnit: 'days' };
-    return { validityPeriod: num, validityUnit: unit || 'months' };
+    
+    return { validityPeriod: num, validityUnit: 'months' };
   };
 
   const handleSubmit = async (e) => {
@@ -158,25 +131,56 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       const { validityPeriod, validityUnit } = parseValidFor(formData.validFor);
 
+      // Validation
+      if (!formData.name.trim()) {
+        alert('Membership name is required');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.description.trim()) {
+        alert('Membership description is required');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.selectedService) {
+        alert('Please select a service');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.sessionType === 'limited' && (!formData.sessionCount || formData.sessionCount < 1)) {
+        alert('Please enter valid number of sessions');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.price || formData.price <= 0) {
+        alert('Please enter valid price');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
-        name: formData.name,
-        description: formData.description,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
         serviceType: formData.sessionType === 'limited' ? 'Limited' : 'Unlimited',
-        selectedServices: (formData.selectedServices || []).map(s => ({
-          service: s.service || s._id || s.id,
-          name: s.name,
-          sessionsAllowed: Number(s.sessionsAllowed) || 0
-        })),
-        numberOfSessions: formData.sessionType === 'limited' ? (Number(formData.sessionCount) || undefined) : undefined,
-        paymentType: formData.paymentType === 'one-time' ? 'One-time' : formData.paymentType,
-        price: formData.price ? parseFloat(formData.price) : 0,
+        service: formData.selectedService._id,
+        serviceName: formData.selectedService.name,
+        numberOfSessions: formData.sessionType === 'limited' ? Number(formData.sessionCount) : undefined,
+        paymentType: formData.paymentType === 'one-time' ? 'One-time' : 'Recurring',
+        price: parseFloat(formData.price),
         currency: formData.currency || 'USD',
-        validityPeriod,
-        validityUnit,
+        validityPeriod: validityPeriod,
+        validityUnit: validityUnit,
         status: 'Draft',
-        notes: formData.notes || '',
+        notes: formData.notes?.trim() || '',
         isTemplate: true
       };
+
+      console.log('📤 Sending payload:', JSON.stringify(payload, null, 2));
+      console.log('📤 Selected service details:', formData.selectedService);
 
       const res = await saveOrUpdateMembership(payload); // uses module-level helper
 
@@ -188,7 +192,18 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
       }
     } catch (err) {
       console.error('Failed to create membership template:', err);
-      alert(err?.response?.data?.message || err.message || 'Failed to create membership. Please try again.');
+      
+      // Better error handling
+      let errorMessage = 'Failed to create membership. Please try again.';
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -198,74 +213,127 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <>
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="membership-modal" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Create Membership</h2>
-            <button className="close-btn" onClick={onClose} aria-label="Close"><IoClose /></button>
+      <div className="modern-modal-overlay" onClick={onClose}>
+        <div className="modern-membership-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modern-modal-header">
+            <h2 className="modern-modal-title">Create Membership</h2>
+            <button className="modern-close-btn" onClick={onClose} aria-label="Close">
+              <IoClose />
+            </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="membership-form">
-            <div className="form-section">
-              <h3>Basic Info</h3>
-              <div className="form-group">
-                <label>Membership Name</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} placeholder="Enter membership name" required />
+          <form onSubmit={handleSubmit} className="modern-membership-form">
+            <div className="modern-form-section">
+              <h3 className="modern-section-title">
+                <span className="section-dot section-dot-blue"></span>
+                Basic Info
+              </h3>
+              <div className="modern-form-group">
+                <label className="modern-label">Membership Name</label>
+                <input 
+                  type="text" 
+                  value={formData.name} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} 
+                  placeholder="Enter membership name" 
+                  required 
+                  className="modern-input"
+                />
               </div>
 
-              <div className="form-group">
-                <label>Membership Description</label>
-                <textarea value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Describe this membership" rows="3" />
+              <div className="modern-form-group">
+                <label className="modern-label">Membership Description</label>
+                <textarea 
+                  value={formData.description} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} 
+                  placeholder="Describe this membership" 
+                  rows="3"
+                  className="modern-textarea"
+                />
               </div>
             </div>
 
-            <div className="form-section">
-              <h3>Services and Sessions</h3>
+            <div className="modern-form-section">
+              <h3 className="modern-section-title">
+                <span className="section-dot section-dot-green"></span>
+                Services and Sessions
+              </h3>
 
-              <div className="form-group">
-                <label>Included Services</label>
-                <div className="services-selection">
-                  {formData.selectedServices.length > 0 ? (
-                    <div className="selected-services">
-                      {formData.selectedServices.map(s => (
-                        <div key={s._id || s.id || s.service} className="selected-service-row">
-                          <span className="service-name">{s.name}</span>
-                          <label className="service-sessions">
-                            Sessions:
-                            <input type="number" min="0" value={s.sessionsAllowed ?? 0} onChange={(e) => updateServiceSessions(s._id || s.id || s.service, e.target.value)} style={{ width: 80, marginLeft: 8 }} />
-                          </label>
-                        </div>
-                      ))}
+              <div className="modern-form-group">
+                <label className="modern-label">Included Service</label>
+                <div className="modern-services-selection">
+                  {formData.selectedService ? (
+                    <div className="modern-selected-service">
+                      <div className="modern-selected-service-info">
+                        <span className="modern-service-name">{formData.selectedService.name}</span>
+                        <span className="modern-service-details">
+                          {formData.selectedService.duration} mins • AED {formData.selectedService.price}
+                        </span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="modern-change-service-btn" 
+                        onClick={() => setShowServiceModal(true)}
+                      >
+                        Change Service
+                      </button>
                     </div>
-                  ) : (<p className="no-services">No services selected</p>)}
-                  <button type="button" className="select-services-btn" onClick={() => setShowServiceModal(true)}>Select Services</button>
+                  ) : (
+                    <div className="modern-no-service-container">
+                      <p className="modern-no-services-text">No service selected</p>
+                      <button 
+                        type="button" 
+                        className="modern-select-services-btn" 
+                        onClick={() => setShowServiceModal(true)}
+                      >
+                        Select Service
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Sessions</label>
-                  <select value={formData.sessionType} onChange={(e) => setFormData(prev => ({ ...prev, sessionType: e.target.value }))}>
+              <div className="modern-form-row">
+                <div className="modern-form-group">
+                  <label className="modern-label">Sessions</label>
+                  <select 
+                    value={formData.sessionType} 
+                    onChange={(e) => setFormData(prev => ({ ...prev, sessionType: e.target.value }))}
+                    className="modern-select"
+                  >
                     <option value="limited">Limited</option>
                     <option value="unlimited">Unlimited</option>
                   </select>
                 </div>
 
                 {formData.sessionType === 'limited' && (
-                  <div className="form-group">
-                    <label>Number of Sessions</label>
-                    <input type="number" value={formData.sessionCount} onChange={(e) => setFormData(prev => ({ ...prev, sessionCount: e.target.value }))} min="1" required />
+                  <div className="modern-form-group">
+                    <label className="modern-label">Number of Sessions</label>
+                    <input 
+                      type="number" 
+                      value={formData.sessionCount} 
+                      onChange={(e) => setFormData(prev => ({ ...prev, sessionCount: e.target.value }))} 
+                      min="1" 
+                      required 
+                      className="modern-input"
+                    />
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="form-section">
-              <h3>Pricing and Payment</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Valid For</label>
-                  <select value={formData.validFor} onChange={(e) => setFormData(prev => ({ ...prev, validFor: e.target.value }))}>
+            <div className="modern-form-section">
+              <h3 className="modern-section-title">
+                <span className="section-dot section-dot-yellow"></span>
+                Pricing and Payment
+              </h3>
+              <div className="modern-form-row" style={{ marginBottom: '20px' }}>
+                <div className="modern-form-group">
+                  <label className="modern-label">Valid For</label>
+                  <select 
+                    value={formData.validFor} 
+                    onChange={(e) => setFormData(prev => ({ ...prev, validFor: e.target.value }))}
+                    className="modern-select"
+                  >
                     <option value="1 month">1 Month</option>
                     <option value="6 months">6 Months</option>
                     <option value="1 year">1 Year</option>
@@ -273,71 +341,139 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Price</label>
-                  <div className="price-input">
-                    <input type="number" value={formData.price} onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))} placeholder="0.00" min="0" step="0.01" required />
-                    <input type="text" value={formData.currency} onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))} className="currency-input" />
+                <div className="modern-form-group">
+                  <label className="modern-label">Price</label>
+                  <div className="modern-price-input">
+                    <input 
+                      type="number" 
+                      value={formData.price} 
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))} 
+                      placeholder="0.00" 
+                      min="0" 
+                      step="0.01" 
+                      required 
+                      className="modern-price-number"
+                    />
+                    <input 
+                      type="text" 
+                      value={formData.currency} 
+                      onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))} 
+                      className="modern-currency-input"
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Notes</label>
-                <textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} />
+              <div className="modern-form-group">
+                <label className="modern-label">Notes</label>
+                <textarea 
+                  value={formData.notes} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} 
+                  rows={2}
+                  className="modern-notes-textarea"
+                />
               </div>
             </div>
 
-            <div className="modal-actions">
-              <button type="button" className="secondary-button" onClick={onClose}>Cancel</button>
-              <button type="submit" className="primary-button" disabled={loading}>{loading ? 'Creating...' : 'Create Membership'}</button>
+            <div className="modern-modal-actions">
+              <button 
+                type="button" 
+                className="modern-secondary-button" 
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="modern-primary-button" 
+                disabled={loading || !formData.selectedService}
+              >
+                {loading ? 'Creating...' : 'Create Membership'}
+              </button>
             </div>
           </form>
         </div>
       </div>
 
       {showServiceModal && (
-        <div className="modal-overlay service-modal-overlay" onClick={() => setShowServiceModal(false)}>
-          <div className="service-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Select Services</h2>
-              <button className="close-btn" onClick={() => setShowServiceModal(false)} aria-label="Close"><IoClose /></button>
+        <div className="service-modal-overlay-modern" onClick={() => setShowServiceModal(false)}>
+          <div className="service-modal-modern" onClick={(e) => e.stopPropagation()}>
+            <div className="service-modal-header-modern">
+              <h2 className="service-modal-title-modern">
+                <span className="service-modal-title-dot"></span>
+                Select Services
+              </h2>
+              <button className="service-modal-close-modern" onClick={() => setShowServiceModal(false)} aria-label="Close">
+                <IoClose />
+              </button>
             </div>
 
-            <div className="service-search">
-              <input type="text" placeholder="Search services" value={serviceSearch} onChange={(e) => setServiceSearch(e.target.value)} />
+            <div className="service-search-modern">
+              <input 
+                type="text" 
+                placeholder="🔍 Search services by name..." 
+                value={serviceSearch} 
+                onChange={(e) => setServiceSearch(e.target.value)}
+                className="service-search-input-modern"
+              />
             </div>
 
-            <div className="service-list">
-              {Object.keys(filteredServices).map(category => (
-                <div key={category} className="service-category">
-                  <label className="category-header">
-                    <input type="checkbox" checked={(() => {
-                      const ids = groupedServices[category].map(s => s._id || s.id);
-                      return ids.length > 0 && ids.every(id => selectedServiceIds.has(id));
-                    })()} onChange={(e) => handleCategorySelect(category, e.target.checked)} />
-                    <span className="category-name">{category}</span>
-                  </label>
-
-                  <div className="category-services">
-                    {filteredServices[category].map(s => (
-                      <label key={s._id || s.id} className="service-item">
-                        <input type="checkbox" checked={selectedServiceIds.has(s._id || s.id)} onChange={(e) => handleServiceSelect(s._id || s.id, e.target.checked)} />
-                        <div className="service-details">
-                          <span className="service-name">{s.name}</span>
-                          <span className="service-duration">{s.duration} mins</span>
-                        </div>
-                        <span className="service-price">{s.effectivePrice || s.price}</span>
-                      </label>
-                    ))}
-                  </div>
+            <div className="service-list-modern">
+              {Object.keys(filteredServices).length === 0 ? (
+                <div className="empty-services-modern">
+                  <div className="empty-services-icon">🔍</div>
+                  <div className="empty-services-title">No services found</div>
+                  <div className="empty-services-text">Try adjusting your search terms</div>
                 </div>
-              ))}
+              ) : (
+                Object.keys(filteredServices).map(category => (
+                  <div key={category} className="service-category-modern">
+                    <div className="category-header-modern">
+                      <span className="category-name-modern">
+                        <span className="category-line-modern"></span>
+                        {category}
+                      </span>
+                    </div>
+
+                    <div className="category-services-modern">
+                      {filteredServices[category].map(s => (
+                        <div key={s._id || s.id} 
+                             className={`service-item-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}
+                             onClick={() => handleServiceSelect(s)}>
+                          <div className="service-details-modern">
+                            <span className={`service-name-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}>
+                              {s.name}
+                            </span>
+                            <span className={`service-duration-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}>
+                              <span className="service-duration-dot"></span>
+                              {s.duration} minutes
+                            </span>
+                          </div>
+                          <div className="service-price-container">
+                            <span className={`service-price-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}>
+                              AED {s.effectivePrice || s.price}
+                            </span>
+                            {formData.selectedService?._id === s._id && (
+                              <span className="service-selected-badge">
+                                ✓ Selected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
-            <div className="modal-actions">
-              <button className="secondary-button" onClick={() => setShowServiceModal(false)}>Close</button>
-              <button className="primary-button" onClick={saveSelectedServices}>Select ({selectedServiceIds.size})</button>
+            <div className="service-modal-actions-modern">
+              <button 
+                className="service-modal-close-btn" 
+                onClick={() => setShowServiceModal(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -465,19 +601,19 @@ const MembershipDetailModal = ({ isOpen, onClose, membership, onUpdateSuccess })
           </div>
 
           <div className="detail-section">
-            <strong>Included Services</strong>
-            <div className="services-list">
-              {(editable.selectedServices || []).length > 0 ? (
-                (editable.selectedServices || []).map((s, idx) => (
-                  <div className="service-item" key={s._id || s.id || idx}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{s.name}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>{s.sessionsAllowed ? `${s.sessionsAllowed} sessions` : ''}</div>
+            <strong>Included Service</strong>
+            <div className="service-info">
+              {editable.service || editable.serviceName ? (
+                <div className="service-item">
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{editable.serviceName || 'Service'}</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>
+                      {editable.numberOfSessions ? `${editable.numberOfSessions} sessions` : 'Unlimited sessions'}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{s._id || s.id}</div>
                   </div>
-                ))
-              ) : (<div className="no-services">No services assigned</div>)}
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{editable.service}</div>
+                </div>
+              ) : (<div className="no-services">No service assigned</div>)}
             </div>
           </div>
 

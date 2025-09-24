@@ -49,6 +49,31 @@ const PaymentClient = () => {
         console.log("Payments (admin/all) API result:", res.data);
 
         const paymentsData = res.data?.data?.payments || [];
+        
+        // Debug: Log payment data to understand the status issue
+        console.log("🔍 Payment Status Debug:");
+        console.log("Total payments:", paymentsData.length);
+        
+        const statusBreakdown = paymentsData.reduce((acc, p) => {
+          acc[p.status] = (acc[p.status] || 0) + 1;
+          return acc;
+        }, {});
+        console.log("Status breakdown:", statusBreakdown);
+        
+        // Log first few payments for detailed inspection
+        if (paymentsData.length > 0) {
+          console.log("First payment sample:", {
+            id: paymentsData[0]._id,
+            status: paymentsData[0].status,
+            bookingStatus: paymentsData[0].booking?.status,
+            paymentIntent: paymentsData[0].paymentIntent,
+            gatewayTransactionId: paymentsData[0].gatewayTransactionId,
+            processedAt: paymentsData[0].processedAt,
+            amount: paymentsData[0].amount,
+            createdAt: paymentsData[0].createdAt
+          });
+        }
+
         const mapped = paymentsData.map((p) => ({
           id: p._id,
           date: p.createdAt ? new Date(p.createdAt) : new Date(),
@@ -61,6 +86,8 @@ const PaymentClient = () => {
           gateway: p.paymentGateway || "-",
           bookingStatus: p.booking?.status || "-",
           refundAmount: p.refundAmount ? (p.refundAmount / 100) : 0,
+          // Include raw data for debugging
+          rawPayment: p
         }));
 
         setPayments(mapped);
@@ -75,6 +102,12 @@ const PaymentClient = () => {
     fetchPayments();
   }, []);
   
+  // Calculate status summary
+  const statusSummary = payments.reduce((acc, payment) => {
+    acc[payment.status] = (acc[payment.status] || 0) + 1;
+    return acc;
+  }, {});
+
   // Logic for sorting and filtering
   const sortedAndFilteredPayments = payments
     .filter(p => 
@@ -340,7 +373,45 @@ const PaymentClient = () => {
             <h1 className="pay-title">Payments transactions</h1>
             <h1 className="pay-sub-title">View, filter and export the history of your payments</h1>
           </div>
-          <div className="pay-options">
+          <div className="pay-options" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button 
+              className="pay-options-btn" 
+              onClick={() => window.location.reload()}
+              style={{ backgroundColor: '#f3f4f6', color: '#374151' }}
+            >
+              🔄 Refresh
+            </button>
+            
+            {/* <button 
+              className="pay-options-btn" 
+              onClick={async () => {
+                const pendingCount = payments.filter(p => p.status === 'pending').length;
+                if (pendingCount === 0) {
+                  alert('No pending payments found');
+                  return;
+                }
+                
+                if (window.confirm(`Fix ${pendingCount} pending payments? This will update payments to 'completed' status if their bookings are confirmed.`)) {
+                  try {
+                    setLoading(true);
+                    const response = await api.post('/payments/admin/fix-pending-status');
+                    if (response.data.success) {
+                      alert(`✅ Fixed ${response.data.updated} payments!`);
+                      window.location.reload();
+                    }
+                  } catch (error) {
+                    console.error('Failed to fix payments:', error);
+                    alert('❌ Failed to fix payments. Check console for details.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }
+              }}
+              style={{ backgroundColor: '#fef3c7', color: '#92400e' }}
+            >
+              🔧 Fix Pending Status
+            </button> */}
+            
             <button 
               className="pay-options-btn" 
               onClick={(e) => { e.stopPropagation(); setIsOptionsOpen(!isOptionsOpen); }}
@@ -357,6 +428,66 @@ const PaymentClient = () => {
             )}
           </div>
         </div>
+        
+        {/* Payment Status Summary */}
+        {payments.length > 0 && (
+          <div className="status-summary" style={{ 
+            padding: '20px', 
+            backgroundColor: '#f9fafb', 
+            borderRadius: '8px', 
+            marginTop: '20px',
+            border: '1px solid #e5e7eb'
+          }}>
+            <h3 style={{ margin: '0 0 15px 0', color: '#374151', fontSize: '16px' }}>Payment Status Summary</h3>
+            {/* <div className="status-cards" style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+              {Object.entries(statusSummary).map(([status, count]) => (
+                <div 
+                  key={status} 
+                  className={`status-card ${status}`}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '12px 20px',
+                    borderRadius: '8px',
+                    backgroundColor: status === 'pending' ? '#fef3c7' : 
+                                   status === 'completed' ? '#d1fae5' :
+                                   status === 'failed' ? '#fee2e2' :
+                                   status === 'cancelled' ? '#f3f4f6' : '#e0e7ff',
+                    border: `2px solid ${status === 'pending' ? '#f59e0b' : 
+                                        status === 'completed' ? '#10b981' :
+                                        status === 'failed' ? '#ef4444' :
+                                        status === 'cancelled' ? '#6b7280' : '#3b82f6'}`,
+                    minWidth: '100px'
+                  }}
+                >
+                  <span className="status-name" style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '600',
+                    textTransform: 'capitalize',
+                    color: status === 'pending' ? '#92400e' : 
+                           status === 'completed' ? '#065f46' :
+                           status === 'failed' ? '#991b1b' :
+                           status === 'cancelled' ? '#374151' : '#1e40af'
+                  }}>
+                    {status}
+                  </span>
+                  <span className="status-count" style={{ 
+                    fontSize: '20px', 
+                    fontWeight: 'bold',
+                    color: status === 'pending' ? '#92400e' : 
+                           status === 'completed' ? '#065f46' :
+                           status === 'failed' ? '#991b1b' :
+                           status === 'cancelled' ? '#374151' : '#1e40af'
+                  }}>
+                    {count}
+                  </span>
+                </div>
+              ))}
+            </div> */}
+          </div>
+        )}
+        
         <div className="pay-controls">
           <div className="pay-search">
             <span className="pay-search-icon"><SearchIcon /></span>

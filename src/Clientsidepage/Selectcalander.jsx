@@ -7,6 +7,7 @@ import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
 import './Selectcalander.css';
 import ClientSummary from '../calendar/components/ClientInformation.jsx';
+import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
 
 import {
   ChevronLeft,
@@ -533,6 +534,10 @@ const SelectCalendar = () => {
   const [upiId, setUpiId] = useState('');
   const [availableGiftCards, setAvailableGiftCards] = useState([]); // [{_id, code, remainingValue}]
   const [availableMemberships, setAvailableMemberships] = useState([]); // [{_id, name, status, expiresAt}]
+  
+  // Membership integration states
+  const [appliedMembership, setAppliedMembership] = useState(null);
+  const [membershipDiscountAmount, setMembershipDiscountAmount] = useState(0);
   const [selectedGiftCard, setSelectedGiftCard] = useState(null);
   const [selectedMembership, setSelectedMembership] = useState(null);
   const [redeemGiftCardAmount, setRedeemGiftCardAmount] = useState(0);
@@ -2097,6 +2102,27 @@ const SelectCalendar = () => {
     return true;
   };
 
+  // Membership integration handlers
+  const handleMembershipApplied = (membership, matchingService) => {
+    console.log('🎯 Admin applying membership:', membership, 'for service:', matchingService);
+    
+    setAppliedMembership(membership);
+    setMembershipDiscountAmount(matchingService.price || 0);
+    
+    // Show success feedback
+    alert(`✅ Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`);
+  };
+
+  const handleMembershipRemoved = () => {
+    console.log('❌ Admin removing applied membership');
+    
+    setAppliedMembership(null);
+    setMembershipDiscountAmount(0);
+    
+    // Show feedback
+    alert('Membership removed. Regular pricing restored.');
+  };
+
   const handleCreateBooking = async () => {
     setBookingLoading(true);
     setBookingError(null);
@@ -2227,6 +2253,26 @@ const SelectCalendar = () => {
       let finalAmount = totalAmount;
       const paymentDetails = {};
 
+      // Apply admin membership discount first
+      if (appliedMembership && membershipDiscountAmount > 0) {
+        console.log('🎯 Applying admin membership discount:', {
+          membership: appliedMembership.name,
+          discount: membershipDiscountAmount,
+          originalAmount: finalAmount
+        });
+        
+        finalAmount = Math.max(0, finalAmount - membershipDiscountAmount);
+        paymentDetails.adminMembership = {
+          membershipId: appliedMembership._id,
+          discountAmount: membershipDiscountAmount,
+          membershipName: appliedMembership.name,
+          sessionDeduction: true, // Signal backend to deduct one session
+          remainingSessionsBefore: appliedMembership.remainingSessions
+        };
+        
+        console.log('✅ Final amount after membership discount:', finalAmount);
+      }
+
       if (paymentMethod === 'giftcard' && selectedGiftCard) {
         // Auto default to full possible redeem if user left amount blank or zero
         const requested = Number(redeemGiftCardAmount);
@@ -2239,9 +2285,17 @@ const SelectCalendar = () => {
         paymentDetails.redeemAmount = redeem;
       }
       if (paymentMethod === 'membership' && selectedMembership) {
-        // Simple assumption: membership covers full amount (adjust if partial rules apply)
-        finalAmount = 0;
+        // Set up membership payment to trigger session deduction in backend
+        finalAmount = 0; // No charge when using membership session
         paymentDetails.membershipId = selectedMembership._id;
+        paymentDetails.membershipName = selectedMembership.name;
+        paymentDetails.sessionDeduction = true; // Signal backend to deduct session
+        
+        console.log('💳 Using membership payment:', {
+          membershipId: selectedMembership._id,
+          membershipName: selectedMembership.name,
+          sessionDeduction: true
+        });
       }
       if (paymentMethod === 'card') {
         paymentDetails.card = { ...cardDetails };
@@ -4428,13 +4482,27 @@ const SelectCalendar = () => {
                     </div>
                   </div>
 
+                  {/* Admin Membership Checker */}
+                  <AdminMembershipChecker
+                    selectedClient={selectedExistingClient || {
+                      firstName: clientInfo.name?.split(' ')[0] || '',
+                      lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
+                      email: clientInfo.email,
+                      phone: clientInfo.phone
+                    }}
+                    selectedServices={multipleAppointments.map(apt => apt.service)}
+                    appliedMembership={appliedMembership}
+                    onMembershipApplied={handleMembershipApplied}
+                    onMembershipRemoved={handleMembershipRemoved}
+                  />
+
                   {/* Payment Information */}
                   <div className="booking-modal-form">
                     <div className="form-group">
                       <label> Select Payment Method:</label>
                       <div className="payment-method-grid">
-                        {['cash', 'card', 'upi', 'membership', 'giftcard'].map(method => {
-                          const labels = { cash: 'Cash', card: 'Card', upi: 'UPI', membership: 'Membership', giftcard: 'Gift Card' };
+                        {['cash', 'card', 'upi', 'giftcard'].map(method => {
+                          const labels = { cash: 'Cash', card: 'Card', upi: 'UPI', giftcard: 'Gift Card' };
                           return (
                             <button
                               type="button"
@@ -4500,7 +4568,7 @@ const SelectCalendar = () => {
                       </div>
                     )}
 
-                    {paymentMethod === 'membership' && (
+                    {/* {paymentMethod === 'membership' && (
                       <div className="payment-conditional membership-section">
                         <h5>Redeem Membership</h5>
                         {benefitsLoading && <div className="mini-loading">Loading memberships...</div>}
@@ -4519,7 +4587,7 @@ const SelectCalendar = () => {
                           ))}
                         </div>
                       </div>
-                    )}
+                    )} */}
 
                     {paymentMethod === 'giftcard' && (
                       <div className="payment-conditional giftcard-section">
@@ -4581,6 +4649,12 @@ const SelectCalendar = () => {
                     {/* Payment Summary */}
                     <div className="payment-summary-box">
                       <div className="summary-row"><span>Subtotal:</span><span>AED {getTotalSessionPrice()}</span></div>
+                      {appliedMembership && membershipDiscountAmount > 0 && (
+                        <div className="summary-row discount">
+                          <span>Membership Discount ({appliedMembership.name}):</span>
+                          <span>- AED {membershipDiscountAmount}</span>
+                        </div>
+                      )}
                       {paymentMethod === 'giftcard' && selectedGiftCard && redeemGiftCardAmount > 0 && (
                         <div className="summary-row discount"><span>Gift Card:</span><span>- AED {Math.min(redeemGiftCardAmount, getTotalSessionPrice())}</span></div>
                       )}
@@ -4590,9 +4664,16 @@ const SelectCalendar = () => {
                       <div className="summary-row total"><span>Total Due:</span><span>
                         AED {(() => {
                           // Business rules:
-                          // 1. Gift Card: subtract redeemed amount (capped by remainingValue & subtotal)
-                          // 2. Membership: assumes full coverage of services (set to 0). If partial coverage needed later, adjust here.
+                          // 1. Admin Applied Membership: subtract discount amount from total
+                          // 2. Gift Card: subtract redeemed amount (capped by remainingValue & subtotal)
+                          // 3. Legacy Membership Payment: assumes full coverage of services (set to 0)
                           let total = getTotalSessionPrice();
+                          
+                          // Apply admin membership discount first
+                          if (appliedMembership && membershipDiscountAmount > 0) {
+                            total = Math.max(0, total - membershipDiscountAmount);
+                          }
+                          
                           if (paymentMethod === 'giftcard' && selectedGiftCard) {
                             const redeemable = Math.min(redeemGiftCardAmount || 0, selectedGiftCard.remainingValue || 0, total);
                             total = Math.max(0, total - redeemable);
@@ -4620,6 +4701,12 @@ const SelectCalendar = () => {
                     >
                       {bookingLoading ? ' Processing Payment...' : (() => {
                         let total = getTotalSessionPrice();
+                        
+                        // Apply admin membership discount first
+                        if (appliedMembership && membershipDiscountAmount > 0) {
+                          total = Math.max(0, total - membershipDiscountAmount);
+                        }
+                        
                         if (paymentMethod === 'giftcard' && selectedGiftCard) total = Math.max(0, total - Math.min(redeemGiftCardAmount, total));
                         if (paymentMethod === 'membership' && selectedMembership) total = 0;
                         return `Confirm ${multipleAppointments.length} Service${multipleAppointments.length > 1 ? 's' : ''} - AED ${total}`;

@@ -187,15 +187,12 @@ const DatePickerModal = ({ isOpen, onClose, onDateSelect, selectedDate }) => {
 
 // --- Export Modal Component ---
 const ExportModal = ({ isOpen, onClose, onExport, employees }) => {
-  const [reportType, setReportType] = useState('weekly');
-  const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedEmployee, setSelectedEmployee] = useState('all');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [exportFormat, setExportFormat] = useState('csv');
 
   if (!isOpen) return null;
 
-  const weeks = Array.from({ length: 4 }, (_, i) => i + 1);
   const months = [
     { value: 1, name: 'January' }, { value: 2, name: 'February' }, { value: 3, name: 'March' },
     { value: 4, name: 'April' }, { value: 5, name: 'May' }, { value: 6, name: 'June' },
@@ -203,12 +200,12 @@ const ExportModal = ({ isOpen, onClose, onExport, employees }) => {
     { value: 10, name: 'October' }, { value: 11, name: 'November' }, { value: 12, name: 'December' }
   ];
 
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+
   const handleExportClick = () => {
     onExport({
-      reportType,
-      selectedWeek: Number(selectedWeek),
       selectedMonth: Number(selectedMonth),
-      selectedEmployee,
+      selectedYear: Number(selectedYear),
       exportFormat
     });
     onClose();
@@ -218,38 +215,24 @@ const ExportModal = ({ isOpen, onClose, onExport, employees }) => {
     <div className="timesheet-export-modal-overlay" onClick={onClose}>
       <div className="timesheet-export-modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="timesheet-export-modal-header">
-          <h3>Export Timesheet Report</h3>
+          <h3>Export Monthly Timesheet Report</h3>
           <button onClick={onClose}>×</button>
         </div>
         <div className="timesheet-export-modal-content">
           <div className="timesheet-modal-group">
-            <label>Report Period</label>
+            <label>Select Month & Year</label>
             <div className="timesheet-modal-row">
-              <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
+              <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+                {months.map(month => (
+                  <option key={month.value} value={month.value}>{month.name}</option>
+                ))}
               </select>
-              {reportType === 'weekly' ? (
-                <select value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)}>
-                  {weeks.map(week => <option key={week} value={week}>Week {week}</option>)}
-                </select>
-              ) : (
-                <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-                  {months.map(month => <option key={month.value} value={month.value}>{month.name}</option>)}
-                </select>
-              )}
+              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+                {years.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
-          </div>
-          <div className="timesheet-modal-group">
-            <label>Select Employee</label>
-            <select value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
-              <option value="all">All Employees</option>
-              {employees.map(emp => (
-                <option key={emp.employeeId || emp._id} value={emp.employeeId || emp._id}>
-                  {emp.user?.firstName || emp.firstName} {emp.user?.lastName || emp.lastName}
-                </option>
-              ))}
-            </select>
           </div>
           <div className="timesheet-modal-group">
             <label>Export Format</label>
@@ -259,10 +242,17 @@ const ExportModal = ({ isOpen, onClose, onExport, employees }) => {
                 <option value="excel">Excel</option>
             </select>
           </div>
+          <div className="timesheet-modal-group">
+            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>
+              This will export all employees' timesheet data for the entire selected month.
+            </p>
+          </div>
         </div>
         <div className="timesheet-export-modal-footer">
           <button onClick={onClose} className="timesheet-btn-secondary">Cancel</button>
-          <button onClick={handleExportClick} className="timesheet-btn-primary">Export Report</button>
+          <button onClick={handleExportClick} className="timesheet-btn-primary">
+            Export {months.find(m => m.value === Number(selectedMonth))?.name} {selectedYear}
+          </button>
         </div>
       </div>
     </div>
@@ -280,50 +270,88 @@ const TimesheetApp = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Export helpers (unchanged)
-  const downloadCSV = (data) => {
-    const headers = ['Name', 'Role', 'Team', 'Date', 'Clock In', 'Clock Out', 'Hours Worked'];
+  // Fetch monthly timesheet data for all employees
+  const fetchMonthlyTimesheetData = async (month, year) => {
+    const monthlyData = [];
+    const daysInMonth = getDaysInMonth(year, month - 1);
+    
+    // Fetch data for each day of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dateString = date.toISOString().split('T')[0];
+      
+      try {
+        const response = await api.get(`/employees?includeAttendance=true&date=${dateString}`);
+        if (response.data && response.data.success) {
+          const employees = response.data.data.employees || [];
+          const dayData = generateTimesheetFromEmployees(employees, dateString);
+          monthlyData.push(...dayData);
+        }
+      } catch (error) {
+        console.error(`Error fetching data for ${dateString}:`, error);
+        // Continue with other dates even if one fails
+      }
+    }
+    
+    return monthlyData;
+  };
+
+  // Export helpers
+  const downloadCSV = (data, month, year) => {
+    const monthName = getMonthName(month - 1);
+    const headers = ['Name', 'Role', 'Team', 'Date', 'Clock In', 'Clock Out', 'Hours Worked', 'Status'];
     const csvContent = [
       headers.join(','),
       ...data.map(item => [
         `"${item.name}"`, `"${item.role}"`, `"${item.team}"`, `"${item.date}"`,
-        `"${item.clockIn}"`, `"${item.clockOut}"`, `"${item.hoursWorked}"`
+        `"${item.clockIn}"`, `"${item.clockOut}"`, `"${item.hoursWorked}"`, `"${item.status}"`
       ].join(','))
     ].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.setAttribute('href', URL.createObjectURL(blob));
-    link.setAttribute('download', 'timesheet-report.csv');
+    link.setAttribute('download', `timesheet-${monthName}-${year}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    Swal.fire({ icon: 'success', title: 'Exported as CSV!' });
+    Swal.fire({ 
+      icon: 'success', 
+      title: 'Exported as CSV!', 
+      text: `${monthName} ${year} timesheet data exported successfully.`
+    });
   };
 
-  const downloadExcel = (data) => {
-    const headers = ['Name', 'Role', 'Team', 'Date', 'Clock In', 'Clock Out', 'Hours Worked'];
+  const downloadExcel = (data, month, year) => {
+    const monthName = getMonthName(month - 1);
+    const headers = ['Name', 'Role', 'Team', 'Date', 'Clock In', 'Clock Out', 'Hours Worked', 'Status'];
     const excelContent = [
       headers.join('\t'),
       ...data.map(item => [
-        item.name, item.role, item.team, item.date, item.clockIn, item.clockOut, item.hoursWorked
+        item.name, item.role, item.team, item.date, item.clockIn, item.clockOut, item.hoursWorked, item.status
       ].join('\t'))
     ].join('\n');
     const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const link = document.createElement('a');
     link.setAttribute('href', URL.createObjectURL(blob));
-    link.setAttribute('download', 'timesheet-report.xls');
+    link.setAttribute('download', `timesheet-${monthName}-${year}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    Swal.fire({ icon: 'success', title: 'Exported as Excel!' });
+    Swal.fire({ 
+      icon: 'success', 
+      title: 'Exported as Excel!', 
+      text: `${monthName} ${year} timesheet data exported successfully.`
+    });
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = (data, month, year) => {
+    const monthName = getMonthName(month - 1);
     Swal.fire({
       icon: 'info',
       title: 'PDF Export',
-      text: 'PDF report generation functionality is not yet implemented.',
+      text: `PDF export for ${monthName} ${year} will be available soon.`,
     });
   };
 
@@ -394,17 +422,43 @@ const TimesheetApp = () => {
     fetchTimesheetData(selectedDate);
   };
 
-  const handleExport = (options) => {
-    let filteredReportData = timesheetData.filter(item =>
-      options.selectedEmployee === 'all' || item.employeeId === options.selectedEmployee
-    );
-
-    if (options.exportFormat === 'csv') {
-      downloadCSV(filteredReportData);
-    } else if (options.exportFormat === 'excel') {
-      downloadExcel(filteredReportData);
-    } else if (options.exportFormat === 'pdf') {
-      downloadPDF();
+  const handleExport = async (options) => {
+    try {
+      setIsExporting(true);
+      
+      // Show loading message
+      const loadingAlert = Swal.fire({
+        title: 'Exporting Data...',
+        text: 'Please wait while we prepare your monthly timesheet report.',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+      
+      // Fetch all employees for the entire selected month
+      const monthlyData = await fetchMonthlyTimesheetData(options.selectedMonth, options.selectedYear);
+      
+      // Close loading alert
+      Swal.close();
+      
+      if (options.exportFormat === 'csv') {
+        downloadCSV(monthlyData, options.selectedMonth, options.selectedYear);
+      } else if (options.exportFormat === 'excel') {
+        downloadExcel(monthlyData, options.selectedMonth, options.selectedYear);
+      } else if (options.exportFormat === 'pdf') {
+        downloadPDF(monthlyData, options.selectedMonth, options.selectedYear);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Swal.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Failed',
+        text: 'Failed to export timesheet data. Please try again.',
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -470,9 +524,17 @@ const TimesheetApp = () => {
           <button
             className="timesheet-export-button"
             onClick={() => setShowExportModal(true)}
-            style={{ background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, cursor: 'pointer' }}
+            disabled={isExporting}
+            style={{ 
+              background: isExporting ? '#6b7280' : '#111', 
+              color: '#fff', 
+              border: 'none', 
+              padding: '8px 16px', 
+              borderRadius: 6, 
+              cursor: isExporting ? 'not-allowed' : 'pointer' 
+            }}
           >
-            <span>Export</span>
+            <span>{isExporting ? 'Exporting...' : 'Export Monthly Report'}</span>
           </button>
 
           <button
