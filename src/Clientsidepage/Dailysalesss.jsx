@@ -44,14 +44,7 @@ const DailySales = () => {
   const processPaymentsData = (payments) => {
     const transactionTypes = ['Services', 'Membership card', 'Gift cards'];
     
-    // Filter payments for current date
-    const currentDateStr = formatApiDate(currentDate);
-    const todaysPayments = payments.filter(payment => {
-      const paymentDate = payment.createdAt.slice(0, 10);
-      return paymentDate === currentDateStr;
-    });
-
-    // Count transactions by type (for now, we'll categorize all as Services since we don't have specific type data)
+    // Count transactions by type
     const processedTransactions = transactionTypes.map(type => {
       let salesQty = 0;
       let refundQty = 0;
@@ -59,13 +52,26 @@ const DailySales = () => {
 
       if (type === 'Services') {
         // Count completed payments as sales
-        salesQty = todaysPayments.filter(p => p.status === 'completed').length;
-        // Count refunds
-        refundQty = todaysPayments.filter(p => p.refundAmount > 0).length;
+        const completedPayments = payments.filter(p => 
+          p.status === 'completed' || p.status === 'paid' || p.status === 'success'
+        );
+        salesQty = completedPayments.length;
+        
+        // Count refunds - check multiple possible refund indicators
+        refundQty = payments.filter(p => 
+          (p.refundAmount && p.refundAmount > 0) || 
+          p.status === 'refunded' || 
+          p.status === 'cancelled'
+        ).length;
+        
         // Calculate gross total from completed payments
-        grossTotal = todaysPayments
-          .filter(p => p.status === 'completed')
-          .reduce((sum, p) => sum + (p.amount / 100), 0); // Convert from cents
+        grossTotal = completedPayments.reduce((sum, p) => {
+          // Handle different possible amount formats
+          const amount = p.amount || p.totalAmount || p.finalAmount || 0;
+          // Check if amount is in cents or regular format
+          const actualAmount = amount > 1000 ? amount / 100 : amount;
+          return sum + actualAmount;
+        }, 0);
       }
 
       return {
@@ -86,34 +92,88 @@ const DailySales = () => {
       setError(null);
       try {
         const dateStr = formatApiDate(currentDate);
+        console.log('📅 Fetching data for date:', dateStr);
         
-        // Fetch both APIs in parallel
-        const [cashMovementRes, paymentsRes] = await Promise.all([
-          api.get(`/admin/cash-movement-summary?date=${dateStr}`),
-          api.get(`/payments/admin/all?page=1&limit=1000&date=${dateStr}`) // Server filters by date now
-        ]);
+        // Try different API endpoints and approaches
+        let cashMovementRes, paymentsRes;
+        
+        try {
+          // Fetch cash movement data
+          cashMovementRes = await api.get(`/admin/cash-movement-summary?date=${dateStr}`);
+        } catch (cashErr) {
+          console.warn('Cash movement API failed, trying alternative:', cashErr);
+          // Try alternative endpoint or create empty response
+          cashMovementRes = { data: { data: {} } };
+        }
+        
+        try {
+          // Fetch payments data - try multiple possible endpoints
+          paymentsRes = await api.get(`/payments/admin/all?page=1&limit=1000&date=${dateStr}`);
+        } catch (paymentsErr) {
+          console.warn('Payments API with date failed, trying without date filter:', paymentsErr);
+          try {
+            // Try without date filter and filter client-side
+            paymentsRes = await api.get(`/payments/admin/all?page=1&limit=1000`);
+          } catch (paymentsErr2) {
+            console.warn('Alternative payments API also failed:', paymentsErr2);
+            paymentsRes = { data: { data: { payments: [] } } };
+          }
+        }
 
         // Process cash movement summary
         const cashMovementData = cashMovementRes.data?.data || {};
+        
         const paymentTypes = ['Card', 'Cash', 'Upi', 'GiftCard Redemption', 'Membership Card'];
-        const processedCashMovement = paymentTypes.map(type => ({
-          paymentType: type,
-          paymentsCollected: cashMovementData[type]?.paymentsCollected 
-            ? `AED ${(cashMovementData[type].paymentsCollected / 100).toFixed(2)}` 
-            : "AED 0.00",
-          refundsPaid: cashMovementData[type]?.refundsPaid 
-            ? `AED ${(cashMovementData[type].refundsPaid / 100).toFixed(2)}` 
-            : "AED 0.00"
-        }));
+        const processedCashMovement = paymentTypes.map(type => {
+          const typeData = cashMovementData[type] || {};
+          const paymentsCollected = typeData.paymentsCollected || 0;
+          const refundsPaid = typeData.refundsPaid || 0;
+          
+          return {
+            paymentType: type,
+            paymentsCollected: paymentsCollected > 0 
+              ? `AED ${(paymentsCollected / 100).toFixed(2)}` 
+              : "AED 0.00",
+            refundsPaid: refundsPaid > 0 
+              ? `AED ${(refundsPaid / 100).toFixed(2)}` 
+              : "AED 0.00"
+          };
+        });
 
         // Process payments data for transaction summary
-  const paymentsData = paymentsRes.data?.data?.payments || [];
-  const processedTransactions = processPaymentsData(paymentsData); // Already date-filtered by API
+        let paymentsData = paymentsRes.data?.data?.payments || paymentsRes.data?.payments || [];
+        
+        // If we got all payments, filter by current date
+        if (paymentsData.length > 0) {
+          const currentDateStr = formatApiDate(currentDate);
+          paymentsData = paymentsData.filter(payment => {
+            if (!payment.createdAt) return false;
+            
+            // Handle different date formats
+            let paymentDate;
+            if (typeof payment.createdAt === 'string') {
+              paymentDate = payment.createdAt.slice(0, 10); // YYYY-MM-DD
+            } else {
+              paymentDate = new Date(payment.createdAt).toISOString().slice(0, 10);
+            }
+            
+            return paymentDate === currentDateStr;
+          });
+          console.log(`💰 Filtered ${paymentsData.length} payments for ${currentDateStr}`);
+        }
+        
+        const processedTransactions = processPaymentsData(paymentsData);
+
+        console.log('✅ Data processing completed:', {
+          transactionsSummary: processedTransactions,
+          cashMovementSummary: processedCashMovement
+        });
 
         setTransactionSummary(processedTransactions);
         setCashMovementSummary(processedCashMovement);
       } catch (err) {
         console.error('Failed to fetch daily sales data:', err);
+        console.error('Error details:', err.response?.data); // More detailed error logging
         setError(err.response?.data?.message || err.message || "Failed to load daily sales data");
         // Set empty arrays on error
         setTransactionSummary([]);
@@ -134,6 +194,15 @@ const DailySales = () => {
   const hasCashMovementData = cashMovementSummary.some(
     (item) => item.paymentsCollected !== "AED 0.00" || item.refundsPaid !== "AED 0.00"
   );
+
+  // Debug logs for data state (only log once when data changes)
+  useEffect(() => {
+    console.log('🔄 Data State Updated:');
+    console.log('Transaction Summary:', transactionSummary);
+    console.log('Has Transaction Data:', hasTransactionData);
+    console.log('Cash Movement Summary:', cashMovementSummary);
+    console.log('Has Cash Movement Data:', hasCashMovementData);
+  }, [transactionSummary, cashMovementSummary, hasTransactionData, hasCashMovementData]);
 
   const formatDate = (date) => {
     return date.toLocaleDateString("en-GB", {
@@ -352,7 +421,12 @@ const DailySales = () => {
 
       <div className="ds-tables">
         <div className="ds-table-card">
-          <h2 className="ds-table-title">Transaction summary</h2>
+          <h2 className="ds-table-title">
+            Transaction summary 
+            <small style={{fontSize: '12px', color: '#666', marginLeft: '10px'}}>
+              (Has Data: {hasTransactionData ? 'Yes' : 'No'}, Items: {transactionSummary.length})
+            </small>
+          </h2>
           <div className="ds-table-wrapper">
             {!hasTransactionData ? (
               <NoDataState
@@ -371,14 +445,17 @@ const DailySales = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {transactionSummary.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.itemType}</td>
-                      <td>{item.salesQty}</td>
-                      <td>{item.refundQty}</td>
-                      <td>{item.grossTotal}</td>
-                    </tr>
-                  ))}
+                  {transactionSummary.map((item, index) => {
+                    console.log(`🎯 Rendering transaction row ${index}:`, item);
+                    return (
+                      <tr key={index}>
+                        <td>{item.itemType}</td>
+                        <td>{item.salesQty}</td>
+                        <td>{item.refundQty}</td>
+                        <td>{item.grossTotal}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

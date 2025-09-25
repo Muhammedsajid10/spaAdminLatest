@@ -187,8 +187,93 @@ const DatePickerModal = ({ isOpen, onClose, onDateSelect, selectedDate }) => {
   );
 };
 
+// --- Export Loading Overlay Component ---
+const ExportLoadingOverlay = ({ isVisible, progress }) => {
+  if (!isVisible) return null;
+
+  const progressPercentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+
+  return (
+    <div 
+      className="timesheet-export-loading-overlay" 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+      }}
+    >
+      <div 
+        style={{
+          backgroundColor: 'white',
+          padding: '32px',
+          borderRadius: '12px',
+          minWidth: '400px',
+          textAlign: 'center',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        }}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <RefreshCw 
+            size={48} 
+            style={{ 
+              color: '#111', 
+              animation: 'spin 1s linear infinite'
+            }} 
+          />
+        </div>
+        
+        <h3 style={{ margin: '0 0 8px 0', color: '#111', fontSize: '18px', fontWeight: '600' }}>
+          Exporting Timesheet
+        </h3>
+        
+        <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '14px' }}>
+          {progress.message}
+        </p>
+        
+        {progress.total > 0 && (
+          <div style={{ marginBottom: '12px' }}>
+            <div 
+              style={{
+                width: '100%',
+                height: '8px',
+                backgroundColor: '#f0f0f0',
+                borderRadius: '4px',
+                overflow: 'hidden'
+              }}
+            >
+              <div 
+                style={{
+                  width: `${progressPercentage}%`,
+                  height: '100%',
+                  backgroundColor: '#111',
+                  borderRadius: '4px',
+                  transition: 'width 0.3s ease'
+                }}
+              />
+            </div>
+            <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+              {progress.current} of {progress.total} completed ({progressPercentage}%)
+            </div>
+          </div>
+        )}
+        
+        <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>
+          Please wait while we prepare your timesheet export...
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // --- Export Modal Component ---
-const ExportModal = ({ isOpen, onClose, onExport }) => {
+const ExportModal = ({ isOpen, onClose, onExport, isExporting }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedFormat, setSelectedFormat] = useState('excel');
@@ -271,12 +356,21 @@ const ExportModal = ({ isOpen, onClose, onExport }) => {
           </div>
         </div>
         <div className="timesheet-export-modal-footer">
-          <button onClick={onClose} className="timesheet-btn-secondary">Cancel</button>
+          <button 
+            onClick={onClose} 
+            className="timesheet-btn-secondary"
+            disabled={isExporting}
+            style={{ opacity: isExporting ? 0.6 : 1, cursor: isExporting ? 'not-allowed' : 'pointer' }}
+          >
+            Cancel
+          </button>
           <button 
             onClick={handleExportClick} 
             className="timesheet-btn-primary"
+            disabled={isExporting}
+            style={{ opacity: isExporting ? 0.6 : 1, cursor: isExporting ? 'not-allowed' : 'pointer' }}
           >
-            Export
+            {isExporting ? 'Processing...' : 'Export'}
           </button>
         </div>
       </div>
@@ -295,6 +389,8 @@ const TimesheetApp = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState({ current: 0, total: 0, message: '' });
 
   // Export helpers (unchanged)
   const downloadCSV = (data) => {
@@ -495,30 +591,165 @@ const TimesheetApp = () => {
     fetchTimesheetData(selectedDate);
   };
 
-  const handleExport = (options) => {
+  const handleExport = async (options) => {
     const { month, year, format } = options;
     
-    // Filter data for the selected month and year
-    const filteredReportData = timesheetData.filter(item => {
-      const itemDate = new Date(item.date);
-      return itemDate.getMonth() === month && itemDate.getFullYear() === year;
-    });
-
-    if (filteredReportData.length === 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'No Data',
-        text: 'No timesheet data found for the selected criteria.',
+    try {
+      setIsExporting(true);
+      setExportProgress({ current: 0, total: 0, message: 'Initializing export...' });
+      
+      // Get all days in the selected month
+      const daysInMonth = getDaysInMonth(year, month);
+      const monthlyTimesheetData = [];
+      
+      setExportProgress({ current: 0, total: daysInMonth + 2, message: 'Fetching employee list...' });
+      
+      // Fetch all employees first to ensure we include everyone
+      const allEmployeesResponse = await api.get('/employees');
+      const allEmployees = allEmployeesResponse.data?.data?.employees || [];
+      
+      if (allEmployees.length === 0) {
+        setIsExporting(false);
+        Swal.fire({
+          icon: 'warning',
+          title: 'No Employees Found',
+          text: 'No employees found in the system.',
+        });
+        return;
+      }
+      
+      setExportProgress({ current: 1, total: daysInMonth + 2, message: `Found ${allEmployees.length} employees. Processing attendance data...` });
+      
+      // Generate timesheet data for each day of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const monthName = getMonthName(month);
+        
+        setExportProgress({ 
+          current: day + 1, 
+          total: daysInMonth + 2, 
+          message: `Processing ${monthName} ${day}, ${year}...` 
+        });
+        
+        try {
+          // Fetch attendance data for this specific date
+          const response = await api.get(`/employees?includeAttendance=true&date=${dateStr}`);
+          const employeesWithAttendance = response.data?.success ? response.data.data.employees || [] : [];
+          
+          // Create a map of employees with attendance data
+          const attendanceMap = new Map();
+          employeesWithAttendance.forEach(emp => {
+            attendanceMap.set(emp._id || emp.id, emp);
+          });
+          
+          // Generate timesheet entries for ALL employees for this date
+          allEmployees.forEach(employee => {
+            const employeeId = employee._id || employee.id;
+            const attendanceData = attendanceMap.get(employeeId);
+            
+            const firstName = employee.user?.firstName || employee.firstName || '';
+            const lastName = employee.user?.lastName || employee.lastName || '';
+            const fullName = `${firstName} ${lastName}`.trim() || 'Unknown Employee';
+            
+            // Use attendance data if available, otherwise use placeholder values
+            const clockIn = attendanceData?.clockIn || '-';
+            const clockOut = attendanceData?.clockOut || '-';
+            let hoursWorked = attendanceData?.hoursWorked || '-';
+            
+            // Format hours worked if it's a number
+            if (typeof attendanceData?.actualHours === 'number' && attendanceData.actualHours > 0) {
+              const hours = Math.floor(attendanceData.actualHours);
+              const minutes = Math.round((attendanceData.actualHours - hours) * 60);
+              hoursWorked = minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+            } else if (clockIn !== '-' && clockOut !== '-') {
+              hoursWorked = calculateHoursWorked(clockIn, clockOut);
+            }
+            
+            const hasData = clockIn !== '-' && clockOut !== '-';
+            
+            monthlyTimesheetData.push({
+              id: employeeId,
+              initials: getInitials(fullName),
+              name: fullName,
+              role: employee.position || employee.department || 'Staff Member',
+              team: employee.department || employee.team || 'Centre Dubai',
+              date: formatDate(dateStr),
+              clockIn: clockIn,
+              clockOut: clockOut,
+              breaks: attendanceData?.breaks || '-',
+              hoursWorked: hoursWorked,
+              status: hasData ? 'Recorded' : 'No data',
+              statusColor: hasData ? 'green' : 'gray',
+              employeeId: employeeId
+            });
+          });
+        } catch (dayError) {
+          console.error(`Error fetching data for ${dateStr}:`, dayError);
+          // Still add all employees with "No data" for this day
+          allEmployees.forEach(employee => {
+            const firstName = employee.user?.firstName || employee.firstName || '';
+            const lastName = employee.user?.lastName || employee.lastName || '';
+            const fullName = `${firstName} ${lastName}`.trim() || 'Unknown Employee';
+            
+            monthlyTimesheetData.push({
+              id: employee._id || employee.id,
+              initials: getInitials(fullName),
+              name: fullName,
+              role: employee.position || employee.department || 'Staff Member',
+              team: employee.department || employee.team || 'Centre Dubai',
+              date: formatDate(dateStr),
+              clockIn: '-',
+              clockOut: '-',
+              breaks: '-',
+              hoursWorked: '-',
+              status: 'No data',
+              statusColor: 'gray',
+              employeeId: employee._id || employee.id
+            });
+          });
+        }
+        
+        // Small delay to prevent overwhelming the server
+        if (day % 5 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      setExportProgress({ 
+        current: daysInMonth + 2, 
+        total: daysInMonth + 2, 
+        message: `Generating ${format.toUpperCase()} file...` 
       });
-      return;
-    }
+      
+      if (monthlyTimesheetData.length === 0) {
+        setIsExporting(false);
+        Swal.fire({
+          icon: 'warning',
+          title: 'No Data',
+          text: 'No timesheet data found for the selected month.',
+        });
+        return;
+      }
 
-    if (format === 'csv') {
-      downloadCSV(filteredReportData);
-    } else if (format === 'excel') {
-      downloadExcel(filteredReportData);
-    } else if (format === 'pdf') {
-      downloadPDF(filteredReportData);
+      // Export the complete monthly data
+      if (format === 'csv') {
+        downloadCSV(monthlyTimesheetData);
+      } else if (format === 'excel') {
+        downloadExcel(monthlyTimesheetData);
+      } else if (format === 'pdf') {
+        downloadPDF(monthlyTimesheetData);
+      }
+      
+      setIsExporting(false);
+      
+    } catch (error) {
+      console.error('Error generating monthly export:', error);
+      setIsExporting(false);
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Failed',
+        text: 'There was an error generating the monthly timesheet. Please try again.',
+      });
     }
   };
 
@@ -584,9 +815,18 @@ const TimesheetApp = () => {
           <button
             className="timesheet-export-button"
             onClick={() => setShowExportModal(true)}
-            style={{ background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, cursor: 'pointer' }}
+            disabled={isExporting}
+            style={{ 
+              background: isExporting ? '#ccc' : '#111', 
+              color: '#fff', 
+              border: 'none', 
+              padding: '8px 12px', 
+              borderRadius: 6, 
+              cursor: isExporting ? 'not-allowed' : 'pointer',
+              opacity: isExporting ? 0.6 : 1
+            }}
           >
-            <span>Export</span>
+            <span>{isExporting ? 'Exporting...' : 'Export'}</span>
           </button>
 
           
@@ -701,6 +941,7 @@ const TimesheetApp = () => {
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
         onExport={handleExport}
+        isExporting={isExporting}
       />
       <DatePickerModal
         isOpen={showDatePickerModal}
@@ -708,6 +949,20 @@ const TimesheetApp = () => {
         onDateSelect={handleDateSelect}
         selectedDate={selectedDate}
       />
+      
+      {/* Export Loading Overlay */}
+      <ExportLoadingOverlay 
+        isVisible={isExporting} 
+        progress={exportProgress} 
+      />
+      
+      {/* Add CSS animation for spinning icon */}
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
