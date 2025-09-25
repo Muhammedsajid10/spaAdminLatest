@@ -539,11 +539,24 @@ const TeamMembers = () => {
         setAddLoading(true);
         setError(null);
         try {
+            // Validate required fields
+            const requiredFields = ['firstName', 'lastName', 'email', 'password', 'employeeId', 'position', 'department'];
+            const missingFields = requiredFields.filter(field => !addForm[field]);
+            if (missingFields.length > 0) {
+                throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(addForm.email)) {
+                throw new Error('Please enter a valid email address');
+            }
+
             // Check network connectivity
             if (!navigator.onLine) {
                 throw new Error('No internet connection. Please check your network and try again.');
             }
-
+            console.log("something inside ");
             // 1. Create user
             const userRes = await fetch(`${Base_url}/auth/signup`, {
                 method: 'POST',
@@ -557,6 +570,7 @@ const TeamMembers = () => {
                     role: 'employee',
                 }),
             });
+            
             if (!userRes.ok) {
                 const errData = await userRes.json();
                 throw new Error(errData.message || 'Failed to create user');
@@ -564,7 +578,9 @@ const TeamMembers = () => {
             const userData = await userRes.json();
             const userId = userData.data?.user?._id;
             if (!userId) throw new Error('User ID not returned');
-
+console.log("user id is there ", userId);
+console.log("add form data is ", addForm);
+console.log("adding employee now");
             // 2. Create employee profile
             const token = localStorage.getItem('token');
             const empRes = await fetch(`${Base_url}/employees`, {
@@ -585,7 +601,8 @@ const TeamMembers = () => {
                 const errData = await empRes.json();
                 throw new Error(errData.message || 'Failed to create employee profile');
             }
-            const newEmployeeId = empRes.data?._id;
+            const empData = await empRes.json();
+            const newEmployeeId = empData.data?._id;
             setTeamMembers(prev => [
                 {
                     id: newEmployeeId || userId,

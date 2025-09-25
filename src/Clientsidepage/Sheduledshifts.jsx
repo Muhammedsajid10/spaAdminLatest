@@ -301,13 +301,13 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
   const [scheduleType, setScheduleType] = useState('Every week');
   const [startDate, setStartDate] = useState(new Date());
   const [weeklySchedule, setWeeklySchedule] = useState({
-    sunday: { isWorking: false, startTime: '00:00', endTime: '00:00' },
-    monday: { isWorking: false, startTime: '00:00', endTime: '00:00' },
-    tuesday: { isWorking: false, startTime: '00:00', endTime: '00:00' },
-    wednesday: { isWorking: false, startTime: '00:00', endTime: '00:00' },
-    thursday: { isWorking: false, startTime: '00:00', endTime: '00:00' },
-    friday: { isWorking: false, startTime: '00:00', endTime: '00:00' },
-    saturday: { isWorking: false, startTime: '00:00', endTime: '00:00' }
+    sunday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
+    monday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
+    tuesday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
+    wednesday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
+    thursday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
+    friday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
+    saturday: { isWorking: true, startTime: '12:00', endTime: '23:59' }
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -319,13 +319,13 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
     if (employee && employee.workSchedule) {
       // Create a proper default schedule with fallback values
       const defaultSchedule = {
-        sunday:    { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        monday:    { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        tuesday:   { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        wednesday: { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        thursday:  { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        friday:    { isWorking: false, startTime: '09:00', endTime: '17:00' },
-        saturday:  { isWorking: false, startTime: '09:00', endTime: '17:00' }
+        sunday:    { isWorking: true, startTime: '12:00', endTime: '23:59' },
+        monday:    { isWorking: true, startTime: '12:00', endTime: '23:59' },
+        tuesday:   { isWorking: true, startTime: '12:00', endTime: '23:59' },
+        wednesday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
+        thursday:  { isWorking: true, startTime: '12:00', endTime: '23:59' },
+        friday:    { isWorking: true, startTime: '12:00', endTime: '23:59' },
+        saturday:  { isWorking: true, startTime: '12:00', endTime: '23:59' }
       };
 
       // Merge with existing schedule but ensure times are valid
@@ -1428,17 +1428,33 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       // Enrich each working day with the unified shift fields used elsewhere
       const enrichedSchedule = Object.keys(newSchedule).reduce((acc, dayKey) => {
         const day = newSchedule[dayKey] || {};
-        if (day.isWorking && day.startTime && day.endTime && day.startTime !== '00:00' && day.endTime !== '00:00') {
-          const shiftString = `${day.startTime} - ${day.endTime}`;
-            acc[dayKey] = {
-              ...day,
-              shifts: shiftString,
-              multipleShifts: shiftString,
-              shiftsData: [{ startTime: day.startTime, endTime: day.endTime }],
-              shiftCount: 1
-            };
+        // If the day is marked as working, always include the shift data
+        if (day.isWorking) {
+          // Use the actual times from the schedule, defaulting to 12:00-23:59 if not set
+          const startTime = day.startTime || '12:00';
+          const endTime = day.endTime || '23:59';
+          const shiftString = `${startTime} - ${endTime}`;
+          acc[dayKey] = {
+            ...day,
+            startTime,
+            endTime,
+            shifts: shiftString,
+            multipleShifts: shiftString,
+            shiftsData: [{ startTime, endTime }],
+            shiftCount: 1
+          };
         } else {
-          acc[dayKey] = { ...day };
+          // For non-working days, keep the structure but mark as not working
+          acc[dayKey] = {
+            ...day,
+            isWorking: false,
+            startTime: null,
+            endTime: null,
+            shifts: null,
+            multipleShifts: null,
+            shiftsData: [],
+            shiftCount: 0
+          };
         }
         return acc;
       }, {});

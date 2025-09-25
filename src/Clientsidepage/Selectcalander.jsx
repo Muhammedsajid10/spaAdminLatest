@@ -2110,7 +2110,7 @@ const SelectCalendar = () => {
     setMembershipDiscountAmount(matchingService.price || 0);
     
     // Show success feedback
-    alert(`✅ Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`);
+    alert(` Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`);
   };
 
   const handleMembershipRemoved = () => {
@@ -3927,9 +3927,7 @@ const SelectCalendar = () => {
                               </div>
                             </div>
                             <div className="service-card-actions">
-                              <button className="svc-edit-btn" title="Edit" onClick={() => { /* future inline edit */ }}>
-                                ✏️
-                              </button>
+                             
                               <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSession(apt.id)}>
                                 🗑️
                               </button>
