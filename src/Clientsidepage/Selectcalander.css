@@ -7437,3 +7437,201 @@
   font-weight: 600;
   color: #064e3b;
 }
+/* --- Gift Card Redemption Section --- */
+
+.available-gift-cards-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.gift-cards-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6c757d;
+}
+
+.loading-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid #e9ecef;
+  border-top-color: #0d6efd;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.no-gift-cards {
+  text-align: center;
+  padding: 1rem;
+  color: #6c757d;
+}
+
+.no-cards-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.available-gift-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.gift-card-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gift-card-item:hover {
+  background-color: #e9ecef;
+}
+
+.gift-card-item.selected {
+  border-color: #0d6efd;
+  background-color: #e7f1ff;
+}
+
+.gift-card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-right: 1rem;
+  background-color: #0d6efd;
+  border-radius: 50%;
+}
+
+.gift-card-info {
+  flex-grow: 1;
+}
+
+.gift-card-code {
+  font-weight: 600;
+}
+
+.gift-card-balance {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.gift-card-expiry {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.gift-card-select-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #0d6efd;
+  color: #0d6efd;
+  background-color: transparent;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.gift-card-item.selected .gift-card-select-btn {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.applied-gift-card-section {
+  margin-top: 1rem;
+}
+
+.applied-gift-card-info {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #e7f1ff;
+  border: 1px solid #0d6efd;
+  border-radius: 8px;
+}
+
+.gift-card-details {
+  flex-grow: 1;
+}
+
+.remove-gift-card-btn {
+  background-color: transparent;
+  border: none;
+  font-size: 1.25rem;
+  color: #6c757d;
+  cursor: pointer;
+}
+
+.remove-gift-card-btn:hover {
+  color: #dc3545;
+}
+
+.gift-card-error {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c2c7;
+  color: #842029;
+  border-radius: 8px;
+}
+
+/* --- Payment Summary --- */
+
+.payment-summary-box {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.summary-row.discount span {
+  color: #28a745;
+}
+
+.summary-row.total {
+  font-weight: 600;
+  border-top: 1px solid #dee2e6;
+  padding-top: 0.5rem;
+}
+
+/* --- Payment Method Section --- */
+
+.payment-method-section {
+  margin-top: 1.5rem;
+}
+
+.payment-method-grid {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.payment-method-tile {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.payment-method-tile.selected {
+  border-color: #0d6efd;
+  background-color: #e7f1ff;
+}
