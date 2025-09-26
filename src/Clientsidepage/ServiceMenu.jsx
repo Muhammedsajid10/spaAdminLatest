@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, Filter, ArrowDown, Plus, Edit, Trash2, MoreVertical } from "lucide-react";
+import { Search, Filter, ArrowDown, Plus, Edit, Trash2, MoreVertical, AlertTriangle, Info } from "lucide-react";
 import { Button, TextField, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, Menu, /* Add Menu from MUI */ TextareaAutosize } from "@mui/material"; // Import Menu
 import api from "../Service/Api";
 import "./ServiceMenu.css";
@@ -47,6 +47,15 @@ const ServiceMenu = () => {
   // --- NEW: Export dropdown state ---
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
   const openExportMenu = Boolean(exportAnchorEl);
+
+  // Add new state for enhanced deletion dialog
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    category: null,
+    hasServices: false,
+    serviceCount: 0,
+    loading: false
+  });
 
   // Fetch all services
   const fetchServices = async () => {
@@ -159,6 +168,7 @@ const ServiceMenu = () => {
         setShowAddModal(false);
         setFormData({ name: "", description: "", category: "", duration: "", price: "", discountPrice: "" });
         await fetchServices();
+        await fetchCategories(); // Refresh categories
         setSuccess('Service created successfully');
         setTimeout(() => setSuccess(null), 3000);
       } else {
@@ -166,12 +176,76 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to create service:', err);
-      setError(err.message);
-      setTimeout(() => setError(null), 4000);
+      
+      // Enhanced error handling for service creation
+      let userMessage = 'Failed to create service.';
+      
+      if (err.response) {
+        switch (err.response.status) {
+          case 400:
+            if (err.response.data?.message) {
+              if (err.response.data.message.includes('validation')) {
+                userMessage = 'Please fill in all required fields with valid information.';
+              } else if (err.response.data.message.includes('duplicate') || err.response.data.message.includes('already exists')) {
+                userMessage = 'A service with this name already exists. Please choose a different name.';
+              } else {
+                userMessage = err.response.data.message;
+              }
+            } else {
+              userMessage = 'Invalid service information. Please check your input and try again.';
+            }
+            break;
+            
+          case 401:
+            userMessage = 'You are not authorized to create services. Please log in and try again.';
+            break;
+            
+          case 403:
+            userMessage = 'You do not have permission to create services. Please contact an administrator.';
+            break;
+            
+          case 422:
+            if (err.response.data?.message) {
+              userMessage = err.response.data.message;
+            } else {
+              userMessage = 'The service information contains invalid data. Please review all fields.';
+            }
+            break;
+            
+          case 500:
+            userMessage = 'A server error occurred while creating the service. Please try again in a few moments.';
+            break;
+            
+          default:
+            if (err.response.data?.message) {
+              let cleanMessage = err.response.data.message
+                .replace(/error code:?\s*\d+/gi, '')
+                .replace(/status:?\s*\d+/gi, '')
+                .replace(/\[.*?\]/g, '')
+                .trim();
+              userMessage = cleanMessage || 'An unexpected error occurred while creating the service.';
+            } else {
+              userMessage = 'An unexpected error occurred while creating the service. Please try again.';
+            }
+        }
+      } else if (err.request) {
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (err.message) {
+        let cleanMessage = err.message
+          .replace(/error code:?\s*\d+/gi, '')
+          .replace(/status:?\s*\d+/gi, '')
+          .replace(/\[.*?\]/g, '')
+          .replace(/axios/gi, '')
+          .trim();
+        userMessage = cleanMessage || 'An error occurred while creating the service.';
+      }
+      
+      setError(userMessage);
+      setTimeout(() => setError(null), 5000);
     }
   };
 
-  // Update service
+  // Update service with enhanced error handling
   const updateService = async (serviceId, serviceData) => {
     try {
       const response = await api.patch(`/services/${serviceId}`, serviceData);
@@ -181,6 +255,7 @@ const ServiceMenu = () => {
         setSelectedService(null);
         setFormData({ name: "", description: "", category: "", duration: "", price: "", discountPrice: "" });
         await fetchServices();
+        await fetchCategories(); // Refresh categories in case category changed
         setSuccess('Service updated successfully');
         setTimeout(() => setSuccess(null), 3000);
       } else {
@@ -188,8 +263,93 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to update service:', err);
-      setError(err.response?.data?.message || err.message);
-      setTimeout(() => setError(null), 4000);
+      
+      // Enhanced error handling with user-friendly messages
+      let userMessage = 'Failed to update service.';
+      
+      if (err.response) {
+        // Handle different HTTP status codes
+        switch (err.response.status) {
+          case 400:
+            if (err.response.data?.message) {
+              // Handle validation errors
+              if (err.response.data.message.includes('validation')) {
+                userMessage = 'Please check all required fields and ensure they contain valid information.';
+              } else if (err.response.data.message.includes('duplicate') || err.response.data.message.includes('already exists')) {
+                userMessage = 'A service with this name already exists. Please choose a different name.';
+              } else {
+                userMessage = err.response.data.message;
+              }
+            } else {
+              userMessage = 'Invalid service information. Please check your input and try again.';
+            }
+            break;
+            
+          case 401:
+            userMessage = 'You are not authorized to update this service. Please log in and try again.';
+            break;
+            
+          case 403:
+            userMessage = 'You do not have permission to update services. Please contact an administrator.';
+            break;
+            
+          case 404:
+            userMessage = 'The service you are trying to update no longer exists. It may have been deleted by another user.';
+            // Refresh the services list to reflect current state
+            await fetchServices();
+            break;
+            
+          case 409:
+            userMessage = 'This service cannot be updated due to a conflict. Another user may have modified it recently. Please refresh and try again.';
+            await fetchServices();
+            break;
+            
+          case 422:
+            if (err.response.data?.message) {
+              userMessage = err.response.data.message;
+            } else {
+              userMessage = 'The service information contains invalid data. Please review all fields.';
+            }
+            break;
+            
+          case 500:
+            userMessage = 'A server error occurred while updating the service. Please try again in a few moments.';
+            break;
+            
+          case 503:
+            userMessage = 'The service is temporarily unavailable. Please try again later.';
+            break;
+            
+          default:
+            // For any other HTTP errors
+            if (err.response.data?.message) {
+              // Remove technical details and server codes from user message
+              let cleanMessage = err.response.data.message
+                .replace(/error code:?\s*\d+/gi, '')
+                .replace(/status:?\s*\d+/gi, '')
+                .replace(/\[.*?\]/g, '')
+                .trim();
+              userMessage = cleanMessage || 'An unexpected error occurred while updating the service.';
+            } else {
+              userMessage = 'An unexpected error occurred while updating the service. Please try again.';
+            }
+        }
+      } else if (err.request) {
+        // Network error
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (err.message) {
+        // Clean up technical error messages
+        let cleanMessage = err.message
+          .replace(/error code:?\s*\d+/gi, '')
+          .replace(/status:?\s*\d+/gi, '')
+          .replace(/\[.*?\]/g, '')
+          .replace(/axios/gi, '')
+          .trim();
+        userMessage = cleanMessage || 'An error occurred while updating the service.';
+      }
+      
+      setError(userMessage);
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -265,14 +425,65 @@ const ServiceMenu = () => {
 
       if (response.data.success) {
         await fetchServices();
-        setSuccess(response.data.message || 'Service deleted or deactivated successfully');
+        await fetchCategories(); // Refresh categories in case counts changed
+        setSuccess(response.data.message || 'Service deleted successfully');
         setTimeout(() => setSuccess(null), 3000);
       } else {
         throw new Error(response.data.message || 'Failed to delete service');
       }
     } catch (err) {
       console.error('❌ Failed to delete service:', err);
-      setError(err.response?.data?.message || err.message);
+      
+      let userMessage = 'Failed to delete service.';
+      
+      if (err.response) {
+        switch (err.response.status) {
+          case 401:
+            userMessage = 'You are not authorized to delete this service. Please log in and try again.';
+            break;
+            
+          case 403:
+            userMessage = 'You do not have permission to delete services. Please contact an administrator.';
+            break;
+            
+          case 404:
+            userMessage = 'The service you are trying to delete no longer exists. It may have already been deleted.';
+            await fetchServices(); // Refresh to show current state
+            break;
+            
+          case 409:
+            userMessage = 'This service cannot be deleted because it is currently being used in bookings or appointments. Please contact support for assistance.';
+            break;
+            
+          case 500:
+            userMessage = 'A server error occurred while deleting the service. Please try again in a few moments.';
+            break;
+            
+          default:
+            if (err.response.data?.message) {
+              let cleanMessage = err.response.data.message
+                .replace(/error code:?\s*\d+/gi, '')
+                .replace(/status:?\s*\d+/gi, '')
+                .replace(/\[.*?\]/g, '')
+                .trim();
+              userMessage = cleanMessage || 'An unexpected error occurred while deleting the service.';
+            } else {
+              userMessage = 'An unexpected error occurred while deleting the service. Please try again.';
+            }
+        }
+      } else if (err.request) {
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (err.message) {
+        let cleanMessage = err.message
+          .replace(/error code:?\s*\d+/gi, '')
+          .replace(/status:?\s*\d+/gi, '')
+          .replace(/\[.*?\]/g, '')
+          .replace(/axios/gi, '')
+          .trim();
+        userMessage = cleanMessage || 'An error occurred while deleting the service.';
+      }
+      
+      setError(userMessage);
       setTimeout(() => setError(null), 4000);
     }
   };
@@ -511,6 +722,82 @@ const ServiceMenu = () => {
     return { headers, rows };
   };
 
+  // Enhanced delete category function with better error handling
+  const initiateDeleteCategory = async (categoryId, categoryName) => {
+    try {
+      // First, check if category has services
+      const servicesInCategory = allServices.filter(service => {
+        const serviceCategoryId = service.category?._id;
+        const serviceCategoryName = service.category?.displayName || service.category?.name;
+        return serviceCategoryId === categoryId || serviceCategoryName === categoryName;
+      });
+
+      setDeleteDialog({
+        open: true,
+        category: { id: categoryId, name: categoryName },
+        hasServices: servicesInCategory.length > 0,
+        serviceCount: servicesInCategory.length,
+        loading: false
+      });
+    } catch (err) {
+      console.error('Error checking category services:', err);
+      setError('Unable to verify category status. Please try again.');
+      setTimeout(() => setError(null), 4000);
+    }
+  };
+
+  // Confirmed delete category
+  const confirmDeleteCategory = async (force = false) => {
+    const { category } = deleteDialog;
+    
+    if (!category) return;
+
+    setDeleteDialog(prev => ({ ...prev, loading: true }));
+
+    try {
+      const response = await api.delete(`/categories/categories/${category.id}${force ? '?force=true' : ''}`);
+
+      if (response.data.success) {
+        await fetchServices();
+        await fetchAvailableCategories();
+        await fetchCategories();
+        
+        setDeleteDialog({ open: false, category: null, hasServices: false, serviceCount: 0, loading: false });
+        setSuccess(response.data.message || 'Category deleted successfully');
+        setTimeout(() => setSuccess(null), 3000);
+
+        if (selectedCategory === category.name) {
+          setSelectedCategory("All categories");
+        }
+      } else {
+        throw new Error(response.data.message || 'Failed to delete category');
+      }
+    } catch (err) {
+      console.error('❌ Failed to delete category:', err);
+      
+      let userMessage = 'Failed to delete category.';
+      if (err.response?.status === 409) {
+        userMessage = `Cannot delete "${category.name}" as it contains ${deleteDialog.serviceCount} service${deleteDialog.serviceCount !== 1 ? 's' : ''}. Please reassign or delete these services first, or use force delete.`;
+      } else if (err.response?.data?.message) {
+        userMessage = err.response.data.message;
+      } else if (err.message) {
+        userMessage = err.message;
+      }
+      
+      setError(userMessage);
+      setTimeout(() => setError(null), 5000);
+      
+      setDeleteDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Close delete dialog
+  const handleDeleteDialogClose = () => {
+    if (!deleteDialog.loading) {
+      setDeleteDialog({ open: false, category: null, hasServices: false, serviceCount: 0, loading: false });
+    }
+  };
+
   if (loading) {
     return (
       <Loading />
@@ -666,7 +953,7 @@ const ServiceMenu = () => {
                     className="service-menu__category-delete-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteCategory(category._id, category.name);
+                      initiateDeleteCategory(category._id, category.name);
                     }}
                     title={`Delete ${category.name} category`}
                   >
@@ -821,6 +1108,151 @@ const ServiceMenu = () => {
         <DialogActions className="service-menu__modal-actions">
           <Button onClick={() => setShowAddCategoryModal(false)} className="service-menu__btn service-menu__btn--cancel">Cancel</Button>
           <Button onClick={handleCategorySubmit} className="service-menu__btn service-menu__btn--primary">Add Category</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Enhanced Delete Category Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialog.open} 
+        onClose={handleDeleteDialogClose}
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          style: {
+            borderRadius: '12px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+            backgroundColor: '#ffffff'
+          }
+        }}
+      >
+        <DialogTitle style={{ 
+          padding: '24px 24px 16px', 
+          background: deleteDialog.hasServices ? '#f8f9fa' : '#ffffff',
+          borderBottom: '1px solid #e9ecef',
+          backgroundColor: '#ffffff'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {deleteDialog.hasServices ? (
+              <AlertTriangle size={24} style={{ color: '#495057' }} />
+            ) : (
+              <Info size={24} style={{ color: '#6c757d' }} />
+            )}
+            <span style={{ fontSize: '18px', fontWeight: '600', color: '#212529' }}>
+              {deleteDialog.hasServices ? 'Category Contains Services' : 'Confirm Category Deletion'}
+            </span>
+          </div>
+        </DialogTitle>
+        
+        <DialogContent style={{ padding: '24px', backgroundColor: '#ffffff' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <p style={{ 
+              fontSize: '16px', 
+              color: '#495057', 
+              margin: '0 0 16px',
+              lineHeight: '1.5'
+            }}>
+              You are about to delete the category <strong>"{deleteDialog.category?.name}"</strong>.
+            </p>
+            
+            {deleteDialog.hasServices ? (
+              <div style={{ 
+                background: '#f8f9fa', 
+                border: '1px solid #dee2e6', 
+                borderRadius: '8px', 
+                padding: '16px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <AlertTriangle size={20} style={{ color: '#495057', marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <h4 style={{ 
+                      margin: '0 0 8px', 
+                      fontSize: '16px', 
+                      fontWeight: '600', 
+                      color: '#212529' 
+                    }}>
+                      Warning: Category Not Empty
+                    </h4>
+                    <p style={{ margin: '0 0 12px', color: '#495057', fontSize: '14px' }}>
+                      This category currently contains <strong>{deleteDialog.serviceCount} service{deleteDialog.serviceCount !== 1 ? 's' : ''}</strong>. 
+                    </p>
+                    <p style={{ margin: 0, color: '#dc3545', fontSize: '14px', fontWeight: '500' }}>
+                      Deleting this category will permanently remove all associated services.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ 
+                background: '#f8f9fa', 
+                border: '1px solid #dee2e6', 
+                borderRadius: '8px', 
+                padding: '16px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Info size={20} style={{ color: '#495057' }} />
+                  <p style={{ margin: 0, color: '#495057', fontSize: '14px' }}>
+                    This category is empty and safe to delete.
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#6c757d', 
+              margin: 0,
+              fontStyle: 'italic'
+            }}>
+              This action cannot be undone. Please proceed with caution.
+            </p>
+          </div>
+        </DialogContent>
+        
+        <DialogActions style={{ 
+          padding: '16px 24px 24px', 
+          gap: '12px',
+          borderTop: '1px solid #e9ecef',
+          backgroundColor: '#ffffff'
+        }}>
+          <Button 
+            onClick={handleDeleteDialogClose}
+            disabled={deleteDialog.loading}
+            style={{
+              color: '#495057',
+              borderColor: '#dee2e6',
+              padding: '10px 24px',
+              fontWeight: '500',
+              backgroundColor: '#ffffff'
+            }}
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          
+          <Button 
+            onClick={() => confirmDeleteCategory(true)}
+            disabled={deleteDialog.loading}
+            style={{
+              backgroundColor: '#212529',
+              color: '#ffffff',
+              padding: '10px 24px',
+              fontWeight: '500',
+              '&:hover': {
+                backgroundColor: '#343a40'
+              }
+            }}
+            variant="contained"
+          >
+            {deleteDialog.loading ? (
+              <CircularProgress size={16} style={{ color: '#ffffff' }} />
+            ) : (
+              deleteDialog.hasServices ? 
+                `Force Delete Category & ${deleteDialog.serviceCount} Service${deleteDialog.serviceCount !== 1 ? 's' : ''}` : 
+                'Delete Category'
+            )}
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

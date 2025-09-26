@@ -4,7 +4,6 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import "jspdf-autotable";
 import { TbCaretUpDownFilled } from "react-icons/tb";
 import "./Appoint.css";
 import api from "../Service/Api";
@@ -25,7 +24,6 @@ const exportToCSV = (data) => {
   link.click();
   document.body.removeChild(link);
 };
-
 const exportToPDF = (data) => {
   const doc = new jsPDF();
   const tableColumn = [
@@ -51,14 +49,17 @@ const exportToPDF = (data) => {
 
   doc.setFontSize(14);
   doc.text("Appointments Report", 14, 15);
-  doc.autoTable({
+
+  autoTable(doc, {
     head: [tableColumn],
     body: tableRows,
     startY: 20,
     styles: { fontSize: 10 },
   });
+
   doc.save("appointments.pdf");
 };
+
 
 const exportToExcel = (data) => {
   const worksheet = XLSX.utils.json_to_sheet(data);

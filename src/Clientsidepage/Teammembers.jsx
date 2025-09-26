@@ -539,6 +539,7 @@ const TeamMembers = () => {
         setAddLoading(true);
         setError(null);
         try {
+            console.log("adding employee now");
             // Validate required fields
             const requiredFields = ['firstName', 'lastName', 'email', 'password', 'employeeId', 'position', 'department'];
             const missingFields = requiredFields.filter(field => !addForm[field]);
@@ -570,6 +571,7 @@ const TeamMembers = () => {
                     role: 'employee',
                 }),
             });
+            console.log("user response is ", userRes);
             
             if (!userRes.ok) {
                 const errData = await userRes.json();
@@ -578,9 +580,9 @@ const TeamMembers = () => {
             const userData = await userRes.json();
             const userId = userData.data?.user?._id;
             if (!userId) throw new Error('User ID not returned');
-console.log("user id is there ", userId);
-console.log("add form data is ", addForm);
-console.log("adding employee now");
+  console.log("user id is there ", userId);
+   console.log("add form data is ", addForm);
+   console.log("adding employee now");
             // 2. Create employee profile
             const token = localStorage.getItem('token');
             const empRes = await fetch(`${Base_url}/employees`, {
@@ -597,6 +599,7 @@ console.log("adding employee now");
                     hireDate: addForm.hireDate,
                 }),
             });
+            console.log("employee response is ", empRes);
             if (!empRes.ok) {
                 const errData = await empRes.json();
                 throw new Error(errData.message || 'Failed to create employee profile');
