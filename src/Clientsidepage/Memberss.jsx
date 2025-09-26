@@ -742,14 +742,18 @@ const MembershipTable = () => {
           onClick={() => { setSelectedMembership(item); setShowDetailModal(true); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedMembership(item); setShowDetailModal(true); } }}
         >
-          <div className="membership-info">
-            <div className="membership-icon"><FaCalendarAlt /></div>
-            <div className="membership-details">
-              <div className="membership-title">{item.name}</div>
-              <div className="membership-subtitle">{item.description || ''}</div>
-            </div>
-          </div>
-
+          <div
+  className="membership-info"
+  onClick={e => e.stopPropagation()}
+  onKeyDown={e => e.stopPropagation()}
+  tabIndex={-1}
+>
+  <div className="membership-icon"><FaCalendarAlt /></div>
+  <div className="membership-details">
+    <div className="membership-title">{item.name}</div>
+    <div className="membership-subtitle">{item.description || ''}</div>
+  </div>
+</div>
           <span className="validity-period">{item.validityPeriod ? `${item.validityPeriod} ${item.validityUnit || ''}` : ''}</span>
           <span className="session-count">{item.serviceType ? item.serviceType : (typeof item.numberOfSessions !== 'undefined' ? item.numberOfSessions : (item.remainingSessions || ''))}</span>
           <span className="membership-price">{item.price ? `${item.currency ? item.currency + ' ' : ''}${item.price}` : ''}</span>

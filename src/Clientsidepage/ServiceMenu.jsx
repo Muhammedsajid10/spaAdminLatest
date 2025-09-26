@@ -1061,7 +1061,7 @@ const ServiceMenu = () => {
             </FormControl>
             <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480}} variant="outlined" className="service-menu__form-input" />
             <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
+            {/* <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" /> */}
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
@@ -1087,7 +1087,7 @@ const ServiceMenu = () => {
             </FormControl>
             <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480 }} variant="outlined" className="service-menu__form-input" />
             <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
+            {/* <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" /> */}
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
