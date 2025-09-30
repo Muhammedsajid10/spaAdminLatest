@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Loading from '../states/Loading.jsx';
-import { useDatePickerState, useBookingSession, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
+import { useSelector, useDispatch } from 'react-redux';
+import { useDatePickerState, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
 import { StaffColumn } from '../calendar/components/StaffColumn';
+import { setEmployees } from '../store/employeesSlice';
+import { setTimeSlots, setLoading as setCalendarLoading, setError as setCalendarError, setSelectedStaff as setCalendarSelectedStaff, setCurrentDateISO } from '../store/calendarSlice';
+import { setAppointments } from '../store/appointmentsSlice';
+import { fetchCalendarThunk, fetchServicesThunk, fetchClientsThunk, fetchBookingTimeSlotsThunk } from '../store/thunks';
+import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction } from '../store/bookingSessionSlice';
 import axios from 'axios';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
@@ -178,51 +184,51 @@ const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDuration = 30
   return slots;
 };
 
-const MOCK_SUCCESS_DATA = {
-  employees: [
-    { id: 'e1', name: 'Alice', position: 'Stylist', avatar: 'https://i.pravatar.cc/150?img=1', avatarColor: '#f97316', unavailablePeriods: [] },
-    { id: 'e2', name: 'Bob', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=2', avatarColor: '#22c55e', unavailablePeriods: [] },
-  ],
-  timeSlots: generateTimeSlots('00:00', '23:30', 30),
-  appointments: {
-    'e1': {
-      '2025-08-02_09:00': { client: 'Client A', service: 'Haircut', duration: 30, color: '#f97316' },
-    },
-    'e2': {
-      '2025-08-02_09:30': { client: 'Client C', service: 'Shave', duration: 15, color: '#0ea5e9' },
-    }
-  },
-};
+// const MOCK_SUCCESS_DATA = {
+//   employees: [
+//     { id: 'e1', name: 'Alice', position: 'Stylist', avatar: 'https://i.pravatar.cc/150?img=1', avatarColor: '#f97316', unavailablePeriods: [] },
+//     { id: 'e2', name: 'Bob', position: 'Barber', avatar: 'https://i.pravatar.cc/150?img=2', avatarColor: '#22c55e', unavailablePeriods: [] },
+//   ],
+//   timeSlots: generateTimeSlots('00:00', '23:30', 30),
+//   appointments: {
+//     'e1': {
+//       '2025-08-02_09:00': { client: 'Client A', service: 'Haircut', duration: 30, color: '#f97316' },
+//     },
+//     'e2': {
+//       '2025-08-02_09:30': { client: 'Client C', service: 'Shave', duration: 15, color: '#0ea5e9' },
+//     }
+//   },
+// };
 
-const MOCK_SERVICES_DATA = [
-  { _id: 's1', name: 'Haircut', price: 50, duration: 30 },
-  { _id: 's2', name: 'Color', price: 150, duration: 60 },
-  { _id: 's3', name: 'Deep Cleansing Facial', price: 150, duration: 90 },
-  { _id: 's4', name: 'Swedish Massage', price: 150, duration: 60 },
-];
+// const MOCK_SERVICES_DATA = [
+//   { _id: 's1', name: 'Haircut', price: 50, duration: 30 },
+//   { _id: 's2', name: 'Color', price: 150, duration: 60 },
+//   { _id: 's3', name: 'Deep Cleansing Facial', price: 150, duration: 90 },
+//   { _id: 's4', name: 'Swedish Massage', price: 150, duration: 60 },
+// ];
 
-const MOCK_CLIENTS_DATA = [
-  { _id: 'c1', firstName: 'Aswin', lastName: 'P', email: 'aswinp04@gmail.com', phone: '7736018588' },
-  { _id: 'c2', firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '123-456-7890' },
-];
+// const MOCK_CLIENTS_DATA = [
+//   { _id: 'c1', firstName: 'Aswin', lastName: 'P', email: 'aswinp04@gmail.com', phone: '7736018588' },
+//   { _id: 'c2', firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '123-456-7890' },
+// ];
 
-const MOCK_PROFESSIONALS_DATA = [
-  { _id: 'p1', user: { firstName: 'Shaif', lastName: 'Sharif' }, position: 'massage therapist', employeeId: 'shaif_001' },
-  { _id: 'p2', user: { firstName: 'Sajad', lastName: 'Yousuf' }, position: 'massage therapist', employeeId: 'sajad_002' },
-];
+// const MOCK_PROFESSIONALS_DATA = [
+//   { _id: 'p1', user: { firstName: 'Shaif', lastName: 'Sharif' }, position: 'massage therapist', employeeId: 'shaif_001' },
+//   { _id: 'p2', user: { firstName: 'Sajad', lastName: 'Yousuf' }, position: 'massage therapist', employeeId: 'sajad_002' },
+// ];
 
-const MOCK_TIME_SLOTS_DATA = [
-  { time: '09:00', available: true },
-  { time: '09:30', available: true },
-  { time: '10:00', available: false },
-  { time: '10:30', available: true },
-];
+// const MOCK_TIME_SLOTS_DATA = [
+//   { time: '09:00', available: true },
+//   { time: '09:30', available: true },
+//   { time: '10:00', available: false },
+//   { time: '10:30', available: true },
+// ];
 
-const paymentMethods = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'card', label: 'Card' },
-  { value: 'online', label: 'Online' }
-];
+// const paymentMethods = [
+//   { value: 'cash', label: 'Cash' },
+//   { value: 'card', label: 'Card' },
+//   { value: 'online', label: 'Online' }
+// ];
 // Add these functions after your existing date picker functions (around line 400)
 
 // --- ENHANCED: Utility to get valid time slots for a professional and service ---
@@ -478,21 +484,40 @@ const SelectCalendar = () => {
     handleDatePickerDateSelect
   } = useDatePickerState(new Date());
 
-  // Booking session (multi services)
-  const {
-    multipleAppointments, currentAppointmentIndex, showServiceCatalog, isAddingAdditionalService,
-    setCurrentAppointmentIndex, setShowServiceCatalog, setIsAddingAdditionalService,
-    addAppointmentToSession, removeAppointmentFromSession, clearSession, getTotalSessionPrice
-  } = useBookingSession();
+  // Booking session (multi services) moved to Redux
+  const multipleAppointments = useSelector(state => state.bookingSession.multipleAppointments);
+  const currentAppointmentIndex = useSelector(state => state.bookingSession.currentAppointmentIndex);
+  const showServiceCatalog = useSelector(state => state.bookingSession.showServiceCatalog);
+  const isAddingAdditionalService = useSelector(state => state.bookingSession.isAddingAdditionalService);
+  const dispatch = useDispatch();
 
-  // Core scheduler state
-  const [employees, setEmployees] = useState([]);
-  const [timeSlots, setTimeSlots] = useState([]);
-  const [appointments, setAppointments] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const setCurrentAppointmentIndex = (idx) => { /* UI-only; kept local for now */ dispatch({ type: 'bookingSession/setCurrentAppointmentIndex', payload: idx }); };
+  const setShowServiceCatalog = (val) => dispatch(setShowServiceCatalogAction(val));
+  const setIsAddingAdditionalService = (val) => dispatch({ type: 'bookingSession/setIsAddingAdditionalService', payload: val });
+  const addAppointmentToSessionLocal = (apt) => dispatch(addAppointmentToSession(apt));
+  const removeAppointmentFromSessionLocal = (id) => dispatch(removeAppointmentFromSession(id));
+  const clearSessionLocal = () => dispatch(clearSessionAction());
+
+  // Calculate total session price from Redux booking session
+  const getTotalSessionPrice = useCallback(() => {
+    if (!Array.isArray(multipleAppointments)) return 0;
+    return multipleAppointments.reduce((sum, a) => {
+      // price might be on the appointment directly or nested in service
+      const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
+      return sum + Number(price || 0);
+    }, 0);
+  }, [multipleAppointments]);
+
+  // Core scheduler state (moved to Redux)
+  const employees = useSelector(state => state.employees.list);
+  const employeesLoading = useSelector(state => state.employees.loading);
+  const employeesError = useSelector(state => state.employees.error);
+  const timeSlots = useSelector(state => state.calendar.timeSlots);
+  const loading = useSelector(state => state.calendar.loading);
+  const error = useSelector(state => state.calendar.error);
+  const selectedStaff = useSelector(state => state.calendar.selectedStaff);
+  const appointments = useSelector(state => state.appointments.byEmployee);
   const [currentView, setCurrentView] = useState('Day');
-  const [selectedStaff, setSelectedStaff] = useState('All');
 
   // Enhanced Booking Flow States
   const [availableServices, setAvailableServices] = useState([]);
@@ -836,7 +861,7 @@ const SelectCalendar = () => {
         startTime,
         endTime
       };
-      addAppointmentToSession(newAppointment);
+  addAppointmentToSessionLocal(newAppointment);
       // Persist selected professional for potential later use
       setSelectedProfessional(professionalObj);
       setSelectedService(null); // We store service in appointment card instead
@@ -852,7 +877,8 @@ const SelectCalendar = () => {
       setSelectedProfessional(bookingDefaults.professional);
       setBookingStep(3); // Skip professional selection, go directly to time selection
       const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
-      fetchBookingTimeSlots(bookingDefaults.professional._id || bookingDefaults.professional.id, service._id, bookingDate);
+  // use thunk to fetch timeslots (fallback will still use local generator if API not available)
+  dispatch(fetchBookingTimeSlotsThunk({ employeeId: bookingDefaults.professional._id || bookingDefaults.professional.id, serviceId: service._id, date: bookingDate }));
       return;
     }
 
@@ -987,22 +1013,18 @@ const SelectCalendar = () => {
       const actualBackendStatus = backendStatusMapping[newStatus] || newStatus;
       console.log('📝 Status mapping:', newStatus, '→', actualBackendStatus);
 
-      // Update only this slot locally with the backend status
-      setAppointments(prev => {
+      // Update only this slot locally with the backend status (Redux)
+      try {
         const empId = selectedBookingForStatus.employeeId;
         const slotKey = selectedBookingForStatus.slotKey;
-        if (!prev[empId] || !prev[empId][slotKey]) return prev;
-        return {
-          ...prev,
-          [empId]: {
-            ...prev[empId],
-            [slotKey]: {
-              ...prev[empId][slotKey],
-              status: actualBackendStatus // Use backend status for consistency
-            }
-          }
-        };
-      });
+        const updated = { ...appointments };
+        if (updated[empId] && updated[empId][slotKey]) {
+          updated[empId] = { ...updated[empId], [slotKey]: { ...updated[empId][slotKey], status: actualBackendStatus } };
+          dispatch(setAppointments(updated));
+        }
+      } catch (e) {
+        console.warn('Failed to update appointment in redux store', e);
+      }
 
       // Update the selected booking status for immediate UI feedback
       setSelectedBookingForStatus(prev => ({
@@ -1053,9 +1075,9 @@ const SelectCalendar = () => {
         ? `${Base_url}/bookings/admin/${id}/service/${serviceEntryId}`
         : `${Base_url}/bookings/admin/${id}`; // fallback (legacy)
 
-      // Optimistic removal: only this slot if per-service; otherwise whole booking slots
-      setAppointments(prev => {
-        const updated = { ...prev };
+      // Optimistic removal: adjust Redux store copy
+      try {
+        const updated = { ...appointments };
         if (serviceEntryId) {
           const empId = selectedBookingForStatus.employeeId;
           const slotKey = selectedBookingForStatus.slotKey;
@@ -1078,8 +1100,10 @@ const SelectCalendar = () => {
             }
           });
         }
-        return updated;
-      });
+        dispatch(setAppointments(updated));
+      } catch (e) {
+        console.warn('Failed to optimistic remove appointment in redux store', e);
+      }
 
       let res = await fetch(primaryUrl, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 404) {
@@ -1240,7 +1264,7 @@ const SelectCalendar = () => {
   // (Removed local add/remove/total functions — replaced by hook implementations)
 
   const clearAppointmentSession = () => {
-    clearSession();
+    clearSessionLocal();
     setGiftCardCode('');
     setShowAppointmentSummary(false);
   };
@@ -1263,8 +1287,17 @@ const SelectCalendar = () => {
     setBookingError(null);
     try {
       // console.log('Fetching services from:', `${Base_url}/bookings/services`);
-      const res = await fetch(`${Base_url}/bookings/services`);
-      const data = await res.json();
+        // Try to load services via thunk-backed API first
+        try {
+          const services = await dispatch(fetchServicesThunk()).unwrap();
+          setAvailableServices(services || MOCK_SERVICES_DATA);
+          setBookingLoading(false);
+          return;
+        } catch (err) {
+          console.warn('fetchServicesThunk failed, falling back to direct fetch', err);
+        }
+        const res = await fetch(`${Base_url}/bookings/services`);
+        const data = await res.json();
 
       // console.log('Services API response:', data);
 
@@ -1327,6 +1360,19 @@ const SelectCalendar = () => {
       const url = `${EMPLOYEES_API_URL}`;
       // console.log('API URL:', url);
 
+      // Try to fetch professionals via thunk (but fallback to local fetch)
+      try {
+        const profs = await dispatch(fetchProfessionalsThunk({ date })).unwrap();
+        // map to expected structure
+        const allProfessionals = profs || [];
+        // proceed with same logic using allProfessionals
+        const data = { success: true, data: { employees: allProfessionals } };
+        // fallthrough to existing handling below by setting res-like data
+        // eslint-disable-next-line no-unused-vars
+        // const res = { ok: true };
+      } catch (err) {
+        console.warn('fetchProfessionalsThunk failed, falling back to direct fetch', err);
+      }
       const res = await fetch(url);
       const data = await res.json();
 
@@ -1483,7 +1529,7 @@ const SelectCalendar = () => {
     console.log('Service ID:', serviceId);
     console.log('Date:', date?.toDateString());
 
-    setBookingLoading(true);
+  setBookingLoading(true);
     setBookingError(null);
 
     try {
@@ -2091,8 +2137,8 @@ const SelectCalendar = () => {
       finalAppointmentDate: appointmentDate,
       formatDateLocalResult: bookingDate instanceof Date ? formatDateLocal(bookingDate) : 'N/A'
     });
-    console.log('Full appointment:', appointment);
-    const newAppointment = addAppointmentToSession(appointment);
+  console.log('Full appointment:', appointment);
+  const newAppointment = addAppointmentToSessionLocal(appointment);
     console.log('New appointment added:', newAppointment);
 
     // Clear the current selection to show empty "Ready to Add" section
@@ -2633,176 +2679,9 @@ const SelectCalendar = () => {
   };
 
 
-  // --- API CALL FUNCTION ---
-  const fetchCalendarData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Get the actual display date range based on current view and date
-      const { startDate, endDate } = getDisplayDateRange();
-
-      // Format dates for API using local date components (avoid UTC timezone shift)
-      const startDateParam = formatDateForAPI(startDate);
-      const endDateParam = formatDateForAPI(endDate);
-
-      console.log('📅 Fetching calendar data:', {
-        view: currentView,
-        currentDate: currentDate.toLocaleDateString(),
-        startDateParam,
-        endDateParam,
-        startDateObj: startDate,
-        endDateObj: endDate
-      });
-
-      // For employees API, send the week start date for proper schedule context
-      const weekStart = new Date(currentDate);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
-      const weekStartDateParam = formatDateForAPI(weekStart);
-
-      const [employeesResponse, bookingsResponse, servicesResponse] = await Promise.all([
-        api.get(`${EMPLOYEES_API_URL}?weekStartDate=${startDateParam}`),
-        api.get(`${BOOKING_API_URL}/admin/all?startDate=${startDateParam}&endDate=${endDateParam}`),
-        api.get(SERVICES_API_URL)
-      ]);
-
-      if (bookingsResponse.data.success && employeesResponse.data.success) {
-        const allBookings = bookingsResponse.data.data.bookings || [];
-        const employees = employeesResponse.data.data.employees || [];
-
-        if (servicesResponse.data.success) {
-          setAvailableServices(servicesResponse.data.data.services || []);
-        }
-
-        // Filter out inactive employees from calendar display and booking interfaces
-        const activeEmployees = employees.filter(emp => emp.isActive !== false);
-
-        const transformedEmployees = activeEmployees.map(emp => ({
-          id: emp._id, // Always use backend _id
-          name: `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim(),
-          position: emp.position || emp.department || 'Staff',
-          avatar: emp.user?.avatar || emp.avatar,
-          avatarColor: getRandomColor(),
-          unavailablePeriods: emp.unavailablePeriods || [],
-          isActive: emp.isActive !== false,
-          workSchedule: emp.workSchedule || {}
-        }));
-
-        const transformedAppointments = {};
-
-        allBookings.forEach(booking => {
-          booking.services?.forEach(service => {
-            const employeeId = service.employee?._id || service.employee;
-            if (!employeeId) return;
-            if (!transformedAppointments[employeeId]) transformedAppointments[employeeId] = {};
-
-            // Prefer service.startTime ISO when available, fallback to booking.appointmentDate
-            const startISO = service.startTime ? String(service.startTime) : (booking.appointmentDate ? String(booking.appointmentDate) : null);
-
-            // Compute end ISO either from provided endTime or from duration
-            let endISO = null;
-            if (service.endTime) {
-              endISO = String(service.endTime);
-            } else if (startISO && service.duration) {
-              const sDt = new Date(startISO);
-              endISO = new Date(sDt.getTime() + (service.duration * 60000)).toISOString();
-            }
-
-            // Build YYYY-MM-DD using UTC methods to avoid timezone date shifts
-            const startDateTime = startISO ? new Date(startISO) : new Date();
-            const localYear = startDateTime.getUTCFullYear();
-            const localMonth = String(startDateTime.getUTCMonth() + 1).padStart(2, '0');
-            const localDay = String(startDateTime.getUTCDate()).padStart(2, '0');
-            const appointmentLocalDate = `${localYear}-${localMonth}-${localDay}`;
-
-            // TIMEZONE FIX: Extract time from UTC datetime without timezone conversion
-            // Use UTC methods to preserve the exact time that was stored
-            const timeSlot = startISO ? (() => {
-              const dt = new Date(startISO);
-              const hours = String(dt.getUTCHours()).padStart(2, '0');
-              const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
-              return `${hours}:${minutes}`;
-            })() : (service.startTime || '');
-
-            const endTimeLabel = endISO ? (() => {
-              const dt = new Date(endISO);
-              const hours = String(dt.getUTCHours()).padStart(2, '0');
-              const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
-              return `${hours}:${minutes}`;
-            })() : null;
-
-            const slotKey = `${appointmentLocalDate}_${timeSlot}`;
-
-            console.log('🔍 Processing appointment:', {
-              startISO,
-              appointmentLocalDate,
-              timeSlot,
-              slotKey,
-              clientName: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
-              serviceName: service.service?.name || service.name || 'Service',
-              startTime: timeSlot,
-              endTime: endTimeLabel
-            });
-
-            transformedAppointments[employeeId][slotKey] = {
-              client: `${booking.client?.firstName || 'Client'} ${booking.client?.lastName || ''}`.trim(),
-              service: service.service?.name || service.name || 'Service',
-              duration: service.duration || 30,
-              color: getAppointmentColorByStatus(service.status || booking.status || 'booked'),
-              date: appointmentLocalDate,
-              bookingId: booking._id,
-              status: service.status || booking.status || 'confirmed',
-              serviceEntryId: service._id, // sub-document id for per-service operations
-              isMainSlot: true,
-              // TIMEZONE FIX: Use the corrected time values for display
-              startISO: startISO,
-              endISO: endISO,
-              startTime: timeSlot,   // This is our corrected UTC-extracted time
-              endTime: endTimeLabel, // This is our corrected UTC-extracted time
-              // Override display times to ensure components show correct values
-              displayStartTime: timeSlot,
-              displayEndTime: endTimeLabel,
-              // Legacy compatibility - some components might use these
-              time: timeSlot,
-              timeSlot: timeSlot
-            };
-          });
-        });
-
-        console.log('✅ Calendar data fetched successfully:', {
-          employees: transformedEmployees.length,
-          appointments: Object.keys(transformedAppointments).length,
-          dateRange: `${startDateParam} to ${endDateParam}`
-        });
-
-        // Debug: Log all appointments for current date
-        const currentDateKey = formatDateForAPI(currentDate);
-        console.log('🔍 Debug - Current date key:', currentDateKey);
-        Object.entries(transformedAppointments).forEach(([empId, empAppts]) => {
-          Object.entries(empAppts).forEach(([slotKey, apt]) => {
-            if (slotKey.includes(currentDateKey)) {
-              console.log('📅 Found appointment for current date:', {
-                employeeId: empId,
-                slotKey,
-                appointment: apt
-              });
-            }
-          });
-        });
-
-        setEmployees(transformedEmployees);
-        setTimeSlots(generateTimeSlots('00:00', '23:30', 30));
-        setAppointments(transformedAppointments);
-        setExistingClients(MOCK_CLIENTS_DATA); // Use mock clients as fallback
-      } else {
-        throw new Error('Failed to fetch calendar data');
-      }
-    } catch (err) {
-      console.error("Error fetching calendar data:", err);
-      setError(`Failed to load calendar data: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+  // --- API CALL FUNCTION (moved to Redux thunk) ---
+  const fetchCalendarData = () => {
+    dispatch(fetchCalendarThunk({ currentDate, currentView }));
   };
 
   useEffect(() => {
@@ -4114,7 +3993,7 @@ useEffect(() => {
                             </div>
                             <div className="service-card-actions">
                           
-                              <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSession(apt.id)}>
+                              <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSessionLocal(apt.id)}>
                                 🗑️
                               </button>
                             </div>
@@ -4337,7 +4216,7 @@ useEffect(() => {
                             </div>
                             <button
                               className="remove-service-btn"
-                              onClick={() => removeAppointmentFromSession(apt.id)}
+                              onClick={() => removeAppointmentFromSessionLocal(apt.id)}
                               title="Remove this service"
                             >
                               ✕
@@ -4606,7 +4485,7 @@ useEffect(() => {
                           </div>
                           <button
                             className="remove-appointment-btn"
-                            onClick={() => removeAppointmentFromSession(apt.id)}
+                            onClick={() => removeAppointmentFromSessionLocal(apt.id)}
                             title="Remove this appointment"
                           >
                             ×

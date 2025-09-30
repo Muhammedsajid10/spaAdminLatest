@@ -14,10 +14,9 @@ export const BookingModal = ({
   bookingDefaults,
   multipleAppointments,
   addMinutesToTime,
-  removeAppointmentFromSession,
   setShowServiceCatalog,
   showServiceCatalog,
-  selectedService,
+  removeAppointmentFromSessionLocal,
   handleServiceSelect,
   currentDate,
   getTotalSessionPrice,
@@ -75,7 +74,6 @@ export const BookingModal = ({
           </div>
 
           {bookingError && <div className="booking-modal-error">{bookingError}</div>}
-          {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
           {bookingSuccess && <div className="booking-modal-success">{bookingSuccess}</div>}
 
           {/* Step 1: Service Selection */}
@@ -102,17 +100,18 @@ export const BookingModal = ({
                             <span className="svc-dot">•</span>
                             <span className="svc-prof">{apt.professional.user?.firstName || apt.professional.name}</span>
                           </div>
-                        </div>
+                      <button className="remove-appointment-btn" onClick={() => removeAppointmentFromSessionLocal(apt.id)} title="Remove this appointment">×</button>
                         <div className="service-card-actions">
                           <button className="svc-edit-btn" title="Edit" onClick={() => {}}>
                             ✏️
                           </button>
-                          <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSession(apt.id)}>
+                          <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSessionLocal(apt.id)}>
                             🗑️
                           </button>
                         </div>
                       </div>
-                    );
+                    </div>
+                  );
                   })}
                   {multipleAppointments.length === 0 && bookingDefaults?.time && (
                     <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
@@ -306,7 +305,7 @@ export const BookingModal = ({
                         </div>
                         <button 
                           className="remove-service-btn"
-                          onClick={() => removeAppointmentFromSession(apt.id)}
+                          onClick={() => removeAppointmentFromSessionLocal(apt.id)}
                           title="Remove this service"
                         >
                           ✕
@@ -490,7 +489,7 @@ export const BookingModal = ({
                           {apt.timeSlot} • {apt.service.duration}min • AED {apt.service.price}
                         </div>
                       </div>
-                      <button className="remove-appointment-btn" onClick={() => removeAppointmentFromSession(apt.id)} title="Remove this appointment">×</button>
+                      <button className="remove-appointment-btn" onClick={() => removeAppointmentFromSessionLocal(apt.id)} title="Remove this appointment">×</button>
                     </div>
                   ))}
                 </div>
