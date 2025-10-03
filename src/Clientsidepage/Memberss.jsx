@@ -482,6 +482,207 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
   );
 };
 
+// Professional Membership Details Modal - View Only
+const ProfessionalMembershipModal = ({ isOpen, onClose, membership, onEdit }) => {
+  if (!isOpen || !membership) return null;
+
+  // Helper functions for formatting data
+  const formatPrice = (price, currency = 'AED') => {
+    if (!price) return 'Not specified';
+    return `${currency} ${parseFloat(price).toFixed(2)}`;
+  };
+
+  const formatValidity = (period, unit) => {
+    if (!period || !unit) return 'Not specified';
+    return `${period} ${unit}`;
+  };
+
+  const formatSessions = (type, total, used = 0, remaining = null) => {
+    if (type === 'Unlimited') return 'Unlimited Sessions';
+    if (remaining !== null) return `${remaining} sessions remaining (${used}/${total} used)`;
+    if (total) return `${total} sessions total`;
+    return 'Not specified';
+  };
+
+  const formatStatus = (status) => {
+    return status || 'Draft';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch ((status || 'draft').toLowerCase()) {
+      case 'active': return '#22c55e';
+      case 'expired': return '#ef4444';
+      case 'draft': return '#f59e0b';
+      default: return '#6b7280';
+    }
+  };
+
+  return (
+    <div className="professional-modal-overlay" onClick={onClose}>
+      <div className="professional-membership-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Header Section */}
+        <div className="professional-modal-header">
+          <div className="header-content">
+            <div className="membership-badge">
+              <FaCalendarAlt />
+            </div>
+            <div className="header-info">
+              <h2 className="membership-name">{membership.name}</h2>
+              <p className="membership-type">{membership.serviceType || 'Membership Plan'}</p>
+            </div>
+          </div>
+          <button className="professional-close-btn" onClick={onClose} aria-label="Close">
+            <IoClose />
+          </button>
+        </div>
+
+        {/* Main Content */}
+        <div className="professional-modal-content">
+          {/* Description Section */}
+          {membership.description && (
+            <div className="content-section">
+              <h3 className="section-title">About This Membership</h3>
+              <p className="section-text">{membership.description}</p>
+            </div>
+          )}
+
+          {/* Key Details Grid */}
+          <div className="content-section">
+            <h3 className="section-title">Membership Details</h3>
+            <div className="details-grid">
+              <div className="detail-item">
+                <span className="detail-label">Price</span>
+                <span className="detail-value">{formatPrice(membership.price, membership.currency)}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Valid For</span>
+                <span className="detail-value">{formatValidity(membership.validityPeriod, membership.validityUnit)}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Sessions</span>
+                <span className="detail-value">
+                  {formatSessions(
+                    membership.serviceType, 
+                    membership.numberOfSessions, 
+                    membership.usedSessions, 
+                    membership.remainingSessions
+                  )}
+                </span>
+              </div>
+           
+            </div>
+          </div>
+
+          {/* Service Information */}
+          <div className="content-section">
+            <h3 className="section-title">Included Service</h3>
+            {membership.service || membership.serviceName ? (
+              <div className="service-card">
+                <div className="service-info">
+                  <h4 className="service-name">
+                    {membership.serviceName || membership.service?.name || 'Service Included'}
+                  </h4>
+                  {membership.service && (
+                    <div className="service-details">
+                      <span className="service-duration">
+                        Duration: {membership.service.duration} minutes
+                      </span>
+                      <span className="service-price">
+                        Service Price: {formatPrice(membership.service.effectivePrice || membership.service.price, 'AED')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="service-meta">
+                  <span className="service-sessions">
+                    {formatSessions(membership.serviceType, membership.numberOfSessions)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="no-service">
+                <p>No specific service assigned to this membership</p>
+              </div>
+            )}
+          </div>
+
+          {/* Validity & Usage Information */}
+          {(membership.startDate || membership.endDate || membership.daysRemaining) && (
+            <div className="content-section">
+              <h3 className="section-title">Validity Period</h3>
+              <div className="timeline-grid">
+                {membership.startDate && (
+                  <div className="timeline-item">
+                    <span className="timeline-label">Start Date</span>
+                    <span className="timeline-value">{formatDate(membership.startDate)}</span>
+                  </div>
+                )}
+                {membership.endDate && (
+                  <div className="timeline-item">
+                    <span className="timeline-label">End Date</span>
+                    <span className="timeline-value">{formatDate(membership.endDate)}</span>
+                  </div>
+                )}
+                {membership.daysRemaining !== undefined && (
+                  <div className="timeline-item">
+                    <span className="timeline-label">Days Remaining</span>
+                    <span className="timeline-value" style={{ 
+                      color: membership.daysRemaining < 7 ? '#ef4444' : membership.daysRemaining < 30 ? '#f59e0b' : '#22c55e',
+                      fontWeight: '600'
+                    }}>
+                      {membership.daysRemaining} days
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Payment Information */}
+          {membership.paymentType && (
+            <div className="content-section">
+              <h3 className="section-title">Payment Information</h3>
+              <div className="info-item">
+                <span className="info-label">Payment Type:</span>
+                <span className="info-value">{membership.paymentType}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Additional Notes */}
+          {membership.notes && membership.notes.trim() && (
+            <div className="content-section">
+              <h3 className="section-title">Additional Notes</h3>
+              <div className="info-item notes-item">
+                <p className="notes-text">{membership.notes}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="professional-modal-footer">
+          <button className="secondary-btn" onClick={onClose}>
+            Close
+          </button>
+        
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
 // Membership detail / edit modal (50vh, scrollable body, left icon, Update + Close + Delete)
 const MembershipDetailModal = ({ isOpen, onClose, membership, onUpdateSuccess }) => {
   const [editable, setEditable] = useState(null);
@@ -655,6 +856,9 @@ const MembershipTable = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedMembership, setSelectedMembership] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showProfessionalModal, setShowProfessionalModal] = useState(false);
+  
+
 
   const fetchMemberships = async () => {
     setLoading(true);
@@ -686,6 +890,16 @@ const MembershipTable = () => {
 
   const handleCreateSuccess = () => fetchMemberships();
   const handleDetailUpdateSuccess = () => fetchMemberships();
+
+  const handleMembershipClick = (membership) => {
+    setSelectedMembership(membership);
+    setShowProfessionalModal(true);
+  };
+
+  const handleEditMembership = (membership) => {
+    setShowProfessionalModal(false);
+    setShowDetailModal(true);
+  };
 
   if (loading) return (<div className="membership-dashboard"><div className="dashboard-header"><h2 className="page-title">Memberships</h2></div><Loading/></div>);
   if (error) return (<div className="membership-dashboard"><div className="dashboard-header"><h2 className="page-title">Memberships</h2></div><Error500Page message={error}/></div>);
@@ -739,21 +953,16 @@ const MembershipTable = () => {
 
       {filteredMemberships.map((item, index) => (
         <div key={item._id || index} className="data-table-row clickable-row" role="button" tabIndex={0}
-          onClick={() => { setSelectedMembership(item); setShowDetailModal(true); }}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedMembership(item); setShowDetailModal(true); } }}
+          onClick={() => handleMembershipClick(item)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleMembershipClick(item); } }}
         >
-          <div
-  className="membership-info"
-  onClick={e => e.stopPropagation()}
-  onKeyDown={e => e.stopPropagation()}
-  tabIndex={-1}
->
-  <div className="membership-icon"><FaCalendarAlt /></div>
-  <div className="membership-details">
-    <div className="membership-title">{item.name}</div>
-    <div className="membership-subtitle">{item.description || ''}</div>
-  </div>
-</div>
+          <div className="membership-info">
+            <div className="membership-icon"><FaCalendarAlt /></div>
+            <div className="membership-details">
+              <div className="membership-title">{item.name}</div>
+              <div className="membership-subtitle">{item.description || ''}</div>
+            </div>
+          </div>
           <span className="validity-period">{item.validityPeriod ? `${item.validityPeriod} ${item.validityUnit || ''}` : ''}</span>
           <span className="session-count">{item.serviceType ? item.serviceType : (typeof item.numberOfSessions !== 'undefined' ? item.numberOfSessions : (item.remainingSessions || ''))}</span>
           <span className="membership-price">{item.price ? `${item.currency ? item.currency + ' ' : ''}${item.price}` : ''}</span>
@@ -761,6 +970,13 @@ const MembershipTable = () => {
       ))}
 
       <CreateMembershipModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={handleCreateSuccess} />
+
+      <ProfessionalMembershipModal 
+        isOpen={showProfessionalModal} 
+        onClose={() => { setShowProfessionalModal(false); setSelectedMembership(null); }} 
+        membership={selectedMembership} 
+        onEdit={handleEditMembership}
+      />
 
       <MembershipDetailModal isOpen={showDetailModal} onClose={() => { setShowDetailModal(false); setSelectedMembership(null); }} membership={selectedMembership} onUpdateSuccess={handleDetailUpdateSuccess} />
     </div>
