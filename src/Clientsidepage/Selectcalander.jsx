@@ -550,6 +550,9 @@ const SelectCalendar = () => {
   const [bookingError, setBookingError] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
 
+  // Signal to force membership checker to refetch from server
+  const [membershipRefreshSignal, setMembershipRefreshSignal] = useState(0);
+
   // Date selection for booking modal (especially for week view)
   const [selectedBookingDate, setSelectedBookingDate] = useState(null);
   const [showBookingDatePicker, setShowBookingDatePicker] = useState(false);
@@ -2497,21 +2500,28 @@ const SelectCalendar = () => {
         };
       }
 
-      // Set payment method details for remaining amount (if any)
+      // Normalize payment methods to backend-accepted enums and attach details
+      // Backend expects values like: 'cash', 'card', 'online', 'giftcard' (common)
+      const paymentMethodMapping = {
+        upi: 'online', // UPI is an online payment type on many backends
+      };
+
+      // Attach payment details for remaining amount (if any)
       if (finalAmount > 0) {
         if (paymentMethod === 'card') {
           paymentDetails.card = { ...cardDetails };
-        } else if (paymentMethod === 'upi') {
+        } else if (paymentMethod === 'upi' || paymentMethod === 'online') {
+          // Keep upiId under paymentDetails so backend can process online payments
           paymentDetails.upiId = upiId;
         }
       }
 
-      // Determine the effective payment method for the booking
+      // Determine the effective payment method for the booking (normalize unknown aliases)
       let effectivePaymentMethod;
       if (finalAmount === 0 && selectedGiftCard) {
         effectivePaymentMethod = 'giftcard';
       } else {
-        effectivePaymentMethod = paymentMethod || 'cash';
+        effectivePaymentMethod = paymentMethodMapping[paymentMethod] || paymentMethod || 'cash';
       }
 
       // Create the booking payload for multiple services
@@ -2570,6 +2580,31 @@ const SelectCalendar = () => {
         setRedeemGiftCardAmount(0);
         loadBenefitsIfNeeded(true);
       }, 1500);
+
+      // If booking used an admin-applied membership, update local membership counters so UI shows reduced remaining sessions
+      try {
+        const adminMembershipInfo = paymentDetails?.adminMembership;
+        if (appliedMembership && adminMembershipInfo && adminMembershipInfo.sessionDeduction) {
+          console.log('Updating local membership usage after booking:', appliedMembership._id);
+          // Mutate local appliedMembership safely
+          setAppliedMembership(prev => {
+            if (!prev) return prev;
+            const used = (prev.usedSessions || 0) + 1;
+            const remaining = (typeof prev.remainingSessions === 'number') ? Math.max(0, prev.remainingSessions - 1) : (typeof prev.numberOfSessions === 'number' ? Math.max(0, prev.numberOfSessions - used) : null);
+            const updated = { ...prev, usedSessions: used, remainingSessions: remaining };
+            return updated;
+          });
+
+          // Update any availableMemberships list we have cached to reflect the deduction
+          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions||0)+1)) : m.remainingSessions)) }) : m));
+
+          // Also refresh memberships list from server in background to keep authoritative state
+          // bump signal to force AdminMembershipChecker to refetch
+          setTimeout(() => setMembershipRefreshSignal(s => s + 1), 800);
+        }
+      } catch (e) {
+        console.warn('Failed to update local membership usage after booking:', e);
+      }
 
       // Refresh calendar data immediately to see the new booking
       console.log('🔄 Refreshing calendar to show new booking...');
@@ -4557,6 +4592,7 @@ useEffect(() => {
                     appliedMembership={appliedMembership}
                     onMembershipApplied={handleMembershipApplied}
                     onMembershipRemoved={handleMembershipRemoved}
+                    refreshSignal={membershipRefreshSignal}
                   />
 
                   {/* Gift Card Redemption Section - FIRST */}

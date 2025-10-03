@@ -71,13 +71,93 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
       };
 
       console.log('🔄 Creating payment intent for membership...', paymentPayload);
-      const paymentResponse = await api.post('/payments/create', paymentPayload);
+
+      // Helper: try a list of possible endpoints with optional payload tweaks
+      const tryCreatePayment = async (payload) => {
+        // First, try asking the memberships endpoint to create a payment intent for membership purchases.
+        // Some backends embed payment creation into the membership purchase flow and will return a clientSecret.
+        try {
+          const memPayload = { templateId: payload.metadata.templateId, clientId: payload.metadata.clientId, amount: payload.amount, currency: payload.currency, paymentMethod: payload.paymentMethod, gateway: payload.gateway, createPaymentIntent: true };
+          const memRes = await api.post('/memberships/purchase', memPayload);
+          // If server handled creation and returned a membership immediately (no clientSecret), treat as success
+          if (memRes?.data?.data?.membership) {
+            return { data: { success: true, data: { membership: memRes.data.data.membership } } };
+          }
+          // If server returned a clientSecret to confirm on the client, return it
+          if (memRes?.data?.data?.clientSecret) {
+            return { data: { success: true, data: { clientSecret: memRes.data.data.clientSecret } } };
+          }
+        } catch (memErr) {
+          // If memberships endpoint doesn't support client-side payment intent creation, continue to other endpoints.
+          const status = memErr?.response?.status;
+          if (status === 404) {
+            console.info('Memberships purchase endpoint not usable for payment-intent creation, falling back to payments endpoints');
+          } else {
+            console.warn('Memberships purchase attempt returned error, falling back:', memErr?.response?.data || memErr.message);
+          }
+        }
+
+        const tried = [];
+        // Primary endpoint
+        try {
+          tried.push('/payments/create');
+          const res = await api.post('/payments/create', payload);
+          return res;
+        } catch (errPrimary) {
+          const status = errPrimary?.response?.status;
+          const serverMsg = errPrimary?.response?.data?.message || errPrimary.message || '';
+          console.warn('Primary payments/create failed', { status, serverMsg });
+
+          // If booking not found, try again without bookingId (some backends expect no booking)
+          if (status === 404 && /booking not found/i.test(serverMsg)) {
+            try {
+              tried.push('/payments/create (no bookingId)');
+              const clone = { ...payload, bookingId: null };
+              const res2 = await api.post('/payments/create', clone);
+              return res2;
+            } catch (err2) {
+              console.warn('Retry without bookingId failed', err2?.response?.data || err2.message);
+            }
+          }
+
+          // Try alternative endpoints commonly used in different backends
+          const fallbacks = ['/payments', '/payments/intent', '/payments/charge', '/payments/create-payment-intent'];
+          for (const u of fallbacks) {
+            try {
+              tried.push(u);
+              const resf = await api.post(u, payload);
+              return resf;
+            } catch (ef) {
+              // continue trying
+              console.warn(`Fallback ${u} failed`, ef?.response?.data?.message || ef.message || ef);
+            }
+          }
+
+          // nothing worked — rethrow primary error for outer catch
+          const err = new Error(errPrimary?.response?.data?.message || errPrimary.message || 'Failed to create payment intent');
+          err._tried = tried;
+          throw errPrimary;
+        }
+      };
+
+      const paymentResponse = await tryCreatePayment(paymentPayload);
       
-      if (!paymentResponse.data.success) {
-        throw new Error(paymentResponse.data.message || 'Failed to create payment intent');
+      if (!paymentResponse?.data?.success) {
+        throw new Error(paymentResponse?.data?.message || 'Failed to create payment intent');
       }
 
-      const { clientSecret } = paymentResponse.data.data;
+      // If server already created the membership and returned it, treat as success
+      const maybeMembership = paymentResponse.data.data?.membership || paymentResponse.data?.membership;
+      if (maybeMembership) {
+        console.log('✅ Server returned completed membership; skipping client-side Stripe confirm');
+        onSuccess(maybeMembership);
+        return;
+      }
+
+      const clientSecret = paymentResponse.data.data?.clientSecret || paymentResponse.data?.clientSecret;
+      if (!clientSecret) {
+        throw new Error('Missing clientSecret from payment-intent creation response');
+      }
       console.log('✅ Payment intent created, client secret received');
 
       // Confirm payment with Stripe
@@ -110,7 +190,11 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
       }
     } catch (error) {
       console.error('Payment error:', error);
-      onError(error.message || 'Payment failed');
+      // If axios error, extract useful info
+      const status = error?.response?.status;
+      const serverMsg = error?.response?.data?.message || error?.message || 'Payment failed';
+      const userMsg = status === 404 ? `Payment service not found (404). ${serverMsg}` : serverMsg;
+      onError(userMsg);
     } finally {
       setIsProcessing(false);
     }

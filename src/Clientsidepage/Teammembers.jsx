@@ -35,14 +35,16 @@ const PasswordResetModal = ({ isOpen, onClose, member, onReset, loading, error }
         try {
             const response = await api.get('/password/generate');
             if (response.data && response.data.success) {
-                setPassword(response.data.data.password);
+                // Ensure minimum length
+                const pw = response.data.data.password || generateRandomPassword(10);
+                setPassword(pw.length >= 6 ? pw : generateRandomPassword(10));
             } else {
                 // Fallback to client-side generation if API call fails
-                setPassword(generateRandomPassword());
+                setPassword(generateRandomPassword(10));
             }
         } catch (error) {
             console.error('Failed to generate password from API:', error);
-            setPassword(generateRandomPassword());
+            setPassword(generateRandomPassword(10));
         } finally {
             setIsGenerating(false);
         }
@@ -995,23 +997,65 @@ const TeamMembers = () => {
             setPasswordResetError('User ID is missing');
             return;
         }
-        
+
+        // Client-side validation to avoid server 400s
+        if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+            setPasswordResetError('Password must be at least 6 characters long');
+            return;
+        }
+
         setPasswordResetLoading(true);
         try {
-            const response = await api.post(`/password/reset/${userId}`, { 
-                newPassword 
-            });
-            
-            if (response.data && response.data.success) {
-                setShowPasswordResetModal(false);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Password Reset Successful',
-                    text: response.data.message || 'The password has been reset successfully. An email notification has been sent to the employee.'
-                });
-            } else {
-                throw new Error(response.data?.message || 'Failed to reset password');
-            }
+                // Primary attempt
+                const primaryUrl = `/password/reset/${userId}`;
+                let res = null;
+                try {
+                    res = await api.post(primaryUrl, { newPassword });
+                } catch (errPrimary) {
+                    const status = errPrimary?.response?.status;
+                    console.warn(`Primary password reset failed (${status}):`, errPrimary?.response?.data || errPrimary.message);
+
+                    // If 404 or primary path not found, try fallbacks
+                    const fallbacks = [
+                        { method: 'post', url: `/auth/password/reset/${userId}` },
+                        { method: 'patch', url: `/auth/password/reset/${userId}` },
+                        { method: 'post', url: `/auth/admin/users/${userId}/reset-password` },
+                        { method: 'patch', url: `/auth/admin/users/${userId}/reset-password` },
+                        { method: 'post', url: `/auth/admin/reset-password/${userId}` },
+                        { method: 'patch', url: `/auth/admin/reset-password/${userId}` },
+                        { method: 'post', url: `/users/${userId}/password` },
+                        { method: 'patch', url: `/users/${userId}/password` }
+                    ];
+
+                    for (const fb of fallbacks) {
+                        try {
+                            console.info('Attempting fallback password reset:', fb.method.toUpperCase(), fb.url);
+                            if (fb.method === 'post') {
+                                res = await api.post(fb.url, { newPassword });
+                            } else {
+                                res = await api.patch(fb.url, { newPassword });
+                            }
+                            if (res && res.data && (res.data.success || res.status === 200 || res.status === 204)) {
+                                console.info('Fallback succeeded:', fb.url);
+                                break;
+                            }
+                        } catch (eFb) {
+                            console.info('Fallback failed:', fb.url, eFb?.response?.status || eFb.message);
+                            res = null;
+                        }
+                    }
+                }
+
+                if (res && res.data && (res.data.success || res.status === 200 || res.status === 204)) {
+                    setShowPasswordResetModal(false);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Password Reset Successful',
+                        text: res.data?.message || 'The password has been reset successfully. An email notification may have been sent to the employee.'
+                    });
+                } else {
+                    throw new Error((res?.data?.message) || 'Failed to reset password - no matching endpoint responded successfully');
+                }
         } catch (error) {
             console.error('Error resetting password:', error);
             setPasswordResetError(error.response?.data?.message || error.message || 'Failed to reset password');

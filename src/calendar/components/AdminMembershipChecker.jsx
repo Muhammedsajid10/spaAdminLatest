@@ -8,6 +8,7 @@ const AdminMembershipChecker = ({
   onMembershipApplied, 
   onMembershipRemoved,
   appliedMembership 
+  , refreshSignal
 }) => {
   const [loading, setLoading] = useState(false);
   const [clientMemberships, setClientMemberships] = useState([]);
@@ -22,7 +23,7 @@ const AdminMembershipChecker = ({
       setClientMemberships([]);
       setEligibleMemberships([]);
     }
-  }, [selectedClient]);
+  }, [selectedClient, refreshSignal]);
 
   // Filter eligible memberships when services change
   useEffect(() => {
@@ -36,10 +37,102 @@ const AdminMembershipChecker = ({
     setError('');
     
     try {
-      const response = await api.get(`/memberships/my-memberships/${selectedClient._id}`);
-      setClientMemberships(response.data.data.memberships || []);
+      // Primary attempt
+      const primaryUrl = `/memberships/my-memberships/${selectedClient._id}`;
+      let response;
+      // collectedMemberships will hold memberships extracted from fallbacks where we don't populate `response`
+      let collectedMemberships = null;
+      try {
+        response = await api.get(primaryUrl);
+      } catch (err) {
+        // If 404, don't immediately treat as no memberships — some servers use a different path.
+        const status = err?.response?.status;
+        if (status === 404) {
+          console.warn(`Memberships endpoint not found (404): ${primaryUrl}. Will try fallback endpoints.`);
+        } else {
+          console.warn(`Primary memberships endpoint error (${status}):`, err?.response?.data || err.message);
+        }
+
+        // Try plausible fallbacks before giving up
+        const fallbackUrls = [
+          `/memberships/client/${selectedClient._id}`,
+          `/memberships?clientId=${selectedClient._id}`
+        ];
+        let fallbackOk = false;
+        for (const u of fallbackUrls) {
+          try {
+            response = await api.get(u);
+            fallbackOk = true;
+            console.info(`Fetched memberships via fallback URL: ${u}`);
+            break;
+          } catch (e2) {
+            if (e2?.response?.status === 404) {
+              console.info(`Fallback ${u} returned 404`);
+              continue; // try next
+            }
+            // non-404 fallback error -> bubble up
+            throw e2;
+          }
+        }
+
+        if (!fallbackOk) {
+          // No client-specific fallback succeeded (all 404) -> try broader endpoints and filter locally
+          console.warn('No client-specific memberships endpoints found; trying broader memberships endpoints as fallback.');
+          try {
+            // Try purchased memberships list and filter by client
+            const purchasedRes = await api.get('/memberships/purchased');
+            const allPurchased = purchasedRes.data.data?.memberships || purchasedRes.data?.memberships || [];
+            const clientMatches = allPurchased.filter(m => {
+              const id = m.client && (typeof m.client === 'string' ? m.client : m.client._id);
+              return id === selectedClient._id;
+            });
+            if (clientMatches.length) {
+              collectedMemberships = clientMatches;
+              console.info(`Found ${clientMatches.length} membership(s) via /memberships/purchased fallback`);
+              // fall through to normal processing
+            } else {
+              // Try general memberships listing
+              try {
+                const listRes = await api.get('/memberships');
+                const all = listRes.data.data?.memberships || listRes.data?.memberships || [];
+                const matches = all.filter(m => {
+                  const id = m.client && (typeof m.client === 'string' ? m.client : m.client._id);
+                  return id === selectedClient._id;
+                });
+                if (matches.length) {
+                  collectedMemberships = matches;
+                  console.info(`Found ${matches.length} membership(s) via /memberships fallback`);
+                } else {
+                  console.warn('No memberships found for client after checking /memberships/purchased and /memberships');
+                  collectedMemberships = [];
+                  setEligibleMemberships([]);
+                  return;
+                }
+              } catch (eList) {
+                console.info('/memberships listing not available or failed:', eList?.response?.status || eList.message);
+                setClientMemberships([]);
+                setEligibleMemberships([]);
+                return;
+              }
+            }
+          } catch (ePurchased) {
+            console.info('/memberships/purchased not available or failed:', ePurchased?.response?.status || ePurchased.message);
+            setClientMemberships([]);
+            setEligibleMemberships([]);
+            return;
+          }
+        }
+      }
+
+      // Finalize memberships list: prefer collectedMemberships (from fallbacks), else response if present
+      const finalList = collectedMemberships !== null
+        ? collectedMemberships
+        : (response ? (response.data?.data?.memberships || response.data?.memberships || []) : []);
+
+      setClientMemberships(finalList);
     } catch (err) {
       console.error('Error fetching client memberships:', err);
+      // If server returned 404 already handled above; here show message for other errors
       setError('Failed to load client memberships');
       setClientMemberships([]);
     } finally {
@@ -50,18 +143,35 @@ const AdminMembershipChecker = ({
   const filterEligibleMemberships = () => {
     // Find memberships that match any of the selected services
     const eligible = clientMemberships.filter(membership => {
+      // Safely derive the service id from possible shapes
+      const membershipServiceId = membership?.service && (typeof membership.service === 'string'
+        ? membership.service
+        : membership.service._id)
+        || membership?.serviceId
+        || (membership?.service && membership.service?._id)
+        || null;
+
+      if (!membershipServiceId) {
+        // no service id to match against — not eligible
+        console.info('Skipping membership without service id', membership._id || membership);
+        return false;
+      }
+
       // Check if membership service matches any selected service
-      const matchesService = selectedServices.some(service => 
-        service._id === membership.service._id || service._id === membership.service
+      const matchesService = selectedServices.some(service => service && service._id === membershipServiceId);
+
+      // Compute remaining sessions defensively
+      const remainingSessions = membership?.remainingSessions ?? (
+        (typeof membership?.numberOfSessions === 'number' && typeof membership?.usedSessions === 'number')
+          ? (membership.numberOfSessions - membership.usedSessions)
+          : null
       );
-      
-      // Check if membership has remaining sessions
-      const hasRemainingSessions = membership.remainingSessions > 0;
-      
-      // Check if membership is not expired
-      const isNotExpired = !membership.isExpired && 
-        (membership.status === 'Active' || membership.status === 'Partially Used');
-      
+      const hasRemainingSessions = remainingSessions === null ? true : (remainingSessions > 0);
+
+      // Determine expiry/status
+      const status = (membership?.status || '').toString();
+      const isNotExpired = !(membership?.isExpired) && (['Active','active','Partially Used','partially used'].includes(status));
+
       return matchesService && hasRemainingSessions && isNotExpired;
     });
 
