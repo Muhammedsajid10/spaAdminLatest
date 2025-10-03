@@ -495,7 +495,11 @@ const SelectCalendar = () => {
   const setShowServiceCatalog = (val) => dispatch(setShowServiceCatalogAction(val));
   const setIsAddingAdditionalService = (val) => dispatch({ type: 'bookingSession/setIsAddingAdditionalService', payload: val });
   const addAppointmentToSessionLocal = (apt) => dispatch(addAppointmentToSession(apt));
-  const removeAppointmentFromSessionLocal = (id) => dispatch(removeAppointmentFromSession(id));
+  const removeAppointmentFromSessionLocal = (id) => {
+    console.log('🗑️ Removing appointment with ID:', id);
+    console.log('Current multipleAppointments:', multipleAppointments.map(a => ({ id: a.id, service: a.service?.name })));
+    dispatch(removeAppointmentFromSession(id));
+  };
   const clearSessionLocal = () => dispatch(clearSessionAction());
 
   // Calculate total session price from Redux booking session
@@ -2112,6 +2116,7 @@ const SelectCalendar = () => {
 
     // Add current appointment to session, using strict duration and time format
     const appointment = {
+      id: `${professionalId}_${appointmentDate}_${timeSlot}_${Date.now()}`, // Generate unique ID
       service: selectedService,
       professional: selectedProfessional,
       timeSlot: timeSlot,
@@ -2153,7 +2158,7 @@ const SelectCalendar = () => {
     setBookingError(null);
 
     // Show success message and auto-focus on the session summary
-    setBookingSuccess(`✅ "${serviceName}" added to booking session! Total services: ${multipleAppointments.length + 1}`);
+    setBookingSuccess(` "${serviceName}" added to booking session! Total services: ${multipleAppointments.length + 1}`);
     setTimeout(() => setBookingSuccess(null), 4000);
     return true;
   };
@@ -2166,7 +2171,7 @@ const SelectCalendar = () => {
     setMembershipDiscountAmount(matchingService.price || 0);
     
     // Show success feedback
-    alert(`✅ Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`);
+    alert(` Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`);
   };
 
   const handleMembershipRemoved = () => {
@@ -4008,6 +4013,7 @@ useEffect(() => {
                   {(bookingDefaults?.professional || multipleAppointments.length > 0) && (
                     <div className="service-cards-stack">
                       {multipleAppointments.map((apt, idx) => {
+                        console.log('🎯 Rendering appointment card:', { id: apt.id, service: apt.service?.name, index: idx });
                         const start = apt.timeSlot;
                         const end = addMinutesToTime(apt.timeSlot, apt.duration);
                         return (

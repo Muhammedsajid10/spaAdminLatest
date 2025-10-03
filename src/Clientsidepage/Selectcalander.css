@@ -6624,7 +6624,7 @@
 }
 
 .card-details h5:before {
-  content: "💳";
+  content: "";
   font-size: 16px;
 }
 
@@ -6672,7 +6672,7 @@
 }
 
 .upi-details h5:before {
-  content: "📱";
+  content: "";
   font-size: 16px;
 }
 

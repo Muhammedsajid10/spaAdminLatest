@@ -232,7 +232,7 @@ const AdminMembershipChecker = ({
     return (
       <div className="admin-membership-checker">
         <div className="no-memberships">
-          <span className="info-icon">ℹ️</span>
+          <span className="info-icon"></span>
           <span>This client has no active memberships</span>
         </div>
       </div>
@@ -244,11 +244,11 @@ const AdminMembershipChecker = ({
       <div className="admin-membership-checker">
         <div className="no-eligible-memberships">
           <div className="membership-header">
-            <span className="membership-icon">🎫</span>
+        
             <span>Client Memberships ({clientMemberships.length})</span>
           </div>
           <div className="ineligible-message">
-            <span className="info-icon">ℹ️</span>
+            <span className="info-icon"></span>
             <span>No memberships available for selected services</span>
           </div>
           <div className="memberships-list">
@@ -275,14 +275,14 @@ const AdminMembershipChecker = ({
   return (
     <div className="admin-membership-checker">
       <div className="membership-header">
-        <span className="membership-icon">🎫</span>
+        <span className="membership-icon"></span>
         <span>Available Memberships ({eligibleMemberships.length})</span>
       </div>
 
       {appliedMembership ? (
         <div className="applied-membership">
           <div className="applied-header">
-            <span className="success-icon">✅</span>
+            <span className="success-icon"></span>
             <span>Membership Applied</span>
           </div>
           <div className="applied-membership-card">
@@ -303,7 +303,7 @@ const AdminMembershipChecker = ({
             </button>
           </div>
           <div className="membership-benefit">
-            💰 This service will be FREE for the client
+             This service will be FREE for the client
           </div>
         </div>
       ) : (
@@ -335,7 +335,7 @@ const AdminMembershipChecker = ({
             ))}
           </div>
           <div className="membership-info">
-            <span className="info-icon">💡</span>
+            <span className="info-icon"></span>
             <span>Applying a membership will make the matching service free for this booking</span>
           </div>
         </div>
