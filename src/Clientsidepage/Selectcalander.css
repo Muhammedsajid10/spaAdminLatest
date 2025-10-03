@@ -7635,3 +7635,416 @@
   border-color: #0d6efd;
   background-color: #e7f1ff;
 }
+
+/* ========================================
+   PROFESSIONAL CALENDAR PICKER STYLING
+   Week & Month View Professional Design
+======================================== */
+
+/* Enhanced date picker container for professional look */
+.date-picker-container {
+  min-width: 340px;
+  max-width: 420px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 40px -12px rgba(15, 23, 42, 0.15),
+    0 8px 16px -4px rgba(15, 23, 42, 0.08);
+  padding: 20px 24px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Professional header styling */
+.date-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.date-picker-month-year {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.date-picker-nav-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.date-picker-nav-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.date-picker-nav-btn:active {
+  transform: translateY(0);
+}
+
+/* ===============================
+   WEEK PICKER PROFESSIONAL STYLING
+=============================== */
+
+.date-picker-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.date-picker-week {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.date-picker-week::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.date-picker-week:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.1);
+}
+
+.date-picker-week:hover::before {
+  opacity: 0.6;
+}
+
+.date-picker-week.current-week {
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+}
+
+.date-picker-week.current-week::before {
+  opacity: 0.8;
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.date-picker-week.selected-week {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-color: #0f172a;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.25);
+}
+
+.date-picker-week.selected-week::before {
+  opacity: 1;
+  background: linear-gradient(90deg, #ffffff, #f1f5f9);
+}
+
+.week-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.week-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+}
+
+.date-picker-week.selected-week .week-number {
+  color: #ffffff;
+}
+
+.week-range {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: 0.025em;
+}
+
+.date-picker-week.selected-week .week-range {
+  color: #e2e8f0;
+}
+
+/* ===============================
+   MONTH PICKER PROFESSIONAL STYLING
+=============================== */
+
+.date-picker-months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.date-picker-month {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.date-picker-month::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.date-picker-month:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.08);
+}
+
+.date-picker-month:hover::before {
+  opacity: 0.6;
+}
+
+.date-picker-month.current-month {
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border-color: #94a3b8;
+  box-shadow: 0 3px 8px -2px rgba(15, 23, 42, 0.06);
+}
+
+.date-picker-month.current-month::before {
+  opacity: 0.8;
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.date-picker-month.selected-month {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-color: #0f172a;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -6px rgba(15, 23, 42, 0.2);
+}
+
+.date-picker-month.selected-month::before {
+  opacity: 1;
+  background: linear-gradient(90deg, #ffffff, #f1f5f9);
+}
+
+.month-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.month-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  text-align: center;
+}
+
+.date-picker-month.selected-month .month-name {
+  color: #ffffff;
+}
+
+.month-year {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: 0.025em;
+}
+
+.date-picker-month.selected-month .month-year {
+  color: #cbd5e1;
+}
+
+/* ===============================
+   PROFESSIONAL FOOTER STYLING
+=============================== */
+
+.date-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.date-picker-today-btn,
+.date-picker-close-btn {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.025em;
+  min-width: 80px;
+  text-align: center;
+}
+
+.date-picker-today-btn {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+}
+
+.date-picker-today-btn:hover {
+  background: #1e293b;
+  border-color: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -4px rgba(15, 23, 42, 0.15);
+}
+
+.date-picker-close-btn {
+  background: #ffffff;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.date-picker-close-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+/* ===============================
+   RESPONSIVE ADJUSTMENTS
+=============================== */
+
+@media (max-width: 480px) {
+  .date-picker-container {
+    min-width: 300px;
+    max-width: 90vw;
+    padding: 16px 20px;
+  }
+  
+  .date-picker-months {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .date-picker-month {
+    min-height: 60px;
+    padding: 12px 14px;
+  }
+  
+  .month-name {
+    font-size: 13px;
+  }
+  
+  .week-number {
+    font-size: 13px;
+  }
+  
+  .week-range {
+    font-size: 12px;
+  }
+}
+
+/* ===============================
+   ENHANCED ANIMATIONS
+=============================== */
+
+@keyframes datePickerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes weekItemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes monthItemFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.date-picker-week {
+  animation: weekItemFadeIn 0.3s ease forwards;
+}
+
+.date-picker-month {
+  animation: monthItemFadeIn 0.25s ease forwards;
+}
+
+/* Staggered animation for multiple items */
+.date-picker-week:nth-child(1) { animation-delay: 0.05s; }
+.date-picker-week:nth-child(2) { animation-delay: 0.1s; }
+.date-picker-week:nth-child(3) { animation-delay: 0.15s; }
+.date-picker-week:nth-child(4) { animation-delay: 0.2s; }
+
+.date-picker-month:nth-child(1) { animation-delay: 0.05s; }
+.date-picker-month:nth-child(2) { animation-delay: 0.1s; }
+.date-picker-month:nth-child(3) { animation-delay: 0.15s; }
+.date-picker-month:nth-child(4) { animation-delay: 0.2s; }
+.date-picker-month:nth-child(5) { animation-delay: 0.25s; }
+.date-picker-month:nth-child(6) { animation-delay: 0.3s; }
+.date-picker-month:nth-child(7) { animation-delay: 0.35s; }
+.date-picker-month:nth-child(8) { animation-delay: 0.4s; }
+.date-picker-month:nth-child(9) { animation-delay: 0.45s; }
+.date-picker-month:nth-child(10) { animation-delay: 0.5s; }
+.date-picker-month:nth-child(11) { animation-delay: 0.55s; }
+.date-picker-month:nth-child(12) { animation-delay: 0.6s; }

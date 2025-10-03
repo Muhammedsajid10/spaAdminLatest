@@ -472,6 +472,65 @@ const getDatePickerCalendarDays = (month) => {
   return days;
 };
 
+// Helper function to get weeks for a given month (for week picker)
+const getWeeksInMonth = (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  
+  // First day of the month
+  const firstDay = new Date(year, month, 1);
+  // Last day of the month
+  const lastDay = new Date(year, month + 1, 0);
+  
+  const weeks = [];
+  let currentWeekStart = new Date(firstDay);
+  
+  // Adjust to start of the week (Monday)
+  const dayOfWeek = (firstDay.getDay() + 6) % 7;
+  currentWeekStart.setDate(firstDay.getDate() - dayOfWeek);
+  
+  while (currentWeekStart <= lastDay) {
+    const weekEnd = new Date(currentWeekStart);
+    weekEnd.setDate(currentWeekStart.getDate() + 6);
+    
+    weeks.push({
+      startDate: new Date(currentWeekStart),
+      endDate: new Date(weekEnd),
+      weekNumber: weeks.length + 1,
+      isCurrentWeek: (() => {
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        return todayStart >= currentWeekStart && todayStart <= weekEnd;
+      })()
+    });
+    
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+  }
+  
+  return weeks;
+};
+
+// Helper function to get months for a given year (for month picker)
+const getMonthsInYear = (year) => {
+  const months = [];
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  
+  for (let i = 0; i < 12; i++) {
+    const monthDate = new Date(year, i, 1);
+    months.push({
+      month: i,
+      year: year,
+      name: monthDate.toLocaleDateString('en-US', { month: 'long' }),
+      shortName: monthDate.toLocaleDateString('en-US', { month: 'short' }),
+      isCurrentMonth: year === currentYear && i === currentMonth
+    });
+  }
+  
+  return months;
+};
+
 const SelectCalendar = () => {
   // Date / picker state consolidated
   const {
@@ -501,6 +560,46 @@ const SelectCalendar = () => {
     dispatch(removeAppointmentFromSession(id));
   };
   const clearSessionLocal = () => dispatch(clearSessionAction());
+
+  // Week and Month navigation functions for date picker
+  const goToDatePickerPreviousWeek = useCallback(() => {
+    const newDate = new Date(datePickerCurrentMonth);
+    newDate.setDate(newDate.getDate() - 7);
+    setDatePickerCurrentMonth(newDate);
+  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
+
+  const goToDatePickerNextWeek = useCallback(() => {
+    const newDate = new Date(datePickerCurrentMonth);
+    newDate.setDate(newDate.getDate() + 7);
+    setDatePickerCurrentMonth(newDate);
+  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
+
+  const goToDatePickerPreviousYear = useCallback(() => {
+    const newDate = new Date(datePickerCurrentMonth);
+    newDate.setFullYear(newDate.getFullYear() - 1);
+    setDatePickerCurrentMonth(newDate);
+  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
+
+  const goToDatePickerNextYear = useCallback(() => {
+    const newDate = new Date(datePickerCurrentMonth);
+    newDate.setFullYear(newDate.getFullYear() + 1);
+    setDatePickerCurrentMonth(newDate);
+  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
+
+  // Week selection handler
+  const handleWeekSelect = useCallback((weekStartDate) => {
+    setCurrentDate(weekStartDate);
+    setDatePickerSelectedDate(weekStartDate);
+    setShowDatePicker(false);
+  }, [setCurrentDate, setDatePickerSelectedDate, setShowDatePicker]);
+
+  // Month selection handler
+  const handleMonthSelect = useCallback((month, year) => {
+    const selectedDate = new Date(year, month, 1);
+    setCurrentDate(selectedDate);
+    setDatePickerSelectedDate(selectedDate);
+    setShowDatePicker(false);
+  }, [setCurrentDate, setDatePickerSelectedDate, setShowDatePicker]);
 
   // Calculate total session price from Redux booking session
   const getTotalSessionPrice = useCallback(() => {
@@ -3385,16 +3484,19 @@ useEffect(() => {
               <ChevronLeft size={16} />
             </button>
             <button
-              className={`date-display-button ${currentView !== 'Day' ? 'disabled' : ''}`}
+              className="date-display-button"
               onClick={() => {
-                // Only allow date picker in Day view
-                if (currentView !== 'Day') return;
-
                 setDatePickerCurrentMonth(currentDate);
                 setDatePickerSelectedDate(currentDate);
 
-                // Always show date view regardless of current calendar view
-                setDatePickerView('date');
+                // Set picker view based on current calendar view
+                if (currentView === 'Week') {
+                  setDatePickerView('week');
+                } else if (currentView === 'Month') {
+                  setDatePickerView('month');
+                } else {
+                  setDatePickerView('date');
+                }
 
                 setShowDatePicker(!showDatePicker);
               }}
@@ -3485,6 +3587,130 @@ useEffect(() => {
                           onClick={goToDatePickerToday}
                         >
                           Today
+                        </button>
+                        <button
+                          className="date-picker-close-btn"
+                          onClick={() => setShowDatePicker(false)}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* WEEK VIEW (Week Picker) */}
+                  {datePickerView === 'week' && (
+                    <>
+                      <div className="date-picker-header">
+                        <button
+                          className="date-picker-nav-btn"
+                          onClick={goToDatePickerPreviousMonth}
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <div className="date-picker-month-year">
+                          {datePickerCurrentMonth.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long'
+                          })} - Week Selection
+                        </div>
+                        <button
+                          className="date-picker-nav-btn"
+                          onClick={goToDatePickerNextMonth}
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+
+                      <div className="date-picker-weeks">
+                        {getWeeksInMonth(datePickerCurrentMonth).map((week, index) => {
+                          const isCurrentWeek = week.isCurrentWeek;
+                          const isSelectedWeek = week.startDate.toDateString() === currentDate.toDateString() ||
+                            (currentDate >= week.startDate && currentDate <= week.endDate);
+
+                          return (
+                            <button
+                              key={index}
+                              className={`date-picker-week ${isCurrentWeek ? 'current-week' : ''} ${isSelectedWeek ? 'selected-week' : ''}`}
+                              onClick={() => handleWeekSelect(week.startDate)}
+                            >
+                              <div className="week-info">
+                                <span className="week-number">Week {week.weekNumber}</span>
+                                <span className="week-range">
+                                  {week.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - 
+                                  {week.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="date-picker-footer">
+                        <button
+                          className="date-picker-today-btn"
+                          onClick={goToDatePickerToday}
+                        >
+                          This Week
+                        </button>
+                        <button
+                          className="date-picker-close-btn"
+                          onClick={() => setShowDatePicker(false)}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* MONTH VIEW (Month Picker) */}
+                  {datePickerView === 'month' && (
+                    <>
+                      <div className="date-picker-header">
+                        <button
+                          className="date-picker-nav-btn"
+                          onClick={goToDatePickerPreviousYear}
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <div className="date-picker-month-year">
+                          {datePickerCurrentMonth.getFullYear()} - Month Selection
+                        </div>
+                        <button
+                          className="date-picker-nav-btn"
+                          onClick={goToDatePickerNextYear}
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+
+                      <div className="date-picker-months">
+                        {getMonthsInYear(datePickerCurrentMonth.getFullYear()).map((monthObj) => {
+                          const isCurrentMonth = monthObj.isCurrentMonth;
+                          const isSelectedMonth = currentDate.getFullYear() === monthObj.year && 
+                            currentDate.getMonth() === monthObj.month;
+
+                          return (
+                            <button
+                              key={monthObj.month}
+                              className={`date-picker-month ${isCurrentMonth ? 'current-month' : ''} ${isSelectedMonth ? 'selected-month' : ''}`}
+                              onClick={() => handleMonthSelect(monthObj.month, monthObj.year)}
+                            >
+                              <div className="month-info">
+                                <span className="month-name">{monthObj.name}</span>
+                                <span className="month-year">{monthObj.year}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="date-picker-footer">
+                        <button
+                          className="date-picker-today-btn"
+                          onClick={goToDatePickerToday}
+                        >
+                          This Month
                         </button>
                         <button
                           className="date-picker-close-btn"
