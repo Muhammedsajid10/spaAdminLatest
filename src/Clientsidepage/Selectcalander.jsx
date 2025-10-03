@@ -3369,13 +3369,15 @@ useEffect(() => {
       <div className="scheduler-header-redesigned">
         {/* Left Side Controls */}
         <div className="header-left-controls">
-          {/* Today Button */}
-          <button
-            className="header-btn today-btn"
-            onClick={goToToday}
-          >
-            Today
-          </button>
+          {/* Today Button - Only show in Day view */}
+          {currentView === 'Day' && (
+            <button
+              className="header-btn today-btn"
+              onClick={goToToday}
+            >
+              Today
+            </button>
+          )}
 
           {/* Date Navigation */}
           <div className="date-navigation">
