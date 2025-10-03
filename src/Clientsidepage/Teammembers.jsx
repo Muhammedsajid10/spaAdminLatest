@@ -1009,7 +1009,7 @@ const TeamMembers = () => {
                 // Primary attempt
                 const primaryUrl = `/password/reset/${userId}`;
                 let res = null;
-                try {
+                try {console.log("something inside primary url",primaryUrl);
                     res = await api.post(primaryUrl, { newPassword });
                 } catch (errPrimary) {
                     const status = errPrimary?.response?.status;
@@ -1083,7 +1083,8 @@ const TeamMembers = () => {
                 department: updatedData.department,
                 hireDate: updatedData.hireDate,
             };
-
+            console.log("something inside ", empPayload);
+            console.log("member id is ", memberId);
             console.log('Patching /employees/', memberId, empPayload);
             empUpdateRes = await api.patch(`/employees/${memberId}`, empPayload);
 

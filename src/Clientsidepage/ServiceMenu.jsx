@@ -20,7 +20,10 @@ const ServiceMenu = () => {
   const [categories, setCategories] = useState([]);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Fatal error state - shows Error500Page when component fails to render
   const [error, setError] = useState(null);
+  // Operation error state - shows inline alerts for failed operations (CRUD operations)
+  const [operationError, setOperationError] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -75,7 +78,7 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to fetch services:', err);
-      setError(err.message);
+      setError(`Failed to load services: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -143,7 +146,7 @@ const ServiceMenu = () => {
 
     try {
       setSearchLoading(true);
-      setError(null);
+      setOperationError(null);
 
       const response = await api.get(`/services/search?q=${encodeURIComponent(query)}`);
 
@@ -154,7 +157,8 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to search services:', err);
-      setError(err.message);
+      setOperationError(err.message);
+      setTimeout(() => setOperationError(null), 4000);
     } finally {
       setSearchLoading(false);
     }
@@ -241,8 +245,8 @@ const ServiceMenu = () => {
         userMessage = cleanMessage || 'An error occurred while creating the service.';
       }
       
-      setError(userMessage);
-      setTimeout(() => setError(null), 5000);
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
     }
   };
 
@@ -349,8 +353,8 @@ const ServiceMenu = () => {
         userMessage = cleanMessage || 'An error occurred while updating the service.';
       }
       
-      setError(userMessage);
-      setTimeout(() => setError(null), 5000);
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
     }
   };
 
@@ -391,8 +395,8 @@ const ServiceMenu = () => {
 
     console.error('❌ Failed to create category after trying endpoints:', endpoints, lastError);
     const userMessage = lastError?.response?.data?.message || lastError?.message || 'Failed to create category';
-    setError(userMessage);
-    setTimeout(() => setError(null), 4000);
+    setOperationError(userMessage);
+    setTimeout(() => setOperationError(null), 4000);
   };
 
   // Delete category
@@ -429,8 +433,8 @@ const ServiceMenu = () => {
       } else if (err.message) {
         userMessage = err.message;
       }
-      setError(userMessage);
-      setTimeout(() => setError(null), 5000);
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
     }
   };
 
@@ -625,8 +629,8 @@ const ServiceMenu = () => {
         userMessage = cleanMessage || 'An error occurred while deleting the service.';
       }
       
-      setError(userMessage);
-      setTimeout(() => setError(null), 4000);
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 4000);
     }
   };
 
@@ -647,23 +651,23 @@ const ServiceMenu = () => {
 
     // Client-side validation to avoid sending null/NaN to backend
     if (!name) {
-      setError('Service name is required');
-      setTimeout(() => setError(null), 4000);
+      setOperationError('Service name is required');
+      setTimeout(() => setOperationError(null), 4000);
       return;
     }
     if (!category) {
-      setError('Please select a category');
-      setTimeout(() => setError(null), 4000);
+      setOperationError('Please select a category');
+      setTimeout(() => setOperationError(null), 4000);
       return;
     }
     if (!Number.isFinite(durationVal) || durationVal <= 0) {
-      setError('Please enter a valid duration (minutes)');
-      setTimeout(() => setError(null), 4000);
+      setOperationError('Please enter a valid duration (minutes)');
+      setTimeout(() => setOperationError(null), 4000);
       return;
     }
     if (!Number.isFinite(priceVal) || priceVal <= 0) {
-      setError('Please enter a valid price');
-      setTimeout(() => setError(null), 4000);
+      setOperationError('Please enter a valid price');
+      setTimeout(() => setOperationError(null), 4000);
       return;
     }
 
@@ -917,8 +921,8 @@ const ServiceMenu = () => {
       });
     } catch (err) {
       console.error('Error checking category services:', err);
-      setError('Unable to verify category status. Please try again.');
-      setTimeout(() => setError(null), 4000);
+      setOperationError('Unable to verify category status. Please try again.');
+      setTimeout(() => setOperationError(null), 4000);
     }
   };
 
@@ -960,8 +964,8 @@ const ServiceMenu = () => {
         userMessage = err.message;
       }
       
-      setError(userMessage);
-      setTimeout(() => setError(null), 5000);
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
       
       setDeleteDialog(prev => ({ ...prev, loading: false }));
     }
@@ -980,7 +984,7 @@ const ServiceMenu = () => {
     );
   }
 
-  // Show full page error for network / server errors
+  // Show full page error only for fatal errors during component initialization
   if (error) {
     return <Error500Page message={error} />;
   }
@@ -1059,6 +1063,13 @@ const ServiceMenu = () => {
       {success && (
         <Alert severity="success" onClose={() => setSuccess(null)} className="service-menu__alert service-menu__alert--success">
           {success}
+        </Alert>
+      )}
+
+      {/* Operation error alerts for update/delete/create operations */}
+      {operationError && (
+        <Alert severity="error" onClose={() => setOperationError(null)} className="service-menu__alert service-menu__alert--error">
+          {operationError}
         </Alert>
       )}
 
