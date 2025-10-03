@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Search, Filter, ArrowDown, Plus, Edit, Trash2, MoreVertical, AlertTriangle, Info } from "lucide-react";
 import { Button, TextField, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, Menu, /* Add Menu from MUI */ TextareaAutosize } from "@mui/material"; // Import Menu
 import api from "../Service/Api";
+import Swal from 'sweetalert2';
 import "./ServiceMenu.css";
 import Loading from "../states/Loading";
 import Error500Page from "../states/ErrorPage";
@@ -355,24 +356,43 @@ const ServiceMenu = () => {
 
   // Create new category
   const createCategory = async (categoryData) => {
-    try {
-    const response = await api.post('/categories/categories', categoryData);
+    const endpoints = ['/categories/categories', '/services/categories', '/categories'];
+    let lastError = null;
+    for (const ep of endpoints) {
+      try {
+        console.info('Attempting create category via', ep);
+        const response = await api.post(ep, categoryData);
 
-      if (response.data.success) {
-        setShowAddCategoryModal(false);
-        setNewCategoryData({ name: "", displayName: "" });
-        await fetchAvailableCategories();
-        await fetchCategories();
-        setSuccess('Category created successfully');
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
-        throw new Error(response.data.message || 'Failed to create category');
+        if (response && response.data && response.data.success) {
+          setShowAddCategoryModal(false);
+          setNewCategoryData({ name: "", displayName: "" });
+          await fetchAvailableCategories();
+          await fetchCategories();
+          setSuccess('Category created successfully');
+          setTimeout(() => setSuccess(null), 3000);
+          return;
+        } else if (response && response.data) {
+          // Received a response but not success
+          lastError = new Error(response.data.message || 'Failed to create category');
+          // If server returned 404-like shape inside data, continue to next
+        }
+      } catch (err) {
+        console.warn('Create category attempt failed for', ep, err?.response?.status || err.message);
+        lastError = err;
+        // If 404, try next endpoint
+        if (err?.response?.status === 404) {
+          continue;
+        } else {
+          // For other errors, break and show the error
+          break;
+        }
       }
-    } catch (err) {
-      console.error('❌ Failed to create category:', err);
-      setError(err.message);
-      setTimeout(() => setError(null), 4000);
     }
+
+    console.error('❌ Failed to create category after trying endpoints:', endpoints, lastError);
+    const userMessage = lastError?.response?.data?.message || lastError?.message || 'Failed to create category';
+    setError(userMessage);
+    setTimeout(() => setError(null), 4000);
   };
 
   // Delete category
@@ -416,17 +436,64 @@ const ServiceMenu = () => {
 
   // Delete service
   const deleteService = async (serviceId) => {
-    if (!window.confirm('Are you sure you want to delete this service?')) {
-      return;
-    }
+    const confirm = await Swal.fire({
+      title: 'Delete service?',
+      text: 'Are you sure you want to delete this service? This action will deactivate it and may affect existing bookings.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (!confirm.isConfirmed) return;
 
     try {
       const response = await api.delete(`/services/${serviceId}`);
 
       if (response.data.success) {
-        await fetchServices();
-        await fetchCategories(); // Refresh categories in case counts changed
+        // Backend performs a soft-delete (isActive = false). Update client state to remove the service
+        const updatedAll = allServices.filter(s => s._id !== serviceId);
+        setAllServices(updatedAll);
+        setServices(prev => prev.filter(s => s._id !== serviceId));
+
+        // Recompute categories counts locally if we have the available categories list
+        if (availableCategories && availableCategories.length > 0) {
+          const categoriesWithCounts = availableCategories.map(category => {
+            const count = updatedAll.filter(service => {
+              const serviceCategoryId = service.category?._id;
+              const serviceCategoryName = service.category?.displayName || service.category?.name;
+
+              return serviceCategoryId === category._id ||
+                     serviceCategoryName === category.displayName ||
+                     serviceCategoryName === category.name;
+            }).length;
+
+            return {
+              _id: category._id,
+              name: category.displayName || category.name,
+              count: count
+            };
+          });
+
+          const total = updatedAll.length;
+          const finalCategories = [{ name: "All categories", count: total }, ...categoriesWithCounts];
+          setCategories(finalCategories);
+        } else {
+          // Fallback to fetch categories from server
+          await fetchCategories();
+        }
+
         setSuccess(response.data.message || 'Service deleted successfully');
+        // Authoritative refresh to ensure UI matches server state
+        try {
+          await fetchServices();
+          await fetchCategories();
+          console.debug('✅ Services and categories refreshed after delete');
+        } catch (refreshErr) {
+          console.warn('⚠️ Failed to refresh services/categories after delete:', refreshErr);
+        }
+
         setTimeout(() => setSuccess(null), 3000);
       } else {
         throw new Error(response.data.message || 'Failed to delete service');
@@ -435,7 +502,82 @@ const ServiceMenu = () => {
       console.error('❌ Failed to delete service:', err);
       
       let userMessage = 'Failed to delete service.';
-      
+      // If the backend refuses delete because of active bookings, offer to deactivate instead
+      const backendMsg = err?.response?.data?.message || '';
+      if (err?.response?.status === 400 && backendMsg.includes('Cannot delete service with active bookings')) {
+        const deactivateConfirm = await Swal.fire({
+          title: 'Service has active bookings',
+          html: `This service has active bookings and cannot be deleted.<br/><strong>Would you like to deactivate (hide) the service instead?</strong>`,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Deactivate',
+          cancelButtonText: 'Cancel',
+          reverseButtons: true,
+        });
+
+        if (deactivateConfirm.isConfirmed) {
+          try {
+            Swal.fire({
+              title: 'Deactivating...',
+              allowOutsideClick: false,
+              didOpen: () => Swal.showLoading()
+            });
+
+            const patchRes = await api.patch(`/services/${serviceId}`, { isActive: false });
+
+            Swal.close();
+
+            if (patchRes?.data?.success) {
+              // Update local state similar to delete success
+              const updatedAll = allServices.filter(s => s._id !== serviceId);
+              setAllServices(updatedAll);
+              setServices(prev => prev.filter(s => s._id !== serviceId));
+
+              if (availableCategories && availableCategories.length > 0) {
+                const categoriesWithCounts = availableCategories.map(category => {
+                  const count = updatedAll.filter(service => {
+                    const serviceCategoryId = service.category?._id;
+                    const serviceCategoryName = service.category?.displayName || service.category?.name;
+
+                    return serviceCategoryId === category._id ||
+                           serviceCategoryName === category.displayName ||
+                           serviceCategoryName === category.name;
+                  }).length;
+
+                  return {
+                    _id: category._id,
+                    name: category.displayName || category.name,
+                    count: count
+                  };
+                });
+
+                const total = updatedAll.length;
+                const finalCategories = [{ name: "All categories", count: total }, ...categoriesWithCounts];
+                setCategories(finalCategories);
+              } else {
+                await fetchCategories();
+              }
+
+              // Authoritative refresh after deactivate to keep UI and server authoritative
+              try {
+                await fetchServices();
+                await fetchCategories();
+                console.debug('✅ Services and categories refreshed after deactivate');
+              } catch (refreshErr) {
+                console.warn('⚠️ Failed to refresh services/categories after deactivate:', refreshErr);
+              }
+
+              Swal.fire('Deactivated', patchRes.data.message || 'Service deactivated successfully', 'success');
+              return;
+            }
+          } catch (patchErr) {
+            console.error('Failed to deactivate service after delete blocked:', patchErr);
+            Swal.fire('Error', patchErr?.response?.data?.message || patchErr.message || 'Failed to deactivate service', 'error');
+            return;
+          }
+        }
+      }
+
       if (err.response) {
         switch (err.response.status) {
           case 401:
@@ -490,14 +632,48 @@ const ServiceMenu = () => {
 
   // Handle form submission (for add/edit service)
   const handleSubmit = (e) => {
-    e.preventDefault();
+    // allow calling without an event (DialogAction onClick calls it directly)
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    // Trim string inputs
+    const name = (formData.name || '').toString().trim();
+    const description = (formData.description || '').toString().trim();
+    const category = formData.category;
+
+    // Parse numeric inputs defensively
+    const durationVal = formData.duration === '' || formData.duration === null ? NaN : Number(formData.duration);
+    const priceVal = formData.price === '' || formData.price === null ? NaN : Number(formData.price);
+    const discountVal = formData.discountPrice === '' || formData.discountPrice == null ? undefined : Number(formData.discountPrice);
+
+    // Client-side validation to avoid sending null/NaN to backend
+    if (!name) {
+      setError('Service name is required');
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+    if (!category) {
+      setError('Please select a category');
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+    if (!Number.isFinite(durationVal) || durationVal <= 0) {
+      setError('Please enter a valid duration (minutes)');
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+    if (!Number.isFinite(priceVal) || priceVal <= 0) {
+      setError('Please enter a valid price');
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+
     const serviceData = {
-      name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      duration: parseInt(formData.duration),
-      price: parseFloat(formData.price),
-      ...(formData.discountPrice && { discountPrice: parseFloat(formData.discountPrice) })
+      name,
+      description,
+      category,
+      duration: Math.round(durationVal),
+      price: Number(priceVal.toFixed(2)),
+      ...(discountVal !== undefined && Number.isFinite(discountVal) ? { discountPrice: Number(discountVal.toFixed(2)) } : {})
     };
 
     if (selectedService) {
@@ -984,13 +1160,23 @@ const ServiceMenu = () => {
                   <div key={service._id} className="service-menu__service-card">
                     <div className="service-menu__service-card-main-info">
                       <h3 className="service-menu__service-card-name">{service.name}</h3>
-                      <button
-                        className="service-menu__action-icon-btn service-menu__service-card-more-options"
-                        onClick={() => handleEditService(service)} // Link to Edit for now
-                        title="More options"
-                      >
-                        <MoreVertical size={20} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          className="service-menu__action-icon-btn service-menu__service-card-more-options"
+                          onClick={() => handleEditService(service)} // Link to Edit for now
+                          title="Edit service"
+                        >
+                          <MoreVertical size={20} />
+                        </button>
+
+                        <button
+                          className="service-menu__action-icon-btn service-menu__service-card-delete"
+                          onClick={(e) => { e.stopPropagation(); deleteService(service._id); }}
+                          title="Delete service"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
                     <p className="service-menu__service-card-description">
                       {service.description}
