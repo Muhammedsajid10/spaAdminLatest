@@ -256,7 +256,7 @@ const Searchbar = () => {
             <p className="no-results-message">
               {searchTerm
                 ? "No appointments match your search."
-                : <NoDataState/>}
+                : <Loading/>}
             </p>
           )}
         </div>
@@ -285,7 +285,7 @@ const Searchbar = () => {
             <p className="no-results-message">
               {searchTerm
                 ? "No clients match your search."
-                : <NoDataState/>}
+                : <Loading/>}
             </p>
           )}
         </div>
