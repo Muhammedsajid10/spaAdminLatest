@@ -24,7 +24,7 @@ const performDemoLogin = async () => {
   loginInProgress = true;
   loginPromise = new Promise(async (resolve) => {
     try {
-      console.log('🔄 Attempting automatic demo login...');
+      console.log('🔄 Attempting real login with backend...');
       
       // Clear any old token first
       localStorage.removeItem('token');
@@ -33,9 +33,21 @@ const performDemoLogin = async () => {
       // Add delay to avoid rate limiting
       await new Promise(r => setTimeout(r, 1000));
       
-      const response = await axios.post(`${Base_url}/auth/login`, {
+      // Use axios directly with proper headers to avoid circular dependency with api instance
+      const loginData = JSON.stringify({
         email: 'admin@spa.com',
         password: 'Admin@123'
+      });
+      
+      const response = await axios({
+        method: 'post',
+        url: `${Base_url}/auth/login`,
+        data: loginData,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: true
       });
 
       if (response.data.success) {
