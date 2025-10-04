@@ -444,7 +444,8 @@ const TeamMembers = () => {
                     status: userIsActive === true ? 'Active' : 'Inactive',
                 };
             });
-            // Only show active employees in the team members list
+            
+            // Set team members (using only server data now)
             setTeamMembers(members);
         } catch (err) {
             console.error("Failed to fetch team members:", err);
@@ -559,90 +560,147 @@ const TeamMembers = () => {
             if (!navigator.onLine) {
                 throw new Error('No internet connection. Please check your network and try again.');
             }
-            console.log("something inside ");
-            // 1. Create user
-            const userRes = await fetch(`${Base_url}/auth/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            console.log("Creating employee in database (fixing email issue)...");
+            
+            // Step 1: Create user account first
+            let userId = null;
+            try {
+                console.log("Creating user account...");
+                const userRes = await api.post('/auth/signup', {
                     firstName: addForm.firstName,
                     lastName: addForm.lastName,
                     email: addForm.email,
                     phone: addForm.phone,
-                    password: addForm.password,
-                    role: 'employee',
-                }),
-            });
-            console.log("user response is ", userRes);
-            
-            if (!userRes.ok) {
-                const errData = await userRes.json();
-                throw new Error(errData.message || 'Failed to create user');
+                    password: addForm.password || "Employee@123",
+                    role: 'employee'
+                });
+                
+                if (userRes.data?.success) {
+                    userId = userRes.data.data?.user?._id;
+                    console.log("✅ User created successfully:", userId);
+                } else {
+                    throw new Error(userRes.data?.message || 'Failed to create user account');
+                }
+            } catch (userError) {
+                console.error("❌ User creation failed:", userError);
+                
+                // If it's the email error, provide specific guidance
+                if (userError.response?.status === 500 && 
+                    userError.response?.data?.message?.includes('Missing credentials for "PLAIN"')) {
+                    throw new Error(`
+                        BACKEND EMAIL CONFIGURATION NEEDED:
+                        
+                        The backend is trying to send emails but SMTP is not configured.
+                        
+                        To fix this, in your backend .env file, either:
+                        
+                        1. Set EMAIL_VERIFICATION_ENABLED=false, OR
+                        2. Configure SMTP settings:
+                           SMTP_HOST=your-smtp-host
+                           SMTP_PORT=your-smtp-port  
+                           SMTP_USER=your-smtp-user
+                           SMTP_PASS=your-smtp-password
+                        
+                        Then restart your backend server.
+                    `);
+                } else {
+                    throw new Error("Failed to create user account: " + userError.message);
+                }
             }
-            const userData = await userRes.json();
-            const userId = userData.data?.user?._id;
-            if (!userId) throw new Error('User ID not returned');
-  console.log("user id is there ", userId);
-   console.log("add form data is ", addForm);
-   console.log("adding employee now");
-            // 2. Create employee profile
-            const token = localStorage.getItem('token');
-            const empRes = await fetch(`${Base_url}/employees`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+            
+            if (!userId) {
+                throw new Error('No user ID returned from user creation');
+            }
+            
+            // Step 2: Create employee profile
+            console.log("Creating employee profile for user:", userId);
+            try {
+                const empRes = await api.post('/employees', {
                     userId,
                     employeeId: addForm.employeeId,
                     position: addForm.position,
                     department: addForm.department,
                     hireDate: addForm.hireDate,
-                }),
-            });
-            console.log("employee response is ", empRes);
-            if (!empRes.ok) {
-                const errData = await empRes.json();
-                throw new Error(errData.message || 'Failed to create employee profile');
+                });
+                
+                if (!empRes.data?.success) {
+                    throw new Error(empRes.data?.message || 'Failed to create employee profile');
+                }
+                
+                const empData = empRes.data;
+                const newEmployeeId = empData.data?.employee?._id;
+                
+                console.log("✅ Employee created successfully in database:", newEmployeeId);
+                
+                // Add to team members list
+                setTeamMembers(prev => [
+                    {
+                        id: newEmployeeId || userId,
+                        employeeId: addForm.employeeId,
+                        userId: userId,
+                        name: `${addForm.firstName} ${addForm.lastName}`,
+                        firstName: addForm.firstName,
+                        lastName: addForm.lastName,
+                        email: addForm.email,
+                        phone: addForm.phone,
+                        position: addForm.position,
+                        department: addForm.department,
+                        hireDate: addForm.hireDate,
+                        rating: null,
+                        reviewCount: null,
+                        status: 'Active',
+                        isActive: true,
+                    },
+                    ...prev,
+                ]);
+                
+            } catch (empError) {
+                console.error("❌ Employee creation failed:", empError);
+                throw new Error("Failed to create employee profile: " + empError.message);
             }
-            const empData = await empRes.json();
-            const newEmployeeId = empData.data?._id;
-            setTeamMembers(prev => [
-                {
-                    id: newEmployeeId || userId,
-                    employeeId: addForm.employeeId,
-                    userId: userId,
-                    name: `${addForm.firstName} ${addForm.lastName}`,
-                    firstName: addForm.firstName,
-                    lastName: addForm.lastName,
-                    email: addForm.email,
-                    phone: addForm.phone,
-                    position: addForm.position,
-                    department: addForm.department,
-                    hireDate: addForm.hireDate,
-                    rating: null,
-                    reviewCount: null,
-                    status: 'Active',
-                    isActive: true,
-                },
-                ...prev,
-            ]);
+            
             setShowAddModal(false);
             resetAddForm();
-            Swal.fire('Success!', 'Employee added successfully.', 'success');
+            Swal.fire({
+                icon: 'success',
+                title: 'Employee Added Successfully',
+                text: 'Employee record created ',
+                timer: 3000
+            });
         } catch (err) {
             console.error('Error adding employee:', err);
+            
             let errorMessage = err.message;
-
-            if (!navigator.onLine) {
+            
+            // Handle specific server errors with better messaging
+            if (err.response?.status === 500) {
+                const serverMessage = err.response?.data?.message || '';
+                if (serverMessage.includes('Missing credentials for "PLAIN"') || 
+                    serverMessage.includes('SMTP') || 
+                    serverMessage.includes('email')) {
+                    errorMessage = 'Server email service is not configured properly. Please contact your system administrator to fix the email settings, then try again.';
+                } else {
+                    errorMessage = 'Internal server error occurred. Please try again or contact support.';
+                }
+            } else if (err.response?.status === 404) {
+                errorMessage = 'The employee creation endpoint was not found. Please contact your system administrator.';
+            } else if (err.response?.status === 400) {
+                errorMessage = err.response?.data?.message || 'Invalid data provided. Please check all fields and try again.';
+            } else if (!navigator.onLine) {
                 errorMessage = 'No internet connection. Please check your network and try again.';
             } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
                 errorMessage = 'Network error. Please check your internet connection.';
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
             }
 
             setError(errorMessage);
-            Swal.fire('Error!', errorMessage, 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed to Add Employee',
+                text: errorMessage,
+                confirmButtonText: 'OK'
+            });
         } finally {
             setAddLoading(false);
         }
@@ -1051,7 +1109,7 @@ const TeamMembers = () => {
                     Swal.fire({
                         icon: 'success',
                         title: 'Password Reset Successful',
-                        text: res.data?.message || 'The password has been reset successfully. An email notification may have been sent to the employee.'
+                        text:'The password has been reset successfully.'
                     });
                 } else {
                     throw new Error((res?.data?.message) || 'Failed to reset password - no matching endpoint responded successfully');
