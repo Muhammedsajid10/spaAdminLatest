@@ -188,6 +188,11 @@ const ClientDirectory = () => {
   const [salesData, setSalesData] = useState({}); // To store sales data separately
   const [showExportMenu, setShowExportMenu] = useState(false); // For export dropdown
   const exportMenuRef = useRef(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
 
   // --- Export Functions ---
   const exportToCSV = () => {
@@ -349,7 +354,7 @@ const ClientDirectory = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/admin/clients");
+      const res = await api.get("/admin/clients?limit=7000");
       const clientsData = res.data.data.clients || [];
 
       // Transform the data to match the frontend format, and assign random colors
@@ -481,13 +486,50 @@ const ClientDirectory = () => {
 
   const handleSelectAll = () => {
     if (
-      selectedClients.length === filteredAndSortedClients.length &&
-      filteredAndSortedClients.length > 0
+      selectedClients.length === paginatedClients.length &&
+      paginatedClients.length > 0
     ) {
       setSelectedClients([]); // Deselect all
     } else {
-      setSelectedClients(filteredAndSortedClients.map((client) => client.id)); // Select all visible
+      setSelectedClients(paginatedClients.map((client) => client.id)); // Select all visible on current page
     }
+  };
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      const half = Math.floor(maxVisiblePages / 2);
+      let start = Math.max(currentPage - half, 1);
+      let end = Math.min(start + maxVisiblePages - 1, totalPages);
+      
+      if (end - start < maxVisiblePages - 1) {
+        start = Math.max(end - maxVisiblePages + 1, 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i);
+      }
+    }
+    
+    return pageNumbers;
   };
 
   // --- Sorting Logic ---
@@ -503,7 +545,7 @@ const ClientDirectory = () => {
     []
   );
 
-  const filteredAndSortedClients = useMemo(() => {
+  const { filteredAndSortedClients, paginatedClients } = useMemo(() => {
     let currentClients = [...clients]; // Create a mutable copy
 
     // 1. Filter
@@ -550,12 +592,35 @@ const ClientDirectory = () => {
     });
 
     // 3. Update 'sales' display value based on fetched salesData
-    // Map over currentClients to ensure sales data is always fresh based on salesData state
-    return currentClients.map((client) => ({
+    const allFilteredClients = currentClients.map((client) => ({
       ...client,
       sales: `AED ${salesData[client.id]?.toLocaleString() || "0"}`, // Format sales for display
     }));
-  }, [clients, searchTerm, sortBy, salesData]); // Dependencies for useMemo
+
+    // 4. Calculate pagination
+    const totalClients = allFilteredClients.length;
+    const totalPagesCount = Math.ceil(totalClients / itemsPerPage);
+    
+    // Update total pages state
+    if (totalPagesCount !== totalPages) {
+      setTotalPages(totalPagesCount);
+    }
+    
+    // Reset to first page if current page exceeds total pages
+    if (currentPage > totalPagesCount && totalPagesCount > 0) {
+      setCurrentPage(1);
+    }
+    
+    // 5. Get paginated slice
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = allFilteredClients.slice(startIndex, endIndex);
+
+    return {
+      filteredAndSortedClients: allFilteredClients,
+      paginatedClients: paginatedData
+    };
+  }, [clients, searchTerm, sortBy, salesData, currentPage, itemsPerPage, totalPages]); // Dependencies for useMemo
 
   // --- Conditional Rendering for Loading/Error States ---
   if (loading) {
@@ -666,68 +731,127 @@ const ClientDirectory = () => {
               icon={searchTerm ? "🔍" : "👥"}
             />
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Client Name</th>
-                  <th>Mobile Number</th>
-                  <th>Email</th>
-                  <th>Sales</th>
-                  <th>Created At</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAndSortedClients.map((client) => (
-                  <tr key={client.id}>
-                    <td></td>
-                    <td>
-                      <div className="client-avatar-name">
-                        <div className={`avatar-color avatar-${client.color}`}>
-                          {client.initial}
-                        </div>
-                        <div className="client-meta">
-                          <div className="client-full-name">{client.name}</div>
-                          {/* Display phone here for smaller screens if needed by CSS responsive rules */}
-                          <div className="client-secondary-phone">
-                            {client.mobile}
+            <>
+              {/* Table Info */}
+              <div className="table-info">
+                <div className="table-results-info">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedClients.length)} of {filteredAndSortedClients.length} clients
+                </div>
+                <div className="table-per-page">
+                  <label>Show:</label>
+                  <select 
+                    value={itemsPerPage} 
+                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                    className="per-page-select"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>per page</span>
+                </div>
+              </div>
+              
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Client Name</th>
+                    <th>Mobile Number</th>
+                    <th>Email</th>
+                    <th>Sales</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedClients.map((client) => (
+                    <tr key={client.id}>
+                      <td></td>
+                      <td>
+                        <div className="client-avatar-name">
+                          <div className={`avatar-color avatar-${client.color}`}>
+                            {client.initial}
+                          </div>
+                          <div className="client-meta">
+                            <div className="client-full-name">{client.name}</div>
+                            {/* Display phone here for smaller screens if needed by CSS responsive rules */}
+                            <div className="client-secondary-phone">
+                              {client.mobile}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>{client.mobile}</td>
-                    <td>{client.email}</td>
-                    <td>{client.sales}</td>
-                    <td>
-                      {client.createdAt.toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td>
-                      <div className="table-col-actions">
-                        <button
-                          onClick={() => openEditModal(client)}
-                          className="btn-action btn-edit"
-                          title="Edit client"
-                        >
-                          <Edit className="icon-small" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClient(client.id)}
-                          className="btn-action btn-delete"
-                          title="Delete client"
-                        >
-                          <Trash2 className="icon-small" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td>{client.mobile}</td>
+                      <td>{client.email}</td>
+                      <td>{client.sales}</td>
+                      <td>
+                        {client.createdAt.toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td>
+                        <div className="table-col-actions">
+                          <button
+                            onClick={() => openEditModal(client)}
+                            className="btn-action btn-edit"
+                            title="Edit client"
+                          >
+                            <Edit className="icon-small" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClient(client.id)}
+                            className="btn-action btn-delete"
+                            title="Delete client"
+                          >
+                            <Trash2 className="icon-small" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="pagination-container">
+                  <div className="pagination">
+                    {/* Previous Button */}
+                    <button 
+                      className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </button>
+                    
+                    {/* Page Numbers */}
+                    {getPageNumbers().map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                    
+                    {/* Next Button */}
+                    <button 
+                      className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
