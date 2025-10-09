@@ -1,0 +1,228 @@
+/* =======================
+   BASE PAGE STYLING
+   ======================= */
+.reports-page {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #fafafa;
+  padding: 32px 48px;
+  font-family: "Inter", "SF Pro Display", "Segoe UI", Arial, sans-serif;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+  box-sizing: border-box;
+}
+
+/* =======================
+   HEADER
+   ======================= */
+.reports-header {
+  margin-bottom: 28px;
+}
+
+.reports-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.reports-header p {
+  margin-top: 6px;
+  color: #666;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* =======================
+   SEARCH BAR
+   ======================= */
+.reports-searchbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 560px;
+  background: #ffffff;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  padding: 10px 16px 10px 44px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 32px;
+  transition: all 0.2s ease-in-out;
+}
+
+.reports-searchbar:hover {
+  border-color: #cfcfcf;
+}
+
+.reports-searchbar:focus-within {
+  border-color: #4a56e2;
+  box-shadow: 0 0 0 3px rgba(74, 86, 226, 0.1);
+}
+
+.reports-searchbar input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #222;
+  padding: 0;
+}
+
+.reports-searchbar input::placeholder {
+  color: #9b9b9b;
+}
+
+.reports-searchbar .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+/* =======================
+   TAB BAR
+   ======================= */
+.tabbar {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid #e5e5e5;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  scrollbar-width: none; /* hide scrollbar on firefox */
+}
+.tabbar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabbar-btn {
+  background: none;
+  border: none;
+  outline: none;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tabbar-btn.active {
+  color: #111;
+  font-weight: 600;
+  border-bottom-color: #111;
+}
+
+.tabbar-btn:hover {
+  color: #111;
+}
+
+/* =======================
+   REPORT CARD LIST
+   ======================= */
+.report-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.report-card:hover {
+  border-color: #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.report-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.report-icon svg {
+  width: 28px;
+  height: 28px;
+  color: #5a6fea;
+  background: #f5f6ff;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.report-info h4 {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 4px 0;
+}
+
+.report-info p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.report-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-premium {
+  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f5f0ff;
+  color: #6a5acd;
+  font-weight: 500;
+}
+
+.report-star {
+  color: #999;
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+/* =======================
+   RESPONSIVE DESIGN
+   ======================= */
+@media (max-width: 768px) {
+  .reports-page {
+    padding: 20px;
+  }
+
+  .reports-header h2 {
+    font-size: 20px;
+  }
+
+  .reports-searchbar {
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .tabbar {
+    gap: 18px;
+  }
+
+  .report-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .report-right {
+    align-self: flex-end;
+  }
+}

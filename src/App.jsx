@@ -25,6 +25,7 @@ import Membership from "./Clientsidepage/Membership";
 import Giftcards from "./Clientsidepage/GiftCardPage";
 import GiftCardPage from "./Clientsidepage/GiftCardPage";
 import Dashboard from "./Clientsidepage/Dashboard";
+import ReportsMain from "./pages/reports/ReportsMain";
 
 
 function App() {
@@ -49,7 +50,7 @@ function App() {
           <Route path="calendar" element={<Scheduler />} />
           <Route path="clients-list" element={<ClientsList />} />
           <Route path="search-bar" element={<Searchbar />} />
-          <Route path="report-analytics" element={<Dashboard />} />
+          <Route path="report-analytics" element={<ReportsMain />} />
 
 
           {/* Sales Pages */}
