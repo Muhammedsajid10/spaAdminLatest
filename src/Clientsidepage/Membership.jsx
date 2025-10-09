@@ -150,7 +150,14 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
       const maybeMembership = paymentResponse.data.data?.membership || paymentResponse.data?.membership;
       if (maybeMembership) {
         console.log('✅ Server returned completed membership; skipping client-side Stripe confirm');
-        onSuccess(maybeMembership);
+        
+        const successData = {
+          membership: maybeMembership,
+          message: paymentResponse.data.message,
+          emailSent: paymentResponse.data.emailSent
+        };
+        
+        onSuccess(successData);
         return;
       }
 
@@ -184,7 +191,15 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
         if (assignForm.price !== '' && assignForm.price != null) membershipPayload.price = Number(assignForm.price);
         
         const membershipResponse = await api.post('/memberships/purchase', membershipPayload);
-        onSuccess(membershipResponse.data.data.membership);
+        
+        // Show success message including email notification
+        const successData = {
+          membership: membershipResponse.data.data.membership,
+          message: membershipResponse.data.message,
+          emailSent: membershipResponse.data.emailSent
+        };
+        
+        onSuccess(successData);
       } else {
         throw new Error('Payment was not successful');
       }
@@ -253,6 +268,7 @@ const Membership = () => {
   const [error, setError] = useState(null);
   const [assignStep, setAssignStep] = useState('details'); // 'details' or 'payment'
   const [paymentError, setPaymentError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const fetchMemberships = async () => {
     setLoading(true);
@@ -494,6 +510,23 @@ const Membership = () => {
 
   return (
     <div className="mem-container">
+      {/* Success Notification */}
+      {successMessage && (
+        <div className="success-notification">
+          <div className="success-content">
+            <span className="success-icon">✅</span>
+            <span className="success-text">{successMessage}</span>
+            <button 
+              className="success-close" 
+              onClick={() => setSuccessMessage(null)}
+              aria-label="Close notification"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className="mem-max-width">
         <div className="mem-header">
           <div className="mem-header-content">
@@ -721,11 +754,30 @@ const Membership = () => {
                     <MembershipPaymentForm
                       assignForm={assignForm}
                       templates={templates}
-                      onSuccess={(membership) => {
+                      onSuccess={(successData) => {
+                        // Handle both old format (direct membership) and new format (with email info)
+                        const membership = successData.membership || successData;
+                        const emailSent = successData.emailSent;
+                        const message = successData.message;
+                        
                         setMemberships(m => [membership, ...m]);
                         setShowAssignModal(false);
                         setAssignStep('details');
                         setPaymentError(null);
+                        
+                        // Show success notification with email confirmation
+                        if (emailSent) {
+                          setSuccessMessage('✅ Membership assigned successfully! Confirmation email sent to the client.');
+                          console.log('✅ Membership assigned and email notification sent!');
+                        } else {
+                          setSuccessMessage('✅ Membership assigned successfully!');
+                          console.log('✅ Membership assigned successfully!');
+                        }
+                        
+                        // Auto-hide success message after 5 seconds
+                        setTimeout(() => {
+                          setSuccessMessage(null);
+                        }, 5000);
                       }}
                       onCancel={() => {
                         setAssignStep('details');

@@ -113,9 +113,7 @@ export const BookingModal = ({
                     </div>
                   );
                   })}
-                  {multipleAppointments.length === 0 && bookingDefaults?.time && (
-                    <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
-                  )}
+                 
                   <button
                     type="button"
                     className="add-service-inline-btn"

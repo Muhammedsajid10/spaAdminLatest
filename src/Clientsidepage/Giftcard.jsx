@@ -11,7 +11,7 @@ import * as XLSX from "xlsx";
 
 const Giftcards = () => {
   const [search, setSearch] = useState('');
-  const [giftCards, setGiftCards] = useState([]); // purchased gift cards
+  const [giftCards, setGiftCards] = useState([]); 
   const [templates, setTemplates] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,7 @@ const Giftcards = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignSubmitting, setAssignSubmitting] = useState(false);
   const [assignError, setAssignError] = useState('');
+  const [assignSuccess, setAssignSuccess] = useState(null);
   const [form, setForm] = useState({
     templateId: '',
     purchasedBy: '',
@@ -169,6 +170,7 @@ const Giftcards = () => {
 
   const openAssign = () => {
     setAssignError('');
+    setAssignSuccess(null);
     const validTemplate = templates.find(t => !t.__isLegacyMissingValue);
     if (!validTemplate) {
       setAssignError('No valid gift card templates with value & price. Please recreate templates.');
@@ -284,6 +286,9 @@ const Giftcards = () => {
       });
       const res = await api.post('/giftcards/purchase', payload);
       const newCard = res.data?.data?.giftCard;
+      const emailSent = res.data?.data?.emailSent;
+      const recipientEmail = res.data?.data?.recipientEmail;
+      
       if (newCard) {
         setGiftCards(prev => {
           const value = newCard.value ?? 0;
@@ -304,6 +309,23 @@ const Giftcards = () => {
           };
           return [mapped, ...prev];
         });
+
+        // Set success message with email status
+        const recipientName = form.recipientName || 'recipient';
+        const baseMessage = `🎁 Gift card assigned successfully to ${recipientName}!`;
+        
+        if (emailSent && recipientEmail) {
+          setAssignSuccess(`${baseMessage} 📧 Email notification sent to ${recipientEmail}`);
+        } else if (form.recipientEmail) {
+          setAssignSuccess(`${baseMessage} ⚠️ Note: Email notification could not be sent`);
+        } else {
+          setAssignSuccess(baseMessage);
+        }
+
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => {
+          setAssignSuccess(null);
+        }, 5000);
       }
       setShowAssignModal(false);
     } catch (err) {
@@ -650,6 +672,42 @@ const Giftcards = () => {
       <p className="desc">
         View, filter and export gift cards purchased by your clients. 
       </p>
+
+      {/* Success notification */}
+      {assignSuccess && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          backgroundColor: '#d4edda',
+          border: '1px solid #c3e6cb',
+          borderRadius: '8px',
+          padding: '16px 20px',
+          color: '#155724',
+          fontSize: '14px',
+          fontWeight: '500',
+          zIndex: 1000,
+          maxWidth: '400px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          {assignSuccess}
+          <button 
+            onClick={() => setAssignSuccess(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#155724',
+              fontSize: '16px',
+              marginLeft: '12px',
+              cursor: 'pointer',
+              padding: '0'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       
       <div className="controls">
         <input

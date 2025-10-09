@@ -1730,7 +1730,7 @@ const SelectCalendar = () => {
         return;
       }
 
-      const res = await fetch(`${Base_url}/admin/clients`, {
+      const res = await fetch(`${Base_url}/admin/clients?limit=10000&sort=-createdAt`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1753,7 +1753,8 @@ const SelectCalendar = () => {
 
   const searchClients = useCallback((query) => {
     if (!query.trim()) {
-      setClientSearchResults(existingClients.slice(0, 10));
+      // Show first 50 clients when no search query (increased from 10)
+      setClientSearchResults(existingClients.slice(0, 50));
       return;
     }
 
@@ -1767,7 +1768,9 @@ const SelectCalendar = () => {
         email.includes(searchTerm) ||
         phone.includes(searchTerm);
     });
-    setClientSearchResults(filtered);
+    
+    // Show up to 100 filtered results (increased limit)
+    setClientSearchResults(filtered.slice(0, 100));
   }, [existingClients]);
 
   const handleClientSearchChange = (e) => {
@@ -2483,11 +2486,11 @@ const SelectCalendar = () => {
         };
       }
 
-      if (!clientData.email || !clientData.phone) {
-        setBookingError('Client email and phone are required.');
-        setBookingLoading(false);
-        return;
-      }
+      // if (!clientData.email || !clientData.phone) {
+      //   setBookingError('Client email and phone are required.');
+      //   setBookingLoading(false);
+      //   return;
+      // }
 
       // Create services array from multiple appointments
       const services = multipleAppointments.map(apt => {
@@ -2628,6 +2631,23 @@ const SelectCalendar = () => {
         effectivePaymentMethod = paymentMethodMapping[paymentMethod] || paymentMethod || 'cash';
       }
 
+      // Store original client name in case backend overwrites with admin user
+      const originalClientName = selectedExistingClient 
+        ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`.trim()
+        : `${clientData.firstName} ${clientData.lastName || ''}`.trim();
+
+      // Prepare notes with client name preserved
+      const existingNotes = bookingForm.notes || '';
+      const notesWithClientName = existingNotes 
+        ? `Client: ${originalClientName}\n${existingNotes}` 
+        : `Client: ${originalClientName}`;
+
+      // Prepare special requests to include client name
+      const specialRequests = [`Client Name: ${originalClientName}`];
+      if (existingNotes) {
+        specialRequests.push(existingNotes);
+      }
+
       // Create the booking payload for multiple services
       const bookingPayload = {
         services,
@@ -2638,7 +2658,10 @@ const SelectCalendar = () => {
         paymentMethod: effectivePaymentMethod,
         paymentDetails,
         client: clientData,
-        notes: bookingForm.notes || '',
+        originalClientName: originalClientName, // Store original name
+        clientDisplayName: originalClientName, // Alternative field name
+        notes: notesWithClientName, // Store client name in notes as backup
+        specialRequests: specialRequests, // Store client name in special requests array
         giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
         bookingSource: 'admin'
       };
@@ -2653,6 +2676,7 @@ const SelectCalendar = () => {
         },
         body: JSON.stringify(bookingPayload),
       });
+
 
       const responseData = await res.json();
 
@@ -4270,9 +4294,7 @@ useEffect(() => {
                         );
                       })}
                       {/* Placeholder when none added yet */}
-                      {multipleAppointments.length === 0 && bookingDefaults?.time && (
-                        <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
-                      )}
+                      
                       <button
                         type="button"
                         className="add-service-inline-btn"
@@ -4596,6 +4618,14 @@ useEffect(() => {
                         />
                         {showClientSearch && clientSearchResults.length > 0 && (
                           <div className="client-search-results">
+                            <div className="client-search-header">
+                              <span className="client-count">
+                                Showing {clientSearchResults.length} client{clientSearchResults.length !== 1 ? 's' : ''}
+                                {existingClients.length > clientSearchResults.length && 
+                                  ` (of ${existingClients.length} total)`
+                                }
+                              </span>
+                            </div>
                             {clientSearchResults.map(client => (
                               <div
                                 key={client._id}
@@ -4691,25 +4721,25 @@ useEffect(() => {
                             />
                           </div>
                           <div className="form-group">
-                            <label htmlFor="clientEmail">Email Address *</label>
+                            <label htmlFor="clientEmail">Email Address</label>
                             <input
                               id="clientEmail"
                               type="email"
                               placeholder="Enter client's email address"
                               value={clientInfo.email}
                               onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
-                              required
+                              // required
                             />
                           </div>
                           <div className="form-group">
-                            <label htmlFor="clientPhone">Phone Number *</label>
+                            <label htmlFor="clientPhone">Phone Number</label>
                             <input
                               id="clientPhone"
                               type="tel"
                               placeholder="Enter client's phone number"
                               value={clientInfo.phone}
                               onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
-                              required
+                              // required
                             />
                           </div>
                         </div>
@@ -4723,7 +4753,7 @@ useEffect(() => {
                       onClick={() => setBookingStep(6)}
                       disabled={
                         !selectedExistingClient &&
-                        (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
+                        (!clientInfo.name.trim() /* || !clientInfo.email.trim() || !clientInfo.phone.trim() */)
                       }
                     >
                       Continue to Payment
