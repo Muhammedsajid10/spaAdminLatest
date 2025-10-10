@@ -13,8 +13,19 @@ export const store = configureStore({
     appointments: appointmentsReducer
     ,services: servicesReducer,
     clients: clientsReducer,
-    bookingSession: bookingSessionReducer
-  }
+    bookingSession: bookingSessionReducer,
+    //  filters: filtersReducer,
+    // reports: reportsReducer,
+    // ui: uiReducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore these action types for date objects
+        ignoredActions: ['filters/setDateRange'],
+      },
+    }),
 });
+
 
 export default store;

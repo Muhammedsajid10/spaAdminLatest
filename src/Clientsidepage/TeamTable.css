@@ -1,0 +1,91 @@
+/* Table Styles with Fixed Header and Scrollable Body */
+.team-table-container {
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+}
+
+.team-table-wrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.team-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.team-table-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: table;
+  width: 100%;
+}
+
+.team-table-body {
+  background-color: white;
+  height: 100%;
+  overflow-y: auto;
+  display: block;
+}
+
+.team-table-row {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Actions styling */
+.team-th-actions,
+.team-td-actions {
+  width: 120px;
+  text-align: center;
+  position: relative;
+}
+
+.team-actions-dropdown {
+  position: fixed;
+  min-width: 180px;
+  background-color: #111827;
+  border: 1px solid #111827;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+  animation: dropdown-fade-in 0.2s ease-out;
+}
+
+.team-actions-dropdown-container {
+  position: static;
+}
+
+/* Column widths */
+.team-th-checkbox {
+  width: 48px;
+}
+
+.team-th-contact {
+  width: 200px;
+}
+
+.team-th-status {
+  width: 100px;
+}
+
+/* Ensure table cells maintain their width */
+.team-table th,
+.team-table td {
+  width: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

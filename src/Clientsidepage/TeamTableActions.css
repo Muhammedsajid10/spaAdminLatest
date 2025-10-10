@@ -1,0 +1,65 @@
+/* Action button and dropdown styles */
+.team-actions-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.team-actions-btn {
+  background-color: transparent;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.team-actions-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+/* Dropdown menu */
+.team-actions-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background-color: #111827;
+  border: 1px solid #111827;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Individual dropdown items */
+.team-action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  color: white;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.team-action-item:hover {
+  background-color: #1f2937;
+}
+
+.team-action-item svg {
+  color: white;
+  flex-shrink: 0;
+}

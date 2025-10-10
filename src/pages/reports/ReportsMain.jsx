@@ -1,10 +1,10 @@
 // src/pages/reports/ReportsMain.jsx
 import React, { useState } from "react";
-import { reportTabs } from "../../reportsData.jsx";
+import { reportTabs } from "./reportsData.jsx";
 import TabBar from "../../components/ui/TabBar";
 import ReportsCategory from "./ReportsCategory";
 import { Search } from "lucide-react";
-import "./ReportsMain.css";
+import "../../styles/ReportsMain.css";
 
 export default function ReportsMain() {
   const [active, setActive] = useState("appointments");

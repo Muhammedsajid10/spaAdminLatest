@@ -1,0 +1,510 @@
+/* ===== STATUS BADGE COMPONENT STYLES ===== */
+/* Professional status indicators with color-coded variants */
+
+/* CSS Custom Properties */
+:root {
+  /* Base Colors */
+  --badge-font-size: 0.75rem;
+  --badge-font-weight: 500;
+  --badge-padding: 4px 8px;
+  --badge-border-radius: 12px;
+  --badge-line-height: 1.2;
+  --badge-letter-spacing: 0.025em;
+  
+  /* Success Variant (Green) */
+  --badge-success-bg: #dcfce7;
+  --badge-success-text: #166534;
+  --badge-success-border: #bbf7d0;
+  --badge-success-bg-hover: #bbf7d0;
+  --badge-success-text-hover: #14532d;
+  
+  /* Warning Variant (Amber/Orange) */
+  --badge-warning-bg: #fef3c7;
+  --badge-warning-text: #92400e;
+  --badge-warning-border: #fde68a;
+  --badge-warning-bg-hover: #fde68a;
+  --badge-warning-text-hover: #78350f;
+  
+  /* Error Variant (Red) */
+  --badge-error-bg: #fee2e2;
+  --badge-error-text: #dc2626;
+  --badge-error-border: #fecaca;
+  --badge-error-bg-hover: #fecaca;
+  --badge-error-text-hover: #b91c1c;
+  
+  /* Info Variant (Blue) */
+  --badge-info-bg: #dbeafe;
+  --badge-info-text: #1d4ed8;
+  --badge-info-border: #93c5fd;
+  --badge-info-bg-hover: #93c5fd;
+  --badge-info-text-hover: #1e40af;
+  
+  /* Neutral Variant (Gray) */
+  --badge-neutral-bg: #f3f4f6;
+  --badge-neutral-text: #374151;
+  --badge-neutral-border: #d1d5db;
+  --badge-neutral-bg-hover: #e5e7eb;
+  --badge-neutral-text-hover: #1f2937;
+  
+  /* Primary Variant (Brand Color) */
+  --badge-primary-bg: #eff6ff;
+  --badge-primary-text: #2563eb;
+  --badge-primary-border: #bfdbfe;
+  --badge-primary-bg-hover: #bfdbfe;
+  --badge-primary-text-hover: #1d4ed8;
+  
+  /* Secondary Variant (Purple) */
+  --badge-secondary-bg: #f3e8ff;
+  --badge-secondary-text: #7c3aed;
+  --badge-secondary-border: #d8b4fe;
+  --badge-secondary-bg-hover: #d8b4fe;
+  --badge-secondary-text-hover: #6d28d9;
+  
+  /* Transitions */
+  --badge-transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== BASE STATUS BADGE ===== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--badge-padding);
+  font-size: var(--badge-font-size);
+  font-weight: var(--badge-font-weight);
+  line-height: var(--badge-line-height);
+  letter-spacing: var(--badge-letter-spacing);
+  border-radius: var(--badge-border-radius);
+  border: 1px solid transparent;
+  text-transform: capitalize;
+  white-space: nowrap;
+  transition: var(--badge-transition);
+  cursor: default;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== SUCCESS VARIANT ===== */
+.status-badge--success {
+  background-color: var(--badge-success-bg);
+  color: var(--badge-success-text);
+  border-color: var(--badge-success-border);
+}
+
+.status-badge--success:hover {
+  background-color: var(--badge-success-bg-hover);
+  color: var(--badge-success-text-hover);
+}
+
+.status-badge--success::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: var(--badge-success-text);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+/* ===== WARNING VARIANT ===== */
+.status-badge--warning {
+  background-color: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
+  border-color: var(--badge-warning-border);
+}
+
+.status-badge--warning:hover {
+  background-color: var(--badge-warning-bg-hover);
+  color: var(--badge-warning-text-hover);
+}
+
+.status-badge--warning::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: var(--badge-warning-text);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+/* ===== ERROR VARIANT ===== */
+.status-badge--error {
+  background-color: var(--badge-error-bg);
+  color: var(--badge-error-text);
+  border-color: var(--badge-error-border);
+}
+
+.status-badge--error:hover {
+  background-color: var(--badge-error-bg-hover);
+  color: var(--badge-error-text-hover);
+}
+
+.status-badge--error::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: var(--badge-error-text);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+/* ===== INFO VARIANT ===== */
+.status-badge--info {
+  background-color: var(--badge-info-bg);
+  color: var(--badge-info-text);
+  border-color: var(--badge-info-border);
+}
+
+.status-badge--info:hover {
+  background-color: var(--badge-info-bg-hover);
+  color: var(--badge-info-text-hover);
+}
+
+.status-badge--info::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: var(--badge-info-text);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+/* ===== NEUTRAL VARIANT ===== */
+.status-badge--neutral {
+  background-color: var(--badge-neutral-bg);
+  color: var(--badge-neutral-text);
+  border-color: var(--badge-neutral-border);
+}
+
+.status-badge--neutral:hover {
+  background-color: var(--badge-neutral-bg-hover);
+  color: var(--badge-neutral-text-hover);
+}
+
+/* ===== PRIMARY VARIANT ===== */
+.status-badge--primary {
+  background-color: var(--badge-primary-bg);
+  color: var(--badge-primary-text);
+  border-color: var(--badge-primary-border);
+}
+
+.status-badge--primary:hover {
+  background-color: var(--badge-primary-bg-hover);
+  color: var(--badge-primary-text-hover);
+}
+
+/* ===== SECONDARY VARIANT ===== */
+.status-badge--secondary {
+  background-color: var(--badge-secondary-bg);
+  color: var(--badge-secondary-text);
+  border-color: var(--badge-secondary-border);
+}
+
+.status-badge--secondary:hover {
+  background-color: var(--badge-secondary-bg-hover);
+  color: var(--badge-secondary-text-hover);
+}
+
+/* ===== SIZE VARIANTS ===== */
+.status-badge--xs {
+  --badge-font-size: 0.625rem;
+  --badge-padding: 2px 6px;
+  --badge-border-radius: 8px;
+}
+
+.status-badge--sm {
+  --badge-font-size: 0.75rem;
+  --badge-padding: 3px 7px;
+  --badge-border-radius: 10px;
+}
+
+.status-badge--md {
+  --badge-font-size: 0.875rem;
+  --badge-padding: 5px 10px;
+  --badge-border-radius: 14px;
+}
+
+.status-badge--lg {
+  --badge-font-size: 1rem;
+  --badge-padding: 6px 12px;
+  --badge-border-radius: 16px;
+}
+
+/* ===== STYLE VARIANTS ===== */
+
+/* Outlined Style */
+.status-badge--outlined {
+  background-color: transparent;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.status-badge--outlined.status-badge--success {
+  color: var(--badge-success-text);
+  border-color: var(--badge-success-text);
+}
+
+.status-badge--outlined.status-badge--warning {
+  color: var(--badge-warning-text);
+  border-color: var(--badge-warning-text);
+}
+
+.status-badge--outlined.status-badge--error {
+  color: var(--badge-error-text);
+  border-color: var(--badge-error-text);
+}
+
+.status-badge--outlined.status-badge--info {
+  color: var(--badge-info-text);
+  border-color: var(--badge-info-text);
+}
+
+.status-badge--outlined.status-badge--neutral {
+  color: var(--badge-neutral-text);
+  border-color: var(--badge-neutral-text);
+}
+
+/* Solid Style */
+.status-badge--solid.status-badge--success {
+  background-color: var(--badge-success-text);
+  color: white;
+  border-color: var(--badge-success-text);
+}
+
+.status-badge--solid.status-badge--warning {
+  background-color: var(--badge-warning-text);
+  color: white;
+  border-color: var(--badge-warning-text);
+}
+
+.status-badge--solid.status-badge--error {
+  background-color: var(--badge-error-text);
+  color: white;
+  border-color: var(--badge-error-text);
+}
+
+.status-badge--solid.status-badge--info {
+  background-color: var(--badge-info-text);
+  color: white;
+  border-color: var(--badge-info-text);
+}
+
+.status-badge--solid.status-badge--neutral {
+  background-color: var(--badge-neutral-text);
+  color: white;
+  border-color: var(--badge-neutral-text);
+}
+
+/* Rounded Style */
+.status-badge--rounded {
+  border-radius: 9999px;
+}
+
+/* Square Style */
+.status-badge--square {
+  border-radius: 4px;
+}
+
+/* ===== ICON SUPPORT ===== */
+.status-badge--with-icon {
+  padding-left: 14px;
+}
+
+.status-badge--with-icon::before {
+  display: block;
+}
+
+.status-badge--with-icon.status-badge--xs {
+  padding-left: 12px;
+}
+
+.status-badge--with-icon.status-badge--lg {
+  padding-left: 18px;
+}
+
+/* ===== INTERACTIVE BADGES ===== */
+.status-badge--clickable {
+  cursor: pointer;
+}
+
+.status-badge--clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge--clickable:active {
+  transform: translateY(0);
+}
+
+/* ===== PULSING ANIMATION ===== */
+.status-badge--pulse {
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ===== BLINKING DOT ANIMATION ===== */
+.status-badge--blinking::before {
+  animation: badgeBlink 1.5s infinite;
+}
+
+@keyframes badgeBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .status-badge {
+    --badge-font-size: 0.7rem;
+    --badge-padding: 3px 7px;
+  }
+  
+  .status-badge--lg {
+    --badge-font-size: 0.875rem;
+    --badge-padding: 5px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .status-badge {
+    --badge-font-size: 0.65rem;
+    --badge-padding: 2px 6px;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+.status-badge:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Success Variant (Dark Mode) */
+    --badge-success-bg: #064e3b;
+    --badge-success-text: #6ee7b7;
+    --badge-success-border: #047857;
+    
+    /* Warning Variant (Dark Mode) */
+    --badge-warning-bg: #78350f;
+    --badge-warning-text: #fcd34d;
+    --badge-warning-border: #92400e;
+    
+    /* Error Variant (Dark Mode) */
+    --badge-error-bg: #7f1d1d;
+    --badge-error-text: #fca5a5;
+    --badge-error-border: #991b1b;
+    
+    /* Info Variant (Dark Mode) */
+    --badge-info-bg: #1e3a8a;
+    --badge-info-text: #93c5fd;
+    --badge-info-border: #1d4ed8;
+    
+    /* Neutral Variant (Dark Mode) */
+    --badge-neutral-bg: #374151;
+    --badge-neutral-text: #d1d5db;
+    --badge-neutral-border: #4b5563;
+  }
+}
+
+/* ===== HIGH CONTRAST MODE ===== */
+@media (prefers-contrast: high) {
+  .status-badge {
+    border-width: 2px;
+    font-weight: 600;
+  }
+  
+  .status-badge--success {
+    background-color: #000000;
+    color: #00ff00;
+    border-color: #00ff00;
+  }
+  
+  .status-badge--error {
+    background-color: #000000;
+    color: #ff0000;
+    border-color: #ff0000;
+  }
+  
+  .status-badge--warning {
+    background-color: #000000;
+    color: #ffff00;
+    border-color: #ffff00;
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .status-badge,
+  .status-badge::before {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .status-badge--clickable:hover {
+    transform: none !important;
+  }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.status-badge--uppercase {
+  text-transform: uppercase;
+}
+
+.status-badge--lowercase {
+  text-transform: lowercase;
+}
+
+.status-badge--no-transform {
+  text-transform: none;
+}
+
+.status-badge--bold {
+  font-weight: 600;
+}
+
+.status-badge--light {
+  font-weight: 400;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .status-badge {
+    background-color: transparent !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+  }
+  
+  .status-badge::before {
+    display: none !important;
+  }
+}

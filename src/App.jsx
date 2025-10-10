@@ -18,6 +18,8 @@ import TeamMembers from './Clientsidepage/Teammembers';
 import ScheduledShifts from './Clientsidepage/Sheduledshifts';
 import TimeSheets from './Clientsidepage/TimeSheets';
 import ServiceMenu from './Clientsidepage/ServiceMenu';
+import SalesSummary from './pages/reports/SalesSummary';
+import PaymentSummary from './pages/reports/PaymentSummary';
 import CatalogMemberships from './Clientsidepage/Membership';
 import Searchbar from "./Clientsidepage/SearchBar";
 import Reporting from "./Clientsidepage/Dashboard";
@@ -50,7 +52,9 @@ function App() {
           <Route path="calendar" element={<Scheduler />} />
           <Route path="clients-list" element={<ClientsList />} />
           <Route path="search-bar" element={<Searchbar />} />
-          <Route path="report-analytics" element={<ReportsMain />} />
+          <Route path="/reports" element={<ReportsMain />} />
+                      <Route path="/reports/sales-summary" element={<SalesSummary />} />
+            <Route path="/reports/payment-summary" element={<PaymentSummary />} />
 
 
           {/* Sales Pages */}
