@@ -1,4 +1,7 @@
 import FinanceSummary from './FinanceSummary';
+import { ReportsAPI } from '../../Service/api/reportsApi';
+import { usePaymentTransactions } from '../../store/reports/hooks/usePaymentTransactions';
+import { usePaymentSummary } from '../../store/reports/hooks/usePaymentSummary';
 
 // Sample data fetchers for different reports
 const mockDataFetchers = {
@@ -27,28 +30,6 @@ const mockDataFetchers = {
         netSales: 1010.00,
         taxes: 101.00,
         totalSales: 1111.00
-      }
-    ];
-  },
-
-  paymentSummary: async (dateRange) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return [
-      {
-        paymentMethod: 'Cash',
-        numberOfPayments: 25,
-        paymentAmount: 1250.00,
-        numberOfRefunds: 2,
-        refunds: 50.00,
-        netPayments: 1200.00
-      },
-      {
-        paymentMethod: 'Credit Card',
-        numberOfPayments: 43,
-        paymentAmount: 2133.50,
-        numberOfRefunds: 1,
-        refunds: 25.00,
-        netPayments: 2108.50
       }
     ];
   },
@@ -118,6 +99,7 @@ const mockDataFetchers = {
   }
 };
 
+
 // Report configurations
 export const reportsConfig = {
   'sales-summary': {
@@ -125,9 +107,17 @@ export const reportsConfig = {
     description: 'Sales quantities and value, excluding tips and gift card sales.',
     category: 'Sales',
     dataFetcher: mockDataFetchers.salesSummary,
+    showTypeFilter: true,
+    typeFilterOptions: [
+      { value: 'services', label: 'Services' },
+      { value: 'category', label: 'Category' },
+      { value: 'item', label: 'Item' },
+      { value: 'team-member', label: 'Team member' },
+      { value: 'clients', label: 'Clients' }
+    ],
     columns: [
       { key: 'type', label: 'Type', sortable: true },
-      { key: 'salesQty', label: 'Sales Qty', type: 'number', align: 'right', sortable: true },
+      { key: 'salesQty', label: 'Sales qty', type: 'number', align: 'right', sortable: true },
       { key: 'itemsSold', label: 'Items Sold', type: 'number', align: 'right', sortable: true },
       { key: 'grossSales', label: 'Gross Sales', type: 'currency', align: 'right', sortable: true },
       { key: 'totalDiscounts', label: 'Total Discounts', type: 'currency', align: 'right', sortable: true },
@@ -149,24 +139,32 @@ export const reportsConfig = {
 
   'payment-summary': {
     title: 'Payment Summary',
-    description: 'Payments split by payment methods.',
+    description: 'Payments grouped by payment method within the selected period.',
     category: 'Finance',
-    dataFetcher: mockDataFetchers.paymentSummary,
+    dataHook: usePaymentSummary,
     columns: [
-      { key: 'paymentMethod', label: 'Payment Method', sortable: true },
-      { key: 'numberOfPayments', label: 'No. of Payments', type: 'number', align: 'right', sortable: true },
-      { key: 'paymentAmount', label: 'Payment Amount', type: 'currency', align: 'right', sortable: true },
-      { key: 'numberOfRefunds', label: 'No. of Refunds', type: 'number', align: 'right', sortable: true },
-      { key: 'refunds', label: 'Refunds', type: 'currency', align: 'right', sortable: true },
-      { key: 'netPayments', label: 'Net Payments', type: 'currency', align: 'right', sortable: true }
+      { key: 'paymentMethod', label: 'Payment method', sortable: true },
+      { key: 'numberOfPayments', label: 'No. of payments', type: 'number', align: 'right', sortable: true },
+      { key: 'paymentAmount', label: 'Payment amount', type: 'currency', align: 'right', sortable: true },
+      { key: 'numberOfRefunds', label: 'No. of refunds', type: 'number', align: 'right' },
+      { key: 'refundAmount', label: 'Refunds', type: 'currency', align: 'right' },
+      { key: 'netPayments', label: 'Net payments', type: 'currency', align: 'right' }
     ]
   },
 
   'appointments-summary': {
-    title: 'Appointments Report',
+    title: 'Appointments Summary',
     description: 'View appointment trends and staff bookings.',
     category: 'Appointments',
     dataFetcher: mockDataFetchers.appointmentsSummary,
+    showTypeFilter: true,
+    typeFilterOptions: [
+      { value: 'team-member', label: 'Team Member' },
+      { value: 'channel', label: 'Channel' },
+      { value: 'service', label: 'Service' },
+      { value: 'channel', label: 'Channel' },
+      { value: 'status', label: 'Status' }
+    ],
     columns: [
       { key: 'date', label: 'Date', sortable: true },
       { key: 'totalAppointments', label: 'Total', type: 'number', align: 'right', sortable: true },
@@ -192,17 +190,46 @@ export const reportsConfig = {
   },
 
   'client-list': {
-    title: 'Client List',
-    description: 'Comprehensive list of all active clients.',
+    title: 'Client list',
+    description: 'Complete client directory.',
     category: 'Clients',
-    dataFetcher: mockDataFetchers.clientList,
+    dataFetcher: async ({ dateRange }) => {
+      const res = await ReportsAPI.getClients();
+      const rows = res?.data?.clients ?? [];
+      return rows.filter((row) => {
+        if (!dateRange?.start || !dateRange?.end) return true;
+        const created = new Date(row.createdAt);
+        return created >= new Date(dateRange.start) && created <= new Date(`${dateRange.end}T23:59:59`);
+      });
+    },
     columns: [
-      { key: 'name', label: 'Name', sortable: true },
+      { key: 'fullName', label: 'Client name', sortable: true },
       { key: 'email', label: 'Email', sortable: true },
       { key: 'phone', label: 'Phone', sortable: true },
-      { key: 'lastVisit', label: 'Last Visit', sortable: true },
-      { key: 'totalSpent', label: 'Total Spent', type: 'currency', align: 'right', sortable: true },
-      { key: 'visits', label: 'Visits', type: 'number', align: 'right', sortable: true }
+      { key: 'gender', label: 'Gender' },
+      { key: 'createdAt', label: 'Created', type: 'date', sortable: true },
+      // { key: 'isActive', label: 'Active' }
+    ]
+  },
+
+  'payment-transactions': {
+    title: 'Payment transactions',
+    description: 'Detailed view of all payment transactions.',
+    category: 'Finance',
+    dataHook: usePaymentTransactions,
+    typeFilterKey: 'transactionType',
+    columns: [
+      { key: 'paymentDate', label: 'Payment date', sortable: true, type: 'date' },
+      { key: 'paymentNumber', label: 'Payment no.', sortable: true },
+      { key: 'saleDate', label: 'Sale date', sortable: true, type: 'date' },
+      { key: 'saleNumber', label: 'Sale no.', sortable: true },
+      { key: 'appointmentRef', label: 'Appt. ref', sortable: true },
+      { key: 'client', label: 'Client', sortable: true },
+      { key: 'location', label: 'Location', sortable: true },
+      { key: 'teamMember', label: 'Team member', sortable: true },
+      { key: 'transactionType', label: 'Transaction type', sortable: true },
+      { key: 'paymentMethod', label: 'Payment method', sortable: true },
+      { key: 'paymentAmount', label: 'Payment amount', type: 'currency', align: 'right', sortable: true }
     ]
   }
 };

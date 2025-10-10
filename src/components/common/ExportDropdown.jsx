@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
-import { Download, FileText, File, Image } from 'lucide-react';
-import Button from '../../components/ui/Button';
-import Dropdown from '../../components/ui/DropDown';
+import React, { useState, useRef, useEffect } from 'react';
+import { Download, FileText, FileSpreadsheet } from 'lucide-react';
 import './ExportDropdown.css';
 
 const ExportDropdown = ({ 
@@ -11,63 +9,72 @@ const ExportDropdown = ({
   disabled = false,
   className = '' 
 }) => {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const exportOptions = [
-    { 
-      value: 'csv', 
-      label: 'CSV', 
+    {
+      value: 'csv',
+      label: 'CSV',
       icon: <FileText size={16} />,
-      description: 'Comma-separated values'
     },
-    { 
-      value: 'excel', 
-      label: 'Excel', 
-      icon: <File size={16} />,
-      description: 'Microsoft Excel format'
+    {
+      value: 'excel',
+      label: 'Excel',
+      icon: <FileSpreadsheet size={16} />,
     },
-    { 
-      value: 'pdf', 
-      label: 'PDF', 
+    {
+      value: 'pdf',
+      label: 'PDF',
       icon: <FileText size={16} />,
-      description: 'Portable document format'
-    },
+    }
   ];
 
   const handleExport = (option) => {
-    if (onExport) {
-      onExport(option.value);
-    }
+    onExport?.(option.value, reportType);
+    setOpen(false);
   };
 
-  const renderOption = (option) => (
-    <div className="export-dropdown__option-content">
-      <div className="export-dropdown__option-main">
-        <span className="export-dropdown__option-icon">{option.icon}</span>
-        <span className="export-dropdown__option-label">{option.label}</span>
-      </div>
-      <span className="export-dropdown__option-desc">{option.description}</span>
-    </div>
-  );
-
   return (
-    <div className={`export-dropdown ${className}`}>
-      <Dropdown
-        options={exportOptions}
-        onChange={handleExport}
-        placeholder="Export"
+    <div ref={dropdownRef} className={`export-dropdown-unique ${className}`}>
+      <button
+        type="button"
+        className="export-dropdown__trigger"
+        onClick={() => !disabled && setOpen((prev) => !prev)}
         disabled={disabled || loading}
-        renderOption={renderOption}
-        renderSelected={() => (
-          <div className="export-dropdown__trigger">
-            <Download size={16} />
-            <span>Export</span>
-          </div>
-        )}
-      />
-      
-      {loading && (
-        <div className="export-dropdown__loading">
-          <div className="export-dropdown__spinner" />
-          <span>Preparing export...</span>
+      >
+        <Download size={16} />
+        {loading ? 'Preparing...' : 'Export'}
+      </button>
+
+      {open && (
+        <div className="export-dropdown__menu">
+          {exportOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className="export-dropdown__option"
+              onClick={() => handleExport(option)}
+            >
+              <div className="export-dropdown__option-content">
+                <div className="export-dropdown__option-main">
+                  <span className="export-dropdown__option-icon">{option.icon}</span>
+                  <span className="export-dropdown__option-label">{option.label}</span>
+                </div>
+                <span className="export-dropdown__option-desc">{option.description}</span>
+              </div>
+            </button>
+          ))}
         </div>
       )}
     </div>

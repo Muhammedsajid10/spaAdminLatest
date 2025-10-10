@@ -1,7 +1,5 @@
 import React from 'react';
 import { Download } from 'lucide-react';
-import SearchBar from '../common/SearchBar';
-import Button from '../ui/Button';
 
 const ActionRow = ({
   leftSlot,
@@ -17,16 +15,7 @@ const ActionRow = ({
         {leftSlot}
       </div>
       
-      <div className="report-actions__center">
-        {onSearchChange && (
-          <SearchBar
-            value={searchValue}
-            onChange={onSearchChange}
-            placeholder={searchPlaceholder}
-            size="md"
-          />
-        )}
-      </div>
+     
       
       <div className="report-actions__right">
         {rightSlot}

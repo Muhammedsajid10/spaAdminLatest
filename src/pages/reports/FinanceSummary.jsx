@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, ChevronRight, Search } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
+import MonthPicker from "../../components/ui/MonthPicker";
+import ExportDropdown from "../../components/common/ExportDropdown";
+import ActionRow from "../../components/reports/ActionRow";
 import "../../styles/FinanceSummary.css";
 
 const FinanceSummary = () => {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
   const [financeData, setFinanceData] = useState([]);
+  const [dateRange, setDateRange] = useState({
+    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
 
   useEffect(() => {
-    // For now static mock data; replace with API later
     const mockData = [
       {
         month: "Oct 2025",
@@ -62,68 +67,72 @@ const FinanceSummary = () => {
   }, []);
 
   const handleBack = () => {
-    navigate('/reports');
+    navigate("/reports");
   };
 
   const handleBreadcrumbClick = (path) => {
     navigate(path);
   };
 
-  const filteredData = financeData.filter((d) =>
-    d.month.toLowerCase().includes(search.toLowerCase())
+  const handleExport = (option) => {
+    console.log(`Exporting as ${option}`);
+    // Add export logic here later
+  };
+
+  // Left slot - MonthPicker
+  const leftSlot = (
+    <MonthPicker value={dateRange} onChange={setDateRange} showPresets={true} />
   );
 
+  // Right slot - Export Button
+  const rightSlot = <ExportDropdown onExport={handleExport} />;
+
   return (
-    <div className="finance-summary-container">
-      {/* Header Section with back button and breadcrumb */}
-      <div className="finance-report-header">
-        <div className="finance-header-top">
-          <Button
-            variant="outline"
-            icon={<ArrowLeft />}
-            onClick={handleBack}
-            className="finance-back-button"
-          >
-            Back
-          </Button>
-          <div className="finance-header-content">
-            {/* Breadcrumb Navigation */}
-            <div className="finance-breadcrumb">
-              <button 
+    <div className="generic-report-page">
+      <div className="report-container">
+        <div className="report-header">
+          <div className="report-header__row">
+            <Button
+              variant="outline"
+              icon={<ArrowLeft />}
+              onClick={handleBack}
+              className="report-back-button"
+            >
+              Back
+            </Button>
+
+            <div className="report-breadcrumb">
+              <button
                 className="breadcrumb-link"
-                onClick={() => handleBreadcrumbClick('/reports')}
+                onClick={() => handleBreadcrumbClick("/reports")}
               >
                 All reports
               </button>
               <ChevronRight className="breadcrumb-separator" />
-              <span className="breadcrumb-current">Finance</span>
+              <button
+                className="breadcrumb-link"
+                onClick={() => handleBreadcrumbClick("/reports/finance")}
+              >
+                Finance
+              </button>
               <ChevronRight className="breadcrumb-separator" />
-              <span className="breadcrumb-current">Finance Summary</span>
+              <span className="breadcrumb-current">Finance summary</span>
             </div>
-            
-            {/* Title and Description */}
-            <h2>Finance summary</h2>
-            <p>High-level summary of sales, payments, and liabilities.</p>
           </div>
-        </div>
-      </div>
 
-      <div className="finance-summary-page">
-        {/* ===== Search Bar ===== */}
-        <div className="finance-search-section">
-          <div className="finance-searchbar">
-            <Search className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search by month..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <h2 className="report-header__title">Finance summary</h2>
+          <p className="report-header__subtitle">
+            High-level summary of sales, payments, and liabilities.
+          </p>
         </div>
 
-        {/* ===== Table ===== */}
-        <div className="finance-table-container">
+        <ActionRow
+          leftSlot={leftSlot}
+          rightSlot={rightSlot}
+          className="report-actions-no-search"
+        />
+
+        <div className="finance-table-section">
           <table className="finance-table">
             <thead>
               <tr>
@@ -137,7 +146,7 @@ const FinanceSummary = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((row, i) => (
+              {financeData.map((row, i) => (
                 <tr key={i}>
                   <td className="month-col">{row.month}</td>
                   <td>{row.grossSales}</td>

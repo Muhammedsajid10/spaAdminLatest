@@ -6,6 +6,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import Button from '../ui/Button';
+import LoadingSpinner from './LoadingSpinner';
 import './DataTable.css';
 
 const DataTable = ({
@@ -27,25 +28,23 @@ const DataTable = ({
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedRows, setSelectedRows] = useState([]);
 
+  const rows = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+
   // Sort data
   const sortedData = useMemo(() => {
-    if (!sortable || !sortConfig.key) return data;
-
-    return [...data].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-      
+    if (!sortable || !sortConfig.key) return rows;
+    return [...rows].sort((a, b) => {
+      const aValue = a?.[sortConfig.key];
+      const bValue = b?.[sortConfig.key];
       if (aValue === bValue) return 0;
-      
       const comparison = aValue < bValue ? -1 : 1;
       return sortConfig.direction === 'desc' ? comparison * -1 : comparison;
     });
-  }, [data, sortConfig, sortable]);
+  }, [rows, sortConfig, sortable]);
 
   // Paginate data
   const paginatedData = useMemo(() => {
     if (!paginated) return sortedData;
-    
     const startIndex = (currentPage - 1) * itemsPerPage;
     return sortedData.slice(startIndex, startIndex + itemsPerPage);
   }, [sortedData, currentPage, itemsPerPage, paginated]);
@@ -116,14 +115,67 @@ const DataTable = ({
     return value ?? '-';
   };
 
-  if (loading) {
-    return (
-      <div className="data-table-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading data...</p>
+ if (loading) {
+  return (
+    <div className={`data-table ${className}`}>
+      {/* Keep header */}
+      <div className="data-table__container">
+        <table className="data-table__table">
+          <thead className="data-table__header">
+            <tr>
+              {selectable && <th className="data-table__header-cell data-table__header-cell--checkbox"></th>}
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={`data-table__header-cell ${
+                    column.align ? `data-table__header-cell--${column.align}` : ''
+                  }`}
+                >
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          {/* Loading row in table body */}
+          <tbody className="data-table__body">
+            <tr>
+              <td
+                colSpan={columns.length + (selectable ? 1 : 0)}
+                className="data-table__loading-row"
+              >
+                <div className="data-table__loading-inline">
+                  <LoadingSpinner label="Loading data…" />
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-    );
-  }
+
+      {/* Keep footer/pagination visible during loading */}
+      <div className="data-table__footer">
+        <div className="data-table__info">
+          <span>Loading...</span>
+          <select
+            disabled
+            className="data-table__items-per-page"
+          >
+            <option>10 per page</option>
+          </select>
+        </div>
+        <div className="data-table__pagination">
+          <Button variant="ghost" size="sm" icon={<ChevronLeft />} disabled />
+          <div className="data-table__page-numbers">
+            <button className="data-table__page-number data-table__page-number--active">1</button>
+          </div>
+          <Button variant="ghost" size="sm" icon={<ChevronRight />} disabled />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
   if (error) {
     return (

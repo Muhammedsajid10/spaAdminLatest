@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import './MonthPicker.css';
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const MonthPicker = ({ 
   value, 
@@ -11,6 +13,17 @@ const MonthPicker = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(new Date());
+  const [draftRange, setDraftRange] = useState(value ?? {});
+
+  useEffect(() => {
+    setDraftRange(value ?? {});
+  }, [value, isOpen]);
+
+  const secondMonthDate = useMemo(() => {
+    const next = new Date(viewDate);
+    next.setMonth(next.getMonth() + 1);
+    return next;
+  }, [viewDate]);
 
   // Preset date ranges
   const presets = [
@@ -18,10 +31,10 @@ const MonthPicker = ({
       label: 'Month to date',
       getValue: () => {
         const now = new Date();
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
         return {
-          start: firstDay.toISOString().split('T')[0],
-          end: new Date().toISOString().split('T')[0],
+          start: formatISO(start),
+          end: formatISO(now)
         };
       }
     },
@@ -32,8 +45,8 @@ const MonthPicker = ({
         const start = new Date();
         start.setDate(start.getDate() - 30);
         return {
-          start: start.toISOString().split('T')[0],
-          end: end.toISOString().split('T')[0],
+          start: formatISO(start),
+          end: formatISO(end)
         };
       }
     },
@@ -44,165 +57,246 @@ const MonthPicker = ({
         const start = new Date();
         start.setMonth(start.getMonth() - 6);
         return {
-          start: start.toISOString().split('T')[0],
-          end: end.toISOString().split('T')[0],
+          start: formatISO(start),
+          end: formatISO(end)
         };
       }
     }
   ];
 
-  const formatDateRange = (dateRange) => {
-    if (!dateRange?.start || !dateRange?.end) return 'Select date range';
-    
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
-    
-    const formatOptions = { 
-      month: 'short', 
-      day: 'numeric',
-      year: startDate.getFullYear() !== endDate.getFullYear() ? 'numeric' : undefined
-    };
-    
-    return `${startDate.toLocaleDateString('en-US', formatOptions)} - ${endDate.toLocaleDateString('en-US', formatOptions)}`;
+  const formatDateRange = (range) => {
+    if (!range?.start || !range?.end) return 'Select date range';
+
+    const startDate = new Date(range.start);
+    const endDate = new Date(range.end);
+
+    const sameYear = startDate.getFullYear() === endDate.getFullYear();
+    const fmt = (date, opts) =>
+      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...opts });
+
+    return sameYear
+      ? `${fmt(startDate)} - ${fmt(endDate)}`
+      : `${fmt(startDate, { year: 'numeric' })} - ${fmt(endDate, { year: 'numeric' })}`;
   };
 
   const handlePresetClick = (preset) => {
-    const newRange = preset.getValue();
-    onChange(newRange);
+    const range = preset.getValue();
+    setDraftRange(range);
+    onChange?.(range);
     setIsOpen(false);
   };
 
-  const navigateMonth = (direction) => {
-    const newDate = new Date(viewDate);
-    newDate.setMonth(newDate.getMonth() + direction);
-    setViewDate(newDate);
+  const addMonths = (date, count) => {
+    const next = new Date(date);
+    next.setDate(1);
+    next.setMonth(next.getMonth() + count);
+    return next;
   };
 
-  const getDaysInMonth = (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+  const buildMonthDays = (monthDate) => {
+    const startOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const endOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    const startOffset = startOfMonth.getDay();
+
+    const totalDays = startOffset + endOfMonth.getDate();
+    const weeks = Math.ceil(totalDays / 7);
+    const cells = weeks * 7;
 
     const days = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
+
+    for (let i = 0; i < cells; i++) {
+      const dayNumber = i - startOffset + 1;
+      const isCurrentMonth = dayNumber >= 1 && dayNumber <= endOfMonth.getDate();
+
+      const date = isCurrentMonth
+        ? new Date(monthDate.getFullYear(), monthDate.getMonth(), dayNumber)
+        : null;
+
+      days.push({
+        key: `${monthDate.getFullYear()}-${monthDate.getMonth()}-${i}`,
+        label: isCurrentMonth ? dayNumber : '',
+        date,
+        isCurrentMonth
+      });
     }
-    
-    // Add all days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
-    }
-    
+
     return days;
   };
 
-  const isDateInRange = (date) => {
-    if (!value?.start || !value?.end || !date) return false;
-    const dateStr = date.toISOString().split('T')[0];
-    return dateStr >= value.start && dateStr <= value.end;
+  const isSameDay = (dateA, dateB) =>
+    dateA.getFullYear() === dateB.getFullYear() &&
+    dateA.getMonth() === dateB.getMonth() &&
+    dateA.getDate() === dateB.getDate();
+
+  const formatISO = (date) => date.toISOString().split('T')[0];
+
+  const getDayClass = (day) => {
+    if (!day.isCurrentMonth || !day.date) return 'month-picker__day--disabled';
+
+    const dayISO = formatISO(day.date);
+    const startISO = draftRange?.start ?? null;
+    const endISO = draftRange?.end ?? null;
+    const hasStart = Boolean(startISO);
+    const hasEnd = Boolean(endISO);
+    const isSingleDay = hasStart && hasEnd && startISO === endISO;
+
+    const classes = ['month-picker__day--clickable'];
+
+    if (hasStart && hasEnd && dayISO > startISO && dayISO < endISO) {
+      classes.push('month-picker__day--in-range');
+    }
+
+    if (hasStart && dayISO === startISO) {
+      classes.push('month-picker__day--selected', 'month-picker__day--range-start');
+      if (!hasEnd || isSingleDay) {
+        classes.push('month-picker__day--single');
+      }
+      if (hasStart && !hasEnd) {
+        classes.push('month-picker__day--pending-end');
+      }
+    }
+
+    if (hasEnd && dayISO === endISO) {
+      classes.push('month-picker__day--selected', 'month-picker__day--range-end');
+      if (isSingleDay) {
+        classes.push('month-picker__day--single');
+      }
+    }
+
+    return classes.join(' ');
   };
 
-  const isDateSelected = (date) => {
-    if (!date) return false;
-    const dateStr = date.toISOString().split('T')[0];
-    return dateStr === value?.start || dateStr === value?.end;
+  const handleDaySelect = (date) => {
+  if (!date) return;
+
+  const iso = formatISO(date);
+
+  // CASE 1: No start selected OR both start & end already set
+  // → start a new range
+  if (!draftRange.start || (draftRange.start && draftRange.end)) {
+    setDraftRange({ start: iso, end: null });
+    return;
+  }
+
+  // CASE 2: Start selected, no end yet
+  // → set end, ensuring start <= end
+  if (draftRange.start && !draftRange.end) {
+    if (iso < draftRange.start) {
+      // User clicked an earlier date → swap
+      setDraftRange({ start: iso, end: draftRange.start });
+    } else {
+      setDraftRange({ start: draftRange.start, end: iso });
+    }
+  }
+};
+
+const handleApply = () => {
+  if (draftRange?.start) {
+    const finalRange = {
+      start: draftRange.start,
+      end: draftRange.end || draftRange.start
+    };
+    onChange?.(finalRange);
+  }
+  setIsOpen(false);
+};
+
+
+  const handleCancel = () => {
+    setDraftRange(value ?? {});
+    setIsOpen(false);
   };
+
+  const renderCalendar = (monthDate, index) => (
+    <div key={index} className="month-picker__calendar-single">
+      <div className="month-picker__header">
+        {index === 0 ? (
+          <button
+            type="button"
+            className="month-picker__nav-btn"
+            onClick={() => setViewDate(addMonths(viewDate, -1))}
+          >
+            <ChevronLeft size={16} />
+          </button>
+        ) : (
+          <span className="month-picker__nav-spacer" />
+        )}
+
+        <div className="month-picker__month-year">
+          {monthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+        </div>
+
+        {index === 1 ? (
+          <button
+            type="button"
+            className="month-picker__nav-btn"
+            onClick={() => setViewDate(addMonths(viewDate, 1))}
+          >
+            <ChevronRight size={16} />
+          </button>
+        ) : (
+          <span className="month-picker__nav-spacer" />
+        )}
+      </div>
+
+      <div className="month-picker__weekdays">
+        {WEEKDAYS.map((day) => (
+          <div key={day} className="month-picker__weekday">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      <div className="month-picker__days">
+        {buildMonthDays(monthDate).map((day) => (
+          <button
+            key={day.key}
+            type="button"
+            className={`month-picker__day ${getDayClass(day)}`}
+            disabled={!day.isCurrentMonth}
+            onClick={() => handleDaySelect(day.date)}
+          >
+            {day.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className={`month-picker ${className}`}>
       <Button
         variant="secondary"
         icon={<Calendar />}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
         className="month-picker__trigger"
       >
-        {formatDateRange(value)}
+        {formatDateRange(draftRange.start && draftRange.end ? draftRange : value)}
       </Button>
 
       {isOpen && (
         <div className="month-picker__dropdown">
-          {showPresets && (
-            <div className="month-picker__presets">
-              <h4 className="month-picker__presets-title">Quick Select</h4>
-              {presets.map((preset) => (
-                <button
-                  key={preset.label}
-                  className="month-picker__preset"
-                  onClick={() => handlePresetClick(preset)}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          )}
-          
+      
+
           <div className="month-picker__calendar">
-            <div className="month-picker__header">
-              <button
-                className="month-picker__nav-btn"
-                onClick={() => navigateMonth(-1)}
-              >
-                <ChevronLeft />
-              </button>
-              <h3 className="month-picker__month-year">
-                {viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </h3>
-              <button
-                className="month-picker__nav-btn"
-                onClick={() => navigateMonth(1)}
-              >
-                <ChevronRight />
-              </button>
-            </div>
-            
-            <div className="month-picker__weekdays">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="month-picker__weekday">{day}</div>
-              ))}
-            </div>
-            
-            <div className="month-picker__days">
-              {getDaysInMonth(viewDate).map((date, index) => (
-                <div
-                  key={index}
-                  className={`month-picker__day ${
-                    date ? 'month-picker__day--clickable' : ''
-                  } ${
-                    isDateSelected(date) ? 'month-picker__day--selected' : ''
-                  } ${
-                    isDateInRange(date) ? 'month-picker__day--in-range' : ''
-                  }`}
-                  onClick={() => {
-                    if (date) {
-                      // Simple implementation - you can enhance this for range selection
-                      const dateStr = date.toISOString().split('T')[0];
-                      onChange({ start: dateStr, end: dateStr });
-                    }
-                  }}
-                >
-                  {date ? date.getDate() : ''}
-                </div>
-              ))}
+            <div className="month-picker__calendars">
+              {renderCalendar(viewDate, 0)}
+              {renderCalendar(secondMonthDate, 1)}
             </div>
           </div>
-          
+
           <div className="month-picker__actions">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsOpen(false)}
+              onClick={handleCancel}
             >
               Cancel
             </Button>
             <Button
               variant="primary"
               size="sm"
-              onClick={() => setIsOpen(false)}
+              onClick={handleApply}
             >
               Apply
             </Button>

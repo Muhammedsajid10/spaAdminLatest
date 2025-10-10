@@ -1,16 +1,19 @@
 import React from 'react';
 import './LoadingSpinner.css';
 
-const LoadingSpinner = ({ 
-  size = 'md', 
-  className = '',
-  color = 'primary' 
-}) => {
-  return (
-    <div className={`loading-spinner loading-spinner--${size} ${className}`}>
-      <div className={`loading-spinner__circle loading-spinner__circle--${color}`} />
+const LoadingSpinner = ({
+  label = 'Connecting to network…',
+  className = ''
+}) => (
+  <div className={`loading-range ${className}`}>
+    <div className="loading-range__bars">
+      <span />
+      <span />
+      <span />
+      <span />
     </div>
-  );
-};
+    <p className="loading-range__label">{label}</p>
+  </div>
+);
 
 export default LoadingSpinner;

@@ -166,47 +166,34 @@
   overflow: hidden;
 }
 
+.finance-table-section {
+  margin-top: 28px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
 .finance-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
 }
 
-.finance-table th {
-  background: #f9fafb;
-  font-weight: 600;
-  text-align: left;
-  padding: 16px 20px;
-  color: #374151;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap;
-}
-
-.finance-table td {
+.finance-table thead th {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  background: #f8fafc;
   padding: 14px 20px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #1f2937;
-  vertical-align: middle;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.finance-table .month-col {
-  font-weight: 500;
-  color: #111827;
-}
-
-.finance-table .discounts {
-  color: #dc2626;
-  font-weight: 500;
-}
-
-.finance-table .highlight {
-  color: #2563eb;
-  font-weight: 600;
-}
-
-.finance-table .highlight-total {
-  color: #16a34a;
-  font-weight: 700;
+.finance-table tbody td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 /* Hover Effects */
@@ -217,6 +204,21 @@
 
 .finance-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.finance-table .month-col {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.finance-table .discounts {
+  color: #dc2626;
+}
+
+.finance-table .highlight,
+.finance-table .highlight-total {
+  font-weight: 600;
+  color: #111827;
 }
 
 /* =============================

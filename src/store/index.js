@@ -5,6 +5,9 @@ import appointmentsReducer from './appointmentsSlice';
 import servicesReducer from './servicesSlice';
 import clientsReducer from './clientsSlice';
 import bookingSessionReducer from './bookingSessionSlice';
+import reportReducer from './reports/reportSlice';
+import paymentSummaryReducer from './reports/slices/paymentSummarySlice';
+import paymentTransactionsReducer from './reports/slices/paymentTransactionsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,8 +17,10 @@ export const store = configureStore({
     ,services: servicesReducer,
     clients: clientsReducer,
     bookingSession: bookingSessionReducer,
+    reports: reportReducer,
+    paymentSummary: paymentSummaryReducer,
+    paymentTransactions: paymentTransactionsReducer,
     //  filters: filtersReducer,
-    // reports: reportsReducer,
     // ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -23,6 +28,9 @@ export const store = configureStore({
       serializableCheck: {
         // Ignore these action types for date objects
         ignoredActions: ['filters/setDateRange'],
+        ignoredActionPaths: ['meta.arg', 'payload.raw'],
+        ignoredPaths: ['paymentTransactions.items'],
+        warnAfter: 500
       },
     }),
 });

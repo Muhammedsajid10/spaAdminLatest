@@ -44,6 +44,7 @@
     "react-router-dom": "^7.6.2",
     "reactjs-popup": "^2.0.6",
     "recharts": "^3.0.2",
+    "redux-starter-kit": "^2.0.0",
     "sweetalert2": "^11.22.3",
     "tailwindcss-animate": "^1.0.7",
     "xlsx": "^0.18.5"
