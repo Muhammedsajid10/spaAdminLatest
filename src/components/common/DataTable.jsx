@@ -1,26 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { 
   ChevronUp, 
   ChevronDown, 
   ChevronLeft, 
-  ChevronRight,
-  MoreHorizontal,
-  Download
+  ChevronRight
 } from 'lucide-react';
-import Button from '../../components/ui/Button';
-import StatusBadge from '../../components/common/StatusBadge/StatusBadge';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-
-import { 
-  setSortConfig, 
-  setCurrentPage, 
-  setItemsPerPage,
-  selectRow,
-  deselectRow,
-  selectAllRows,
-  clearSelectedRows
-} from '../../store/slices/uiSlice';
+import Button from '../ui/Button';
 import './DataTable.css';
 
 const DataTable = ({
@@ -36,8 +21,11 @@ const DataTable = ({
   onRowClick = null,
   renderCell = null,
 }) => {
-  const dispatch = useDispatch();
-  const { sortConfig, currentPage, itemsPerPage, selectedRows } = useSelector(state => state.ui);
+  // Local state instead of Redux
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedRows, setSelectedRows] = useState([]);
 
   // Sort data
   const sortedData = useMemo(() => {
@@ -70,72 +58,68 @@ const DataTable = ({
   const handleSort = (columnKey) => {
     if (!sortable) return;
 
-    dispatch(setSortConfig({
+    setSortConfig({
       key: columnKey,
       direction: sortConfig.key === columnKey && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-    }));
+    });
   };
 
   const handlePageChange = (page) => {
-    dispatch(setCurrentPage(page));
+    setCurrentPage(page);
   };
 
   const handleItemsPerPageChange = (newItemsPerPage) => {
-    dispatch(setItemsPerPage(newItemsPerPage));
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page
   };
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      dispatch(selectAllRows(paginatedData.map(row => row.id)));
+      setSelectedRows(paginatedData.map(row => row.id).filter(id => id !== undefined));
     } else {
-      dispatch(clearSelectedRows());
+      setSelectedRows([]);
     }
   };
 
   const handleRowSelect = (rowId, checked) => {
     if (checked) {
-      dispatch(selectRow({ id: rowId }));
+      setSelectedRows(prev => [...prev, rowId]);
     } else {
-      dispatch(deselectRow({ id: rowId }));
+      setSelectedRows(prev => prev.filter(id => id !== rowId));
     }
   };
 
   const isRowSelected = (rowId) => selectedRows.includes(rowId);
-  const isAllSelected = paginatedData.length > 0 && paginatedData.every(row => isRowSelected(row.id));
+  const isAllSelected = paginatedData.length > 0 && paginatedData.every(row => row.id && isRowSelected(row.id));
   const isIndeterminate = selectedRows.length > 0 && !isAllSelected;
 
-  const renderCellContent = (row, column) => {
-    if (renderCell) {
-      const customContent = renderCell(row, column);
-      if (customContent !== undefined) return customContent;
+  const formatCellValue = (value, column) => {
+    if (column.type === 'currency') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(value || 0);
+    }
+    
+    if (column.type === 'number') {
+      return new Intl.NumberFormat('en-US').format(value || 0);
     }
 
-    const value = row[column.key];
-
-    // Handle different data types
-    switch (column.type) {
-      case 'status':
-        return <StatusBadge status={value} />;
-      case 'currency':
-        return new Intl.NumberFormat('en-AE', {
-          style: 'currency',
-          currency: 'AED'
-        }).format(value || 0);
-      case 'percentage':
-        return `${(value || 0).toFixed(1)}%`;
-      case 'date':
-        return value ? new Date(value).toLocaleDateString() : '-';
-      case 'datetime':
-        return value ? new Date(value).toLocaleString() : '-';
-      default:
-        return value || '-';
+    if (column.type === 'date') {
+      return value ? new Date(value).toLocaleDateString() : '-';
     }
+
+    if (column.type === 'percentage') {
+      return `${(value || 0).toFixed(1)}%`;
+    }
+    
+    return value ?? '-';
   };
 
   if (loading) {
     return (
-      <div className="data-table__loading">
-        <LoadingSpinner size="lg" />
+      <div className="data-table-loading">
+        <div className="loading-spinner"></div>
         <p>Loading data...</p>
       </div>
     );
@@ -143,11 +127,19 @@ const DataTable = ({
 
   if (error) {
     return (
-      <div className="data-table__error">
+      <div className="data-table-error">
         <p>Error loading data: {error}</p>
         <Button variant="secondary" size="sm">
           Retry
         </Button>
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="data-table-empty">
+        <p>{emptyMessage}</p>
       </div>
     );
   }
@@ -222,7 +214,7 @@ const DataTable = ({
                 <tr
                   key={row.id || index}
                   className={`data-table__row ${
-                    isRowSelected(row.id) ? 'data-table__row--selected' : ''
+                    row.id && isRowSelected(row.id) ? 'data-table__row--selected' : ''
                   } ${
                     onRowClick ? 'data-table__row--clickable' : ''
                   }`}
@@ -232,8 +224,8 @@ const DataTable = ({
                     <td className="data-table__cell data-table__cell--checkbox">
                       <input
                         type="checkbox"
-                        checked={isRowSelected(row.id)}
-                        onChange={(e) => handleRowSelect(row.id, e.target.checked)}
+                        checked={row.id ? isRowSelected(row.id) : false}
+                        onChange={(e) => row.id && handleRowSelect(row.id, e.target.checked)}
                         className="data-table__checkbox"
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -246,7 +238,10 @@ const DataTable = ({
                         column.align ? `data-table__cell--${column.align}` : ''
                       }`}
                     >
-                      {renderCellContent(row, column)}
+                      {renderCell ? 
+                        renderCell(row, column) || formatCellValue(row[column.key], column) :
+                        formatCellValue(row[column.key], column)
+                      }
                     </td>
                   ))}
                 </tr>

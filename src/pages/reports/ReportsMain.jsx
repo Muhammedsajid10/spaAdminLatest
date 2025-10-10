@@ -1,31 +1,111 @@
-// src/pages/reports/ReportsMain.jsx
 import React, { useState } from "react";
-import { reportTabs } from "./reportsData.jsx";
-import TabBar from "../../components/ui/TabBar";
-import ReportsCategory from "./ReportsCategory";
+import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import "../../styles/ReportsMain.css";
 
-export default function ReportsMain() {
-  const [active, setActive] = useState("appointments");
-  const [search, setSearch] = useState("");
+// Reusable data (you can extend this easily)
+const reportTabs = [
+  { key: "sales", label: "Sales" },
+  { key: "finance", label: "Finance" },
+  { key: "appointments", label: "Appointments" },
+  { key: "team", label: "Team" },
+  { key: "clients", label: "Clients" },
+];
 
-  const currentTab = reportTabs.find((t) => t.key === active);
-  const filteredReports = currentTab.reports.filter(
-    (r) =>
-      r.title.toLowerCase().includes(search.toLowerCase()) ||
-      r.desc.toLowerCase().includes(search.toLowerCase())
-  );
+const reports = [
+  {
+    id: 1,
+    category: "sales",
+    title: "Sales summary",
+    desc: "Sales quantities and value, excluding tips and gift card sales.",
+    premium: false,
+    route: "sales-summary"
+  },
+  {
+    id: 4,
+    category: "finance",
+    title: "Finance summary",
+    desc: "Overview of revenue, tax, and expenses.",
+    premium: false,
+    route: "finance-summary"
+  },
+  {
+    id: 5,
+    category: "finance",
+    title: "Payment Summary",
+    desc: "Payments split by payment methods.",
+    premium: false,
+    route: "payment-summary"
+  },
+  {
+    id: 6,
+    category: "finance",
+    title: "Payment Transactions",
+    desc: "Detailed View of all payment transactions.",
+    premium: false,
+    route: "payment-transactions"
+  },
+  {
+    id: 7,
+    category: "appointments",
+    title: "Appointments report",
+    desc: "View appointment trends and staff bookings.",
+    premium: false,
+    route: "appointments-summary"
+  },
+  {
+    id: 9,
+    category: "team",
+    title: "Working Hours Activity",
+    desc: "Detailed view of team members worked hours, shifts, and timesheets",
+    premium: false,
+    route: "team-activity"
+  },
+  {
+    id: 11,
+    category: "clients",
+    title: "Client list",
+    desc: "Comprehensive list of all active clients.",
+    premium: false,
+    route: "client-list"
+  },
+];
+
+export default function ReportsMain() {
+  const [active, setActive] = useState("sales");
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+
+  // Fixed filtering logic - properly filter by category and search
+  const filteredReports = reports.filter((report) => {
+    // First filter by category (must match the active tab)
+    const matchesCategory = report.category === active;
+    
+    // Then filter by search term (if search is provided)
+    const matchesSearch = search === "" || 
+      report.title.toLowerCase().includes(search.toLowerCase()) ||
+      report.desc.toLowerCase().includes(search.toLowerCase());
+    
+    // Report must match both category AND search criteria
+    return matchesCategory && matchesSearch;
+  });
+
+  // Handle report card click - navigate to GenericReportPage
+  const handleReportClick = (report) => {
+    if (report.route) {
+      navigate(`/reports/${report.route}`);
+    }
+  };
 
   return (
-    <div className="reports-page">
-      {/* ===== Page Header ===== */}
+    <div className="reports-container">
+      {/* Header */}
       <div className="reports-header">
         <h2>Reporting and analytics</h2>
         <p>Access all of your reports and summaries</p>
       </div>
 
-      {/* ===== Search Bar ===== */}
+      {/* Search bar */}
       <div className="reports-searchbar">
         <Search className="search-icon" />
         <input
@@ -36,11 +116,47 @@ export default function ReportsMain() {
         />
       </div>
 
-      {/* ===== Tabs ===== */}
-      <TabBar tabs={reportTabs} active={active} onChange={setActive} />
+      {/* Tabs */}
+      <div className="reports-tabs">
+        {reportTabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={`tab-btn ${active === tab.key ? "active" : ""}`}
+            onClick={() => setActive(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      {/* ===== Report List ===== */}
-      <ReportsCategory data={filteredReports} />
+      {/* Reports list */}
+      <div className="reports-list">
+        {filteredReports.length > 0 ? (
+          filteredReports.map((report) => (
+            <div 
+              key={report.id} 
+              className="report-card"
+              onClick={() => handleReportClick(report)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="report-info">
+                <h4>{report.title}</h4>
+                <p>{report.desc}</p>
+              </div>
+              {report.premium && <span className="report-tag">Premium</span>}
+            </div>
+          ))
+        ) : (
+          <div className="no-results">
+            <p>
+              {search 
+                ? `No reports found for "${search}" in ${active} category.`
+                : `No reports available in ${active} category.`
+              }
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

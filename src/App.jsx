@@ -18,8 +18,6 @@ import TeamMembers from './Clientsidepage/Teammembers';
 import ScheduledShifts from './Clientsidepage/Sheduledshifts';
 import TimeSheets from './Clientsidepage/TimeSheets';
 import ServiceMenu from './Clientsidepage/ServiceMenu';
-import SalesSummary from './pages/reports/SalesSummary';
-import PaymentSummary from './pages/reports/PaymentSummary';
 import CatalogMemberships from './Clientsidepage/Membership';
 import Searchbar from "./Clientsidepage/SearchBar";
 import Reporting from "./Clientsidepage/Dashboard";
@@ -27,8 +25,9 @@ import Membership from "./Clientsidepage/Membership";
 import Giftcards from "./Clientsidepage/GiftCardPage";
 import GiftCardPage from "./Clientsidepage/GiftCardPage";
 import Dashboard from "./Clientsidepage/Dashboard";
-import ReportsMain from "./pages/reports/ReportsMain";
 
+// Import the ReportsRoutes component
+import ReportsRoutes from "./routes/ReportsRoutes";
 
 function App() {
   return (
@@ -46,16 +45,14 @@ function App() {
             </ProtectedRoute>
           }
         >
-
           {/* Top-level pages */}
           <Route index element={<DashboardPage />} />
           <Route path="calendar" element={<Scheduler />} />
           <Route path="clients-list" element={<ClientsList />} />
           <Route path="search-bar" element={<Searchbar />} />
-          <Route path="/reports" element={<ReportsMain />} />
-                      <Route path="/reports/sales-summary" element={<SalesSummary />} />
-            <Route path="/reports/payment-summary" element={<PaymentSummary />} />
-
+          
+          {/* Reports Routes - Use the ReportsRoutes component */}
+          <Route path="reports/*" element={<ReportsRoutes />} />
 
           {/* Sales Pages */}
           <Route path="sales" element={<DailySalesSummary />} />
@@ -74,6 +71,11 @@ function App() {
           <Route path="catalog" element={<ServiceMenu />} />
           <Route path="catalog/memberships" element={<MembershipsSold />} />
           <Route path="catalog/gift-card" element={<GiftCardPage />} />
+
+          {/* Additional standalone pages */}
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="reporting" element={<Reporting />} />
+          <Route path="giftcards" element={<Giftcards />} />
 
           {/* Fallback for any unknown route inside the layout */}
           <Route path="*" element={<Navigate to="/" />} />

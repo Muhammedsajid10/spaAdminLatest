@@ -1,40 +1,82 @@
-import { useEffect, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchReportsData, exportReportData } from '../store/slices/reportsSlice';
+import { useState, useEffect } from 'react';
+
+// Mock data for demonstration - replace with actual API calls
+const mockData = {
+  salesSummary: [
+    {
+      type: 'Services',
+      salesQty: 45,
+      itemsSold: 45,
+      grossSales: 2250.00,
+      totalDiscounts: 225.00,
+      refunds: 50.00,
+      netSales: 1975.00,
+      taxes: 197.50,
+      totalSales: 2172.50
+    },
+    {
+      type: 'Products',
+      salesQty: 23,
+      itemsSold: 31,
+      grossSales: 1150.00,
+      totalDiscounts: 115.00,
+      refunds: 25.00,
+      netSales: 1010.00,
+      taxes: 101.00,
+      totalSales: 1111.00
+    }
+  ],
+  paymentSummary: [
+    {
+      paymentMethod: 'Cash',
+      numberOfPayments: 25,
+      paymentAmount: 1250.00,
+      numberOfRefunds: 2,
+      refunds: 50.00,
+      netPayments: 1200.00
+    },
+    {
+      paymentMethod: 'Credit Card',
+      numberOfPayments: 43,
+      paymentAmount: 2133.50,
+      numberOfRefunds: 1,
+      refunds: 25.00,
+      netPayments: 2108.50
+    }
+  ]
+};
 
 export const useReports = (reportType) => {
-  const dispatch = useDispatch();
-  
-  const data = useSelector(state => state.reports.data[reportType] || []);
-  const loading = useSelector(state => state.reports.loading[reportType] || false);
-  const error = useSelector(state => state.reports.errors[reportType] || null);
-  const lastUpdated = useSelector(state => state.reports.lastUpdated[reportType]);
-  const filters = useSelector(state => state.filters);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch data when filters change
-  const fetchData = useCallback(() => {
-    dispatch(fetchReportsData({ reportType, filters }));
-  }, [dispatch, reportType, filters]);
-
-  // Auto-fetch on mount and filter changes
   useEffect(() => {
+    // Simulate API call
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const reportData = mockData[reportType] || [];
+        setData(reportData);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load report data');
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
-  }, [fetchData]);
+  }, [reportType]);
 
-  // Export functionality
-  const exportData = useCallback((format) => {
-    dispatch(exportReportData({ reportType, format, filters }));
-  }, [dispatch, reportType, filters]);
-
-  return {
-    data,
-    loading,
-    error,
-    lastUpdated,
-    fetchData,
-    exportData,
-    // Helper computed values
-    isEmpty: !loading && data.length === 0,
-    hasData: data.length > 0,
+  const exportData = (format) => {
+    console.log(`Exporting ${reportType} data as ${format}`);
+    // Implement actual export logic here
   };
+
+  return { data, loading, error, exportData };
 };

@@ -4,41 +4,31 @@ import './Button.css';
 const Button = ({ 
   children, 
   variant = 'primary', 
-  size = 'md', 
-  disabled = false, 
-  loading = false,
-  icon = null,
-  onClick,
-  type = 'button',
+  icon, 
+  onClick, 
   className = '',
+  disabled = false,
   ...props 
 }) => {
-  const baseClass = 'btn';
-  const variantClass = `btn--${variant}`;
-  const sizeClass = `btn--${size}`;
-  const disabledClass = disabled ? 'btn--disabled' : '';
-  const loadingClass = loading ? 'btn--loading' : '';
-  
-  const buttonClass = [
-    baseClass,
-    variantClass,
-    sizeClass,
-    disabledClass,
-    loadingClass,
-    className
-  ].filter(Boolean).join(' ');
+  const baseClasses = 'btn';
+  const variantClasses = {
+    primary: 'btn-primary',
+    secondary: 'btn-secondary',
+    outline: 'btn-outline',
+    ghost: 'btn-ghost'
+  };
+
+  const classes = `${baseClasses} ${variantClasses[variant]} ${className}`.trim();
 
   return (
-    <button
-      type={type}
-      className={buttonClass}
+    <button 
+      className={classes}
       onClick={onClick}
-      disabled={disabled || loading}
+      disabled={disabled}
       {...props}
     >
-      {loading && <span className="btn__spinner" />}
-      {icon && !loading && <span className="btn__icon">{icon}</span>}
-      <span className="btn__text">{children}</span>
+      {icon && <span className="btn-icon">{icon}</span>}
+      {children}
     </button>
   );
 };

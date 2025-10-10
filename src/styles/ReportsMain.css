@@ -1,55 +1,49 @@
-/* =======================
-   BASE PAGE STYLING
-   ======================= */
-.reports-page {
-  width: 100%;
-  min-height: 100vh;
-  background-color: #fafafa;
-  padding: 32px 48px;
-  font-family: "Inter", "SF Pro Display", "Segoe UI", Arial, sans-serif;
-  color: #1a1a1a;
-  letter-spacing: -0.01em;
-  box-sizing: border-box;
+/* =============================
+   BASE LAYOUT
+============================= */
+.reports-container {
+    max-width: 1080px;
+    /* margin: 0 auto; */
+    /* padding: 48px 24px 80px; */
+    background-color: #ffffff;
+    font-family: "Inter", "SF Pro Display", "Segoe UI", Arial, sans-serif;
+    color: #000000;
+    margin-top: 20px;
+    margin-left: 41px;
+
 }
 
-/* =======================
+/* =============================
    HEADER
-   ======================= */
-.reports-header {
-  margin-bottom: 28px;
-}
-
+============================= */
 .reports-header h2 {
   font-size: 24px;
   font-weight: 600;
-  color: #111;
   margin: 0;
-  letter-spacing: -0.015em;
+  color: #111;
 }
 
 .reports-header p {
-  margin-top: 6px;
-  color: #666;
   font-size: 15px;
-  line-height: 1.5;
+  color: #6b7280;
+  margin-top: 6px;
 }
 
-/* =======================
+/* =============================
    SEARCH BAR
-   ======================= */
+============================= */
 .reports-searchbar {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
-  max-width: 560px;
-  background: #ffffff;
-  border: 1px solid #e3e3e3;
-  border-radius: 10px;
-  padding: 10px 16px 10px 44px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-top: 24px;
   margin-bottom: 32px;
-  transition: all 0.2s ease-in-out;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 10px 16px 10px 42px;
+  transition: all 0.2s ease;
+  max-width: 520px;
 }
 
 .reports-searchbar:hover {
@@ -68,14 +62,9 @@
   background: transparent;
   font-size: 15px;
   color: #222;
-  padding: 0;
 }
 
-.reports-searchbar input::placeholder {
-  color: #9b9b9b;
-}
-
-.reports-searchbar .search-icon {
+.search-icon {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -83,124 +72,109 @@
   color: #777;
   width: 18px;
   height: 18px;
-  pointer-events: none;
 }
 
-/* =======================
-   TAB BAR
-   ======================= */
-.tabbar {
+/* =============================
+   TABS
+============================= */
+.reports-tabs {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   border-bottom: 1px solid #e5e5e5;
   margin-bottom: 28px;
   overflow-x: auto;
-  scrollbar-width: none; /* hide scrollbar on firefox */
+  scrollbar-width: none;
 }
-.tabbar::-webkit-scrollbar {
+
+.reports-tabs::-webkit-scrollbar {
   display: none;
 }
 
-.tabbar-btn {
+.tab-btn {
   background: none;
   border: none;
-  outline: none;
-  padding: 8px 0;
   font-size: 15px;
   font-weight: 500;
   color: #555;
+  padding-bottom: 10px;
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s, border-color 0.2s;
   border-bottom: 2px solid transparent;
+  flex-shrink: 0;
 }
 
-.tabbar-btn.active {
+.tab-btn.active {
   color: #111;
   font-weight: 600;
   border-bottom-color: #111;
 }
 
-.tabbar-btn:hover {
+.tab-btn:hover {
   color: #111;
 }
 
-/* =======================
-   REPORT CARD LIST
-   ======================= */
-.report-card {
+/* =============================
+   REPORT CARD
+============================= */
+.reports-list {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-card {
+  background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 12px;
   padding: 16px 20px;
-  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   transition: all 0.2s ease;
 }
 
 .report-card:hover {
-  border-color: #d9d9d9;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.report-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.report-icon svg {
-  width: 28px;
-  height: 28px;
-  color: #5a6fea;
-  background: #f5f6ff;
-  padding: 6px;
-  border-radius: 8px;
+  border-color: #4a56e2;
+  box-shadow: 0 4px 12px rgba(74, 86, 226, 0.1);
+  transform: translateY(-2px);
 }
 
 .report-info h4 {
+  margin: 0 0 6px 0;
   font-size: 15.5px;
   font-weight: 600;
   color: #111;
-  margin: 0 0 4px 0;
 }
 
 .report-info p {
   font-size: 14px;
-  color: #666;
+  color: #6b7280;
   margin: 0;
   line-height: 1.4;
 }
 
-.report-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.report-premium {
-  font-size: 13px;
-  padding: 3px 8px;
-  border-radius: 6px;
+.report-tag {
   background: #f5f0ff;
   color: #6a5acd;
+  font-size: 13px;
   font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 
-.report-star {
-  color: #999;
-  width: 18px;
-  height: 18px;
-  opacity: 0.7;
+.no-results {
+  font-size: 14px;
+  color: #888;
+  text-align: center;
+  margin-top: 20px;
 }
 
-/* =======================
+/* =============================
    RESPONSIVE DESIGN
-   ======================= */
+============================= */
 @media (max-width: 768px) {
-  .reports-page {
-    padding: 20px;
+  .reports-container {
+    padding: 28px 16px 60px;
   }
 
   .reports-header h2 {
@@ -209,11 +183,10 @@
 
   .reports-searchbar {
     max-width: 100%;
-    margin-bottom: 20px;
   }
 
-  .tabbar {
-    gap: 18px;
+  .tab-btn {
+    font-size: 14px;
   }
 
   .report-card {
@@ -222,7 +195,7 @@
     gap: 10px;
   }
 
-  .report-right {
+  .report-tag {
     align-self: flex-end;
   }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
-import './Dropdown.css';
+import { ChevronDown } from 'lucide-react';
+import './DropDown.css';
 
 const Dropdown = ({
   options = [],
@@ -25,12 +25,10 @@ const Dropdown = ({
       )
     : options;
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
-        setSearchTerm('');
       }
     };
 
@@ -46,56 +44,51 @@ const Dropdown = ({
 
   const handleOptionClick = (option) => {
     if (multiple) {
+      // Handle multiple selection
       const currentValues = Array.isArray(value) ? value : [];
-      const isSelected = currentValues.some(v => v.value === option.value);
-      
-      if (isSelected) {
-        onChange(currentValues.filter(v => v.value !== option.value));
-      } else {
-        onChange([...currentValues, option]);
-      }
+      const newValues = currentValues.includes(option.value)
+        ? currentValues.filter(v => v !== option.value)
+        : [...currentValues, option.value];
+      onChange(newValues);
     } else {
       onChange(option);
       setIsOpen(false);
-      setSearchTerm('');
     }
   };
 
-  const getDisplayValue = () => {
+  const getSelectedDisplay = () => {
+    if (renderSelected) {
+      return renderSelected(value);
+    }
+    
     if (multiple && Array.isArray(value)) {
-      if (value.length === 0) return placeholder;
-      if (value.length === 1) return value[0].label;
-      return `${value.length} selected`;
+      return value.length > 0 ? `${value.length} selected` : placeholder;
     }
     
     return value?.label || placeholder;
   };
 
-  const isOptionSelected = (option) => {
-    if (multiple && Array.isArray(value)) {
-      return value.some(v => v.value === option.value);
-    }
-    return value?.value === option.value;
-  };
-
   return (
-    <div 
-      className={`dropdown ${disabled ? 'dropdown--disabled' : ''} ${className}`}
-      ref={dropdownRef}
-    >
-      <button
-        type="button"
-        className={`dropdown__trigger ${isOpen ? 'dropdown__trigger--open' : ''}`}
+    <div className={`dropdown ${className}`} ref={dropdownRef}>
+      {/* Fixed: Remove nested button, use div instead */}
+      <div
+        className={`dropdown__trigger ${disabled ? 'dropdown__trigger--disabled' : ''}`}
         onClick={handleToggle}
-        disabled={disabled}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleToggle();
+          }
+        }}
       >
-        <span className="dropdown__value">
-          {renderSelected ? renderSelected(value) : getDisplayValue()}
+        <span className="dropdown__selected">
+          {getSelectedDisplay()}
         </span>
         <ChevronDown 
-          className={`dropdown__chevron ${isOpen ? 'dropdown__chevron--rotated' : ''}`}
+          className={`dropdown__icon ${isOpen ? 'dropdown__icon--open' : ''}`} 
         />
-      </button>
+      </div>
 
       {isOpen && (
         <div className="dropdown__menu">
@@ -103,37 +96,32 @@ const Dropdown = ({
             <div className="dropdown__search">
               <input
                 type="text"
-                className="dropdown__search-input"
-                placeholder="Search options..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                autoFocus
+                className="dropdown__search-input"
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
           )}
           
           <div className="dropdown__options">
             {filteredOptions.length === 0 ? (
-              <div className="dropdown__option dropdown__option--empty">
-                No options found
-              </div>
+              <div className="dropdown__no-options">No options available</div>
             ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
+              filteredOptions.map((option, index) => (
+                <div
+                  key={option.value || index}
                   className={`dropdown__option ${
-                    isOptionSelected(option) ? 'dropdown__option--selected' : ''
+                    (multiple && Array.isArray(value) && value.includes(option.value)) ||
+                    (!multiple && value?.value === option.value)
+                      ? 'dropdown__option--selected'
+                      : ''
                   }`}
                   onClick={() => handleOptionClick(option)}
                 >
-                  <span className="dropdown__option-content">
-                    {renderOption ? renderOption(option) : option.label}
-                  </span>
-                  {isOptionSelected(option) && (
-                    <Check className="dropdown__check-icon" />
-                  )}
-                </button>
+                  {renderOption ? renderOption(option) : option.label}
+                </div>
               ))
             )}
           </div>
