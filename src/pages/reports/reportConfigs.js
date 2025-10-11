@@ -2,6 +2,7 @@ import FinanceSummary from './FinanceSummary';
 import { ReportsAPI } from '../../Service/api/reportsApi';
 import { usePaymentTransactions } from '../../store/reports/hooks/usePaymentTransactions';
 import { usePaymentSummary } from '../../store/reports/hooks/usePaymentSummary';
+import { useAppointmentSummary } from '../../store/reports/hooks/useAppointmentSummary';
 
 // Sample data fetchers for different reports
 const mockDataFetchers = {
@@ -156,22 +157,29 @@ export const reportsConfig = {
     title: 'Appointments Summary',
     description: 'View appointment trends and staff bookings.',
     category: 'Appointments',
-    dataFetcher: mockDataFetchers.appointmentsSummary,
+    dataHook: useAppointmentSummary,
     showTypeFilter: true,
+    typeFilterKey: 'type',
     typeFilterOptions: [
-      { value: 'team-member', label: 'Team Member' },
-      { value: 'channel', label: 'Channel' },
+      { value: 'team-member', label: 'Team member' },
       { value: 'service', label: 'Service' },
       { value: 'channel', label: 'Channel' },
       { value: 'status', label: 'Status' }
     ],
     columns: [
-      { key: 'date', label: 'Date', sortable: true },
-      { key: 'totalAppointments', label: 'Total', type: 'number', align: 'right', sortable: true },
-      { key: 'completed', label: 'Completed', type: 'number', align: 'right', sortable: true },
-      { key: 'cancelled', label: 'Cancelled', type: 'number', align: 'right', sortable: true },
-      { key: 'noShow', label: 'No Show', type: 'number', align: 'right', sortable: true },
-      { key: 'revenue', label: 'Revenue', type: 'currency', align: 'right', sortable: true }
+      { key: 'label', label: 'Team member', sortable: true },
+      { key: 'appointments', label: 'Appointments', type: 'number', align: 'right', sortable: true },
+      { key: 'services', label: 'Services', type: 'number', align: 'right', sortable: true },
+      { key: 'percentRequested', label: '% requested', type: 'percent', align: 'right' },
+      { key: 'totalApptValue', label: 'Total appt. value', type: 'currency', align: 'right', sortable: true },
+      { key: 'averageApptValue', label: 'Average appt. value', type: 'currency', align: 'right', sortable: true },
+      { key: 'percentOnline', label: '% online', type: 'percent', align: 'right' },
+      { key: 'percentCancelled', label: '% cancelled', type: 'percent', align: 'right' },
+      { key: 'percentNoShow', label: '% no show', type: 'percent', align: 'right' },
+      { key: 'totalClients', label: 'Total clients', type: 'number', align: 'right', sortable: true },
+      { key: 'newClients', label: 'New clients', type: 'number', align: 'right' },
+      { key: 'percentNewClients', label: '% new clients', type: 'percent', align: 'right' },
+      { key: 'percentReturningClients', label: '% returning clients', type: 'percent', align: 'right' }
     ]
   },
 

@@ -9,38 +9,46 @@ const toISO = (value) => {
 
 export const normalizePaymentForSummary = (payment) => {
   const metadata = payment?.metadata ?? {};
-  const paymentDate =
-    metadata.paymentDate ?? payment?.paymentDate ?? payment?.createdAt ?? null;
+  
+  // Priority: metadata.paymentDate -> createdAt
+  const paymentDate = metadata.paymentDate ?? payment?.createdAt ?? null;
 
   return {
     id: payment?._id ?? payment?.id ?? null,
-    paymentMethod: (metadata.paymentMethodCSV ?? payment?.paymentMethod ?? 'Unknown').toString(),
+    paymentMethod: (metadata.paymentMethodCSV ?? payment?.paymentMethod ?? 'Unknown')
+      .toString()
+      .toLowerCase(),
     paymentDate: toISO(paymentDate),
     paymentAmount: Number(metadata.paymentAmountCSV ?? payment?.amount ?? 0),
-    refundAmount: Number(payment?.refundAmount ?? metadata.refundAmountCSV ?? 0)
+    refundAmount: Number(payment?.refundAmount ?? 0)
   };
 };
 
-export const buildPaymentSummary = (rows = [], dateRange) => {
-  const start = dateRange?.start ? new Date(dateRange.start) : null;
-  const end = dateRange?.end ? new Date(`${dateRange.end}T23:59:59`) : null;
-
+export const buildPaymentSummary = (rows = [], dateRange = null) => {
   const map = new Map();
 
-  rows.forEach((item) => {
+  // Filter by date range first if provided
+  let filteredRows = rows;
+  if (dateRange?.start && dateRange?.end) {
+    const start = new Date(dateRange.start);
+    const end = new Date(`${dateRange.end}T23:59:59`);
+    
+    filteredRows = rows.filter((item) => {
+      if (!item?.paymentDate) return false;
+      const ts = new Date(item.paymentDate);
+      return !Number.isNaN(ts.getTime()) && ts >= start && ts <= end;
+    });
+  }
+
+  // Build summary from filtered rows
+  filteredRows.forEach((item) => {
     if (!item) return;
 
-    if (start && end && item.paymentDate) {
-      const ts = new Date(item.paymentDate);
-      if (Number.isNaN(ts.getTime()) || ts < start || ts > end) {
-        return;
-      }
-    }
-
-    const key = item.paymentMethod || 'Unknown';
+    const key = item.paymentMethod || 'unknown';
+    
     if (!map.has(key)) {
       map.set(key, {
-        paymentMethod: key,
+        paymentMethod: key.charAt(0).toUpperCase() + key.slice(1),
         numberOfPayments: 0,
         paymentAmount: 0,
         numberOfRefunds: 0,
@@ -75,9 +83,12 @@ export const fetchPaymentSummary = createAsyncThunk(
   'paymentSummary/fetch',
   async (_, { rejectWithValue }) => {
     try {
-      const payload = await ReportsAPI.getPaymentSummary();
-      const payments = payload?.data?.payments ?? payload?.payments ?? [];
-      return payments.map(normalizePaymentForSummary);
+      const response = await ReportsAPI.getPaymentSummary();
+      const payments = response?.data?.payments ?? response?.payments ?? [];
+      
+      // Normalize all payments and store in state
+      const normalized = payments.map(normalizePaymentForSummary);
+      return normalized;
     } catch (error) {
       const message =
         error?.response?.data?.message ??
@@ -91,7 +102,7 @@ export const fetchPaymentSummary = createAsyncThunk(
 const paymentSummarySlice = createSlice({
   name: 'paymentSummary',
   initialState: {
-    items: [],
+    rawItems: [], // Store normalized raw data
     status: 'idle',
     error: null,
     fetchedAt: null
@@ -105,13 +116,13 @@ const paymentSummarySlice = createSlice({
       })
       .addCase(fetchPaymentSummary.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.items = action.payload ?? [];
+        state.rawItems = action.payload ?? [];
         state.fetchedAt = Date.now();
       })
       .addCase(fetchPaymentSummary.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload ?? 'Failed to load payment summary';
-        state.items = [];
+        state.rawItems = [];
       });
   }
 });

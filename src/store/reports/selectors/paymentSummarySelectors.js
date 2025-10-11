@@ -1,12 +1,12 @@
 const selectPaymentSummaryState = (state) =>
   state.paymentSummary ?? {
-    items: [],
+    rawItems: [],
     status: 'idle',
     error: null
   };
 
-export const selectPaymentSummaryItems = (state) =>
-  selectPaymentSummaryState(state).items;
+export const selectPaymentSummaryRawItems = (state) =>
+  selectPaymentSummaryState(state).rawItems;
 
 export const selectPaymentSummaryStatus = (state) =>
   selectPaymentSummaryState(state).status;

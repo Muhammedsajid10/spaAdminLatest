@@ -6,7 +6,7 @@ import DataTable from "../../components/common/DataTable";
 import ReportHeader from "../../components/reports/ReportHeader";
 import ActionRow from "../../components/reports/ActionRow";
 import Button from "../../components/ui/Button";
-import Dropdown from "../../components/ui/DropDown";
+import DropDown from "../../components/ui/DropDown";
 import ExportDropdown from "../../components/common/ExportDropdown";
 import { useReportDateRange, useReportClients } from '../../store/reports/hooks';
 import { ReportsAPI } from "../../Service/api/reportsApi";
@@ -14,36 +14,27 @@ import "../../styles/ReportsGeneric.css";
 
 const arrayFromPayload = (payload) => {
   if (Array.isArray(payload)) return payload;
-
-  if (payload && typeof payload === 'object') {
-    const keys = ['data', 'results', 'items', 'records', 'rows', 'clients'];
-    for (const key of keys) {
-      const value = payload[key];
-      if (Array.isArray(value)) return value;
-      if (value && typeof value === 'object') {
-        const nested = arrayFromPayload(value);
-        if (nested.length) return nested;
-      }
-    }
-  }
-
+  if (payload?.data) return arrayFromPayload(payload.data);
+  if (payload?.items) return arrayFromPayload(payload.items);
+  if (payload?.rows) return arrayFromPayload(payload.rows);
   return [];
 };
 
 const filterByDateRange = (rows, range) => {
   if (!range?.start || !range?.end) return rows;
-
   const start = new Date(range.start);
   const end = new Date(`${range.end}T23:59:59`);
-
   return rows.filter((row) => {
-    const dateKey = Object.keys(row ?? {}).find((key) => /date/i.test(key));
-    if (!dateKey) return true;
-
-    const value = new Date(row[dateKey]);
-    if (Number.isNaN(value.getTime())) return true;
-
-    return value >= start && value <= end;
+    const dateFields = ['date', 'appointmentDate', 'createdAt', 'paymentDate'];
+    for (const field of dateFields) {
+      if (row[field]) {
+        const d = new Date(row[field]);
+        if (!Number.isNaN(d.getTime()) && d >= start && d <= end) {
+          return true;
+        }
+      }
+    }
+    return false;
   });
 };
 
@@ -61,12 +52,7 @@ const GenericReportPage = ({
   className = '',
   category = '',
   showTypeFilter = false,
-  typeFilterOptions = [
-    { value: "all", label: "Type" },
-    { value: "services", label: "Services" },
-    { value: "products", label: "Products" },
-    { value: "gift-cards", label: "Gift cards" },
-  ],
+  typeFilterOptions = [],
   typeFilterKey = null,
   typeFilterPredicate = null,
 }) => {
@@ -87,160 +73,173 @@ const GenericReportPage = ({
   const hookStatus = hookResult?.status;
   const hookError = hookResult?.error;
   const hookData = hookResult?.data;
+  const hookGroupBy = hookResult?.groupBy;
+  const setHookGroupBy = hookResult?.setGroupBy;
+  const hookRefresh = hookResult?.refresh;
 
-  const filters = useMemo(
-    () => ({
-      dateRange,
-      selectedType
-    }),
-    [dateRange, selectedType]
-  );
+  console.log('GenericReportPage render:', {
+    usingDataHook,
+    hookStatus,
+    hookGroupBy,
+    dataLength: hookData?.length,
+    showTypeFilter
+  });
 
-  const getCategory = () => {
-    if (category) return category;
+  // Fetch data using old method if not using hook
+  useEffect(() => {
+    if (usingDataHook) return;
+    
+    const fetchData = async () => {
+      if (!dataFetcher) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        const result = await dataFetcher(dateRange);
+        const rows = arrayFromPayload(result);
+        setData(rows);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError(err.message || "Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const path = location.pathname;
-    if (path.includes("sales")) return "Sales";
-    if (path.includes("finance") || path.includes("payment")) return "Finance";
-    if (path.includes("appointments")) return "Appointments";
-    if (path.includes("team")) return "Team";
-    if (path.includes("client")) return "Clients";
-    return "";
-  };
+    fetchData();
+  }, [dataFetcher, dateRange, usingDataHook]);
 
+  // Update data when using hook
   useEffect(() => {
     if (!usingDataHook) return;
 
-    if (hookStatus === "loading" || hookStatus === "idle") {
-      setLoading(true);
-      return;
-    }
+    console.log('Hook data updated:', {
+      status: hookStatus,
+      dataLength: hookData?.length,
+      groupBy: hookGroupBy
+    });
 
-    if (hookStatus === "failed") {
+    if (hookStatus === 'loading') {
+      setLoading(true);
+      setError(null);
+    } else if (hookStatus === 'succeeded') {
+      setData(hookData ?? []);
       setLoading(false);
+      setError(null);
+    } else if (hookStatus === 'failed') {
       setError(hookError);
-      setData([]);
-      return;
-    }
-
-    if (hookStatus === "succeeded") {
       setLoading(false);
-      setError(null);
-      setData(Array.isArray(hookData) ? hookData : []);
+      setData([]);
     }
-  }, [usingDataHook, hookStatus, hookError, hookData]);
+  }, [usingDataHook, hookData, hookStatus, hookError, hookGroupBy]);
 
+  // Apply search and type filters
   useEffect(() => {
-    if (usingDataHook || !dataFetcher) return;
+    let result = [...data];
 
-    let active = true;
-
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await dataFetcher(filters);
-        if (!active) return;
-        const rows = arrayFromPayload(response);
-        setData(Array.isArray(rows) ? rows : []);
-      } catch (err) {
-        if (!active) return;
-        console.error(err);
-        setError(err);
-        setData([]);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    loadData();
-
-    return () => {
-      active = false;
-    };
-  }, [usingDataHook, dataFetcher, filters]);
-
-  const applyFiltering = useCallback(
-    (rows) => {
-      const safeRows = Array.isArray(rows) ? rows : [];
-      const rangeFiltered = filterByDateRange(safeRows, dateRange);
-
-      const typeFiltered =
-        typeFilterKey && selectedType && !["all", "type"].includes(selectedType.toLowerCase())
-          ? rangeFiltered.filter((row) => {
-              if (typeFilterPredicate) {
-                return typeFilterPredicate(row, selectedType);
-              }
-              const value = row?.[typeFilterKey];
-              return String(value ?? "")
-                .toLowerCase()
-                .includes(selectedType.toLowerCase());
-            })
-          : rangeFiltered;
-
-      if (!search.trim()) {
-        return typeFiltered;
-      }
-
-      const query = search.toLowerCase();
-      return typeFiltered.filter((row) =>
-        Object.values(row ?? {}).some((val) =>
-          String(val ?? "").toLowerCase().includes(query)
+    // Search filter
+    if (search && showSearch) {
+      const lowerSearch = search.toLowerCase();
+      result = result.filter((row) =>
+        Object.values(row).some((val) =>
+          String(val).toLowerCase().includes(lowerSearch)
         )
       );
-    },
-    [dateRange, selectedType, typeFilterKey, typeFilterPredicate, search]
-  );
-
-  useEffect(() => {
-    setFiltered(applyFiltering(data));
-  }, [data, applyFiltering]);
-
-  const handleExport = async (format) => {
-    if (!Array.isArray(filtered) || filtered.length === 0) return;
-
-    try {
-      const blob = await ReportsAPI.exportData(filtered, format);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${title.toLowerCase().replace(/\s+/g, "-")}.${
-        format === "excel" ? "xlsx" : format
-      }`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed:", err);
     }
-  };
+
+    // Type filter (for old method, not hook-based)
+    if (!usingDataHook && typeFilterKey && selectedType !== "all") {
+      if (typeFilterPredicate) {
+        result = result.filter((row) => typeFilterPredicate(row, selectedType));
+      } else {
+        result = result.filter((row) => row[typeFilterKey] === selectedType);
+      }
+    }
+
+    setFiltered(result);
+  }, [data, search, selectedType, typeFilterKey, typeFilterPredicate, showSearch, usingDataHook]);
+
+  const handleTypeChange = useCallback((newValue) => {
+  console.log('Type dropdown changed:', newValue);
+  
+  // Extract string value from dropdown object or use as-is if string
+  const value = typeof newValue === 'string' ? newValue : newValue?.value;
+  
+  if (setHookGroupBy) {
+    console.log('Calling setHookGroupBy with:', value);
+    setHookGroupBy(value);
+  } else {
+    console.log('Using local selectedType state');
+    setSelectedType(value);
+  }
+}, [setHookGroupBy]);
+
+  // Update first column label dynamically based on groupBy
+  const dynamicColumns = useMemo(() => {
+    if (!showTypeFilter || !columns.length) return columns;
+    
+    const currentGroupBy = hookGroupBy ?? selectedType;
+    console.log('Updating column labels for groupBy:', currentGroupBy);
+    
+    const firstCol = { ...columns[0] };
+    const selectedOption = typeFilterOptions.find(opt => opt.value === currentGroupBy);
+    
+    if (selectedOption) {
+      firstCol.label = selectedOption.label;
+      console.log('Updated first column label to:', selectedOption.label);
+    }
+    
+    return [firstCol, ...columns.slice(1)];
+  }, [columns, hookGroupBy, selectedType, typeFilterOptions, showTypeFilter]);
 
   const handleBack = () => {
-    navigate('/reports');
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/reports');
+    }
   };
 
   const handleBreadcrumbClick = (path) => {
     navigate(path);
   };
 
-  // Left slot - Date picker
+  const handleExport = async (format) => {
+    console.log(`Exporting ${filtered.length} rows as ${format}`);
+    // Implement export logic
+  };
+
+  const getCategory = () => {
+    if (category) return category;
+    const pathParts = location.pathname.split('/');
+    if (pathParts.length >= 3 && pathParts[1] === 'reports') {
+      const cat = pathParts[2];
+      return cat.charAt(0).toUpperCase() + cat.slice(1);
+    }
+    return null;
+  };
+
+  // Left slot - Date picker and Type Filter
   const leftSlot = (
-    <div className={`report-filters ${showTypeFilter ? "report-filters--with-type" : ""}`}>
-      {showTypeFilter && (
-        <Dropdown
+  <div className="report-filters">
+    {showTypeFilter && typeFilterOptions.length > 0 && (
+      <div className="report-filter__type">
+        <DropDown
           options={typeFilterOptions}
-          value={selectedType}
-          onChange={setSelectedType}
-          className="report-filter__dropdown"
+          value={typeFilterOptions.find(opt => opt.value === (hookGroupBy ?? selectedType))}
+          onChange={handleTypeChange}
+          placeholder="Select type..."
+          className="report-type-dropdown"
         />
-      )}
-      {showDatePicker && (
-        <MonthPicker value={dateRange} onChange={setDateRange} showPresets={true} />
-      )}
-    </div>
-  );
+      </div>
+    )}
+    {showDatePicker && (
+      <MonthPicker value={dateRange} onChange={setDateRange} showPresets={true} />
+    )}
+  </div>
+);
 
   // Right slot - Export button
   const rightSlot = showExport ? (
@@ -298,19 +297,29 @@ const GenericReportPage = ({
           className="report-actions-no-search"
         />
 
+        {/* Error Display */}
+        {error && (
+          <div className="report-error">
+            <p>Error: {error}</p>
+            {hookRefresh && (
+              <Button onClick={hookRefresh} variant="outline">
+                Retry
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Table Section */}
         <div className="report-table-section">
-          
-            <DataTable
-              data={filtered}
-              columns={columns}
-              loading={loading}
-              sortable={true}
-              paginated={true}
-              className="report-table"
-              emptyMessage="No data available for the selected period"
-            />
-          
+          <DataTable
+            data={filtered}
+            columns={dynamicColumns}
+            loading={loading}
+            sortable={true}
+            paginated={true}
+            className="report-table"
+            emptyMessage="No data available for the selected period"
+          />
         </div>
       </div>
     </div>

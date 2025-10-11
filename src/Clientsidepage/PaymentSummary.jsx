@@ -148,7 +148,7 @@ const PaymentSummary = () => {
             className="filter-select"
           >
             <option value="all">All Payment Methods</option>
-            <option value="card">Card Payments</option>
+            <option value="card"></option>
             <option value="cash">Cash Payments</option>
             <option value="bank_transfer">Bank Transfer</option>
             <option value="digital_wallet">Digital Wallet</option>

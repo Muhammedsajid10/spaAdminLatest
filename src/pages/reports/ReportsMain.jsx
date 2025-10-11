@@ -48,7 +48,7 @@ const reports = [
   {
     id: 7,
     category: "appointments",
-    title: "Appointments report",
+    title: "Appointments Summary",
     desc: "View appointment trends and staff bookings.",
     premium: false,
     route: "appointments-summary"

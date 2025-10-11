@@ -84,6 +84,38 @@ export class ReportsAPI {
     return response.data;
   }
 
+  static async getPaymentSummary({ page = 1, limit = 15000, ...params } = {}) {
+    const response = await api.get('/payments/admin/all', {
+      params: { page, limit, ...params },
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
+  static async getAllEmployeesAttendance({ startDate = null, endDate = null, ...params } = {}) {
+    const queryParams = {
+      includeAttendance: true,
+      ...params
+    };
+    
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
+
+    const response = await api.get('/employees', {
+      params: queryParams,
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
+  static async getAllBookings({ page = 1, limit = 15000, ...params } = {}) {
+    const response = await api.get('/bookings/admin/all', {
+      params: { page, limit, ...params },
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
   static exportData(data, format) {
     return exportDataUtil(data, format);
   }

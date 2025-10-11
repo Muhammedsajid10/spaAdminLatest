@@ -8,6 +8,7 @@ import bookingSessionReducer from './bookingSessionSlice';
 import reportReducer from './reports/reportSlice';
 import paymentSummaryReducer from './reports/slices/paymentSummarySlice';
 import paymentTransactionsReducer from './reports/slices/paymentTransactionsSlice';
+import appointmentSummaryReducer from './reports/slices/appointmentSummarySlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     reports: reportReducer,
     paymentSummary: paymentSummaryReducer,
     paymentTransactions: paymentTransactionsReducer,
+    appointmentSummary: appointmentSummaryReducer,
     //  filters: filtersReducer,
     // ui: uiReducer,
   },
@@ -29,7 +31,7 @@ export const store = configureStore({
         // Ignore these action types for date objects
         ignoredActions: ['filters/setDateRange'],
         ignoredActionPaths: ['meta.arg', 'payload.raw'],
-        ignoredPaths: ['paymentTransactions.items'],
+        ignoredPaths: ['paymentTransactions.items', 'appointmentSummary.rawBookings'],
         warnAfter: 500
       },
     }),
