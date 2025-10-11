@@ -29,25 +29,21 @@
 } 
 
 .progress-ring {
-  transform: rotate(-90deg);
+  animation: rotate-360 0.4s linear infinite;
 }
 
 .progress-ring-circle {
-  stroke-dasharray: 100.53;
-  stroke-dashoffset: 25.13;
+  stroke-dasharray: 75.4;
+  stroke-dashoffset: 18.85;
   stroke-linecap: round;
-  animation: progress-spin 1.5s linear infinite;
 }
 
-@keyframes progress-spin {
+@keyframes rotate-360 {
   0% {
-    stroke-dashoffset: 100.53;
-  }
-  50% {
-    stroke-dashoffset: 25.13;
+    transform: rotate(0deg);
   }
   100% {
-    stroke-dashoffset: 100.53;
+    transform: rotate(360deg);
   }
 }
 

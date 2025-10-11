@@ -95,9 +95,12 @@ api.interceptors.request.use(
     
     // Check if we should use mock data due to rate limiting
     if (localStorage.getItem('useMockData') === 'true') {
-      console.log('🔧 Using mock data mode - skipping API call');
-      // Reject this request to trigger mock data fallback
-      throw new axios.Cancel('Using mock data mode');
+      console.log('🔧 Mock data mode detected - attempting to clear and retry...');
+      // Clear mock data flag and try again
+      localStorage.removeItem('useMockData');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      console.log('✅ Mock data mode cleared - proceeding with real API calls');
     }
 
     let token = localStorage.getItem('token');

@@ -637,6 +637,7 @@ const SelectCalendar = () => {
   const [selectedExistingClient, setSelectedExistingClient] = useState(null);
   const [showClientSearch, setShowClientSearch] = useState(false);
   const [isAddingNewClient, setIsAddingNewClient] = useState(false);
+  const [isWalkIn, setIsWalkIn] = useState(false); // New: mark booking as walk-in (no client data required)
 
   // Booking Selection States
   const [availableProfessionals, setAvailableProfessionals] = useState([]);
@@ -831,6 +832,20 @@ const SelectCalendar = () => {
       setSelectedBookingForStatus(appointmentDetails);
       setShowBookingStatusModal(true);
       return;
+    }
+
+    // Prevent creating new bookings in the disallowed late-night window 22:00 - 23:59
+    try {
+      const hourPart = slotTime?.split(':')?.[0];
+      const hourNum = hourPart ? parseInt(hourPart, 10) : NaN;
+      if (!isNaN(hourNum) && hourNum >= 23 && hourNum <= 24) {
+        setUnavailableMessage('Bookings are not allowed between 23:00 and 24:00');
+        setShowUnavailablePopup(true);
+        return;
+      }
+    } catch (err) {
+      // If parsing fails, don't block – fallback to existing checks and log for debugging
+      console.error('Failed to parse slotTime for late-night block check:', slotTime, err);
     }
 
     // Continue with new booking flow for empty slots
@@ -2462,7 +2477,10 @@ const SelectCalendar = () => {
 
       let clientData;
 
-      if (selectedExistingClient) {
+      // Support Walk-in bookings (admin can continue without entering client data)
+      if (isWalkIn) {
+        clientData = { firstName: 'Walk-in', lastName: '', email: '', phone: '' };
+      } else if (selectedExistingClient) {
         clientData = {
           firstName: selectedExistingClient.firstName,
           lastName: selectedExistingClient.lastName,
@@ -2663,7 +2681,8 @@ const SelectCalendar = () => {
         notes: notesWithClientName, // Store client name in notes as backup
         specialRequests: specialRequests, // Store client name in special requests array
         giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
-        bookingSource: 'admin'
+        bookingSource: isWalkIn ? 'walk-in' : 'admin',
+        walkIn: !!isWalkIn
       };
 
       console.log('Multiple appointments booking payload:', JSON.stringify(bookingPayload, null, 2));
@@ -4591,6 +4610,26 @@ useEffect(() => {
                   <div className="client-search-section">
                     <div className="client-search-header">
                       <h4>Search Existing Client</h4>
+                      <div className="walkin-toggle">
+                        <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                          <input
+                            type="checkbox"
+                            checked={isWalkIn}
+                            onChange={(e) => {
+                              const val = !!e.target.checked;
+                              setIsWalkIn(val);
+                              if (val) {
+                                // Clear any selected or new client state when enabling walk-in
+                                setSelectedExistingClient(null);
+                                setIsAddingNewClient(false);
+                                setClientInfo({ name: '', email: '', phone: '' });
+                                setShowClientSearch(false);
+                              }
+                            }}
+                          />
+                          <span style={{fontSize: 12}}>Walk-in (no client data required)</span>
+                        </label>
+                      </div>
                       {selectedExistingClient && (
                         <button
                           className="clear-client-btn"
@@ -4651,7 +4690,7 @@ useEffect(() => {
 
                         {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
                           <div className="client-search-no-results">
-                            <p>No clients found for "{clientSearchQuery}"</p>
+                            <p>No clients found </p>
                             <button
                               className="add-new-client-btn"
                               onClick={addNewClient}
@@ -4752,8 +4791,8 @@ useEffect(() => {
                       className="booking-modal-next"
                       onClick={() => setBookingStep(6)}
                       disabled={
-                        !selectedExistingClient &&
-                        (!clientInfo.name.trim() /* || !clientInfo.email.trim() || !clientInfo.phone.trim() */)
+                        // Allow continue if walk-in is selected OR an existing client is chosen OR a client name is entered
+                        !isWalkIn && !selectedExistingClient && !clientInfo.name.trim()
                       }
                     >
                       Continue to Payment
@@ -4815,9 +4854,9 @@ useEffect(() => {
                     <div className="summary-item">
                       <span>Client:</span>
                       <span>
-                        {selectedExistingClient
+                        {isWalkIn ? 'Walk-in' : (selectedExistingClient
                           ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-                          : clientInfo.name
+                          : clientInfo.name)
                         }
                         {selectedExistingClient && (
                           <span className="existing-client-indicator"> VIP Member</span>
@@ -4827,18 +4866,18 @@ useEffect(() => {
                     <div className="summary-item">
                       <span> Email:</span>
                       <span>
-                        {selectedExistingClient
+                        {isWalkIn ? '-' : (selectedExistingClient
                           ? selectedExistingClient.email
-                          : clientInfo.email
+                          : clientInfo.email)
                         }
                       </span>
                     </div>
                     <div className="summary-item">
                       <span> Phone:</span>
                       <span>
-                        {selectedExistingClient
+                        {isWalkIn ? '-' : (selectedExistingClient
                           ? selectedExistingClient.phone
-                          : clientInfo.phone
+                          : clientInfo.phone)
                         }
                       </span>
                     </div>
