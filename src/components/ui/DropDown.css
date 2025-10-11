@@ -1,0 +1,122 @@
+.dropdown {
+  position: relative;
+  display: inline-block;
+  min-width: 160px;
+}
+
+.dropdown__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #374151;
+  min-height: 40px;
+}
+
+.dropdown__trigger:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dropdown__trigger:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.dropdown__trigger--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.dropdown__selected {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown__icon {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.dropdown__icon--open {
+  transform: rotate(180deg);
+}
+
+.dropdown__menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.dropdown__search {
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.dropdown__search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+}
+
+.dropdown__search-input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.dropdown__options {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.dropdown__option {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: background-color 0.15s ease;
+}
+
+.dropdown__option:hover {
+  background-color: #f9fafb;
+}
+
+.dropdown__option--selected {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.dropdown__no-options {
+  padding: 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}

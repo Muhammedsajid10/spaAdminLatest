@@ -22,7 +22,7 @@ const MainSideBar = () => {
     { icon: <FiSmile />, label: "Clients", to: "/clients-list" },
     { icon: <FiUsers />, label: "Team", to: "/team" },
     { icon: <FiBook />, label: "Catalog", to: "/catalog" },
-    { icon: <FaChartLine />, label: "Report", to: "/report-analytics" },
+    { icon: <FaChartLine />, label: "Report", to: "/reports" },
   ];
 
   return (

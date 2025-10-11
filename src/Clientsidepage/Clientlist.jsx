@@ -597,21 +597,11 @@ const ClientDirectory = () => {
       sales: `AED ${salesData[client.id]?.toLocaleString() || "0"}`, // Format sales for display
     }));
 
-    // 4. Calculate pagination
+    // 4. Calculate pagination (pure computation only — no state updates here)
     const totalClients = allFilteredClients.length;
     const totalPagesCount = Math.ceil(totalClients / itemsPerPage);
-    
-    // Update total pages state
-    if (totalPagesCount !== totalPages) {
-      setTotalPages(totalPagesCount);
-    }
-    
-    // Reset to first page if current page exceeds total pages
-    if (currentPage > totalPagesCount && totalPagesCount > 0) {
-      setCurrentPage(1);
-    }
-    
-    // 5. Get paginated slice
+
+    // 5. Get paginated slice (use currentPage as-is; we'll adjust state outside this memo)
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedData = allFilteredClients.slice(startIndex, endIndex);
@@ -620,7 +610,21 @@ const ClientDirectory = () => {
       filteredAndSortedClients: allFilteredClients,
       paginatedClients: paginatedData
     };
-  }, [clients, searchTerm, sortBy, salesData, currentPage, itemsPerPage, totalPages]); // Dependencies for useMemo
+  }, [clients, searchTerm, sortBy, salesData, currentPage, itemsPerPage]); // Dependencies for useMemo
+
+  // Move state updates out of render/memo to avoid infinite loops.
+  useEffect(() => {
+    const totalClients = filteredAndSortedClients.length;
+    const newTotalPages = Math.max(1, Math.ceil(totalClients / itemsPerPage));
+
+    if (newTotalPages !== totalPages) {
+      setTotalPages(newTotalPages);
+    }
+
+    if (currentPage > newTotalPages) {
+      setCurrentPage(1);
+    }
+  }, [filteredAndSortedClients, itemsPerPage]);
 
   // --- Conditional Rendering for Loading/Error States ---
   if (loading) {
