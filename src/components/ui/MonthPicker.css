@@ -4,24 +4,15 @@
 
 /* CSS Custom Properties */
 :root {
-  --mp-font-family: "Inter", "SF Pro Display", "Segoe UI", Arial, sans-serif;
   --mp-color-bg: #ffffff;
-  --mp-color-surface: #f8f9fb;
-  --mp-color-border: #e5e7eb;
-  --mp-color-border-strong: #d1d5db;
-  --mp-color-text: #111827;
-  --mp-color-muted: #6b7280;
-  --mp-color-accent: #3b82f6;
-  --mp-color-selected: #000000;        /* confirmed choice */
-  --mp-color-in-range: #eef2f6;
-  --mp-shadow-lg: 0 28px 56px rgba(15, 23, 42, 0.14);
-  --mp-shadow-md: 0 16px 32px rgba(15, 23, 42, 0.12);
-  --mp-shadow-sm: 0 6px 16px rgba(15, 23, 42, 0.08);
-  --mp-radius-lg: 16px;
-  --mp-radius-md: 12px;
-  --mp-radius-sm: 8px;
-  --mp-transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --mp-color-surface: #ffffff;
+  --mp-color-border: #0000001a; /* light border */
+  --mp-color-border-strong: #000000;
+  --mp-color-text: #000000;
+  --mp-color-accent: #000000; /* black focus outline */
+  --mp-color-selected: #000000; /* black circle when selected */
 }
+
 
 /* ===== MAIN CONTAINER ===== */
 .month-picker {
@@ -31,20 +22,23 @@
 
 /* ===== TRIGGER BUTTON ===== */
 .month-picker__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 240px;
-  padding: 12px 20px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: var(--mp-color-bg);
-  color: var(--mp-color-text);
-  font-family: var(--mp-font-family);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.4;
-  border-color: #000000;
+      display: inline-flex
+;
+    align-items: center;
+    gap: 12px;
+    min-width: 240px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: #ffffff;
+    color: #000000;
+    font-family: var(--mp-font-family);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    border-color: #000000;
+    /* box-shadow: var(--mp-shadow-sm); */
+    /* transition: transform var(--mp-transition), box-shadow var(--mp-transition);
   /* box-shadow: var(--mp-shadow-sm); */
   /* transition: transform var(--mp-transition), box-shadow var(--mp-transition); */
 }

@@ -7,9 +7,11 @@ const ExportDropdown = ({
   loading = false, 
   reportType = '',
   disabled = false,
-  className = '' 
+  className = '',
+  exportError = null
 }) => {
   const [open, setOpen] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -40,9 +42,17 @@ const ExportDropdown = ({
     }
   ];
 
-  const handleExport = (option) => {
-    onExport?.(option.value, reportType);
+  const handleExport = async (option) => {
+    setExportingFormat(option.value);
     setOpen(false);
+    
+    try {
+      await onExport?.(option.value, reportType);
+    } catch (error) {
+      console.error('Export error:', error);
+    } finally {
+      setExportingFormat(null);
+    }
   };
 
   return (
@@ -50,11 +60,13 @@ const ExportDropdown = ({
       <button
         type="button"
         className="export-dropdown__trigger"
-        onClick={() => !disabled && setOpen((prev) => !prev)}
-        disabled={disabled || loading}
+        onClick={() => !disabled && !loading && !exportingFormat && setOpen((prev) => !prev)}
+        disabled={disabled || loading || exportingFormat}
+        title={exportError ? `Last export error: ${exportError}` : ''}
       >
         <Download size={16} />
-        {loading ? 'Preparing...' : 'Export'}
+        {exportingFormat ? `Exporting ${exportingFormat.toUpperCase()}...` : 
+         loading ? 'Preparing...' : 'Export'}
       </button>
 
       {open && (

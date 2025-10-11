@@ -9,6 +9,9 @@ import reportReducer from './reports/reportSlice';
 import paymentSummaryReducer from './reports/slices/paymentSummarySlice';
 import paymentTransactionsReducer from './reports/slices/paymentTransactionsSlice';
 import appointmentSummaryReducer from './reports/slices/appointmentSummarySlice';
+import financeSummaryReducer from './reports/slices/financeSummarySlice';
+import workingHoursReducer from './reports/slices/workingHoursSlice';
+import salesSummaryReducer from './reports/slices/salesSummarySlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +25,9 @@ export const store = configureStore({
     paymentSummary: paymentSummaryReducer,
     paymentTransactions: paymentTransactionsReducer,
     appointmentSummary: appointmentSummaryReducer,
+    financeSummary: financeSummaryReducer,
+    workingHours: workingHoursReducer,
+    salesSummary: salesSummaryReducer,
     //  filters: filtersReducer,
     // ui: uiReducer,
   },

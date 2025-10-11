@@ -3,6 +3,9 @@ import { ReportsAPI } from '../../Service/api/reportsApi';
 import { usePaymentTransactions } from '../../store/reports/hooks/usePaymentTransactions';
 import { usePaymentSummary } from '../../store/reports/hooks/usePaymentSummary';
 import { useAppointmentSummary } from '../../store/reports/hooks/useAppointmentSummary';
+import { useFinanceSummary } from '../../store/reports/hooks/useFinanceSummary';
+import { useWorkingHours } from '../../store/reports/hooks/useWorkingHours';
+import { useSalesSummary } from '../../store/reports/hooks/useSalesSummary';
 
 // Sample data fetchers for different reports
 const mockDataFetchers = {
@@ -107,18 +110,87 @@ export const reportsConfig = {
     title: 'Sales Summary',
     description: 'Sales quantities and value, excluding tips and gift card sales.',
     category: 'Sales',
-    dataFetcher: mockDataFetchers.salesSummary,
+    dataHook: useSalesSummary,
     showTypeFilter: true,
+    typeFilterKey: 'filterBy',
     typeFilterOptions: [
-      { value: 'services', label: 'Services' },
-      { value: 'category', label: 'Category' },
-      { value: 'item', label: 'Item' },
-      { value: 'team-member', label: 'Team member' },
-      { value: 'clients', label: 'Clients' }
+      { value: 'service', label: 'Service' },
+      { value: 'client', label: 'Client' },
+      { value: 'team-member', label: 'Team Member' }
+    ],
+    showFilters: true,
+    filters: [
+      {
+        key: 'service',
+        label: 'Service',
+        type: 'select',
+        options: async () => {
+          try {
+            const res = await ReportsAPI.getServices();
+            const services = res?.data?.services || [];
+            return [
+              { value: 'all', label: 'All Services' },
+              ...services.map(service => ({ 
+                value: service._id || service.id, 
+                label: service.name 
+              }))
+            ];
+          } catch (error) {
+            console.error('Error loading services:', error);
+            return [{ value: 'all', label: 'All Services' }];
+          }
+        }
+      },
+      {
+        key: 'client',
+        label: 'Client',
+        type: 'select',
+        options: async () => {
+          try {
+            const res = await ReportsAPI.getClients({ limit: 1000 });
+            const clients = res?.data?.clients || [];
+            return [
+              { value: 'all', label: 'All Clients' },
+              ...clients.map(client => ({ 
+                value: client._id || client.id, 
+                label: client.fullName || client.firstName + ' ' + client.lastName || client.name 
+              }))
+            ];
+          } catch (error) {
+            console.error('Error loading clients:', error);
+            return [{ value: 'all', label: 'All Clients' }];
+          }
+        }
+      },
+      {
+        key: 'teamMember',
+        label: 'Team Member',
+        type: 'select',
+        options: async () => {
+          try {
+            const res = await ReportsAPI.getEmployees();
+            const employees = res?.data?.employees || [];
+            return [
+              { value: 'all', label: 'All Team Members' },
+              ...employees.map(employee => ({ 
+                value: employee._id || employee.id, 
+                label: employee.name || employee.fullName 
+              }))
+            ];
+          } catch (error) {
+            console.error('Error loading team members:', error);
+            return [{ value: 'all', label: 'All Team Members' }];
+          }
+        }
+      }
     ],
     columns: [
-      { key: 'type', label: 'Type', sortable: true },
-      { key: 'salesQty', label: 'Sales qty', type: 'number', align: 'right', sortable: true },
+      { 
+        key: 'name', 
+        label: 'Service', 
+        sortable: true 
+      },
+      { key: 'salesQty', label: 'Sales Qty', type: 'number', align: 'right', sortable: true },
       { key: 'itemsSold', label: 'Items Sold', type: 'number', align: 'right', sortable: true },
       { key: 'grossSales', label: 'Gross Sales', type: 'currency', align: 'right', sortable: true },
       { key: 'totalDiscounts', label: 'Total Discounts', type: 'currency', align: 'right', sortable: true },
@@ -133,9 +205,10 @@ export const reportsConfig = {
     title: 'Finance Summary',
     description: 'High-level summary of sales, payments, and liabilities.',
     category: 'Finance',
-    // Use custom component instead of generic table
+    // Use custom component with hook-based data fetching
     customComponent: FinanceSummary,
-    useCustomComponent: true
+    useCustomComponent: true,
+    dataHook: useFinanceSummary
   },
 
   'payment-summary': {
@@ -187,13 +260,22 @@ export const reportsConfig = {
     title: 'Working Hours Activity',
     description: 'Detailed view of team members worked hours, shifts, and timesheets.',
     category: 'Team',
-    dataFetcher: mockDataFetchers.teamActivity,
+    dataHook: useWorkingHours,
     columns: [
-      { key: 'employee', label: 'Employee', sortable: true },
-      { key: 'hoursWorked', label: 'Hours Worked', type: 'number', align: 'right', sortable: true },
-      { key: 'shiftsCompleted', label: 'Shifts', type: 'number', align: 'right', sortable: true },
-      { key: 'overtime', label: 'Overtime', type: 'number', align: 'right', sortable: true },
-      { key: 'efficiency', label: 'Efficiency %', type: 'number', align: 'right', sortable: true }
+      { key: 'teamMember', label: 'Team member', sortable: true },
+      { key: 'location', label: 'Location', sortable: true },
+      { key: 'date', label: 'Date', type: 'date', sortable: true },
+      { key: 'source', label: 'Source', sortable: true },
+      { key: 'expectedStart', label: 'Expected start', align: 'center' },
+      { key: 'clockIn', label: 'Clock in', align: 'center' },
+      { key: 'clockInType', label: 'Clock in type', align: 'center' },
+      { key: 'clockInDeviation', label: 'Clock in deviation', align: 'center' },
+      { key: 'expectedEnd', label: 'Expected end', align: 'center' },
+      { key: 'clockOut', label: 'Clock out', align: 'center' },
+      { key: 'clockOutType', label: 'Clock out type', align: 'center' },
+      { key: 'clockOutDeviation', label: 'Clock out deviation', align: 'center' },
+      { key: 'scheduledHours', label: 'Scheduled', align: 'right', sortable: true },
+      { key: 'workedHours', label: 'Worked', align: 'right', sortable: true }
     ]
   },
 

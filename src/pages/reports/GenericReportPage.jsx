@@ -9,6 +9,7 @@ import Button from "../../components/ui/Button";
 import DropDown from "../../components/ui/DropDown";
 import ExportDropdown from "../../components/common/ExportDropdown";
 import { useReportDateRange, useReportClients } from '../../store/reports/hooks';
+import { useReportExport } from '../../hooks/useReportExport';
 import { ReportsAPI } from "../../Service/api/reportsApi";
 import "../../styles/ReportsGeneric.css";
 
@@ -67,6 +68,7 @@ const GenericReportPage = ({
     typeFilterOptions?.[0]?.value ?? "all"
   );
   const [error, setError] = useState(null);
+  const { exportLoading, exportError, exportReport, clearExportError } = useReportExport();
 
   const usingDataHook = typeof dataHook === "function";
   const hookResult = usingDataHook ? dataHook() : null;
@@ -83,6 +85,14 @@ const GenericReportPage = ({
     hookGroupBy,
     dataLength: hookData?.length,
     showTypeFilter
+  });
+
+  console.log('🔍 GenericReportPage dropdown debug:', {
+    hookGroupBy,
+    selectedType,
+    dropdownValue: hookGroupBy ?? selectedType,
+    typeFilterOptions,
+    foundOption: typeFilterOptions?.find(opt => opt.value === (hookGroupBy ?? selectedType))
   });
 
   // Fetch data using old method if not using hook
@@ -162,16 +172,17 @@ const GenericReportPage = ({
   }, [data, search, selectedType, typeFilterKey, typeFilterPredicate, showSearch, usingDataHook]);
 
   const handleTypeChange = useCallback((newValue) => {
-  console.log('Type dropdown changed:', newValue);
+  console.log('🎯 GenericReportPage: Type dropdown changed:', newValue);
   
   // Extract string value from dropdown object or use as-is if string
   const value = typeof newValue === 'string' ? newValue : newValue?.value;
+  console.log('🎯 GenericReportPage: Extracted value:', value);
   
   if (setHookGroupBy) {
-    console.log('Calling setHookGroupBy with:', value);
+    console.log('🎯 GenericReportPage: Calling setHookGroupBy with:', value);
     setHookGroupBy(value);
   } else {
-    console.log('Using local selectedType state');
+    console.log('🎯 GenericReportPage: Using local selectedType state');
     setSelectedType(value);
   }
 }, [setHookGroupBy]);
@@ -208,7 +219,18 @@ const GenericReportPage = ({
 
   const handleExport = async (format) => {
     console.log(`Exporting ${filtered.length} rows as ${format}`);
-    // Implement export logic
+    
+    const result = await exportReport(
+      format, 
+      filtered, 
+      dynamicColumns, 
+      title, 
+      title.toLowerCase().replace(/\s+/g, '_')
+    );
+    
+    if (!result.success) {
+      alert(`Export failed: ${result.message}`);
+    }
   };
 
   const getCategory = () => {
@@ -243,7 +265,11 @@ const GenericReportPage = ({
 
   // Right slot - Export button
   const rightSlot = showExport ? (
-    <ExportDropdown onExport={handleExport} />
+    <ExportDropdown 
+      onExport={handleExport} 
+      loading={exportLoading}
+      exportError={exportError}
+    />
   ) : null;
 
   const currentCategory = getCategory();

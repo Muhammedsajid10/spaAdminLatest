@@ -34,3 +34,10 @@ export const useReportClients = (autoFetch = true) => {
 
   return { clients, status, error, refetch: () => dispatch(fetchReportClients()) };
 };
+
+// Export individual hooks from their respective files
+export { usePaymentSummary } from './hooks/usePaymentSummary';
+export { usePaymentTransactions } from './hooks/usePaymentTransactions';
+export { useAppointmentSummary } from './hooks/useAppointmentSummary';
+export { useFinanceSummary } from './hooks/useFinanceSummary';
+export { useWorkingHours } from './hooks/useWorkingHours';

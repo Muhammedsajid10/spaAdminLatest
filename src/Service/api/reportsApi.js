@@ -116,6 +116,61 @@ export class ReportsAPI {
     return response.data;
   }
 
+  static async getFinanceSummary({ all = true, startDate = null, endDate = null, ...params } = {}) {
+    const queryParams = {
+      all,
+      ...params
+    };
+    
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
+
+    const response = await api.get('/admin/finance-summary?all=true', {
+      // params: queryParams,
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
+  static async getWorkingHoursActivity({ all = true, ...params } = {}) {
+    const response = await api.get('/admin/attendance?all=true', {
+      // params: { all, ...params },
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
+  static async getEmployees() {
+    const response = await api.get('/employees', {
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
+  static async getSalesSummary({ all = true, ...params } = {}) {
+    // Fetch booking analytics data which includes popularServices, bookingTrends, etc.
+    const response = await api.get('/bookings/admin/all?all=true', {
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
+  static async getBookingAnalytics({ ...params } = {}) {
+    // Alternative endpoint for booking analytics if different from individual bookings
+    const response = await api.get('/admin/analytics/bookings', {
+      params,
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
+  static async getServiceCategories() {
+    const response = await api.get('/services/categories', {
+      headers: withAuth()
+    });
+    return response.data;
+  }
+
   static exportData(data, format) {
     return exportDataUtil(data, format);
   }
