@@ -6509,9 +6509,9 @@
 }
 
 .payment-method-tile.selected {
-  border-color: #000000;
+  border-color: black;
   background: #000000;
-  color: #ffffff;
+  color: black;
   box-shadow: 0 4px 14px rgba(0,0,0,0.15);
 }
 
@@ -6547,7 +6547,7 @@
 }
 
 .payment-method-tile.selected::after {
-  border-color: #000000;
+  border-color: black;
   background: #000000;
   box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
 }
