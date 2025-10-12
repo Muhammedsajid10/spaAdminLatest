@@ -2187,8 +2187,9 @@
 .service-card-actions button:hover {background:#e2e8f0;}
 .svc-delete-btn {color:#dc2626;}
 .svc-delete-btn:hover {background:#fee2e2;border-color:#fecaca;}
-.add-service-inline-btn {width:100%;border:2px dashed #cbd5e1;background:#f8fafc;color:#64748b;font-weight:500;font-size:13px;padding:10px 14px;border-radius:12px;cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:6px;}
-.add-service-inline-btn:disabled {opacity:.7;}
+.add-service-inline-btn {width:100%;border:2px dashed #cbd5e1;background:#f8fafc;color:#64748b;font-weight:500;font-size:13px;padding:10px 14px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;}
+.add-service-inline-btn:hover {cursor:pointer;}
+.add-service-inline-btn:disabled {opacity:.7;cursor:not-allowed;}
 .service-card-placeholder {background:#f1f5f9;border:1px dashed #cbd5e1;color:#64748b;padding:14px 16px;border-radius:12px;font-size:13px;font-weight:500;text-align:center;}
 
 /* Catalog list */

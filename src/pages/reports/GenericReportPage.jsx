@@ -84,7 +84,8 @@ const GenericReportPage = ({
     hookStatus,
     hookGroupBy,
     dataLength: hookData?.length,
-    showTypeFilter
+    showTypeFilter,
+    renderTime: new Date().toISOString()
   });
 
   console.log('🔍 GenericReportPage dropdown debug:', {
@@ -93,6 +94,16 @@ const GenericReportPage = ({
     dropdownValue: hookGroupBy ?? selectedType,
     typeFilterOptions,
     foundOption: typeFilterOptions?.find(opt => opt.value === (hookGroupBy ?? selectedType))
+  });
+
+  // Additional debugging for dropdown value
+  console.log('🎯 GenericReportPage detailed dropdown state:', {
+    usingDataHook,
+    hookGroupBy,
+    selectedType,
+    finalValue: hookGroupBy ?? selectedType,
+    typeFilterOptions: typeFilterOptions?.map(opt => ({ value: opt.value, label: opt.label })),
+    foundOptionLabel: typeFilterOptions?.find(opt => opt.value === (hookGroupBy ?? selectedType))?.label
   });
 
   // Fetch data using old method if not using hook
@@ -250,7 +261,16 @@ const GenericReportPage = ({
       <div className="report-filter__type">
         <DropDown
           options={typeFilterOptions}
-          value={typeFilterOptions.find(opt => opt.value === (hookGroupBy ?? selectedType))}
+          value={(() => {
+            const currentValue = hookGroupBy ?? selectedType;
+            const foundOption = typeFilterOptions.find(opt => opt.value === currentValue);
+            console.log('🎪 DropDown value calculation:', {
+              currentValue,
+              foundOption,
+              typeFilterOptions: typeFilterOptions?.map(opt => ({ value: opt.value, label: opt.label }))
+            });
+            return foundOption;
+          })()}
           onChange={handleTypeChange}
           placeholder="Select type..."
           className="report-type-dropdown"
