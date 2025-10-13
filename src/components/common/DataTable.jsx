@@ -94,10 +94,8 @@ const DataTable = ({
 
   const formatCellValue = (value, column) => {
     if (column.type === 'currency') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      }).format(value || 0);
+      // Always show AED
+      return `AED ${Number(value || 0).toLocaleString('en-US')}`;
     }
     
     if (column.type === 'number') {
@@ -260,7 +258,7 @@ const DataTable = ({
                 >
                   {emptyMessage}
                 </td>
-              </tr>
+              </tr> 
             ) : (
               paginatedData.map((row, index) => (
                 <tr

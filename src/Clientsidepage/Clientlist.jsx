@@ -175,6 +175,8 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
 
 // Client Directory Component (Full functionality restored and Add Client fixed)
 const ClientDirectory = () => {
+  // Store all clients for searching
+  const [allClients, setAllClients] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -188,11 +190,12 @@ const ClientDirectory = () => {
   const [salesData, setSalesData] = useState({}); // To store sales data separately
   const [showExportMenu, setShowExportMenu] = useState(false); // For export dropdown
   const exportMenuRef = useRef(null);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   // --- Export Functions ---
   const exportToCSV = () => {
@@ -350,12 +353,16 @@ const ClientDirectory = () => {
   }, []);
 
   // Main function to fetch clients and then their sales data
-  const fetchClients = useCallback(async () => {
+  // Fetch clients for a specific page
+  const fetchClients = useCallback(async (page = 1, limit = itemsPerPage) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/admin/clients?limit=7000");
+      // Fetch paginated clients for current page
+      const res = await api.get(`/admin/clients?limit=${limit}&page=${page}`);
       const clientsData = res.data.data.clients || [];
+      const total = res.data.totalCount || 0;
+      const pages = res.data.pagination?.totalPages || 1;
 
       // Transform the data to match the frontend format, and assign random colors
       const transformedClients = clientsData.map((client) => ({
@@ -379,8 +386,40 @@ const ClientDirectory = () => {
       }));
 
       setClients(transformedClients);
+      setTotalCount(total);
+      setTotalPages(pages);
       // After setting clients, fetch their sales data
       await fetchSalesData(transformedClients);
+
+      // Fetch all clients for searching only once (if not already fetched)
+      if (allClients.length === 0) {
+        try {
+          const allRes = await api.get(`/admin/clients?limit=10000`);
+          const allClientsData = allRes.data.data.clients || [];
+          const allTransformed = allClientsData.map((client) => ({
+            id: client._id,
+            name: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+            firstName: client.firstName || "",
+            lastName: client.lastName || "",
+            mobile: client.phone || "-",
+            email: client.email || "-",
+            reviews: "-",
+            sales: `AED 0`,
+            createdAt: new Date(client.createdAt),
+            initial: client.firstName
+              ? client.firstName[0].toUpperCase()
+              : client.lastName
+              ? client.lastName[0].toUpperCase()
+              : "?",
+            color: getRandomColor(),
+            isActive: client.isActive,
+            gender: client.gender,
+          }));
+          setAllClients(allTransformed);
+        } catch (err) {
+          // Ignore error, fallback to paginated data
+        }
+      }
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Failed to load clients"
@@ -388,7 +427,7 @@ const ClientDirectory = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchSalesData]); // Dependency on fetchSalesData
+  }, [fetchSalesData, itemsPerPage]);
 
   // --- CRUD Operations ---
 
@@ -460,9 +499,10 @@ const ClientDirectory = () => {
   };
 
   // --- Effect Hook for Initial Data Load ---
+  // Track current page for API
   useEffect(() => {
-    fetchClients();
-  }, [fetchClients]); // fetchClients is a dependency because it's wrapped in useCallback
+    fetchClients(currentPage, itemsPerPage);
+  }, [fetchClients, currentPage, itemsPerPage]);
 
   // --- Modal Open/Close Handlers ---
   const openEditModal = (client) => {
@@ -486,12 +526,12 @@ const ClientDirectory = () => {
 
   const handleSelectAll = () => {
     if (
-      selectedClients.length === paginatedClients.length &&
-      paginatedClients.length > 0
+      selectedClients.length === filteredAndSortedClients.length &&
+      filteredAndSortedClients.length > 0
     ) {
       setSelectedClients([]); // Deselect all
     } else {
-      setSelectedClients(paginatedClients.map((client) => client.id)); // Select all visible on current page
+      setSelectedClients(filteredAndSortedClients.map((client) => client.id)); // Select all visible on current page
     }
   };
 
@@ -499,6 +539,7 @@ const ClientDirectory = () => {
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+      // fetchClients(page, itemsPerPage); // useEffect will handle fetch
     }
   };
 
@@ -545,22 +586,27 @@ const ClientDirectory = () => {
     []
   );
 
-  const { filteredAndSortedClients, paginatedClients } = useMemo(() => {
-    let currentClients = [...clients]; // Create a mutable copy
+  // Filter and sort clients in memory based on searchTerm and sortBy
+  const filteredAndSortedClients = useMemo(() => {
+  // Use allClients for searching, otherwise use paginated clients
+  let currentClients = (searchTerm.trim() ? allClients : clients).map((client) => ({
+      ...client,
+      sales: `AED ${salesData[client.id]?.toLocaleString() || "0"}`,
+    }));
 
-    // 1. Filter
-    currentClients = currentClients.filter(
-      (client) =>
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.mobile.includes(searchTerm) ||
-        client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        // Ensure client.sales is a string before calling toLowerCase
-        (client.sales
-          ? client.sales.toLowerCase().includes(searchTerm.toLowerCase())
-          : false)
-    );
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      currentClients = currentClients.filter(
+        (client) =>
+          client.name.toLowerCase().includes(term) ||
+          client.mobile.includes(term) ||
+          client.email?.toLowerCase().includes(term) ||
+          (client.sales ? client.sales.toLowerCase().includes(term) : false)
+      );
+    }
 
-    // 2. Sort
+    // Sort
     currentClients.sort((a, b) => {
       if (sortBy === "newest") {
         return b.createdAt.getTime() - a.createdAt.getTime();
@@ -571,60 +617,22 @@ const ClientDirectory = () => {
       } else if (sortBy === "name_desc") {
         return b.name.localeCompare(a.name);
       } else if (sortBy === "sales_desc") {
-        // Parse sales string (e.g., "AED 1,250" -> 1250)
-        const salesA =
-          parseFloat(String(a.sales).replace("AED ", "").replace(/,/g, "")) ||
-          0;
-        const salesB =
-          parseFloat(String(b.sales).replace("AED ", "").replace(/,/g, "")) ||
-          0;
+        const salesA = parseFloat(String(a.sales).replace("AED ", "").replace(/,/g, "")) || 0;
+        const salesB = parseFloat(String(b.sales).replace("AED ", "").replace(/,/g, "")) || 0;
         return salesB - salesA;
       } else if (sortBy === "sales_asc") {
-        const salesA =
-          parseFloat(String(a.sales).replace("AED ", "").replace(/,/g, "")) ||
-          0;
-        const salesB =
-          parseFloat(String(b.sales).replace("AED ", "").replace(/,/g, "")) ||
-          0;
+        const salesA = parseFloat(String(a.sales).replace("AED ", "").replace(/,/g, "")) || 0;
+        const salesB = parseFloat(String(b.sales).replace("AED ", "").replace(/,/g, "")) || 0;
         return salesA - salesB;
       }
-      return 0; // Default no-sort
+      return 0;
     });
 
-    // 3. Update 'sales' display value based on fetched salesData
-    const allFilteredClients = currentClients.map((client) => ({
-      ...client,
-      sales: `AED ${salesData[client.id]?.toLocaleString() || "0"}`, // Format sales for display
-    }));
-
-    // 4. Calculate pagination (pure computation only — no state updates here)
-    const totalClients = allFilteredClients.length;
-    const totalPagesCount = Math.ceil(totalClients / itemsPerPage);
-
-    // 5. Get paginated slice (use currentPage as-is; we'll adjust state outside this memo)
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedData = allFilteredClients.slice(startIndex, endIndex);
-
-    return {
-      filteredAndSortedClients: allFilteredClients,
-      paginatedClients: paginatedData
-    };
-  }, [clients, searchTerm, sortBy, salesData, currentPage, itemsPerPage]); // Dependencies for useMemo
+    return currentClients;
+  }, [clients, salesData, searchTerm, sortBy]);
 
   // Move state updates out of render/memo to avoid infinite loops.
-  useEffect(() => {
-    const totalClients = filteredAndSortedClients.length;
-    const newTotalPages = Math.max(1, Math.ceil(totalClients / itemsPerPage));
-
-    if (newTotalPages !== totalPages) {
-      setTotalPages(newTotalPages);
-    }
-
-    if (currentPage > newTotalPages) {
-      setCurrentPage(1);
-    }
-  }, [filteredAndSortedClients, itemsPerPage]);
+  // Remove local totalPages calculation, now using backend value
 
   // --- Conditional Rendering for Loading/Error States ---
   if (loading) {
@@ -659,11 +667,13 @@ const ClientDirectory = () => {
             <div className="header-title-block">
               <h1 className="directory-title">
                 Clients list
-                <span className="directory-count">{clients.length}</span>
+                <span className="directory-count">{totalCount}</span>
               </h1>
               <p className="directory-subtitle">
                 View, add, edit and delete your client's details.
-                {/* <span className="learn-more">Learn more</span> */}
+                <span style={{ marginLeft: 8, color: '#888', fontSize: '0.95em' }}>
+                  (Page {currentPage} of {totalPages})
+                </span>
               </p>
             </div>
             <div className="header-actions-block">
@@ -754,7 +764,7 @@ const ClientDirectory = () => {
               {/* Table Info */}
               <div className="table-info">
                 <div className="table-results-info">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedClients.length)} of {filteredAndSortedClients.length} clients
+                  Showing {clients.length > 0 ? ((currentPage - 1) * itemsPerPage + 1) : 0} to {clients.length > 0 ? ((currentPage - 1) * itemsPerPage + clients.length) : 0} of {totalCount} clients
                 </div>
                 <div className="table-per-page">
                   <label>Show:</label>
@@ -785,7 +795,7 @@ const ClientDirectory = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedClients.map((client) => (
+                  {filteredAndSortedClients.map((client) => (
                     <tr key={client.id}>
                       <td></td>
                       <td>
