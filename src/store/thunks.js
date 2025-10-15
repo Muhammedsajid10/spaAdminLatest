@@ -70,14 +70,6 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
     if (bookingsResponse.data.success && employeesResponse.data.success) {
       const allBookings = bookingsResponse.data.data.bookings || [];
       const employees = employeesResponse.data.data.employees || [];
-      
-      // Debug: Check if system admin bookings have original client names stored elsewhere
-      const systemAdminBookings = allBookings.filter(b => 
-        b.client?.firstName === 'System' && b.client?.lastName === 'Administrator'
-      );
-      if (systemAdminBookings.length > 0) {
-        console.log('🔍 System admin booking - FULL OBJECT:', JSON.stringify(systemAdminBookings[0], null, 2));
-      }
 
       if (servicesResponse.data && servicesResponse.data.success) {
         // services are not currently stored in Redux in this minimal refactor
@@ -96,10 +88,48 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
       }));
 
       const transformedAppointments = {};
+      
+      // Create a helper function to find employee ID by name for Python-created bookings
+      const findEmployeeIdByName = (employeeName) => {
+        if (!employeeName || typeof employeeName !== 'string') return null;
+        
+        const matchingEmployee = activeEmployees.find(emp => {
+          const empFullName = `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim();
+          return empFullName.toLowerCase() === employeeName.toLowerCase() ||
+                 emp.user?.firstName?.toLowerCase() === employeeName.toLowerCase() ||
+                 empFullName.toLowerCase().includes(employeeName.toLowerCase()) ||
+                 employeeName.toLowerCase().includes(empFullName.toLowerCase());
+        });
+        return matchingEmployee?._id || null;
+      };
+      
       allBookings.forEach(booking => {
         booking.services?.forEach(service => {
-          const employeeId = service.employee?._id || service.employee;
-          if (!employeeId) return;
+          let employeeId = null;
+          
+          // Handle different employee data formats
+          if (service.employee?._id) {
+            // ObjectId format (API-created bookings)
+            employeeId = service.employee._id;
+          } else if (typeof service.employee === 'string') {
+            // String format (Python-created bookings) - try to match by name
+            employeeId = findEmployeeIdByName(service.employee);
+          } else if (service.employee?.fullName) {
+            // Normalized object format - try to match by fullName
+            employeeId = findEmployeeIdByName(service.employee.fullName);
+          }
+          
+          if (!employeeId) {
+            console.warn('❌ Could not find employee ID for booking:', booking._id, 'Employee data:', service.employee);
+            console.log('Available employees:', activeEmployees.map(emp => ({
+              id: emp._id,
+              name: `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim()
+            })));
+            return;
+          }
+          
+          console.log('✅ Matched employee:', employeeId, 'for booking:', booking._id);
+          
           if (!transformedAppointments[employeeId]) transformedAppointments[employeeId] = {};
 
           const startISO = service.startTime ? String(service.startTime) : (booking.appointmentDate ? String(booking.appointmentDate) : null);
@@ -133,120 +163,50 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
 
           const slotKey = `${appointmentLocalDate}_${timeSlot}`;
 
-          // Handle client name more robustly - prioritize actual client name over system admin fallback
-          let clientName = 'Client';
-          
-          // Debug logging for this specific booking
-          if (booking.client?.firstName === 'System' && booking.client?.lastName === 'Administrator') {
-            console.log('🔍 Processing system admin booking:', booking._id);
-            console.log('🔍 originalClientName available:', booking.originalClientName);
-            console.log('🔍 clientDisplayName available:', booking.clientDisplayName);
-            console.log('🔍 clientNotes field:', booking.clientNotes);
-            console.log('🔍 internalNotes field:', booking.internalNotes);
-            console.log('🔍 Special requests:', booking.specialRequests);
-            console.log('🔍 All booking fields:', Object.keys(booking));
+          // Handle normalized client data (both string and object formats)
+          let clientDisplayName = 'Client';
+          if (booking.client) {
+            if (typeof booking.client === 'string') {
+              clientDisplayName = booking.client;
+            } else if (booking.client.fullName) {
+              clientDisplayName = booking.client.fullName;
+            } else if (booking.client.firstName || booking.client.lastName) {
+              clientDisplayName = `${booking.client.firstName || ''} ${booking.client.lastName || ''}`.trim();
+            }
           }
-          
-          // First, check if there are alternative sources for the actual client name
-          if (booking.originalClientName && booking.originalClientName.trim()) {
-            // If backend stores the original client name separately
-            clientName = booking.originalClientName.trim();
-            console.log('✅ Using originalClientName:', clientName);
-          } else if (booking.clientDisplayName && booking.clientDisplayName.trim()) {
-            // Alternative field for original client name
-            clientName = booking.clientDisplayName.trim();
-            console.log('✅ Using clientDisplayName:', clientName);
-          } else if (booking.clientNotes && booking.clientNotes.includes('Client:')) {
-            // Extract from clientNotes field (format: "Client: John Doe\nOther notes...")
-            const match = booking.clientNotes.match(/Client:\s*([^\n\r]+)/);
-            if (match && match[1]) {
-              clientName = match[1].trim();
-              console.log('✅ Extracted from clientNotes:', clientName);
+
+          // Handle normalized service data (both string and object formats)
+          let serviceName = 'Service';
+          if (service.service) {
+            if (typeof service.service === 'string') {
+              serviceName = service.service;
+            } else if (service.service.name) {
+              serviceName = service.service.name;
             }
-          } else if (booking.internalNotes && booking.internalNotes.includes('Original client:')) {
-            // Extract from internalNotes field (format: "Original client: John Doe")
-            const match = booking.internalNotes.match(/Original client:\s*(.+)/);
-            if (match && match[1] && match[1] !== 'Unknown') {
-              clientName = match[1].trim();
-              console.log('✅ Extracted from internalNotes:', clientName);
-            }
-          } else if (booking.specialRequests && Array.isArray(booking.specialRequests)) {
-            // Look for client name in specialRequests array
-            for (const request of booking.specialRequests) {
-              if (request && request.includes('Client Name:')) {
-                const match = request.match(/Client Name:\s*(.+)/);
-                if (match && match[1]) {
-                  clientName = match[1].trim();
-                  console.log('✅ Extracted from specialRequests:', clientName);
-                  break;
-                }
-              }
-            }
-          } else if (booking.clientDetails?.name) {
-            // If stored in clientDetails object
-            clientName = booking.clientDetails.name;
-          } else if (booking.customerName) {
-            // Alternative field name
-            clientName = booking.customerName;
-          } else if (booking.guestName) {
-            // For walk-in or guest bookings
-            clientName = booking.guestName;
-          } else if (booking.client) {
-            const firstName = booking.client.firstName || '';
-            const lastName = booking.client.lastName || '';
-            const fullName = `${firstName} ${lastName}`.trim();
-            const email = booking.client.email || '';
-            
-            // Check if this is the admin/system fallback user
-            const isSystemAdmin = (
-              (firstName === 'System' && lastName === 'Administrator') ||
-              email === 'admin@spa.com' ||
-              fullName === 'System Administrator' ||
-              email.includes('admin@') ||
-              firstName.toLowerCase().includes('system') ||
-              lastName.toLowerCase().includes('administrator') ||
-              firstName.toLowerCase().includes('admin')
-            );
-            
-            if (!isSystemAdmin && fullName && fullName !== 'System Administrator') {
-              clientName = fullName;
-            } else if (!isSystemAdmin && firstName && firstName !== 'System') {
-              clientName = firstName;
-            } else if (!isSystemAdmin && lastName && lastName !== 'Administrator') {
-              clientName = lastName;
-            } else {
-              // This is a system admin fallback - check for original client name in other fields
-              if (booking.notes && booking.notes.includes('Client:')) {
-                // Extract client name from notes if stored there
-                const match = booking.notes.match(/Client:\s*([^\n,]+)/i);
-                if (match) {
-                  clientName = match[1].trim();
-                  console.log('✅ Extracted client name from notes:', clientName);
-                }
-              } else if (booking.specialRequests && booking.specialRequests.length > 0) {
-                // Check if client name is stored in special requests
-                console.log('🔍 Checking special requests for client name:', booking.specialRequests);
-                const nameRequest = booking.specialRequests.find(req => 
-                  (typeof req === 'string' && (req.toLowerCase().includes('client name:') || req.toLowerCase().includes('client:')))
-                );
-                if (nameRequest) {
-                  const match = nameRequest.match(/client name:\s*([^,\n]+)/i) || nameRequest.match(/client:\s*([^,\n]+)/i);
-                  if (match) {
-                    clientName = match[1].trim();
-                    console.log('✅ Extracted client name from special requests:', clientName);
-                  }
-                }
-              } else {
-                // Last resort - use generic name
-                clientName = 'Client';
-                console.log('⚠️ No client name found, using fallback:', clientName);
+          }
+
+          // Handle normalized employee data (both string and object formats)
+          let employeeName = 'Employee';
+          if (service.employee) {
+            if (typeof service.employee === 'string') {
+              employeeName = service.employee;
+            } else if (service.employee.fullName && !/^[0-9a-fA-F]{24}$/.test(service.employee.fullName)) {
+              employeeName = service.employee.fullName;
+            } else if (service.employee.user) {
+              employeeName = `${service.employee.user.firstName || ''} ${service.employee.user.lastName || ''}`.trim();
+            } else if (service.employee._id) {
+              // If we have an ObjectId, try to find the actual employee name
+              const emp = activeEmployees.find(e => e._id === service.employee._id);
+              if (emp) {
+                employeeName = `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim();
               }
             }
           }
 
           transformedAppointments[employeeId][slotKey] = {
-            client: clientName,
-            service: service.service?.name || service.name || 'Service',
+            client: clientDisplayName,
+            service: serviceName,
+            employee: employeeName,
             duration: service.duration || 30,
             color: getAppointmentColorByStatus(service.status || booking.status || 'booked'),
             date: appointmentLocalDate,

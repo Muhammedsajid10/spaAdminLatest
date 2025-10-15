@@ -4906,7 +4906,7 @@ useEffect(() => {
     <div className="available-gift-cards-section">
       {benefitsLoading && (
         <div className="gift-cards-loading">
-          <div className="loading-spinner"></div>
+          <div className="loading-spinnerr"></div>
           Loading available gift cards...
         </div>
       )}
