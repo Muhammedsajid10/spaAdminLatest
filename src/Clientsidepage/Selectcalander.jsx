@@ -637,7 +637,6 @@ const SelectCalendar = () => {
   const [selectedExistingClient, setSelectedExistingClient] = useState(null);
   const [showClientSearch, setShowClientSearch] = useState(false);
   const [isAddingNewClient, setIsAddingNewClient] = useState(false);
-  const [isWalkIn, setIsWalkIn] = useState(false); // New: mark booking as walk-in (no client data required)
 
   // Booking Selection States
   const [availableProfessionals, setAvailableProfessionals] = useState([]);
@@ -832,20 +831,6 @@ const SelectCalendar = () => {
       setSelectedBookingForStatus(appointmentDetails);
       setShowBookingStatusModal(true);
       return;
-    }
-
-    // Prevent creating new bookings in the disallowed late-night window 22:00 - 23:59
-    try {
-      const hourPart = slotTime?.split(':')?.[0];
-      const hourNum = hourPart ? parseInt(hourPart, 10) : NaN;
-      if (!isNaN(hourNum) && hourNum >= 23 && hourNum <= 24) {
-        setUnavailableMessage('Bookings are not allowed between 23:00 and 24:00');
-        setShowUnavailablePopup(true);
-        return;
-      }
-    } catch (err) {
-      // If parsing fails, don't block – fallback to existing checks and log for debugging
-      console.error('Failed to parse slotTime for late-night block check:', slotTime, err);
     }
 
     // Continue with new booking flow for empty slots
@@ -1745,7 +1730,7 @@ const SelectCalendar = () => {
         return;
       }
 
-      const res = await fetch(`${Base_url}/admin/clients?limit=10000&sort=-createdAt`, {
+      const res = await fetch(`${Base_url}/admin/clients`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1768,8 +1753,7 @@ const SelectCalendar = () => {
 
   const searchClients = useCallback((query) => {
     if (!query.trim()) {
-      // Show first 50 clients when no search query (increased from 10)
-      setClientSearchResults(existingClients.slice(0, 50));
+      setClientSearchResults(existingClients.slice(0, 10));
       return;
     }
 
@@ -1783,9 +1767,7 @@ const SelectCalendar = () => {
         email.includes(searchTerm) ||
         phone.includes(searchTerm);
     });
-    
-    // Show up to 100 filtered results (increased limit)
-    setClientSearchResults(filtered.slice(0, 100));
+    setClientSearchResults(filtered);
   }, [existingClients]);
 
   const handleClientSearchChange = (e) => {
@@ -2477,10 +2459,7 @@ const SelectCalendar = () => {
 
       let clientData;
 
-      // Support Walk-in bookings (admin can continue without entering client data)
-      if (isWalkIn) {
-        clientData = { firstName: 'Walk-in', lastName: '', email: '', phone: '' };
-      } else if (selectedExistingClient) {
+      if (selectedExistingClient) {
         clientData = {
           firstName: selectedExistingClient.firstName,
           lastName: selectedExistingClient.lastName,
@@ -2504,11 +2483,11 @@ const SelectCalendar = () => {
         };
       }
 
-      // if (!clientData.email || !clientData.phone) {
-      //   setBookingError('Client email and phone are required.');
-      //   setBookingLoading(false);
-      //   return;
-      // }
+      if (!clientData.email || !clientData.phone) {
+        setBookingError('Client email and phone are required.');
+        setBookingLoading(false);
+        return;
+      }
 
       // Create services array from multiple appointments
       const services = multipleAppointments.map(apt => {
@@ -2529,8 +2508,6 @@ const SelectCalendar = () => {
           console.error('Invalid date created from:', apt.date);
           appointmentDate = new Date(); // Fallback to current date
         }
-
-        // const [hours, minutes] = apt.timeSlot.split(':');
 
         // TIMEZONE FIX: Create UTC datetime that represents the exact date/time user selected
         // This ensures the appointment appears on the correct date regardless of server timezone
@@ -2567,17 +2544,31 @@ const SelectCalendar = () => {
           throw new Error('Failed to create valid dates');
         }
 
-        console.log(`📅 Booking: ${apt.service.name} on ${dateStr} at ${timeStr}`);
-        console.log(`🕐 Created UTC datetime: ${appointmentDateTime.toISOString()}`);
-        console.log(`✅ Time will display correctly as: ${timeStr}`);
+        // --- MEMBERSHIP LOGIC ---
+        let price = apt.service.price;
+        let coveredByMembership = false;
+        let sessionDeduction = false;
+        if (appliedMembership && Array.isArray(appliedMembership.services)) {
+          // Check if this service is included in the membership
+          const isCovered = appliedMembership.services.some(
+            sId => (typeof sId === 'string' ? sId : sId?._id) === apt.service._id
+          );
+          if (isCovered) {
+            price = 0;
+            coveredByMembership = true;
+            sessionDeduction = true;
+          }
+        }
 
         return {
           service: apt.service._id,
           employee: apt.professional._id || apt.professional.id,
           duration: apt.service.duration,
-          price: apt.service.price,
+          price,
           startTime: appointmentDateTime.toISOString(),
           endTime: endTime.toISOString(),
+          coveredByMembership,
+          sessionDeduction
         };
       });
 
@@ -2643,27 +2634,10 @@ const SelectCalendar = () => {
 
       // Determine the effective payment method for the booking (normalize unknown aliases)
       let effectivePaymentMethod;
-      if (finalAmount === 0 && selectedGiftCard) {
+      if (selectedGiftCard) {
         effectivePaymentMethod = 'giftcard';
       } else {
         effectivePaymentMethod = paymentMethodMapping[paymentMethod] || paymentMethod || 'cash';
-      }
-
-      // Store original client name in case backend overwrites with admin user
-      const originalClientName = selectedExistingClient 
-        ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`.trim()
-        : `${clientData.firstName} ${clientData.lastName || ''}`.trim();
-
-      // Prepare notes with client name preserved
-      const existingNotes = bookingForm.notes || '';
-      const notesWithClientName = existingNotes 
-        ? `Client: ${originalClientName}\n${existingNotes}` 
-        : `Client: ${originalClientName}`;
-
-      // Prepare special requests to include client name
-      const specialRequests = [`Client Name: ${originalClientName}`];
-      if (existingNotes) {
-        specialRequests.push(existingNotes);
       }
 
       // Create the booking payload for multiple services
@@ -2676,13 +2650,9 @@ const SelectCalendar = () => {
         paymentMethod: effectivePaymentMethod,
         paymentDetails,
         client: clientData,
-        originalClientName: originalClientName, // Store original name
-        clientDisplayName: originalClientName, // Alternative field name
-        notes: notesWithClientName, // Store client name in notes as backup
-        specialRequests: specialRequests, // Store client name in special requests array
+        notes: bookingForm.notes || '',
         giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
-        bookingSource: isWalkIn ? 'walk-in' : 'admin',
-        walkIn: !!isWalkIn
+        bookingSource: 'admin'
       };
 
       console.log('Multiple appointments booking payload:', JSON.stringify(bookingPayload, null, 2));
@@ -2695,7 +2665,6 @@ const SelectCalendar = () => {
         },
         body: JSON.stringify(bookingPayload),
       });
-
 
       const responseData = await res.json();
 
@@ -2885,7 +2854,9 @@ const SelectCalendar = () => {
   // Load client gift cards when entering payment step
 const loadBenefitsIfNeeded = useCallback(async (force = false) => {
   // Only proceed if we have a selected client
-  if (!selectedExistingClient?._id && !force) {
+  if (!selectedExistingClient || !selectedExistingClient._id) {
+    setAvailableMemberships([]);
+    setAppliedMembership(null);
     console.log('No client selected, skipping benefits load');
     return;
   }
@@ -2908,8 +2879,6 @@ const loadBenefitsIfNeeded = useCallback(async (force = false) => {
     const gcRes = await fetch(`${Base_url}/giftcards/purchased`, { headers });
     const gcData = await gcRes.json();
 
-    console.log('Gift cards API response:', gcData); // Debug log
-
     if (!gcRes.ok) {
       throw new Error('Failed to fetch gift cards');
     }
@@ -2930,8 +2899,6 @@ const loadBenefitsIfNeeded = useCallback(async (force = false) => {
 
       return (isOwner || isRecipient) && !isExpired && hasValue && isActive;
     });
-
-    console.log('Filtered gift cards:', ownedGiftCards); // Debug log
     setAvailableGiftCards(ownedGiftCards);
 
     // Clear selected gift card if it's no longer valid
@@ -2940,10 +2907,31 @@ const loadBenefitsIfNeeded = useCallback(async (force = false) => {
       setGiftCardAppliedAmount(0);
     }
 
+    // --- Fetch memberships for the client ---
+    const memRes = await fetch(`${Base_url}/memberships/my-memberships/${clientId}`, { headers });
+    const memData = await memRes.json();
+    console.log('Memberships API response:', memData); // Debug log
+    if (!memRes.ok) {
+      throw new Error('Failed to fetch memberships');
+    }
+    // Filter memberships for active and not expired
+    const validMemberships = Array.isArray(memData)
+      ? memData.filter(m => m.status === 'active' && (!m.expiresAt || new Date(m.expiresAt) > new Date()))
+      : [];
+    setAvailableMemberships(validMemberships);
+    // Auto-select membership if only one is available
+    if (validMemberships.length === 1) {
+      setAppliedMembership(validMemberships[0]);
+    } else {
+      setAppliedMembership(null);
+    }
+
   } catch (error) {
-    console.error('Error loading gift cards:', error);
+    console.error('Error loading benefits:', error);
     setBenefitsError(error.message);
     setAvailableGiftCards([]);
+    setAvailableMemberships([]);
+    setAppliedMembership(null);
   } finally {
     setBenefitsLoading(false);
   }
@@ -4313,7 +4301,9 @@ useEffect(() => {
                         );
                       })}
                       {/* Placeholder when none added yet */}
-                      
+                      {multipleAppointments.length === 0 && bookingDefaults?.time && (
+                        <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
+                      )}
                       <button
                         type="button"
                         className="add-service-inline-btn"
@@ -4610,26 +4600,6 @@ useEffect(() => {
                   <div className="client-search-section">
                     <div className="client-search-header">
                       <h4>Search Existing Client</h4>
-                      <div className="walkin-toggle">
-                        <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                          <input
-                            type="checkbox"
-                            checked={isWalkIn}
-                            onChange={(e) => {
-                              const val = !!e.target.checked;
-                              setIsWalkIn(val);
-                              if (val) {
-                                // Clear any selected or new client state when enabling walk-in
-                                setSelectedExistingClient(null);
-                                setIsAddingNewClient(false);
-                                setClientInfo({ name: '', email: '', phone: '' });
-                                setShowClientSearch(false);
-                              }
-                            }}
-                          />
-                          <span style={{fontSize: 12}}>Walk-in (no client data required)</span>
-                        </label>
-                      </div>
                       {selectedExistingClient && (
                         <button
                           className="clear-client-btn"
@@ -4657,14 +4627,6 @@ useEffect(() => {
                         />
                         {showClientSearch && clientSearchResults.length > 0 && (
                           <div className="client-search-results">
-                            <div className="client-search-header">
-                              <span className="client-count">
-                                Showing {clientSearchResults.length} client{clientSearchResults.length !== 1 ? 's' : ''}
-                                {existingClients.length > clientSearchResults.length && 
-                                  ` (of ${existingClients.length} total)`
-                                }
-                              </span>
-                            </div>
                             {clientSearchResults.map(client => (
                               <div
                                 key={client._id}
@@ -4690,7 +4652,7 @@ useEffect(() => {
 
                         {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
                           <div className="client-search-no-results">
-                            <p>No clients found </p>
+                            <p>No clients found for "{clientSearchQuery}"</p>
                             <button
                               className="add-new-client-btn"
                               onClick={addNewClient}
@@ -4760,25 +4722,25 @@ useEffect(() => {
                             />
                           </div>
                           <div className="form-group">
-                            <label htmlFor="clientEmail">Email Address</label>
+                            <label htmlFor="clientEmail">Email Address *</label>
                             <input
                               id="clientEmail"
                               type="email"
                               placeholder="Enter client's email address"
                               value={clientInfo.email}
                               onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
-                              // required
+                              required
                             />
                           </div>
                           <div className="form-group">
-                            <label htmlFor="clientPhone">Phone Number</label>
+                            <label htmlFor="clientPhone">Phone Number *</label>
                             <input
                               id="clientPhone"
                               type="tel"
                               placeholder="Enter client's phone number"
                               value={clientInfo.phone}
                               onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
-                              // required
+                              required
                             />
                           </div>
                         </div>
@@ -4791,8 +4753,8 @@ useEffect(() => {
                       className="booking-modal-next"
                       onClick={() => setBookingStep(6)}
                       disabled={
-                        // Allow continue if walk-in is selected OR an existing client is chosen OR a client name is entered
-                        !isWalkIn && !selectedExistingClient && !clientInfo.name.trim()
+                        !selectedExistingClient &&
+                        (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
                       }
                     >
                       Continue to Payment
@@ -4854,9 +4816,9 @@ useEffect(() => {
                     <div className="summary-item">
                       <span>Client:</span>
                       <span>
-                        {isWalkIn ? 'Walk-in' : (selectedExistingClient
+                        {selectedExistingClient
                           ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-                          : clientInfo.name)
+                          : clientInfo.name
                         }
                         {selectedExistingClient && (
                           <span className="existing-client-indicator"> VIP Member</span>
@@ -4866,18 +4828,18 @@ useEffect(() => {
                     <div className="summary-item">
                       <span> Email:</span>
                       <span>
-                        {isWalkIn ? '-' : (selectedExistingClient
+                        {selectedExistingClient
                           ? selectedExistingClient.email
-                          : clientInfo.email)
+                          : clientInfo.email
                         }
                       </span>
                     </div>
                     <div className="summary-item">
                       <span> Phone:</span>
                       <span>
-                        {isWalkIn ? '-' : (selectedExistingClient
+                        {selectedExistingClient
                           ? selectedExistingClient.phone
-                          : clientInfo.phone)
+                          : clientInfo.phone
                         }
                       </span>
                     </div>
@@ -4906,7 +4868,7 @@ useEffect(() => {
     <div className="available-gift-cards-section">
       {benefitsLoading && (
         <div className="gift-cards-loading">
-          <div className="loading-spinnerr"></div>
+          <div className="loading-spinner"></div>
           Loading available gift cards...
         </div>
       )}

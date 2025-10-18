@@ -143,22 +143,33 @@ const AdminMembershipChecker = ({
   const filterEligibleMemberships = () => {
     // Find memberships that match any of the selected services
     const eligible = clientMemberships.filter(membership => {
-      // Safely derive the service id from possible shapes
-      const membershipServiceId = membership?.service && (typeof membership.service === 'string'
-        ? membership.service
-        : membership.service._id)
-        || membership?.serviceId
-        || (membership?.service && membership.service?._id)
-        || null;
+      // Support multiple services per membership
+      let membershipServiceIds = [];
+      let membershipServiceNames = [];
 
-      if (!membershipServiceId) {
-        // no service id to match against — not eligible
-        console.info('Skipping membership without service id', membership._id || membership);
-        return false;
+      // If membership has a services array, collect all _id and name
+      if (Array.isArray(membership.services)) {
+        membershipServiceIds = membership.services.map(s => typeof s === 'string' ? s : s._id).filter(Boolean);
+        membershipServiceNames = membership.services.map(s => s.name).filter(Boolean);
+      }
+      // If membership has serviceNames array, collect all names
+      if (Array.isArray(membership.serviceNames)) {
+        membershipServiceNames = membershipServiceNames.concat(membership.serviceNames);
+      }
+      // If membership has a single service/serviceId
+      if (membership.service) {
+        membershipServiceIds.push(typeof membership.service === 'string' ? membership.service : membership.service._id);
+        if (membership.service.name) membershipServiceNames.push(membership.service.name);
+      }
+      if (membership.serviceId) {
+        membershipServiceIds.push(membership.serviceId);
       }
 
-      // Check if membership service matches any selected service
-      const matchesService = selectedServices.some(service => service && service._id === membershipServiceId);
+      // Check if any selected service matches by _id or name
+      const matchesService = selectedServices.some(service => {
+        if (!service) return false;
+        return membershipServiceIds.includes(service._id) || membershipServiceNames.includes(service.name);
+      });
 
       // Compute remaining sessions defensively
       const remainingSessions = membership?.remainingSessions ?? (
@@ -180,11 +191,30 @@ const AdminMembershipChecker = ({
 
   const handleApplyMembership = (membership) => {
     console.log('🎯 Admin applying membership for client:', membership);
-    
-    // Find the service that matches this membership
-    const matchingService = selectedServices.find(service => 
-      service._id === membership.service._id || service._id === membership.service
-    );
+
+    // Gather all possible service IDs and names from the membership
+    let membershipServiceIds = [];
+    let membershipServiceNames = [];
+    if (Array.isArray(membership.services)) {
+      membershipServiceIds = membership.services.map(s => typeof s === 'string' ? s : s._id).filter(Boolean);
+      membershipServiceNames = membership.services.map(s => s.name).filter(Boolean);
+    }
+    if (Array.isArray(membership.serviceNames)) {
+      membershipServiceNames = membershipServiceNames.concat(membership.serviceNames);
+    }
+    if (membership.service) {
+      membershipServiceIds.push(typeof membership.service === 'string' ? membership.service : membership.service._id);
+      if (membership.service.name) membershipServiceNames.push(membership.service.name);
+    }
+    if (membership.serviceId) {
+      membershipServiceIds.push(membership.serviceId);
+    }
+
+    // Find the selected service that matches any of the membership's services
+    const matchingService = selectedServices.find(service => {
+      if (!service) return false;
+      return membershipServiceIds.includes(service._id) || membershipServiceNames.includes(service.name);
+    });
 
     if (matchingService) {
       onMembershipApplied(membership, matchingService);

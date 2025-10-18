@@ -60,8 +60,8 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    selectedService: null, // single service object: { _id, name, price, duration }
-    sessionType: 'limited', // 'limited'|'unlimited'
+    selectedServices: [], // array of service objects
+    sessionType: 'limited',
     sessionCount: '1',
     paymentType: 'one-time',
     validFor: '1 month',
@@ -105,9 +105,16 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
     return acc;
   }, {});
 
-  const handleServiceSelect = (service) => {
-    setFormData(prev => ({ ...prev, selectedService: service }));
-    setShowServiceModal(false);
+  const handleServiceToggle = (service) => {
+    setFormData(prev => {
+      const exists = prev.selectedServices.some(s => s._id === service._id);
+      return {
+        ...prev,
+        selectedServices: exists
+          ? prev.selectedServices.filter(s => s._id !== service._id)
+          : [...prev.selectedServices, service]
+      };
+    });
   };
 
   const parseValidFor = (str) => {
@@ -144,8 +151,8 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
         return;
       }
 
-      if (!formData.selectedService) {
-        alert('Please select a service');
+      if (!formData.selectedServices || formData.selectedServices.length === 0) {
+        alert('Please select at least one service');
         setLoading(false);
         return;
       }
@@ -166,8 +173,7 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
         name: formData.name.trim(),
         description: formData.description.trim(),
         serviceType: formData.sessionType === 'limited' ? 'Limited' : 'Unlimited',
-        service: formData.selectedService._id,
-        serviceName: formData.selectedService.name,
+        services: formData.selectedServices.map(s => typeof s === 'string' ? s : s._id),
         numberOfSessions: formData.sessionType === 'limited' ? Number(formData.sessionCount) : undefined,
         paymentType: formData.paymentType === 'one-time' ? 'One-time' : 'Recurring',
         price: parseFloat(formData.price),
@@ -259,33 +265,35 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
               </h3>
 
               <div className="modern-form-group">
-                <label className="modern-label">Included Service</label>
+                <label className="modern-label">Included Services</label>
                 <div className="modern-services-selection">
-                  {formData.selectedService ? (
-                    <div className="modern-selected-service">
-                      <div className="modern-selected-service-info">
-                        <span className="modern-service-name">{formData.selectedService.name}</span>
-                        <span className="modern-service-details">
-                          {formData.selectedService.duration} mins • AED {formData.selectedService.price}
-                        </span>
-                      </div>
+                  {formData.selectedServices.length > 0 ? (
+                    <div className="modern-selected-services-list">
+                      {formData.selectedServices.map(s => (
+                        <div key={s._id} className="modern-selected-service">
+                          <div className="modern-selected-service-info">
+                            <span className="modern-service-name">{s.name}</span>
+                            <span className="modern-service-details">{s.duration} mins • AED {s.price}</span>
+                          </div>
+                        </div>
+                      ))}
                       <button 
                         type="button" 
                         className="modern-change-service-btn" 
                         onClick={() => setShowServiceModal(true)}
                       >
-                        Change Service
+                        Change Services
                       </button>
                     </div>
                   ) : (
                     <div className="modern-no-service-container">
-                      <p className="modern-no-services-text">No service selected</p>
+                      <p className="modern-no-services-text">No services selected</p>
                       <button 
                         type="button" 
                         className="modern-select-services-btn" 
                         onClick={() => setShowServiceModal(true)}
                       >
-                        Select Service
+                        Select Services
                       </button>
                     </div>
                   )}
@@ -386,7 +394,7 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
               <button 
                 type="submit" 
                 className="modern-primary-button" 
-                disabled={loading || !formData.selectedService}
+                disabled={loading || formData.selectedServices.length === 0}
               >
                 {loading ? 'Creating...' : 'Create Membership'}
               </button>
@@ -436,31 +444,31 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
                     </div>
 
                     <div className="category-services-modern">
-                      {filteredServices[category].map(s => (
-                        <div key={s._id || s.id} 
-                             className={`service-item-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}
-                             onClick={() => handleServiceSelect(s)}>
-                          <div className="service-details-modern">
-                            <span className={`service-name-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}>
-                              {s.name}
-                            </span>
-                            <span className={`service-duration-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}>
-                              <span className="service-duration-dot"></span>
-                              {s.duration} minutes
-                            </span>
+                      {filteredServices[category].map(s => {
+                        const checked = formData.selectedServices.some(sel => sel._id === s._id);
+                        return (
+                          <div key={s._id || s.id} className={`service-item-modern${checked ? ' selected' : ''}`}>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', width: '100%' }}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => handleServiceToggle(s)}
+                                style={{ marginRight: 8 }}
+                              />
+                              <div className="service-details-modern" style={{ flex: 1 }}>
+                                <span className={`service-name-modern${checked ? ' selected' : ''}`}>{s.name}</span>
+                                <span className={`service-duration-modern${checked ? ' selected' : ''}`}>
+                                  <span className="service-duration-dot"></span>
+                                  {s.duration} minutes
+                                </span>
+                              </div>
+                              <div className="service-price-container">
+                                <span className={`service-price-modern${checked ? ' selected' : ''}`}>AED {s.effectivePrice || s.price}</span>
+                              </div>
+                            </label>
                           </div>
-                          <div className="service-price-container">
-                            <span className={`service-price-modern ${formData.selectedService?._id === s._id ? 'selected' : ''}`}>
-                              AED {s.effectivePrice || s.price}
-                            </span>
-                            {formData.selectedService?._id === s._id && (
-                              <span className="service-selected-badge">
-                                ✓ Selected
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))
@@ -584,29 +592,16 @@ const ProfessionalMembershipModal = ({ isOpen, onClose, membership, onEdit }) =>
 
           {/* Service Information */}
           <div className="content-section">
-            <h3 className="section-title">Included Service</h3>
-            {membership.service || membership.serviceName ? (
-              <div className="service-card">
-                <div className="service-info">
-                  <h4 className="service-name">
-                    {membership.serviceName || membership.service?.name || 'Service Included'}
-                  </h4>
-                  {membership.service && (
-                    <div className="service-details">
-                      <span className="service-duration">
-                        Duration: {membership.service.duration} minutes
-                      </span>
-                      <span className="service-price">
-                        Service Price: {formatPrice(membership.service.effectivePrice || membership.service.price, 'AED')}
-                      </span>
+            <h3 className="section-title">Included Services</h3>
+            {Array.isArray(membership.serviceNames) && membership.serviceNames.length > 0 ? (
+              <div className="service-list">
+                {membership.serviceNames.map((name, idx) => (
+                  <div key={idx} className="service-card">
+                    <div className="service-info">
+                      <h4 className="service-name">{name}</h4>
                     </div>
-                  )}
-                </div>
-                <div className="service-meta">
-                  <span className="service-sessions">
-                    {formatSessions(membership.serviceType, membership.numberOfSessions)}
-                  </span>
-                </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="no-service">
