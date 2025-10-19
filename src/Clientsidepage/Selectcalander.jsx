@@ -30,6 +30,7 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
+import CalendarHeader from '../calendar/components/CalendarHeader/CalendarHeader';
 
 
 // --- API ENDPOINTS ---
@@ -3076,21 +3077,24 @@ useEffect(() => {
     return (
       <div className="month-view-container">
         <div className="month-day-names">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <div key={day} className="month-day-name">{day}</div>)}
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+            <div key={day} className="month-day-name">{day}</div>
+          ))}
         </div>
+
         <div className="month-view-grid">
-          {emptyCellsBefore.map((_, index) => <div key={`empty-${index}`} className="month-day-cell empty"></div>)}
+          {emptyCellsBefore.map((_, index) => (
+            <div key={`empty-${index}`} className="month-day-cell empty" />
+          ))}
+
           {calendarDays.map(day => {
             const dayKey = localDateKey(day);
             const dayAppointments = [];
 
-            // Get appointments for this day from all employees
             displayEmployees.forEach(emp => {
               if (mergedAppointments[emp.id]) {
                 Object.entries(mergedAppointments[emp.id]).forEach(([slotKey, appointment]) => {
-                  // Check if the appointment is for this day
                   if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                    // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
                     const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
                     dayAppointments.push({
                       ...appointment,
@@ -3105,28 +3109,23 @@ useEffect(() => {
             });
 
             return (
-              <div
-                key={dayKey}
-                className="month-day-cell"
-                onClick={() => handleMonthDayClick(day)}
-                style={{ cursor: 'pointer' }}
-                title={`Click to add appointment on ${day.toLocaleDateString()}`}
-              >
+              <div key={dayKey} className="month-day-cell">
                 <div className="month-day-header">
                   <span className="month-day-date">{day.getDate()}</span>
                   <span className="month-add-appointment-hint">+</span>
                 </div>
+
                 <div className="month-appointments">
                   {dayAppointments.length > 0 ? (
                     <>
                       {dayAppointments.slice(0, 3).map((app, index) => (
-                        <div key={index}
+                        <div
+                          key={index}
                           className="month-appointment-entry"
                           style={{ backgroundColor: app.color }}
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent day click when clicking on appointment
+                            e.stopPropagation();
                             if (app.bookingId) {
-                              // Show booking status for existing appointment
                               const appointmentDetails = {
                                 ...app,
                                 employeeId: app.employeeId,
@@ -3134,7 +3133,7 @@ useEffect(() => {
                                 slotTime: app.time,
                                 date: dayKey,
                                 slotKey: `${dayKey}_${app.time}`,
-                                serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
+                                serviceEntryId: app.serviceEntryId
                               };
                               setSelectedBookingForStatus(appointmentDetails);
                               setShowBookingStatusModal(true);
@@ -3148,16 +3147,18 @@ useEffect(() => {
                             status: app.status || 'Confirmed',
                             notes: app.notes
                           })}
-                          onMouseLeave={hideBookingTooltip}>
+                          onMouseLeave={hideBookingTooltip}
+                        >
                           <span className="appointment-client-name">{app.client}</span>
                           <span className="appointment-service-name">{app.service}</span>
                         </div>
                       ))}
+
                       {dayAppointments.length > 3 && (
                         <div
                           className="month-more-appointments"
                           onClick={(event) => {
-                            event.stopPropagation(); // Prevent day click when clicking on "more"
+                            event.stopPropagation();
                             handleShowMoreAppointments(dayAppointments, day, event);
                           }}
                         >
@@ -3495,63 +3496,28 @@ useEffect(() => {
 
   return (
     <div className="scheduler-root">
-      {/* REDESIGNED Application-level Header */}
-      <div className="scheduler-header-redesigned">
-        {/* Left Side Controls */}
-        <div className="header-left-controls">
-          {/* Today Button - Only show in Day view */}
-          {currentView === 'Day' && (
-            <button
-              className="header-btn today-btn"
-              onClick={goToToday}
-            >
-              Today
-            </button>
-          )}
-
-          {/* Date Navigation */}
-          <div className="date-navigation">
-            <button className="nav-arrow-btn" onClick={goToPrevious}>
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              className="date-display-button"
-              onClick={() => {
-                setDatePickerCurrentMonth(currentDate);
-                setDatePickerSelectedDate(currentDate);
-
-                // Set picker view based on current calendar view
-                if (currentView === 'Week') {
-                  setDatePickerView('week');
-                } else if (currentView === 'Month') {
-                  setDatePickerView('month');
-                } else {
-                  setDatePickerView('date');
-                }
-
-                setShowDatePicker(!showDatePicker);
-              }}
-            >
-              <span className="date-display-text">
-                {currentView === 'Day' && currentDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-                {currentView === 'Week' && calendarDays.length > 0 &&
-                  `${calendarDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${calendarDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                }
-                {currentView === 'Month' && currentDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long'
-                })}
-              </span>
-              <CalendarIcon size={14} className="date-picker-icon" />
-            </button>
-            <button className="nav-arrow-btn" onClick={goToNext}>
-              <ChevronRight size={16} />
-            </button>
-
+      <CalendarHeader
+        currentView={currentView}
+        currentDate={currentDate}
+        calendarDays={calendarDays}
+        showDatePicker={showDatePicker}
+        datePickerView={datePickerView}
+        datePickerCurrentMonth={datePickerCurrentMonth}
+        datePickerSelectedDate={datePickerSelectedDate}
+        setDatePickerCurrentMonth={setDatePickerCurrentMonth}
+        setDatePickerSelectedDate={setDatePickerSelectedDate}
+        setShowDatePicker={setShowDatePicker}
+        goToDatePickerPreviousMonth={goToDatePickerPreviousMonth}
+        goToDatePickerNextMonth={goToDatePickerNextMonth}
+        goToDatePickerToday={goToDatePickerToday}
+        handleDatePickerDateSelect={handleDatePickerDateSelect}
+        handleRefreshToNow={handleRefreshToNow}
+        setCurrentView={setCurrentView}
+        handleAddAppointment={handleAddAppointment}
+        goToToday={goToToday}
+        goToPrevious={goToPrevious}
+        goToNext={goToNext}
+      />
 
 
             {/* Date Picker Popup */}
@@ -3755,275 +3721,9 @@ useEffect(() => {
 
                 </div>
               </>
-            )}
-          </div>
+    )}
 
-          {/* Team Icon with Popup */}
-          <div className="team-control-container">
-            <button
-              className="header-btn team-icon-btn"
-              onClick={() => setShowTeamPopup(!showTeamPopup)}
-            >
-              <Users size={16} />
-            </button>
-
-            {showTeamPopup && (
-              <>
-                <div className="popup-backdrop" onClick={() => setShowTeamPopup(false)} />
-                <div className="team-popup-enhanced">
-                  {/* Close button */}
-                  <button
-                    type="button"
-                    className="team-popup-close-btn"
-                    aria-label="Close team selector"
-                    title="Close"
-                    onClick={() => setShowTeamPopup(false)}
-                  >
-                    ×
-                  </button>
-                  {/* Header with filters */}
-                  <div className="team-popup-header-enhanced">
-                    <div className="team-filters">
-                      <button
-                        className={`team-filter-pill ${teamFilter === 'all' ? 'active' : ''}`}
-                        onClick={() => handleTeamFilterChange('all')}
-                      >
-                        All Team
-                        <span className="filter-count">{employees.length}</span>
-                      </button>
-                      <button
-                        className={`team-filter-pill ${teamFilter === 'scheduled' ? 'active' : ''}`}
-                        onClick={() => handleTeamFilterChange('scheduled')}
-                      >
-                        Scheduled Today
-                        <span className="filter-count">
-                          {employees.filter(emp => hasShiftOnDate(emp, currentDate)).length}
-                        </span>
-                      </button>
-
-                    </div>
-                    <div className="team-actions">
-                      <button
-                        className="select-all-btn"
-                        onClick={() => setSelectedEmployees(new Set(employees.map(emp => emp.id)))}
-                      >
-                        Select All
-                      </button>
-                      <button
-                        className="clear-all-btn"
-                        onClick={handleClearSelection}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Search bar */}
-                  <div className="team-search-container">
-                    <div className="search-input-wrapper">
-                      {/* <span className="search-icon">🔍</span> */}
-                      <input
-                        type="text"
-                        placeholder="Search team members..."
-                        className="team-search-input"
-                        value={teamSearchQuery || ''}
-                        onChange={(e) => setTeamSearchQuery(e.target.value)}
-                      />
-                      {teamSearchQuery && (
-                        <button
-                          className="clear-search-btn"
-                          onClick={() => setTeamSearchQuery('')}
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Team members list */}
-                  <div className="team-members-container">
-
-
-                    <div className={`team-members-list ${teamViewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
-                      {getFilteredAndSearchedEmployees().map(employee => {
-                        const isSelected = selectedEmployees.has(employee.id);
-                        const hasShift = hasShiftOnDate(employee, currentDate);
-
-                        return (
-                          <div
-                            key={employee.id}
-                            className={`team-member-card ${isSelected ? 'selected' : ''} ${!hasShift ? 'no-shift' : ''}`}
-                            onClick={() => handleEmployeeToggle(employee.id)}
-                          >
-                            <div className="member-avatar-section">
-                              <div
-                                className="member-avatar"
-                                style={{ backgroundColor: employee.avatarColor }}
-                              >
-                                {employee.avatar ?
-                                  <img src={employee.avatar} alt={employee.name} className="avatar-image" /> :
-                                  employee.name.charAt(0)
-                                }
-                                {!hasShift && <div className="no-shift-indicator">!</div>}
-                              </div>
-                            </div>
-
-                            <div className="member-info-section">
-                              <div className="member-primary-info">
-                                <h5 className="member-name">{employee.name}</h5>
-
-                              </div>
-
-                            </div>
-
-                            <div className="member-checkbox-section">
-                              <div className={`checkbox-custom ${isSelected ? 'checked' : ''}`}>
-                                {isSelected && <span className="checkmark">✓</span>}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {getFilteredAndSearchedEmployees().length === 0 && (
-                      <div className="empty-state">
-                        <div className="empty-icon">👥</div>
-                        <h4>No team members found</h4>
-                        <p>Try adjusting your search or filter criteria</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer with summary */}
-                  <div className="team-popup-footer-enhanced">
-                    <div className="selection-summary">
-                      <div className="summary-stats">
-                        <div className="summary-item">
-                          <span className="summary-number">{selectedEmployees.size}</span>
-                          <span className="summary-label">Selected</span>
-                        </div>
-                        <div className="summary-divider"></div>
-                        <div className="summary-item">
-                          <span className="summary-number">
-                            {employees.filter(emp => hasShiftOnDate(emp, currentDate) && selectedEmployees.has(emp.id)).length}
-                          </span>
-                          <span className="summary-label">Working Today</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="footer-actions">
-                      <button
-                        className="apply-selection-btn"
-                        onClick={() => setShowTeamPopup(false)}
-                      >
-                        Apply Selection
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Right Side Controls */}
-        <div className="header-right-controls">
-          {/* Calendar Icon with Popup */}
-          <div className="calendar-control-container">
-            <button
-              className="header-btn calendar-icon-btn"
-              onClick={() => setShowCalendarPopup(!showCalendarPopup)}
-            >
-              <Calendar size={16} />
-            </button>
-
-            {showCalendarPopup && (
-              <>
-                <div className="popup-backdrop" onClick={() => setShowCalendarPopup(false)} />
-                <div className="calendar-popup">
-                  <div className="calendar-popup-tabs">
-                    <button
-                      className={`popup-tab ${calendarPopupTab === 'confirmed' ? 'active' : ''}`}
-                      onClick={() => setCalendarPopupTab('confirmed')}
-                    >
-                      Confirmed
-                    </button>
-                    <button
-                      className={`popup-tab ${calendarPopupTab === 'started' ? 'active' : ''}`}
-                      onClick={() => setCalendarPopupTab('started')}
-                    >
-                      Started
-                    </button>
-                    <button
-                      className={`popup-tab ${calendarPopupTab === 'completed' ? 'active' : ''}`}
-                      onClick={() => setCalendarPopupTab('completed')}
-                    >
-                      Completed
-                    </button>
-                  </div>
-
-                  <div className="calendar-popup-content">
-                    {getAppointmentsForDateRange().length > 0 ? (
-                      getAppointmentsForDateRange().map((appointment, index) => (
-                        <div key={index} className="appointment-popup-item">
-                          <div
-                            className="appointment-color-dot"
-                            style={{ backgroundColor: appointment.color }}
-                          />
-                          <div className="appointment-popup-details">
-                            <div className="appointment-popup-client">{appointment.client}</div>
-                            <div className="appointment-popup-service">{appointment.service}</div>
-                            <div className="appointment-popup-meta">
-                              {appointment.employeeName} • {appointment.timeSlot}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="no-appointments-message">
-                        No {calendarPopupTab} appointments for this period
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* View Controls with Refresh */}
-          <div className="view-controls">
-            <button
-              className="refresh-btn"
-              onClick={handleRefreshToNow}
-              title="Refresh to current time"
-            >
-              <RotateCcw size={14} />
-            </button>
-            <select
-              value={currentView}
-              onChange={(e) => setCurrentView(e.target.value)}
-              className="view-selector"
-            >
-              <option value="Day">Day</option>
-              <option value="Week">Week</option>
-              <option value="Month">Month</option>
-            </select>
-          </div>
-
-          {/* Add Button */}
-          <button
-            className="add-appointment-btn"
-            onClick={handleAddAppointment}
-          >
-            <h1>Add Appointment</h1>
-            <Plus size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Scrollable Calendar Content */}
+  {/* Main Scrollable Calendar Content */}
       <div className="scheduler-content" ref={schedulerContentRef}>
         {renderCalendarContent()}
         <div className="current-time-line" style={{ top: `${currentTimeLineTop}px` }}>
