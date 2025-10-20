@@ -6,6 +6,7 @@ import { StaffColumn } from '../calendar/components/StaffColumn';
 import { setEmployees } from '../store/employeesSlice';
 import { setTimeSlots, setLoading as setCalendarLoading, setError as setCalendarError, setSelectedStaff as setCalendarSelectedStaff, setCurrentDateISO } from '../store/calendarSlice';
 import { setAppointments } from '../store/appointmentsSlice';
+import { IoIosPeople } from "react-icons/io";
 import { fetchCalendarThunk, fetchServicesThunk, fetchClientsThunk, fetchBookingTimeSlotsThunk } from '../store/thunks';
 import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction } from '../store/bookingSessionSlice';
 import axios from 'axios';
@@ -648,6 +649,8 @@ const SelectCalendar = () => {
 
   // Form States
   const [clientInfo, setClientInfo] = useState({ name: '', email: '', phone: '' });
+  // If true, this is a walk-in booking: only client name is required
+  const [isWalkIn, setIsWalkIn] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
@@ -1034,6 +1037,8 @@ const SelectCalendar = () => {
       notes: '',
       giftCardCode: '',
     });
+    // Reset walk-in flag when closing the modal
+    setIsWalkIn(false);
   };
 
   const closeBookingStatusModal = () => {
@@ -1998,30 +2003,32 @@ const SelectCalendar = () => {
   };
   const handleTeamFilterChange = (filter) => {
     setTeamFilter(filter);
+    // 'all' -> select every employee
+    if (filter === 'all') {
+      const allIds = employees.map(emp => emp.id);
+      setSelectedEmployees(new Set(allIds));
+      return;
+    }
+
+    // 'scheduled' -> select employees who have shifts on the current date
     if (filter === 'scheduled') {
-      // When switching to scheduled team, update selected employees to only include those with shifts
       const employeesWithShifts = employees.filter(emp => hasShiftOnDate(emp, currentDate));
-      const newSelected = new Set();
-      employeesWithShifts.forEach(emp => {
-        if (selectedEmployees.has(emp.id)) {
-          newSelected.add(emp.id);
-        }
-      });
-      // Ensure at least one employee is selected
+      const newSelected = new Set(employeesWithShifts.map(emp => emp.id));
+      // fallback: keep at least one if available
       if (newSelected.size === 0 && employeesWithShifts.length > 0) {
         newSelected.add(employeesWithShifts[0].id);
       }
       setSelectedEmployees(newSelected);
-    } else if (filter === 'active' || filter === 'inactive') {
-      // Narrow selectedEmployees to only those matching the active/inactive filter
+      return;
+    }
+
+    // 'active' / 'inactive' -> select all matching employees
+    if (filter === 'active' || filter === 'inactive') {
       const matched = employees.filter(emp => filter === 'active' ? emp.isActive !== false : emp.isActive === false);
-      const newSet = new Set();
-      matched.forEach(emp => {
-        if (selectedEmployees.has(emp.id)) newSet.add(emp.id);
-      });
-      // If none selected, pick first matching employee to keep UI sane
+      const newSet = new Set(matched.map(emp => emp.id));
       if (newSet.size === 0 && matched.length > 0) newSet.add(matched[0].id);
       setSelectedEmployees(newSet);
+      return;
     }
   };
   // NEW: Get appointments for calendar popup
@@ -2479,14 +2486,18 @@ const SelectCalendar = () => {
           firstName,
           lastName,
           email: clientInfo.email.trim(),
-          phone: clientInfo.phone.trim()
+          phone: clientInfo.phone.trim(),
+          walkIn: !!isWalkIn
         };
       }
 
-      if (!clientData.email || !clientData.phone) {
-        setBookingError('Client email and phone are required.');
-        setBookingLoading(false);
-        return;
+      // If not a walk-in booking, require email and phone
+      if (!selectedExistingClient && !isWalkIn) {
+        if (!clientData.email || !clientData.phone) {
+          setBookingError('Client email and phone are required.');
+          setBookingLoading(false);
+          return;
+        }
       }
 
       // Create services array from multiple appointments
@@ -2796,6 +2807,8 @@ const SelectCalendar = () => {
       notes: '',
       giftCardCode: '',
     });
+    // reset walk-in flag
+    setIsWalkIn(false);
   };
   const getDisplayDateRange = () => {
     let startDate, endDate;
@@ -3276,7 +3289,6 @@ useEffect(() => {
                     </div>
                     <div className="staff-info">
                       <div className="staff-name">{employee.name}</div>
-                      <div className="staff-position">{employee.position}</div>
                     </div>
                   </div>
 
@@ -3772,49 +3784,28 @@ useEffect(() => {
                 <div className="popup-backdrop" onClick={() => setShowTeamPopup(false)} />
                 <div className="team-popup-enhanced">
                   {/* Close button */}
-                  <button
-                    type="button"
-                    className="team-popup-close-btn"
-                    aria-label="Close team selector"
-                    title="Close"
-                    onClick={() => setShowTeamPopup(false)}
-                  >
-                    ×
-                  </button>
+                 
                   {/* Header with filters */}
                   <div className="team-popup-header-enhanced">
                     <div className="team-filters">
                       <button
-                        className={`team-filter-pill ${teamFilter === 'all' ? 'active' : ''}`}
-                        onClick={() => handleTeamFilterChange('all')}
-                      >
-                        All Team
-                        <span className="filter-count">{employees.length}</span>
-                      </button>
-                      <button
                         className={`team-filter-pill ${teamFilter === 'scheduled' ? 'active' : ''}`}
                         onClick={() => handleTeamFilterChange('scheduled')}
                       >
-                        Scheduled Today
-                        <span className="filter-count">
-                          {employees.filter(emp => hasShiftOnDate(emp, currentDate)).length}
-                        </span>
+                        <span className="team-filter-icon"><IoIosPeople /></span>
+                        <span className="team-filter-label">Scheduled team</span>
                       </button>
-
+                      <button
+                        className={`team-filter-pill all-team ${teamFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => handleTeamFilterChange('all')}
+                      >
+                        <span className="team-filter-icon"><IoIosPeople /></span>
+                        <span className="team-filter-label">All team</span>
+                      </button>
                     </div>
                     <div className="team-actions">
-                      <button
-                        className="select-all-btn"
-                        onClick={() => setSelectedEmployees(new Set(employees.map(emp => emp.id)))}
-                      >
-                        Select All
-                      </button>
-                      <button
-                        className="clear-all-btn"
-                        onClick={handleClearSelection}
-                      >
-                        Clear
-                      </button>
+                     
+                     
                     </div>
                   </div>
 
@@ -3822,13 +3813,7 @@ useEffect(() => {
                   <div className="team-search-container">
                     <div className="search-input-wrapper">
                       {/* <span className="search-icon">🔍</span> */}
-                      <input
-                        type="text"
-                        placeholder="Search team members..."
-                        className="team-search-input"
-                        value={teamSearchQuery || ''}
-                        onChange={(e) => setTeamSearchQuery(e.target.value)}
-                      />
+                  
                       {teamSearchQuery && (
                         <button
                           className="clear-search-btn"
@@ -3842,6 +3827,11 @@ useEffect(() => {
 
                   {/* Team members list */}
                   <div className="team-members-container">
+
+                    <div className="team-members-header">
+                      <div className="members-title">Team members</div>
+                      <div className="members-clear-link" onClick={handleClearSelection}>Clear all</div>
+                    </div>
 
 
                     <div className={`team-members-list ${teamViewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
@@ -3877,9 +3867,23 @@ useEffect(() => {
                             </div>
 
                             <div className="member-checkbox-section">
-                              <div className={`checkbox-custom ${isSelected ? 'checked' : ''}`}>
-                                {isSelected && <span className="checkmark">✓</span>}
-                              </div>
+                              <label
+                                className="checkbox-wrapper"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="member-checkbox-input"
+                                  checked={isSelected}
+                                  onChange={() => handleEmployeeToggle(employee.id)}
+                                  aria-label={`Select ${employee.name}`}
+                                />
+                                <span className={`checkbox-custom ${isSelected ? 'checked' : ''}`} aria-hidden="true">
+                                  <svg className="checkbox-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </span>
+                              </label>
                             </div>
                           </div>
                         );
@@ -3896,32 +3900,7 @@ useEffect(() => {
                   </div>
 
                   {/* Footer with summary */}
-                  <div className="team-popup-footer-enhanced">
-                    <div className="selection-summary">
-                      <div className="summary-stats">
-                        <div className="summary-item">
-                          <span className="summary-number">{selectedEmployees.size}</span>
-                          <span className="summary-label">Selected</span>
-                        </div>
-                        <div className="summary-divider"></div>
-                        <div className="summary-item">
-                          <span className="summary-number">
-                            {employees.filter(emp => hasShiftOnDate(emp, currentDate) && selectedEmployees.has(emp.id)).length}
-                          </span>
-                          <span className="summary-label">Working Today</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="footer-actions">
-                      <button
-                        className="apply-selection-btn"
-                        onClick={() => setShowTeamPopup(false)}
-                      >
-                        Apply Selection
-                      </button>
-                    </div>
-                  </div>
+  
                 </div>
               </>
             )}
@@ -4301,9 +4280,7 @@ useEffect(() => {
                         );
                       })}
                       {/* Placeholder when none added yet */}
-                      {multipleAppointments.length === 0 && bookingDefaults?.time && (
-                        <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
-                      )}
+                   
                       <button
                         type="button"
                         className="add-service-inline-btn"
@@ -4358,11 +4335,7 @@ useEffect(() => {
                       </div>
                     </div>
                   )}
-                  {/* <div className="booking-modal-actions">
-                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
-                      Cancel
-                    </button>
-                  </div> */}
+                
                 </>
               )}
 
@@ -4596,18 +4569,43 @@ useEffect(() => {
                     </div>
                   </div> */}
 
-                  {/* Client Search Section */}
-                  <div className="client-search-section">
-                    <div className="client-search-header">
-                      <h4>Search Existing Client</h4>
-                      {selectedExistingClient && (
-                        <button
-                          className="clear-client-btn"
-                          onClick={clearClientSelection}
-                        >
-                          Clear Selection
-                        </button>
-                      )}
+                            <div className="client-step-grid">
+                            <div className="client-search-section">
+                            <div className="client-search-header">
+                              <h4>Search Existing Client</h4>
+                              <div className="client-search-right">
+                              {selectedExistingClient && (
+                                <button
+                                className="clear-client-btn"
+                                onClick={clearClientSelection}
+                                >
+                                Clear Selection
+                                </button>
+                              )}
+
+                              {/* Walk-in checkbox on the right side */}
+                              {/* <div className="walkin-control-inline">
+                                <label className="checkbox-container">
+                                <input
+                                  type="checkbox"
+                                  checked={isWalkIn}
+                                  onChange={e => {
+                                  const checked = e.target.checked;
+                                  setIsWalkIn(checked);
+                                  if (checked) {
+                                    setSelectedExistingClient(null);
+                                    setClientInfo(f => ({ ...f, email: '', phone: '' }));
+                                    setIsAddingNewClient(false);
+                                    setShowClientSearch(false);
+                                  }
+                                  }}
+                                />
+                                <span className="checkmark"></span>
+                                </label>
+                              </div> */}
+                        
+                        {/* <div className="walkin-text">Walk-in client (no data required)</div> */}
+                      </div>
                     </div>
 
                     {!selectedExistingClient && !isAddingNewClient && (
@@ -4704,12 +4702,14 @@ useEffect(() => {
                               setIsAddingNewClient(false);
                               setShowClientSearch(true);
                               setClientInfo({ name: '', email: '', phone: '' });
+                              setIsWalkIn(false);
                             }}
                           >
                             ← Back to Search
                           </button>
                         </div>
                         <div className="booking-modal-form">
+                          
                           <div className="form-group">
                             <label htmlFor="clientName">Client Name *</label>
                             <input
@@ -4721,46 +4721,86 @@ useEffect(() => {
                               required
                             />
                           </div>
-                          <div className="form-group">
-                            <label htmlFor="clientEmail">Email Address *</label>
-                            <input
-                              id="clientEmail"
-                              type="email"
-                              placeholder="Enter client's email address"
-                              value={clientInfo.email}
-                              onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
-                              required
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label htmlFor="clientPhone">Phone Number *</label>
-                            <input
-                              id="clientPhone"
-                              type="tel"
-                              placeholder="Enter client's phone number"
-                              value={clientInfo.phone}
-                              onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
-                              required
-                            />
-                          </div>
+                          {/* Email and phone are optional/hidden for walk-in bookings */}
+                          {!isWalkIn && (
+                            <>
+                              <div className="form-group">
+                                <label htmlFor="clientEmail">Email Address *</label>
+                                <input
+                                  id="clientEmail"
+                                  type="email"
+                                  placeholder="Enter client's email address"
+                                  value={clientInfo.email}
+                                  onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
+                                  required={!isWalkIn}
+                                />
+                              </div>
+                              <div className="form-group">
+                                <label htmlFor="clientPhone">Phone Number *</label>
+                                <input
+                                  id="clientPhone"
+                                  type="tel"
+                                  placeholder="Enter client's phone number"
+                                  value={clientInfo.phone}
+                                  onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
+                                  required={!isWalkIn}
+                                />
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="booking-modal-actions">
-                    <button
-                      className="booking-modal-next"
-                      onClick={() => setBookingStep(6)}
-                      disabled={
-                        !selectedExistingClient &&
-                        (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
-                      }
-                    >
-                      Continue to Payment
-                    </button>
-                    <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back to Services</button>
+                {/* Right-side panel: Walk-in toggle and helpers */}
+                <aside className="client-right-panel">
+                  <h4 className="client-right-heading">Walk-in client</h4>
+                  <div className="walkin-control">
+                    <label className="walkin-switch" htmlFor="walkInSwitch">
+                      <input
+                        id="walkInSwitch"
+                        type="checkbox"
+                        checked={isWalkIn}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setIsWalkIn(checked);
+                          if (checked) {
+                            // If user marks as walk-in, clear any selected existing client
+                            setSelectedExistingClient(null);
+                            // Clear optional contact fields (they are not required)
+                            setClientInfo(f => ({ ...f, email: '', phone: '' }));
+                          }
+                        }}
+                      />
+                      <span className="walkin-slider" />
+                    </label>
+                    <div className="walkin-labels">
+                      <div className="walkin-title">Walk-in client</div>
+                      <div className="walkin-sub">No additional data required</div>
+                    </div>
                   </div>
+
+                  {/* <div className="walkin-help">
+                    <p>If checked, only client name is required. When you Continue, the summary will show the client as a walk-in.</p>
+                  </div> */}
+                </aside>
+              </div>
+
+                    <div className="booking-modal-actions">
+                      <button
+                        className="booking-modal-next"
+                        onClick={() => setBookingStep(6)}
+                        disabled={
+                          !selectedExistingClient && !(
+                            isWalkIn || (clientInfo.name.trim() && clientInfo.email.trim() && clientInfo.phone.trim())
+                          )
+                        }
+                      >
+                        Continue to Payment
+                      </button>
+                      <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back to Services</button>
+                    </div>
                 </>
               )}
 
@@ -4825,24 +4865,33 @@ useEffect(() => {
                         )}
                       </span>
                     </div>
-                    <div className="summary-item">
-                      <span> Email:</span>
-                      <span>
-                        {selectedExistingClient
-                          ? selectedExistingClient.email
-                          : clientInfo.email
-                        }
-                      </span>
-                    </div>
-                    <div className="summary-item">
-                      <span> Phone:</span>
-                      <span>
-                        {selectedExistingClient
-                          ? selectedExistingClient.phone
-                          : clientInfo.phone
-                        }
-                      </span>
-                    </div>
+                    {(!selectedExistingClient && isWalkIn) ? (
+                      <div className="summary-item">
+                        <span>Type:</span>
+                        <span>Walk-in</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="summary-item">
+                          <span> Email:</span>
+                          <span>
+                            {selectedExistingClient
+                              ? selectedExistingClient.email
+                              : clientInfo.email
+                            }
+                          </span>
+                        </div>
+                        <div className="summary-item">
+                          <span> Phone:</span>
+                          <span>
+                            {selectedExistingClient
+                              ? selectedExistingClient.phone
+                              : clientInfo.phone
+                            }
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Admin Membership Checker */}
@@ -4996,7 +5045,7 @@ useEffect(() => {
                         </div>
 
                         {/* Conditional Payment Inputs */}
-                        {paymentMethod === 'card' && (
+                        {/* {paymentMethod === 'card' && (
                           <div className="payment-conditional card-details">
                             <h5>Card Details</h5>
                             <div className="card-grid">
@@ -5028,9 +5077,9 @@ useEffect(() => {
                               />
                             </div>
                           </div>
-                        )}
+                        )} */}
 
-                        {paymentMethod === 'upi' && (
+                        {/* {paymentMethod === 'upi' && (
                           <div className="payment-conditional upi-details">
                             <h5>UPI Payment</h5>
                             <input
@@ -5040,7 +5089,7 @@ useEffect(() => {
                               onChange={e => setUpiId(e.target.value)}
                             />
                           </div>
-                        )}
+                        )} */}
                       </div>
                     )}
 
@@ -5063,18 +5112,16 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  <div className="booking-modal-actions">
+                    <div className="booking-modal-actions">
                     <button
                       className="booking-modal-confirm"
                       onClick={handleCreateBooking}
                       disabled={
-                        bookingLoading || 
+                        bookingLoading ||
                         multipleAppointments.length === 0 ||
-                        (calculateTotalWithGiftCard().remainingAmount > 0 && (
-                          (paymentMethod === 'card' && (!cardDetails.number || cardDetails.number.replace(/\s+/g, '').length < 12 || !cardDetails.expiry || !cardDetails.cvv)) ||
-                          (paymentMethod === 'upi' && (!upiId || !upiId.includes('@'))) ||
-                          (!paymentMethod || paymentMethod === '')
-                        ))
+                        (
+                          calculateTotalWithGiftCard().remainingAmount > 0 && (!paymentMethod || paymentMethod === '')
+                        )
                       }
                     >
                       {bookingLoading ? ' Processing Payment...' : (() => {

@@ -67,7 +67,6 @@ export const StaffColumn = ({
         </div>
         <div className="staff-info">
           <div className="staff-name" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.name}</div>
-          <div className="staff-position" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.position}</div>
         </div>
       </div>
       <div className="time-slots-column" style={{ position: 'relative' }}>
