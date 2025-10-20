@@ -2475,12 +2475,15 @@ const SelectCalendar = () => {
         };
       } else {
         const nameString = clientInfo.name ? clientInfo.name.trim() : '';
-        if (!nameString) {
+        // For walk-ins we allow an empty name and default to 'Walk-in' in the payload
+        if (!isWalkIn && !nameString) {
           setBookingError('Client name is required.');
           setBookingLoading(false);
           return;
         }
-        const [firstName, ...rest] = nameString.split(' ');
+
+        const effectiveName = nameString || (isWalkIn ? 'Walk-in' : '');
+        const [firstName, ...rest] = effectiveName.split(' ');
         const lastName = rest.join(' ') || '';
         clientData = {
           firstName,
@@ -4711,14 +4714,14 @@ useEffect(() => {
                         <div className="booking-modal-form">
                           
                           <div className="form-group">
-                            <label htmlFor="clientName">Client Name *</label>
+                            <label htmlFor="clientName">Client Name {isWalkIn ? '(optional for walk-ins)' : '*'}</label>
                             <input
                               id="clientName"
                               type="text"
                               placeholder="Enter client's full name"
                               value={clientInfo.name}
                               onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))}
-                              required
+                              required={!isWalkIn}
                             />
                           </div>
                           {/* Email and phone are optional/hidden for walk-in bookings */}
@@ -4858,7 +4861,7 @@ useEffect(() => {
                       <span>
                         {selectedExistingClient
                           ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-                          : clientInfo.name
+                          : (clientInfo.name && clientInfo.name.trim()) || (isWalkIn ? 'Walk-in' : '')
                         }
                         {selectedExistingClient && (
                           <span className="existing-client-indicator"> VIP Member</span>

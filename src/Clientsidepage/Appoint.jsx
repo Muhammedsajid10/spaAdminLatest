@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ChevronDown, Search, Calendar } from "lucide-react";
+import { ChevronDown, Search, Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -129,26 +129,20 @@ const FilterPopup = ({ isOpen, onClose, onApply }) => {
 /* -------------------------- Single-Date Picker UI ------------------------- */
 
 const SingleDatePicker = ({ isOpen, onClose, onSelect, initialDate }) => {
-  // initialDate format: "YYYY-MM-DD" or null
+  // ensure component mounts only when requested
+  if (!isOpen) return null;
+
   const today = new Date();
-  const init = initialDate
-    ? new Date(initialDate + "T00:00:00")
-    : today;
+  const init = initialDate ? new Date(initialDate + "T00:00:00") : today;
 
   const [viewMonth, setViewMonth] = useState(init.getMonth());
   const [viewYear, setViewYear] = useState(init.getFullYear());
-  const [selected, setSelected] = useState(
-    initialDate
-      ? new Date(initialDate + "T00:00:00")
-      : null
-  );
+  const [selected, setSelected] = useState(initialDate ? init : null);
 
   const months = [
     "January","February","March","April","May","June",
-    "July","August","September","October","November","December",
+    "July","August","September","October","November","December"
   ];
-
-  if (!isOpen) return null;
 
   const toDateOnly = (d) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -156,78 +150,125 @@ const SingleDatePicker = ({ isOpen, onClose, onSelect, initialDate }) => {
     ).padStart(2, "0")}`;
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0 = Sun
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
 
   const handleDayClick = (day) => {
     const d = new Date(viewYear, viewMonth, day, 0, 0, 0);
     setSelected(d);
   };
 
-  const apply = () => {
+  const handleApply = () => {
     if (selected) onSelect(toDateOnly(selected));
     onClose();
   };
 
-  const clear = () => {
+  const handleClear = () => {
     setSelected(null);
     onSelect(null);
     onClose();
   };
 
+  const handlePrev = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(viewYear - 1);
+    } else setViewMonth(viewMonth - 1);
+  };
+
+  const handleNext = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(viewYear + 1);
+    } else setViewMonth(viewMonth + 1);
+  };
+
   return (
     <div className="single-date-popover" role="dialog" aria-label="Select date">
+      {/* Header */}
       <div className="single-date-header">
-        <button className="nav-button" onClick={() => {
-          if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
-          else setViewMonth(viewMonth - 1);
-        }}>‹</button>
+        <button className="nav-button" onClick={handlePrev}>
+          <ChevronLeft size={18} />
+        </button>
 
-        <div className="month-year">{months[viewMonth]} {viewYear}</div>
+        <div className="month-year">
+          {months[viewMonth]} {viewYear}
+        </div>
 
-        <button className="nav-button" onClick={() => {
-          if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
-          else setViewMonth(viewMonth + 1);
-        }}>›</button>
+        <button className="nav-button" onClick={handleNext}>
+          <ChevronRight size={18} />
+        </button>
       </div>
 
-      <div className="single-date-grid">
-        {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
-          <div className="weekday" key={d}>{d}</div>
+      {/* Weekday labels */}
+      <div className="weekday-row" aria-hidden>
+        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+          <div className="weekday" key={d}>
+            {d}
+          </div>
         ))}
+      </div>
 
+      {/* Calendar Grid */}
+      <div className="single-date-grid" role="grid">
         {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`empty-${i}`} className="empty" />
+          <div key={`empty-${i}`} className="empty" aria-hidden />
         ))}
 
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
+          const thisDate = new Date(viewYear, viewMonth, day);
           const isSelected =
             selected &&
             selected.getFullYear() === viewYear &&
             selected.getMonth() === viewMonth &&
             selected.getDate() === day;
 
+          const isToday =
+            thisDate.toDateString() === today.toDateString();
+
           return (
             <button
               key={day}
-              className={`day ${isSelected ? "selected" : ""}`}
+              className={`day ${isSelected ? "selected" : ""} ${
+                isToday ? "today" : ""
+              }`}
               onClick={() => handleDayClick(day)}
             >
               {day}
             </button>
           );
         })}
+        {/* Trailing empty cells to complete the final week (keeps 7 columns per row) */}
+        {(() => {
+          const totalCells = firstDay + daysInMonth;
+          const trailing = (7 - (totalCells % 7)) % 7;
+          return Array.from({ length: trailing }).map((_, idx) => (
+            <div key={`trail-${idx}`} className="empty" aria-hidden />
+          ));
+        })()}
       </div>
 
+      {/* Footer */}
       <div className="single-date-footer">
-        <button className="clear-btn" onClick={clear}>Clear</button>
-        <div className="footer-spacer" />
-        <button className="cancel-btn" onClick={onClose}>Cancel</button>
-        <button className="apply-btn" onClick={apply} disabled={!selected}>Apply</button>
+        <button className="clear-btn" onClick={handleClear}>
+          Clear
+        </button>
+        <button className="cancel-btn" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          className="apply-btn"
+          onClick={handleApply}
+          disabled={!selected}
+        >
+          Apply
+        </button>
       </div>
     </div>
   );
 };
+
+
 
 /* --------------------------------- Spinner -------------------------------- */
 
@@ -257,6 +298,9 @@ const Appoint = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch appointments (unchanged API)
   useEffect(() => {
@@ -402,6 +446,19 @@ const Appoint = () => {
 
     return list;
   }, [appointments, selectedDate, searchTerm, activeFilters, sortField, sortDirection]);
+
+  // Pagination derived values
+  const totalPages = Math.max(1, Math.ceil(filteredAppointments.length / pageSize));
+
+  useEffect(() => {
+    // reset to first page when filters/search change
+    setCurrentPage(1);
+  }, [filteredAppointments, pageSize]);
+
+  const paginatedAppointments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAppointments.slice(start, start + pageSize);
+  }, [filteredAppointments, currentPage, pageSize]);
 
   /* ----------------------------- Daily summary ----------------------------- */
   const dailySummary = useMemo(() => {
@@ -654,7 +711,7 @@ const Appoint = () => {
                     </tr>
                   </thead>
                   <tbody className="data-table-body">
-                    {filteredAppointments.map((appointment, index) => (
+                    {paginatedAppointments.map((appointment, index) => (
                       <tr key={index} className="data-row-item">
                         <td className="data-cell-content">
                           <span className="reference-link-text">{appointment.ref}</span>
@@ -688,7 +745,7 @@ const Appoint = () => {
             {/* Mobile Cards */}
             <div className="mobile-card-layout">
               <div className="card-list-container">
-                {filteredAppointments.map((appointment, index) => (
+                {paginatedAppointments.map((appointment, index) => (
                   <div key={index} className="schedule-card-item">
                     <div className="card-top-section">
                       <span className="card-reference-number">{appointment.ref}</span>
@@ -721,6 +778,44 @@ const Appoint = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="pagination-controls">
+              <div className="pagination-left">
+                <button
+                  className="pagination-btn"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ← Prev
+                </button>
+                <button
+                  className="pagination-btn"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next →
+                </button>
+              </div>
+
+              <div className="pagination-center" aria-live="polite">
+                <span className="pagination-indicator">Page {currentPage} / {totalPages}</span>
+              </div>
+
+              <div className="pagination-right">
+                <label className="page-size-label">Show</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="page-size-select"
+                >
+                  {[5, 10, 20, 50].map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <span className="page-total">{filteredAppointments.length} items</span>
               </div>
             </div>
           </>
