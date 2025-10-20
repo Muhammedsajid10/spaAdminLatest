@@ -1,5 +1,6 @@
 import React from 'react';
 import { hasShiftOnDate, getDayName, formatDateLocal } from '..';
+import './BookingModal.css';
 
 // Extracted Booking Modal component to reduce size of SelectCalendar
 export const BookingModal = ({
@@ -26,8 +27,11 @@ export const BookingModal = ({
   setSelectedProfessional,
   getValidTimeSlotsForProfessional,
   appointments,
-  setAvailableTimeSlots,
+  availableTimeSlots,
   selectedTimeSlot,
+  setSelectedTimeSlot,
+  selectedService,
+  setSelectedService,
   handleAddToBookingSession,
   startAdditionalService,
   selectedExistingClient,
@@ -247,8 +251,18 @@ export const BookingModal = ({
               <div className="booking-modal-list">
                 {availableTimeSlots.filter(slot => slot.available).map(slot => (
                   <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => { 
+                    console.log('📝 Time slot selected:', slot);
+                    console.log('🎯 handleAddToBookingSession function:', typeof handleAddToBookingSession);
+                    
                     setSelectedTimeSlot(slot);
-                    handleAddToBookingSession(slot);
+                    
+                    if (typeof handleAddToBookingSession === 'function') {
+                      console.log('🚀 Calling handleAddToBookingSession with slot:', slot);
+                      handleAddToBookingSession(slot);
+                    } else {
+                      console.error('❌ handleAddToBookingSession is not a function:', handleAddToBookingSession);
+                    }
+                    
                     setBookingStep(4);
                   }}>
                     <div className="booking-modal-item-name">

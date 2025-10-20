@@ -1,0 +1,482 @@
+/**
+ * TeamPopup Component Styles
+ * 
+ * Provides clean, modern styling for the team management popup.
+ * Includes responsive design and accessibility considerations.
+ */
+
+/* Overlay that covers the entire screen */
+.team-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* Main popup container */
+.team-popup {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header section */
+.team-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.team-popup__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1f2937;
+}
+
+.team-popup__title h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.team-popup__close-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.team-popup__close-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Controls section */
+.team-popup__controls {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Search bar */
+.team-popup__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.team-popup__search-icon {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  z-index: 1;
+}
+
+.team-popup__search-input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.team-popup__search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Filter and view controls */
+.team-popup__filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.team-popup__filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.team-popup__filter-select {
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.team-popup__filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* View toggle buttons */
+.team-popup__view-toggle {
+  display: flex;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  overflow: hidden;
+}
+
+.team-popup__view-btn {
+  background: white;
+  border: none;
+  padding: 8px 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-right: 1px solid #d1d5db;
+}
+
+.team-popup__view-btn:last-child {
+  border-right: none;
+}
+
+.team-popup__view-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.team-popup__view-btn.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Selection controls */
+.team-popup__selection-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.team-popup__selection-info {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.team-popup__selection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.team-popup__selection-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.team-popup__selection-btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.team-popup__selection-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Employee list container */
+.team-popup__employees {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  min-height: 200px;
+  max-height: 300px;
+}
+
+/* List view styling */
+.team-popup__employees--list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Grid view styling */
+.team-popup__employees--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+/* Individual employee item */
+.team-popup__employee {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.team-popup__employees--list .team-popup__employee {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.team-popup__employees--grid .team-popup__employee {
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.team-popup__employee:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.team-popup__employee.selected {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+/* Employee avatar */
+.team-popup__employee-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.team-popup__employees--grid .team-popup__employee-avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.team-popup__employee-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.team-popup__employee-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Selection checkbox */
+.team-popup__employee-checkbox {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background-color: #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.team-popup__employee-checkbox.checked {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Employee info */
+.team-popup__employee-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-popup__employees--grid .team-popup__employee-info {
+  text-align: center;
+}
+
+.team-popup__employee-name {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+
+.team-popup__employee-position {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.team-popup__employee-appointments {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #3b82f6;
+  margin-top: 4px;
+}
+
+.team-popup__employees--grid .team-popup__employee-appointments {
+  justify-content: center;
+}
+
+/* Empty state */
+.team-popup__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  min-height: 200px;
+}
+
+.team-popup__empty-icon {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.team-popup__empty p {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.team-popup__empty-subtitle {
+  font-size: 14px !important;
+  opacity: 0.8;
+}
+
+/* Footer */
+.team-popup__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.team-popup__footer-info {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.team-popup__apply-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.team-popup__apply-btn:hover {
+  background-color: #2563eb;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .team-popup {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .team-popup__controls {
+    padding: 16px 20px 12px;
+  }
+  
+  .team-popup__filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .team-popup__employees--grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+  
+  .team-popup__selection-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .team-popup__selection-actions {
+    justify-content: center;
+  }
+}
+
+/* Accessibility improvements */
+.team-popup__employee:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.team-popup__search-input:focus,
+.team-popup__filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Smooth scrollbar styling */
+.team-popup__employees::-webkit-scrollbar {
+  width: 6px;
+}
+
+.team-popup__employees::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.team-popup__employees::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.team-popup__employees::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

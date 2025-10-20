@@ -279,6 +279,8 @@
 .calendar-header__view-controls { display:flex; align-items:center; background:#ffffff; border:1px solid #000000; border-radius:6px; overflow:hidden; }
 .calendar-header__refresh { display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:transparent; border:none; border-right:1px solid #e5e7eb; cursor:pointer; transition:background .2s }
 .calendar-header__refresh:hover { background:#f3f4f6 }
+.calendar-header__team-btn { display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:transparent; border:none; border-right:1px solid #e5e7eb; cursor:pointer; transition:background .2s }
+.calendar-header__team-btn:hover { background:#f3f4f6 }
 .calendar-header__view-selector { background:transparent; border:none; padding:8px 12px; font-size:14px; font-weight:500; cursor:pointer; outline:none; }
 .calendar-header__view-selector:focus { background:#f9fafb }
 

@@ -1,0 +1,88 @@
+import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useBookingSession } from '../hooks/useBookingSession';
+import { selectSelectedEmployeesSet } from '../store/teamPopupSlice';
+import CalendarHeader from '../calendar/components/CalendarHeader/CalendarHeader';
+import DayView from '../calendar/components/DayView';
+import WeekView from '../calendar/components/WeekView';
+import MonthView from '../calendar/components/MonthView';
+import BookingModal from '../calendar/components/BookingModal/BookingModal';
+import './Selectcalander.css';
+
+export default function Selectcalander() {
+  const selectedEmployeesSet = useSelector(selectSelectedEmployeesSet);
+  const bookingSession = useBookingSession();
+  const [viewMode, setViewMode] = useState('week');
+
+  // Minimal placeholders
+  const calendarDays = [];
+  const displayEmployees = [];
+  const mergedAppointments = {};
+  const timeSlots = [];
+  const noop = () => {};
+
+  return (
+    <div className="select-calendar-orchestrator">
+      <CalendarHeader viewMode={viewMode} onChangeViewMode={setViewMode} />
+
+      <div className="calendar-body">
+        {viewMode === 'day' && (
+          <DayView
+            timeSlots={timeSlots}
+            displayEmployees={displayEmployees}
+            mergedAppointments={mergedAppointments}
+            currentDate={new Date()}
+            isTimeSlotUnavailable={() => false}
+            handleTimeSlotClick={noop}
+            showBookingTooltipHandler={noop}
+            hideBookingTooltip={noop}
+            showTimeHoverHandler={noop}
+            hideTimeHover={noop}
+            setSelectedBookingForStatus={noop}
+            setShowBookingStatusModal={noop}
+            formatTime={(t) => t}
+          />
+        )}
+
+        {viewMode === 'week' && (
+          <WeekView
+            calendarDays={calendarDays}
+            displayEmployees={displayEmployees}
+            mergedAppointments={mergedAppointments}
+            formatDateLocal={(d) => d.toISOString().slice(0, 10)}
+            hasShiftOnDate={() => true}
+            formatTime={(t) => t}
+            bookingSession={bookingSession}
+            employees={displayEmployees}
+            handleTimeSlotClick={noop}
+            showBookingTooltipHandler={noop}
+            hideBookingTooltip={noop}
+            handleShowMoreAppointments={noop}
+            setIsNewAppointment={noop}
+            setSelectedBookingForStatus={noop}
+            setShowBookingStatusModal={noop}
+          />
+        )}
+
+        {viewMode === 'month' && (
+          <MonthView
+            calendarDays={calendarDays}
+            displayEmployees={displayEmployees}
+            mergedAppointments={mergedAppointments}
+            localDateKey={(d) => d.toISOString().slice(0, 10)}
+            formatTime={(t) => t}
+            showBookingTooltipHandler={noop}
+            hideBookingTooltip={noop}
+            handleShowMoreAppointments={noop}
+            setSelectedBookingForStatus={noop}
+            setShowBookingStatusModal={noop}
+          />
+        )}
+      </div>
+
+      {bookingSession.state?.showAddBookingModal && (
+        <BookingModal bookingSession={bookingSession} onClose={() => bookingSession.actions.setShowAddBookingModal(false)} />
+      )}
+    </div>
+  );
+}

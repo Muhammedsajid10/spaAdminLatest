@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import './CalendarHeader.css';
 import {
   ChevronLeft,
@@ -9,53 +10,38 @@ import {
   Plus
 } from 'lucide-react';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import CalendarDatePicker from './CalendarDatePicker';
+import { setShowDatePicker, setDatePickerCurrentMonth, setDatePickerSelectedDate, initializeDatePicker } from '../../store/datePickerSlice';
+import { goToToday, goToPrevious, goToNext, setCurrentView, selectCurrentDate, selectCurrentView } from '../../store/datePickerSlice';
+import { toggleTeamPopup } from '../../../store/teamPopupSlice';
 
 function CalendarHeader(props) {
+  const dispatch = useDispatch();
+
+  // Get date picker state from Redux using new selectors
+  const currentDate = useSelector(selectCurrentDate);
+  const currentView = useSelector(selectCurrentView);
+
+  // Calculate calendar days for week display
+  const getCalendarDays = () => {
+    if (currentView === 'Week') {
+      const startOfWeek = new Date(currentDate);
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
+      return Array.from({ length: 7 }, (_, i) => {
+        const day = new Date(startOfWeek);
+        day.setDate(startOfWeek.getDate() + i);
+        return day;
+      });
+    }
+    return [];
+  };
+
+  const calendarDays = getCalendarDays();
+
+  // Get simplified props - only what's actually needed for header functionality
   const {
-    currentView,
-    currentDate,
-    calendarDays,
-    showDatePicker,
-    datePickerView,
-    datePickerCurrentMonth,
-    datePickerSelectedDate,
-    setDatePickerCurrentMonth,
-    setDatePickerSelectedDate,
-    setShowDatePicker,
-    goToDatePickerPreviousMonth,
-    goToDatePickerNextMonth,
-    goToDatePickerToday,
-    handleDatePickerDateSelect,
-    showTeamPopup,
-    setShowTeamPopup,
-    showCalendarPopup,
-    setShowCalendarPopup,
-    calendarPopupTab,
-    setCalendarPopupTab,
     handleRefreshToNow,
-    setCurrentView,
-    handleAddAppointment,
-    goToToday,
-    goToPrevious,
-    goToNext,
-    getDatePickerCalendarDays,
-    getWeeksInMonth,
-    getMonthsInYear,
-    handleWeekSelect,
-    handleMonthSelect,
-    setSelectedEmployees,
-    selectedEmployees,
-    employees,
-    teamFilter,
-    handleTeamFilterChange,
-    setTeamSearchQuery,
-    teamSearchQuery,
-    teamViewMode,
-    setTeamViewMode,
-    getFilteredAndSearchedEmployees,
-    handleEmployeeToggle,
-    handleClearSelection,
-    setShowTeamPopupLocal
+    handleAddAppointment
   } = props;
 
   return (
@@ -66,7 +52,7 @@ function CalendarHeader(props) {
         {currentView === 'Day' && (
           <button
             className="calendar-header__btn calendar-header__btn--today"
-            onClick={goToToday}
+            onClick={() => dispatch(goToToday())}
           >
             Today
           </button>
@@ -74,15 +60,15 @@ function CalendarHeader(props) {
 
         {/* Date Navigation */}
         <div className="calendar-header__nav">
-          <button className="calendar-header__nav-arrow" onClick={goToPrevious}>
+          <button className="calendar-header__nav-arrow" onClick={() => dispatch(goToPrevious())}>
             <ChevronLeft size={16} />
           </button>
           <button
             className="calendar-header__display-button"
             onClick={() => {
-              setDatePickerCurrentMonth(currentDate);
-              setDatePickerSelectedDate(currentDate);
-              setShowDatePicker(!showDatePicker);
+              dispatch(setDatePickerCurrentMonth(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)));
+              dispatch(setDatePickerSelectedDate(currentDate));
+              dispatch(setShowDatePicker(true));
             }}
           >
             <span className="calendar-header__display-text">
@@ -101,18 +87,20 @@ function CalendarHeader(props) {
             </span>
             <CalendarIcon size={14} className="calendar-header__picker-icon" />
           </button>
-          <button className="calendar-header__nav-arrow" onClick={goToNext}>
+          <button className="calendar-header__nav-arrow" onClick={() => dispatch(goToNext())}>
             <ChevronRight size={16} />
           </button>
         </div>
-
-        {/* Date Picker Popup - keep minimal here; full picker lives in SelectCalendar props */}
-        {showDatePicker && (
-          <div className="calendar-header__date-picker-backdrop" onClick={() => setShowDatePicker(false)} />
-        )}
+          <button
+            className="calendar-header__team-btn"
+            onClick={() => dispatch(toggleTeamPopup())}
+            title="Manage team visibility"
+          >
+            <Users size={14} />
+          </button>
       </div>
 
-      {/* Right Side Controls (simplified) */}
+      {/* Right Side Controls */}
       <div className="calendar-header__right">
         <div className="calendar-header__view-controls">
           <button
@@ -122,9 +110,12 @@ function CalendarHeader(props) {
           >
             <RotateCcw size={14} />
           </button>
+          
+        
+          
           <select
             value={currentView}
-            onChange={(e) => setCurrentView(e.target.value)}
+            onChange={(e) => dispatch(setCurrentView(e.target.value))}
             className="calendar-header__view-selector"
           >
             <option value="Day">Day</option>

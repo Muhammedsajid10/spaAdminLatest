@@ -1,19 +1,19 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../Service/Api';
-import { Base_url } from '../Service/Base_url';
-import { setEmployees } from './employeesSlice';
+import api from '../../Service/Api';
+import { Base_url } from '../../Service/Base_url';
+import { setEmployees } from '../../store/employeesSlice';
 import { setTimeSlots, setLoading as setCalendarLoading, setError as setCalendarError } from './calendarSlice';
 import { setAppointments } from './appointmentsSlice';
-import { getAppointmentColorByStatus } from '../calendar/uiUtils';
-import { setServices, setServicesLoading, setServicesError } from './servicesSlice';
-import { setClients, setClientsLoading, setClientsError } from './clientsSlice';
+import { getAppointmentColorByStatus } from '../uiUtils';
+import { setServices, setServicesLoading, setServicesError } from '../../store/servicesSlice';
+import { setClients, setClientsLoading, setClientsError } from '../../store/clientsSlice';
 import { addAppointmentToSession } from './bookingSessionSlice';
-import { formatDateLocal } from '../calendar/dateUtils';
+import { formatDateLocal } from '../dateUtils';
 import { 
   detectProfessionalConflict, 
   validateBookingAppointment, 
   createAppointmentForSession 
-} from '../utils/bookingLogic';
+} from '../bookingLogic';
 
 const generateTimeSlots = (startTime, endTime, intervalMinutes = 30) => {
   const slots = [];
@@ -308,42 +308,6 @@ export const fetchBookingTimeSlotsThunk = createAsyncThunk('timeslots/fetch', as
     return rejectWithValue(err.message || String(err));
   }
 });
-
-// Business Logic: Conflict Detection
-const detectProfessionalConflict = (professionalId, date, startTime, duration, appointments, multipleAppointments) => {
-  if (!professionalId || !startTime || !duration) return null;
-  
-  const dayKey = formatDateLocal(date);
-  const desiredStart = timeToMinutes(startTime);
-  const desiredEnd = desiredStart + duration;
-
-  // Check existing multipleAppointments in the current session
-  for (const apt of multipleAppointments) {
-    if (apt.professional._id === professionalId && formatDateLocal(new Date(apt.date)) === dayKey) {
-      const existingStart = timeToMinutes(apt.timeSlot);
-      const existingEnd = existingStart + apt.service.duration;
-      if (desiredStart < existingEnd && desiredEnd > existingStart) {
-        return { type: 'session', conflictingAppointment: apt };
-      }
-    }
-  }
-
-  // Check existing persisted appointments
-  const profAppointments = appointments?.[professionalId];
-  if (profAppointments) {
-    for (const [slotKey, aptData] of Object.entries(profAppointments)) {
-      const [aptDate, aptTime] = slotKey.split('_');
-      if (aptDate === dayKey) {
-        const existingStart = timeToMinutes(aptTime);
-        const existingEnd = existingStart + (aptData.duration || 30);
-        if (desiredStart < existingEnd && desiredEnd > existingStart) {
-          return { type: 'persisted', conflictingAppointment: aptData };
-        }
-      }
-    }
-  }
-  return null;
-};
 
 // Business Logic Thunk: Add Appointment to Booking Session
 export const addAppointmentToBookingSessionThunk = createAsyncThunk(
