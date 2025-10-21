@@ -40,50 +40,7 @@ const DailySales = () => {
     return checkDate.toDateString() === today.toDateString();
   };
 
-  // Process payments data to create transaction summary
-  const processPaymentsData = (payments) => {
-    const transactionTypes = ['Services', 'Membership card', 'Gift cards'];
-    
-    // Count transactions by type
-    const processedTransactions = transactionTypes.map(type => {
-      let salesQty = 0;
-      let refundQty = 0;
-      let grossTotal = 0;
 
-      if (type === 'Services') {
-        // Count completed payments as sales
-        const completedPayments = payments.filter(p => 
-          p.status === 'completed' || p.status === 'paid' || p.status === 'success'
-        );
-        salesQty = completedPayments.length;
-        
-        // Count refunds - check multiple possible refund indicators
-        refundQty = payments.filter(p => 
-          (p.refundAmount && p.refundAmount > 0) || 
-          p.status === 'refunded' || 
-          p.status === 'cancelled'
-        ).length;
-        
-        // Calculate gross total from completed payments
-        grossTotal = completedPayments.reduce((sum, p) => {
-          // Handle different possible amount formats
-          const amount = p.amount || p.totalAmount || p.finalAmount || 0;
-          // Check if amount is in cents or regular format
-          const actualAmount = amount > 1000 ? amount / 100 : amount;
-          return sum + actualAmount;
-        }, 0);
-      }
-
-      return {
-        itemType: type,
-        salesQty,
-        refundQty,
-        grossTotal: grossTotal > 0 ? `AED ${grossTotal.toFixed(2)}` : "AED 0.00"
-      };
-    });
-
-    return processedTransactions;
-  };
 
   // Fetch both cash movement summary and payments data
   useEffect(() => {
@@ -94,30 +51,24 @@ const DailySales = () => {
         const dateStr = formatApiDate(currentDate);
         console.log('📅 Fetching data for date:', dateStr);
         
-        // Try different API endpoints and approaches
-        let cashMovementRes, paymentsRes;
+        let cashMovementRes, transactionRes;
         
         try {
           // Fetch cash movement data
           cashMovementRes = await api.get(`/admin/cash-movement-summary?date=${dateStr}`);
+          console.log('✅ Cash movement response:', cashMovementRes.data);
         } catch (cashErr) {
-          console.warn('Cash movement API failed, trying alternative:', cashErr);
-          // Try alternative endpoint or create empty response
+          console.warn('Cash movement API failed:', cashErr);
           cashMovementRes = { data: { data: {} } };
         }
         
         try {
-          // Fetch payments data - try multiple possible endpoints
-          paymentsRes = await api.get(`/payments/admin/all?page=1&limit=1000&date=${dateStr}`);
-        } catch (paymentsErr) {
-          console.warn('Payments API with date failed, trying without date filter:', paymentsErr);
-          try {
-            // Try without date filter and filter client-side
-            paymentsRes = await api.get(`/payments/admin/all?page=1&limit=1000`);
-          } catch (paymentsErr2) {
-            console.warn('Alternative payments API also failed:', paymentsErr2);
-            paymentsRes = { data: { data: { payments: [] } } };
-          }
+          // Fetch daily transaction summary
+          transactionRes = await api.get(`/admin/daily-transaction-summary?date=${dateStr}`);
+          console.log('✅ Transaction summary response:', transactionRes.data);
+        } catch (transactionErr) {
+          console.warn('Transaction summary API failed:', transactionErr);
+          transactionRes = { data: { data: {} } };
         }
 
         // Process cash movement summary
@@ -132,37 +83,39 @@ const DailySales = () => {
           return {
             paymentType: type,
             paymentsCollected: paymentsCollected > 0 
-              ? `AED ${(paymentsCollected / 100).toFixed(2)}` 
+              ? `AED ${(paymentsCollected).toFixed(2)}` 
               : "AED 0.00",
             refundsPaid: refundsPaid > 0 
-              ? `AED ${(refundsPaid / 100).toFixed(2)}` 
+              ? `AED ${(refundsPaid).toFixed(2)}` 
               : "AED 0.00"
           };
         });
 
-        // Process payments data for transaction summary
-        let paymentsData = paymentsRes.data?.data?.payments || paymentsRes.data?.payments || [];
+        // Process transaction summary
+        const transactionSummaryData = transactionRes.data?.data || {};
         
-        // If we got all payments, filter by current date
-        if (paymentsData.length > 0) {
-          const currentDateStr = formatApiDate(currentDate);
-          paymentsData = paymentsData.filter(payment => {
-            if (!payment.createdAt) return false;
-            
-            // Handle different date formats
-            let paymentDate;
-            if (typeof payment.createdAt === 'string') {
-              paymentDate = payment.createdAt.slice(0, 10); // YYYY-MM-DD
-            } else {
-              paymentDate = new Date(payment.createdAt).toISOString().slice(0, 10);
-            }
-            
-            return paymentDate === currentDateStr;
-          });
-          console.log(`💰 Filtered ${paymentsData.length} payments for ${currentDateStr}`);
-        }
-        
-        const processedTransactions = processPaymentsData(paymentsData);
+        const processedTransactions = [
+          {
+            itemType: 'Services',
+            salesQty: transactionSummaryData.Services?.salesQty || 0,
+            refundQty: transactionSummaryData.Services?.refundQty || 0,
+            grossTotal: transactionSummaryData.Services?.grossTotal 
+              ? `AED ${(transactionSummaryData.Services.grossTotal).toFixed(2)}`
+              : "AED 0.00"
+          },
+          {
+            itemType: 'Membership card',
+            salesQty: transactionSummaryData['Membership card']?.salesQty || 0,
+            refundQty: transactionSummaryData['Membership card']?.refundQty || 0,
+            grossTotal: "AED 0.00"
+          },
+          {
+            itemType: 'Gift cards',
+            salesQty: transactionSummaryData['Gift cards']?.salesQty || 0,
+            refundQty: transactionSummaryData['Gift cards']?.refundQty || 0,
+            grossTotal: "AED 0.00"
+          }
+        ];
 
         console.log('✅ Data processing completed:', {
           transactionsSummary: processedTransactions,
@@ -173,9 +126,7 @@ const DailySales = () => {
         setCashMovementSummary(processedCashMovement);
       } catch (err) {
         console.error('Failed to fetch daily sales data:', err);
-        console.error('Error details:', err.response?.data); // More detailed error logging
         setError(err.response?.data?.message || err.message || "Failed to load daily sales data");
-        // Set empty arrays on error
         setTransactionSummary([]);
         setCashMovementSummary([]);
       } finally {

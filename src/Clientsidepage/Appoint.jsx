@@ -302,7 +302,106 @@ const Appoint = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Fetch appointments (unchanged API)
+  // ✅ NEW: Backend pagination state
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  
+  // ✅ NEW: Store ALL appointments for searching (loaded once, then searched client-side)
+  const [allAppointments, setAllAppointments] = useState([]);
+  const [isLoadingAll, setIsLoadingAll] = useState(false);
+
+  // ✅ OPTIMIZATION: Cache appointments data with 5-minute TTL to avoid redundant API calls
+  const cacheRef = React.useRef({
+    appointmentsData: null,
+    cachedAt: 0
+  });
+  
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
+  // ✅ NEW: Fetch ALL appointments once (for client-side search)
+  useEffect(() => {
+    const toDateOnly = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+
+    const fetchAllAppointments = async () => {
+      try {
+        setIsLoadingAll(true);
+        console.log('📥 Fetching ALL appointments for search...');
+        
+        // Fetch all with high limit to get maximum records
+        const res = await api.get('/bookings/admin/all?page=1&limit=5000');
+        const allBookings = res?.data?.data?.bookings || [];
+        
+        console.log(`📊 Loaded ${allBookings.length} total appointments for searching`);
+        
+        // Map the bookings to formatted appointments
+        const mapped = allBookings.map((booking) => {
+          const teamMembers = (booking.services || [])
+            .map((s) =>
+              s?.employee?.user
+                ? `${s.employee.user.firstName || ""} ${s.employee.user.lastName || ""}`.trim()
+                : "-"
+            )
+            .filter(Boolean)
+            .join(", ");
+
+          const createdAt = booking?.createdAt ? new Date(booking.createdAt) : null;
+          const apptAt = booking?.appointmentDate ? new Date(booking.appointmentDate) : null;
+
+          const finalAmtNum =
+            typeof booking?.finalAmount === "number" ? booking.finalAmount : null;
+
+          return {
+            ref: booking.bookingNumber || booking._id || "-",
+            createdBy:
+              booking?.client?.firstName
+                ? `${booking.client.firstName} ${booking.client.lastName || ""}`.trim()
+                : "-",
+            createdDate: createdAt
+              ? createdAt.toLocaleString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-",
+            scheduledDate: apptAt
+              ? apptAt.toLocaleString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-",
+            createdDateObj: createdAt,
+            scheduledDateObj: apptAt,
+            dateOnly: apptAt ? toDateOnly(apptAt) : null,
+            duration: booking?.totalDuration
+              ? `${Math.round(booking.totalDuration / 60)}h`
+              : "-",
+            teamMember: teamMembers || "-",
+            price: finalAmtNum != null ? `AED ${finalAmtNum.toFixed(2)}` : "-",
+            priceValue: finalAmtNum,
+            status: booking?.status || "-",
+          };
+        });
+        
+        setAllAppointments(mapped);
+      } catch (err) {
+        console.error('Failed to fetch all appointments:', err);
+      } finally {
+        setIsLoadingAll(false);
+      }
+    };
+    
+    fetchAllAppointments();
+  }, []); // Only run once on mount
+
+  // Fetch appointments (for pagination)
   useEffect(() => {
     const toDateOnly = (d) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -312,9 +411,49 @@ const Appoint = () => {
     const fetchAppointments = async () => {
       setLoading(true);
       setError(null);
+      
+      const now = Date.now();
+      // ✅ Check if cache is still valid (less than 5 minutes old)
+      // But SKIP cache if:
+      // 1. Filters/search/sort have changed
+      // 2. On page > 1 (pagination)
+      const hasFilters = selectedDate || activeFilters.teamMember || activeFilters.status || sortField !== "scheduledDate" || sortDirection !== "desc";
+      const isPaginated = currentPage > 1;
+      
+      if (!hasFilters && !isPaginated && cacheRef.current.appointmentsData && cacheRef.current.paginationData &&
+          (now - cacheRef.current.cachedAt) < CACHE_DURATION) {
+        console.log('📦 Using cached appointments data (TTL: 5 min)');
+        setAppointments(cacheRef.current.appointmentsData);
+        // ✅ FIX: Also restore pagination data from cache
+        setTotalRecords(cacheRef.current.paginationData.total);
+        setTotalPages(cacheRef.current.paginationData.pages);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await api.get("/bookings/admin/all");
+        // ✅ NEW: Build query params for pagination + filtering
+        const params = new URLSearchParams();
+        params.append('page', currentPage);
+        params.append('limit', pageSize);
+        
+        // Optional: add date filter if selected
+        if (selectedDate) {
+          params.append('startDate', selectedDate);
+          params.append('endDate', selectedDate);
+        }
+        
+        console.log(`📥 Fetching appointments: page=${currentPage}, limit=${pageSize}`);
+        
+        // ✅ API call with pagination params ONLY (search done on frontend)
+        const res = await api.get(`/bookings/admin/all?${params.toString()}`);
+        
+        // ✅ NEW: Extract paginated response
         const bookings = res?.data?.data?.bookings || [];
+        const pagination = res?.data?.data?.pagination || {};
+        
+        console.log(`📊 Received ${bookings.length} of ${pagination.total} total appointments`);
+        console.log(`📄 Page ${pagination.page} of ${pagination.pages}`);
 
         const mapped = bookings.map((booking) => {
           // Build team member names
@@ -380,6 +519,23 @@ const Appoint = () => {
         });
 
         setAppointments(mapped);
+        
+        // ✅ NEW: Update pagination state from backend response
+        setTotalRecords(pagination.total);
+        setTotalPages(pagination.pages);
+        
+        console.log(`✅ Pagination updated: total=${pagination.total}, pages=${pagination.pages}`);
+        
+        // ✅ FIX: Update cache with BOTH appointments AND pagination data
+        cacheRef.current = {
+          appointmentsData: mapped,
+          paginationData: {
+            total: pagination.total,
+            pages: pagination.pages
+          },
+          cachedAt: Date.now()
+        };
+        
         setLoading(false);
       } catch (err) {
         setError(err?.message || "Failed to load appointments");
@@ -388,18 +544,17 @@ const Appoint = () => {
     };
 
     fetchAppointments();
-  }, []);
+  }, [currentPage, pageSize, selectedDate]); // Only rerun on pagination/date change
 
-  /* -------------------------- Derived filtered list ------------------------- */
+  // ✅ NOTE: Search is now done on frontend only, no backend API call needed
+
+  /* -------------------------- Derived filtered list (CLIENT-SIDE SEARCH) ------------------------- */
+  // ✅ Search through ALL appointments (allAppointments), not just current page
   const filteredAppointments = useMemo(() => {
-    let list = [...appointments];
+    // Start with ALL appointments for searching
+    let list = [...allAppointments];
 
-    // Date filter (single selected day)
-    if (selectedDate) {
-      list = list.filter((a) => a.dateOnly === selectedDate);
-    }
-
-    // Search (ref / client / team member)
+    // Search (ref / client / team member) - FRONTEND ONLY, searches ALL data
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       list = list.filter(
@@ -408,6 +563,11 @@ const Appoint = () => {
           (a.createdBy || "").toLowerCase().includes(q) ||
           (a.teamMember || "").toLowerCase().includes(q)
       );
+    }
+
+    // Date filter
+    if (selectedDate) {
+      list = list.filter((a) => a.dateOnly === selectedDate);
     }
 
     // Extra filters (popup)
@@ -420,7 +580,7 @@ const Appoint = () => {
       list = list.filter((a) => (a.status || "").toLowerCase() === s);
     }
 
-    // Sorting
+    // Sorting - FRONTEND ONLY
     const dir = sortDirection === "asc" ? 1 : -1;
     list.sort((a, b) => {
       if (sortField === "createdDate") {
@@ -444,21 +604,29 @@ const Appoint = () => {
       return av === bv ? 0 : av > bv ? dir : -dir;
     });
 
+    console.log(`🔍 Filtered: ${list.length} results from ${allAppointments.length} total`);
     return list;
-  }, [appointments, selectedDate, searchTerm, activeFilters, sortField, sortDirection]);
+  }, [allAppointments, searchTerm, selectedDate, activeFilters, sortField, sortDirection]);
 
-  // Pagination derived values
-  const totalPages = Math.max(1, Math.ceil(filteredAppointments.length / pageSize));
-
-  useEffect(() => {
-    // reset to first page when filters/search change
-    setCurrentPage(1);
-  }, [filteredAppointments, pageSize]);
-
+  // ✅ Client-side pagination on filtered results
   const paginatedAppointments = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredAppointments.slice(start, start + pageSize);
   }, [filteredAppointments, currentPage, pageSize]);
+
+  // ✅ Update pagination metadata based on filtered results
+  useEffect(() => {
+    const totalCount = filteredAppointments.length;
+    const totalPagesCount = Math.ceil(totalCount / pageSize);
+    setTotalRecords(totalCount);
+    setTotalPages(totalPagesCount);
+    console.log(`📊 Pagination: ${totalCount} results, ${totalPagesCount} pages`);
+  }, [filteredAppointments.length, pageSize]);
+
+  // ✅ Reset to page 1 when filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedDate, activeFilters, sortField, sortDirection]);
 
   /* ----------------------------- Daily summary ----------------------------- */
   const dailySummary = useMemo(() => {
@@ -609,12 +777,39 @@ const Appoint = () => {
             <Search className="search-field-icon" />
             <input
               type="text"
-              placeholder="Search by Reference or Client"
+              placeholder="Search by Reference, Client Name, or Team Member"
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="search-text-input"
+              aria-label="Search appointments"
             />
+            {searchTerm && (
+              <button
+                className="search-clear-btn"
+                onClick={() => handleSearch("")}
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+            {searchTerm && filteredAppointments.length > 0 && (
+              <span className="search-results-badge">
+                {filteredAppointments.length} result{filteredAppointments.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {searchTerm && filteredAppointments.length === 0 && (
+              <span className="search-no-results">No results found</span>
+            )}
           </div>
+
+          {/* Search results info */}
+          {searchTerm && (
+            <div className="search-results-info">
+              <span className="search-results-text">
+                Found {filteredAppointments.length} result{filteredAppointments.length !== 1 ? 's' : ''} for "{searchTerm}"
+              </span>
+            </div>
+          )}
 
           {/* If you want the extra filter popup, uncomment this block and the button
           <button
@@ -808,14 +1003,17 @@ const Appoint = () => {
                 <label className="page-size-label">Show</label>
                 <select
                   value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page on size change
+                  }}
                   className="page-size-select"
                 >
                   {[5, 10, 20, 50].map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
-                <span className="page-total">{filteredAppointments.length} items</span>
+                <span className="page-total">{totalRecords} total items</span>
               </div>
             </div>
           </>

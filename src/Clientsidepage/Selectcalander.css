@@ -1700,6 +1700,13 @@
   top: 0;
   left: 0;
   z-index: 3000;
+
+
+      /* position: fixed;
+    top: 144px;
+    
+    width: 100%; */
+  
 }
 
 .staff-avatar {

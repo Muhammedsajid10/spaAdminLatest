@@ -181,7 +181,40 @@
 .search-text-input {
   width: 100%; padding: 10px 14px 10px 44px;
   border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem;
+  transition: all 0.2s;
 }
+.search-text-input:focus {
+  outline: none; border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.search-text-input::placeholder { color: #cbd5e1; }
+.search-clear-btn {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; font-size: 18px; color: #9ca3af;
+  cursor: pointer; padding: 4px 8px; transition: all 0.2s;
+}
+.search-clear-btn:hover { color: #ef4444; }
+
+/* ✅ NEW: Search Results Badge */
+.search-results-badge {
+  position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+  background: #dbeafe; color: #1e40af; padding: 4px 12px;
+  border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ✅ NEW: Search No Results */
+.search-no-results {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: #ef4444; font-size: 0.85rem; font-weight: 500;
+}
+
+.search-results-info {
+  margin-top: 8px; padding: 8px 12px;
+  background: #eff6ff; border-left: 3px solid #3b82f6;
+  border-radius: 4px; font-size: 0.9rem;
+}
+.search-results-text { color: #1e40af; font-weight: 500; }
 .filter-button-group {
   display: flex;
   gap: 0.75rem;

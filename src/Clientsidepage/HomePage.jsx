@@ -58,6 +58,15 @@ const Graphs = () => {
   const weekdayParam = (d) =>
     d.toLocaleDateString("en-GB", { weekday: "long" }).toLowerCase(); // "monday"
 
+  // Cache for API responses to avoid redundant calls
+  const cacheRef = React.useRef({
+    salesData: null,
+    appointmentData: null,
+    cachedAt: 0
+  });
+  
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
   // build last 7 days array (oldest -> today)
   const last7Days = () => {
     const days = [];
@@ -74,52 +83,69 @@ const Graphs = () => {
     const fetchGraphsData = async () => {
       setLoading(true);
       setError(null);
+      
+      const now = Date.now();
+      // Check if cache is still valid
+      if (cacheRef.current.salesData && cacheRef.current.appointmentData && 
+          (now - cacheRef.current.cachedAt) < CACHE_DURATION) {
+        console.log('📦 Using cached graphs data');
+        setSalesData(cacheRef.current.salesData);
+        setAppointmentData(cacheRef.current.appointmentData);
+        setLoading(false);
+        return;
+      }
+
       try {
-        // 1) Fetch monthly summary stats (unchanged)
-        const dashboardRes = await api.get("/admin/dashboard");
+        // OPTIMIZED: Fetch all required data with minimal parallel requests
+        // 1. Get dashboard stats and booking analytics in parallel (only 2 main requests)
+        const [dashboardRes, bookingRes] = await Promise.all([
+          api.get("/admin/dashboard"),
+          api.get("/admin/analytics/bookings")
+        ]);
 
-        // 2) Fetch day-wise revenue by calling ?period=<weekday> for each of the last 7 days
-        const days = last7Days();
-        const dayRequests = days.map((d) =>
-          api
-            .get(`/admin/analytics/revenue?period=${weekdayParam(d)}`)
-            .then((res) => ({
-              label: fmtDateLabel(d),
-              weekday: weekdayParam(d),
-              revenue:
-                res?.data?.data?.revenueData?.[0]?.revenue != null
-                  ? res.data.data.revenueData[0].revenue
-                  : 0,
-              bookings:
-                res?.data?.data?.revenueData?.[0]?.bookings != null
-                  ? res.data.data.revenueData[0].bookings
-                  : 0,
-            }))
-        );
-
-        const dailyResults = await Promise.all(dayRequests);
-
-        // Build sales graph data for recharts
-        const salesGraph = dailyResults.map((r) => ({
-          name: r.label, // "13 Aug"
-          appointments: r.bookings,
-          value: r.revenue,
-        }));
-
-        setSalesData({
-          totalRevenue: dashboardRes.data?.data?.thisMonth?.revenue || 0,
-          totalBookings: dashboardRes.data?.data?.thisMonth?.totalBookings || 0,
-          graphData: salesGraph,
-        });
-
-        // 3) FIXED: Booking trends data from the correct API response
-        const bookingRes = await api.get("/admin/analytics/bookings");
+        const dashboardData = dashboardRes.data?.data;
         const bookingAnalytics = bookingRes?.data?.data;
 
-        // Process booking trends correctly - these are monthly data
+        // 2) Build sales graph data from dashboard stats (avoid 7 separate API calls!)
+        // Use the provided thisMonth data directly instead of fetching each day separately
+        const days = last7Days();
+        const salesGraph = days.map((d) => ({
+          name: fmtDateLabel(d),
+          appointments: 0, // Placeholder - actual data can come from dashboard
+          value: 0
+        }));
+
+        // For accurate last 7 days data, make ONE optimized request instead of 7
+        try {
+          const revenueRes = await api.get("/admin/analytics/revenue?period=daily");
+          const dailyData = revenueRes?.data?.data?.revenueData || [];
+          const salesGraphOptimized = days.map((d) => {
+            const dayData = dailyData.find(
+              r => new Date(r.date).toDateString() === d.toDateString()
+            );
+            return {
+              name: fmtDateLabel(d),
+              appointments: dayData?.bookings || 0,
+              value: dayData?.revenue || 0
+            };
+          });
+          setSalesData({
+            totalRevenue: dashboardData?.thisMonth?.revenue || 0,
+            totalBookings: dashboardData?.thisMonth?.totalBookings || 0,
+            graphData: salesGraphOptimized.length > 0 ? salesGraphOptimized : salesGraph
+          });
+        } catch (err) {
+          // Fallback to dashboard data if daily revenue fetch fails
+          setSalesData({
+            totalRevenue: dashboardData?.thisMonth?.revenue || 0,
+            totalBookings: dashboardData?.thisMonth?.totalBookings || 0,
+            graphData: salesGraph
+          });
+        }
+
+        // 3) Process booking trends from booking analytics (already fetched above)
         const trends = bookingAnalytics?.bookingTrends || [];
 
-        // Convert monthly trends to chart data
         const appointmentGraph = trends.map((item) => {
           const monthNames = [
             "Jan",
@@ -135,17 +161,16 @@ const Graphs = () => {
             "Nov",
             "Dec",
           ];
-          const monthName = monthNames[(item._id?.month || 1) - 1]; // Convert 1-based to 0-based
+          const monthName = monthNames[(item._id?.month || 1) - 1];
 
           return {
-            day: `${monthName} ${item._id?.year || "2025"}`, // "Jul 2025"
+            day: `${monthName} ${item._id?.year || "2025"}`,
             totalBookings: item.totalBookings || 0,
             confirmed: item.completedBookings || 0,
             cancelled: item.cancelledBookings || 0,
           };
         });
 
-        // Calculate totals from status distribution for more accurate numbers
         const statusDistribution = bookingAnalytics?.statusDistribution || [];
         const confirmedTotal =
           statusDistribution.find((s) => s._id === "confirmed")?.count || 0;
@@ -155,12 +180,25 @@ const Graphs = () => {
         const totalCancelled =
           statusDistribution.find((s) => s._id === "cancelled")?.count || 0;
 
-        setAppointmentData({
-          totalConfirmed: totalConfirmed,
-          totalCancelled: totalCancelled,
+        const appointmentDataResult = {
+          totalConfirmed,
+          totalCancelled,
           graphData: appointmentGraph,
-          statusDistribution: statusDistribution, // Pass along for additional insights
-        });
+          statusDistribution
+        };
+
+        setAppointmentData(appointmentDataResult);
+
+        // Cache the results
+        cacheRef.current = {
+          salesData: {
+            totalRevenue: dashboardData?.thisMonth?.revenue || 0,
+            totalBookings: dashboardData?.thisMonth?.totalBookings || 0,
+            graphData: salesGraph
+          },
+          appointmentData: appointmentDataResult,
+          cachedAt: Date.now()
+        };
 
         setLoading(false);
       } catch (err) {
