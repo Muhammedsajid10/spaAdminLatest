@@ -46,7 +46,7 @@ const LoginPage = () => {
                 console.log('✅ Login successful!');
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.data.user));
-                navigate('/');
+                navigate('/calendar');
             } else {
                 console.log('❌ Login failed:', data.message);
                 alert(data.message || 'Login failed');
