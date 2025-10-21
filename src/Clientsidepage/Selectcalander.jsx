@@ -12,7 +12,8 @@ import { addAppointmentToSession, removeAppointmentFromSession, clearSession as 
 import axios from 'axios';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
-import './Selectcalander.css';
+// import './Selectcalander.css';
+import './Selectcalander.css'
 import ClientSummary from '../calendar/components/ClientInformation.jsx';
 import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
 
@@ -4573,6 +4574,37 @@ useEffect(() => {
                   </div> */}
 
                             <div className="client-step-grid">
+                              <aside className="client-right-panel">
+                  <h4 className="client-right-heading">Walk-in client</h4>
+                  <div className="walkin-control">
+                    <label className="walkin-switch" htmlFor="walkInSwitch">
+                      <input
+                        id="walkInSwitch"
+                        type="checkbox"
+                        checked={isWalkIn}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setIsWalkIn(checked);
+                          if (checked) {
+                            // If user marks as walk-in, clear any selected existing client
+                            setSelectedExistingClient(null);
+                            // Clear optional contact fields (they are not required)
+                            setClientInfo(f => ({ ...f, email: '', phone: '' }));
+                          }
+                        }}
+                      />
+                      <span className="walkin-slider" />
+                    </label>
+                    <div className="walkin-labels">
+                      <div className="walkin-title">Walk-in client</div>
+                      <div className="walkin-sub">No additional data required</div>
+                    </div>
+                  </div>
+
+                  {/* <div className="walkin-help">
+                    <p>If checked, only client name is required. When you Continue, the summary will show the client as a walk-in.</p>
+                  </div> */}
+                </aside>
                             <div className="client-search-section">
                             <div className="client-search-header">
                               <h4>Search Existing Client</h4>
@@ -4757,37 +4789,7 @@ useEffect(() => {
                   </div>
 
                 {/* Right-side panel: Walk-in toggle and helpers */}
-                <aside className="client-right-panel">
-                  <h4 className="client-right-heading">Walk-in client</h4>
-                  <div className="walkin-control">
-                    <label className="walkin-switch" htmlFor="walkInSwitch">
-                      <input
-                        id="walkInSwitch"
-                        type="checkbox"
-                        checked={isWalkIn}
-                        onChange={e => {
-                          const checked = e.target.checked;
-                          setIsWalkIn(checked);
-                          if (checked) {
-                            // If user marks as walk-in, clear any selected existing client
-                            setSelectedExistingClient(null);
-                            // Clear optional contact fields (they are not required)
-                            setClientInfo(f => ({ ...f, email: '', phone: '' }));
-                          }
-                        }}
-                      />
-                      <span className="walkin-slider" />
-                    </label>
-                    <div className="walkin-labels">
-                      <div className="walkin-title">Walk-in client</div>
-                      <div className="walkin-sub">No additional data required</div>
-                    </div>
-                  </div>
-
-                  {/* <div className="walkin-help">
-                    <p>If checked, only client name is required. When you Continue, the summary will show the client as a walk-in.</p>
-                  </div> */}
-                </aside>
+                
               </div>
 
                     <div className="booking-modal-actions">

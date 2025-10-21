@@ -635,21 +635,15 @@ const ClientDirectory = () => {
   // Remove local totalPages calculation, now using backend value
 
   // --- Conditional Rendering for Loading/Error States ---
-  if (loading) {
+  if (loading && clients.length === 0) {
     return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        zIndex: 9999
-      }}>
-        <Loading/>
+      <div className="client-directory-container">
+        <div className="client-directory-wrapper">
+          <div className="loading-state-container">
+            <Loading/>
+            <p>Loading clients...</p>
+          </div>
+        </div>
       </div>
     );
   }
