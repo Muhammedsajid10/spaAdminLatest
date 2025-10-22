@@ -366,7 +366,8 @@ const AppointmentsRedesign = () => {
       setLoading(true);
       setError(null);
       try {
-        const dashboardRes = await api.get("/bookings/admin/all");
+        // ✅ FIX: Add high limit to get all appointments for dashboard
+        const dashboardRes = await api.get("/bookings/admin/all?limit=10000");
 
         const bookings = dashboardRes.data?.data?.bookings || [];
         setAppointments(

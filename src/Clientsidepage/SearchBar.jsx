@@ -93,7 +93,8 @@ const Searchbar = () => {
   // Fetch appointments from backend
   const fetchAppointments = useCallback(async () => {
     try {
-      const res = await api.get("/bookings/admin/all");
+      // ✅ FIX: Add high limit to get all appointments for search
+      const res = await api.get("/bookings/admin/all?limit=10000");
       const bookings = res.data.data.bookings || [];
 
       const now = new Date();

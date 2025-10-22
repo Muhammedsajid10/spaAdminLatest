@@ -48,7 +48,8 @@ function App() {
         >
 
           {/* Top-level pages */}
-          <Route index element={<DashboardPage />} />
+          <Route index element={<Scheduler />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="calendar" element={<Scheduler />} />
           <Route path="clients-list" element={<ClientsList />} />
           <Route path="search-bar" element={<Searchbar />} />

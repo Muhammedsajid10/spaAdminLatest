@@ -1736,17 +1736,20 @@ const SelectCalendar = () => {
         return;
       }
 
-      const res = await fetch(`${Base_url}/admin/clients`, {
+      // Request all clients with a high limit to avoid pagination issues
+      const res = await fetch(`${Base_url}/admin/clients?limit=10000`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       const data = await res.json();
 
-      // console.log('Clients API response:', data);
+      console.log('📋 Clients API response:', data);
 
       if (res.ok && data.success) {
-        setExistingClients(data.data?.clients || []);
+        const clients = data.data?.clients || [];
+        console.log('✅ Loaded clients:', clients.length, 'Sample:', clients.slice(0, 3));
+        setExistingClients(clients);
       } else {
         console.error('Failed to fetch clients:', data.message);
         setExistingClients(MOCK_CLIENTS_DATA);
@@ -1758,8 +1761,19 @@ const SelectCalendar = () => {
   }, []);
 
   const searchClients = useCallback((query) => {
+    console.log('🔍 Searching clients:', { 
+      query, 
+      totalClients: existingClients.length,
+      sampleClients: existingClients.slice(0, 3).map(c => ({
+        name: `${c.firstName} ${c.lastName}`,
+        email: c.email
+      }))
+    });
+
     if (!query.trim()) {
-      setClientSearchResults(existingClients.slice(0, 10));
+      // Show all clients when search is empty (no limit)
+      console.log('📝 Showing all clients:', existingClients.length);
+      setClientSearchResults(existingClients);
       return;
     }
 
@@ -1769,10 +1783,18 @@ const SelectCalendar = () => {
       const phone = (client.phone || '').toLowerCase();
       const searchTerm = query.toLowerCase();
 
-      return fullName.includes(searchTerm) ||
+      const matches = fullName.includes(searchTerm) ||
         email.includes(searchTerm) ||
         phone.includes(searchTerm);
+
+      if (matches) {
+        console.log('✅ Match found:', { fullName, email, searchTerm });
+      }
+
+      return matches;
     });
+
+    console.log('🎯 Filtered results:', filtered.length, 'clients');
     setClientSearchResults(filtered);
   }, [existingClients]);
 
@@ -2506,6 +2528,14 @@ const SelectCalendar = () => {
 
       // Create services array from multiple appointments
       const services = multipleAppointments.map(apt => {
+        console.log('🔍 Processing appointment:', {
+          service: apt.service?.name,
+          date: apt.date,
+          dateType: typeof apt.date,
+          timeSlot: apt.timeSlot,
+          professional: apt.professional?.name
+        });
+
         // Ensure we have a valid date object
         let appointmentDate;
         if (apt.date instanceof Date) {
@@ -2552,6 +2582,15 @@ const SelectCalendar = () => {
 
         const endTime = new Date(appointmentDateTime);
         endTime.setUTCMinutes(endTime.getUTCMinutes() + apt.service.duration);
+
+        console.log('✅ Created appointment datetime:', {
+          dateStr,
+          timeStr,
+          hours,
+          minutes,
+          appointmentDateTime: appointmentDateTime.toISOString(),
+          endTime: endTime.toISOString()
+        });
 
         // Validate that the dates were created successfully
         if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {

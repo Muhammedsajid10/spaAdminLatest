@@ -318,7 +318,7 @@ const Appoint = () => {
   
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
-  // ✅ NEW: Fetch ALL appointments once (for client-side search)
+  // ✅ OPTIMIZED: Fetch appointments with pagination (no longer loading all 5000)
   useEffect(() => {
     const toDateOnly = (d) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -328,13 +328,14 @@ const Appoint = () => {
     const fetchAllAppointments = async () => {
       try {
         setIsLoadingAll(true);
-        console.log('📥 Fetching ALL appointments for search...');
+        console.log('📥 Fetching appointments with pagination...');
         
-        // Fetch all with high limit to get maximum records
-        const res = await api.get('/bookings/admin/all?page=1&limit=5000');
+        // ✅ PERFORMANCE FIX: Use reasonable limit instead of 5000
+        // Backend now handles pagination efficiently with skip/limit
+        const res = await api.get('/bookings/admin/all?page=1&limit=100');
         const allBookings = res?.data?.data?.bookings || [];
         
-        console.log(`📊 Loaded ${allBookings.length} total appointments for searching`);
+        console.log(`📊 Loaded ${allBookings.length} appointments (page 1)`);
         
         // Map the bookings to formatted appointments
         const mapped = allBookings.map((booking) => {

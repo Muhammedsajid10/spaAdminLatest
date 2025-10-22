@@ -37,7 +37,8 @@ const Navbar = () => {
       // Fetch only upcoming or recent bookings relevant for a notification dropdown
       // Example: fetch last 10 bookings, or only unread ones, etc.
       // For simplicity, fetching all, then filtering. Adjust API endpoint as needed.
-      const res = await api.get("/bookings/admin/all"); 
+      // ✅ FIX: Add high limit to get all appointments for notifications
+      const res = await api.get("/bookings/admin/all?limit=10000"); 
       const bookings = res.data.data.bookings || [];
 
       // Process bookings to fit the existing appointment item structure

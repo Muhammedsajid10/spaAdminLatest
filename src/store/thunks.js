@@ -63,13 +63,26 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
 
     const [employeesResponse, bookingsResponse, servicesResponse] = await Promise.all([
       api.get(`${Base_url}/employees?weekStartDate=${startDateParam}`),
-      api.get(`${Base_url}/bookings/admin/all?startDate=${startDateParam}&endDate=${endDateParam}`),
+      // ✅ FIX: Use high limit for calendar to get all appointments in date range
+      api.get(`${Base_url}/bookings/admin/all?startDate=${startDateParam}&endDate=${endDateParam}&limit=10000`),
       api.get(`${Base_url}/services`)
     ]);
 
     if (bookingsResponse.data.success && employeesResponse.data.success) {
       const allBookings = bookingsResponse.data.data.bookings || [];
       const employees = employeesResponse.data.data.employees || [];
+
+      console.log('📊 CALENDAR DATA RECEIVED:', {
+        totalBookings: allBookings.length,
+        totalEmployees: employees.length,
+        dateRange: `${startDateParam} to ${endDateParam}`,
+        sampleBooking: allBookings[0] ? {
+          id: allBookings[0]._id,
+          date: allBookings[0].appointmentDate,
+          client: allBookings[0].client,
+          services: allBookings[0].services?.length
+        } : 'No bookings'
+      });
 
       if (servicesResponse.data && servicesResponse.data.success) {
         // services are not currently stored in Redux in this minimal refactor
@@ -109,8 +122,23 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           
           // Handle different employee data formats
           if (service.employee?._id) {
-            // ObjectId format (API-created bookings)
-            employeeId = service.employee._id;
+            // Check if it's a placeholder ObjectId for legacy data
+            if (service.employee._id === '000000000000000000000000') {
+              // Legacy data with placeholder - try to match by fullName
+              employeeId = findEmployeeIdByName(service.employee.fullName || service.employee.user?.firstName);
+            } else {
+              // Real ObjectId format (API-created bookings) - employee is an object
+              employeeId = service.employee._id;
+            }
+          } else if (typeof service.employee === 'string' && /^[0-9a-fA-F]{24}$/.test(service.employee)) {
+            // Check if it's a placeholder ObjectId string
+            if (service.employee === '000000000000000000000000') {
+              // Placeholder - cannot match, skip this service
+              console.warn('⚠️ Placeholder employee ID without name data for booking:', booking._id);
+              return;
+            }
+            // ✅ FIX: Direct ObjectId string format (from createBooking API)
+            employeeId = service.employee;
           } else if (typeof service.employee === 'string') {
             // String format (Python-created bookings) - try to match by name
             employeeId = findEmployeeIdByName(service.employee);
@@ -168,6 +196,9 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           if (booking.client) {
             if (typeof booking.client === 'string') {
               clientDisplayName = booking.client;
+            } else if (booking.client._id === '000000000000000000000000') {
+              // Legacy data with placeholder - use the preserved name from firstName
+              clientDisplayName = booking.client.firstName || booking.client.fullName || 'Unknown Client';
             } else if (booking.client.fullName) {
               clientDisplayName = booking.client.fullName;
             } else if (booking.client.firstName || booking.client.lastName) {
@@ -180,6 +211,9 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           if (service.service) {
             if (typeof service.service === 'string') {
               serviceName = service.service;
+            } else if (service.service._id === '000000000000000000000000') {
+              // Legacy data with placeholder - use the preserved name
+              serviceName = service.service.name || 'Unknown Service';
             } else if (service.service.name) {
               serviceName = service.service.name;
             }
@@ -190,6 +224,9 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           if (service.employee) {
             if (typeof service.employee === 'string') {
               employeeName = service.employee;
+            } else if (service.employee._id === '000000000000000000000000') {
+              // Legacy data with placeholder - use the preserved name from fullName
+              employeeName = service.employee.fullName || service.employee.user?.firstName || 'Unknown Employee';
             } else if (service.employee.fullName && !/^[0-9a-fA-F]{24}$/.test(service.employee.fullName)) {
               employeeName = service.employee.fullName;
             } else if (service.employee.user) {
@@ -224,6 +261,15 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
             timeSlot: timeSlot
           };
         });
+      });
+
+      console.log('✅ TRANSFORMED APPOINTMENTS:', {
+        totalEmployeesWithAppointments: Object.keys(transformedAppointments).length,
+        appointmentsByEmployee: Object.entries(transformedAppointments).map(([empId, slots]) => ({
+          employeeId: empId,
+          appointmentCount: Object.keys(slots).length,
+          sampleSlot: Object.keys(slots)[0]
+        }))
       });
 
       dispatch(setEmployees(transformedEmployees));
