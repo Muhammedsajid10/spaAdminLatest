@@ -379,13 +379,7 @@ const DailySales = () => {
             </small>
           </h2>
           <div className="ds-table-wrapper">
-            {!hasTransactionData ? (
-              <NoDataState
-                message="No transactions found"
-                description={`No transaction data available for ${formatDate(currentDate)}.`}
-                icon="💳"
-              />
-            ) : (
+          
               <table>
                 <thead>
                   <tr>
@@ -409,20 +403,13 @@ const DailySales = () => {
                   })}
                 </tbody>
               </table>
-            )}
           </div>
         </div>
 
         <div className="ds-table-card">
           <h2 className="ds-table-title">Cash movement summary</h2>
           <div className="ds-table-wrapper">
-            {!hasCashMovementData ? (
-              <NoDataState
-                message="No cash movements found"
-                description={`No cash movement data available for ${formatDate(currentDate)}.`}
-                icon="💰"
-              />
-            ) : (
+          
               <table>
                 <thead>
                   <tr>
@@ -441,7 +428,7 @@ const DailySales = () => {
                   ))}
                 </tbody>
               </table>
-            )}
+            
           </div>
         </div>
       </div>
