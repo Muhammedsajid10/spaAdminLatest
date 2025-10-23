@@ -21,19 +21,20 @@
 }
 
 .mem-export-bbtn{
- 
-  height: 50px;
-  min-width: 100px;
-  border-radius: 10px;
-  color: white;
-  background-color: black;
-  font-size: 10px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  font-size: 15px;
+height: 50px;
+    min-width: 100px;
+    border-radius: 10px;
+    color: #000000;
+    background-color: black;
+    font-size: 10px;
+    box-sizing: border-box;
+    display: flex
+;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    font-size: 15px;
+    border-color: black;
 }
 
 .pay-header-top {
@@ -62,7 +63,7 @@
 }
 
 .pay-options-btn {
-    display: flex
+     display: flex
 ;
     align-items: center;
     gap: 8px;
@@ -73,7 +74,7 @@
     border-radius: 8px;
     font-weight: 500;
     cursor: pointer;
-    color: white;
+    color: #000000;
 }
 .pay-options-btn svg { width: 1.25rem; height: 1.25rem; color: #6b7280; }
 
