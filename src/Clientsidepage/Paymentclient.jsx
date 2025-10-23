@@ -357,20 +357,19 @@ const PaymentClient = () => {
   };
 
   const renderTable = () => (
-    <div className="pay-table-wrapper">
-      <table className="pay-table">
+    <div className="pay-table-wrapper" style={{ width: '100%', overflowX: 'auto' }}>
+      <table className="pay-table" style={{ width: '100%', tableLayout: 'auto' }}>
         <thead>
-          <tr>
+          <tr style={{ width: '100%' }}>
             {[
-              { key: 'date', label: 'Date' },
-              { key: 'reference', label: 'Reference' },
-              { key: 'user', label: 'User' },
-              { key: 'paymentMethod', label: 'Payment Method' },
-              { key: 'status', label: 'Status' },
-              { key: 'amount', label: 'Amount' },
+              { key: 'date', label: 'Date', width: '15%' },
+              { key: 'reference', label: 'Reference', width: '20%' },
+              { key: 'user', label: 'User', width: '25%' },
+              { key: 'paymentMethod', label: 'Payment Method', width: '25%' },
+              { key: 'amount', label: 'Amount', width: '15%' },
             ].map(column => (
-              <th className="pay-th" key={column.key}>
-                <button className="pay-sort-btn " onClick={() => handleSort(column.key)}>
+              <th className="pay-th" key={column.key} style={{ width: column.width }}>
+                <button className="pay-sort-btn" onClick={() => handleSort(column.key)} style={{ width: '100%', justifyContent: 'space-between' }}>
                   {column.label}
                   <SortIcon />
                 </button>
@@ -380,29 +379,24 @@ const PaymentClient = () => {
         </thead>
         <tbody>
           {currentItems.map((payment) => (
-            <tr key={payment.id} className="pay-row">
-              <td className="pay-td">
+            <tr key={payment.id} className="pay-row" style={{ width: '100%' }}>
+              <td className="pay-td" style={{ width: '15%', padding: '12px 8px' }}>
                 {payment.date.toLocaleDateString('en-GB', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric'
                 })}
               </td>
-              <td className="pay-td pay-link">{payment.reference}</td>
-              <td className="pay-td">{payment.user}</td>
-              <td className="pay-td">{payment.paymentMethod}</td>
-              <td className="pay-td">
-                <span className={`status-badge status-${payment.status.toLowerCase()}`}>
-                  {payment.status}
-                </span>
-              </td>
-              <td className="pay-td pay-td-bold">AED {payment.amount.toFixed(2)}</td>
+              <td className="pay-td" style={{ width: '20%', padding: '12px 8px' }}>{payment.reference}</td>
+              <td className="pay-td" style={{ width: '25%', padding: '12px 8px' }}>{payment.user}</td>
+              <td className="pay-td" style={{ width: '25%', padding: '12px 8px' }}>{payment.paymentMethod}</td>
+              <td className="pay-td pay-td-bold" style={{ width: '15%', padding: '12px 8px' }}>AED {payment.amount.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr className="pay-total-row">
-            <td colSpan="5" className="pay-td-bold">Total</td>
+            <td colSpan="4" className="pay-td-bold">Total</td>
             <td className="pay-td-bold">AED {totalAmount.toFixed(2)}</td>
           </tr>
         </tfoot>
@@ -437,11 +431,6 @@ const PaymentClient = () => {
                 })}
               </span>
             </div>
-          </div>
-          <div className="pay-card-footer">
-            <span className={`status-badge status-${payment.status.toLowerCase()}`}>
-              {payment.status}
-            </span>
           </div>
         </div>
       ))}
