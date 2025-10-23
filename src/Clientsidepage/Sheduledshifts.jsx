@@ -301,13 +301,13 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
   const [scheduleType, setScheduleType] = useState('Every week');
   const [startDate, setStartDate] = useState(new Date());
   const [weeklySchedule, setWeeklySchedule] = useState({
-    sunday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
-    monday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
-    tuesday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
-    wednesday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
-    thursday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
-    friday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
-    saturday: { isWorking: true, startTime: '12:00', endTime: '23:59' }
+    sunday: { isWorking: true, startTime: '00:00', endTime: '23:59' },
+    monday: { isWorking: true, startTime: '00:00', endTime: '23:59' },
+    tuesday: { isWorking: true, startTime: '00:00', endTime: '23:59' },
+    wednesday: { isWorking: true, startTime: '00:00', endTime: '23:59' },
+    thursday: { isWorking: true, startTime: '00:00', endTime: '23:59' },
+    friday: { isWorking: true, startTime: '00:00', endTime: '23:59' },
+    saturday: { isWorking: true, startTime: '00:00', endTime: '23:59' }
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -319,13 +319,13 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
     if (employee && employee.workSchedule) {
       // Create a proper default schedule with fallback values
       const defaultSchedule = {
-        sunday:    { isWorking: true, startTime: '12:00', endTime: '23:59' },
-        monday:    { isWorking: true, startTime: '12:00', endTime: '23:59' },
-        tuesday:   { isWorking: true, startTime: '12:00', endTime: '23:59' },
-        wednesday: { isWorking: true, startTime: '12:00', endTime: '23:59' },
-        thursday:  { isWorking: true, startTime: '12:00', endTime: '23:59' },
-        friday:    { isWorking: true, startTime: '12:00', endTime: '23:59' },
-        saturday:  { isWorking: true, startTime: '12:00', endTime: '23:59' }
+        sunday:    { isWorking: true, startTime: '00:00', endTime: '23:59' },
+        monday:    { isWorking: true, startTime: '00:00', endTime: '23:59' },
+        tuesday:   { isWorking: true, startTime: '00:00', endTime: '23:59' },
+        wednesday: { isWorking: true, startTime: '00:00', endTime: '23:59' },
+        thursday:  { isWorking: true, startTime: '00:00', endTime: '23:59' },
+        friday:    { isWorking: true, startTime: '00:00', endTime: '23:59' },
+        saturday:  { isWorking: true, startTime: '00:00', endTime: '23:59' }
       };
 
       // Merge with existing schedule but ensure times are valid
@@ -383,8 +383,8 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
       [dayKey]: {
         ...prev[dayKey],
         isWorking: true,
-        startTime: '09:00',
-        endTime: '17:00'
+        startTime: '00:00',
+        endTime: '23:59'
       }
     }));
   };
@@ -426,7 +426,9 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
     Object.keys(updatedSchedule).forEach(day => {
       updatedSchedule[day] = {
         ...updatedSchedule[day],
-        isWorking: newSelectAll
+        isWorking: newSelectAll,
+        startTime: newSelectAll ? '00:00' : updatedSchedule[day].startTime,
+        endTime: newSelectAll ? '23:59' : updatedSchedule[day].endTime
       };
     });
     setWeeklySchedule(updatedSchedule);

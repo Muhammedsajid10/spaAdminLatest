@@ -58,7 +58,7 @@ const Giftcards = () => {
       const [purchasedRes, templatesRes, clientsRes] = await Promise.all([
         api.get('/giftcards/purchased'),
         api.get('/giftcards/templates'),
-        api.get('/admin/clients?fields=firstName,lastName,email')
+        api.get('/admin/clients?limit=10000&fields=firstName,lastName,email')
       ]);
 
       const rawList = purchasedRes.data?.data?.giftCards || [];

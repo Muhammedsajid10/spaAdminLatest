@@ -837,6 +837,14 @@ const SelectCalendar = () => {
       return;
     }
 
+    // Check if time is after 11 PM (23:00)
+    const [hours] = slotTime.split(':').map(Number);
+    if (hours >= 23) {
+      setUnavailableMessage('Bookings are not allowed after 11:00 PM');
+      setShowUnavailablePopup(true);
+      return;
+    }
+
     // Continue with new booking flow for empty slots
     const employee = employees.find(emp => emp.id === employeeId);
 
@@ -1955,11 +1963,17 @@ const SelectCalendar = () => {
       minute: '2-digit'
     });
 
+    // Check if time slot is after 11 PM
+    const [hours] = timeSlot.split(':').map(Number);
+    const isAfter11PM = hours >= 23;
+
     setHoverTimePosition({ x, y });
     setHoverTimeData({
       timeSlot,
       currentTime: currentTimeStr,
-      date: currentDate.toLocaleDateString()
+      date: currentDate.toLocaleDateString(),
+      isRestricted: isAfter11PM,
+      restrictionMessage: isAfter11PM ? 'Bookings not allowed after 11:00 PM' : null
     });
     setShowTimeHover(true);
   };

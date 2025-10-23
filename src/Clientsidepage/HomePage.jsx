@@ -9,6 +9,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 import "./HomePage.css";
@@ -64,7 +65,7 @@ const Graphs = () => {
     appointmentData: null,
     cachedAt: 0
   });
-  
+
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
   // build last 7 days array (oldest -> today)
@@ -83,11 +84,11 @@ const Graphs = () => {
     const fetchGraphsData = async () => {
       setLoading(true);
       setError(null);
-      
+
       const now = Date.now();
       // Check if cache is still valid
-      if (cacheRef.current.salesData && cacheRef.current.appointmentData && 
-          (now - cacheRef.current.cachedAt) < CACHE_DURATION) {
+      if (cacheRef.current.salesData && cacheRef.current.appointmentData &&
+        (now - cacheRef.current.cachedAt) < CACHE_DURATION) {
         console.log('📦 Using cached graphs data');
         setSalesData(cacheRef.current.salesData);
         setAppointmentData(cacheRef.current.appointmentData);
@@ -116,31 +117,53 @@ const Graphs = () => {
         }));
 
         // For accurate last 7 days data, make ONE optimized request instead of 7
+        let calculatedSalesData;
         try {
           const revenueRes = await api.get("/admin/analytics/revenue?period=daily");
           const dailyData = revenueRes?.data?.data?.revenueData || [];
+
+          // Map the last 7 days and calculate totals
+          let totalRevenueLast7Days = 0;
+          let totalBookingsLast7Days = 0;
+
           const salesGraphOptimized = days.map((d) => {
-            const dayData = dailyData.find(
-              r => new Date(r.date).toDateString() === d.toDateString()
-            );
+            // Match by constructing date from _id fields
+            const dayData = dailyData.find(r => {
+              if (!r._id) return false;
+              const dataDate = new Date(r._id.year, r._id.month - 1, r._id.day);
+              return dataDate.toDateString() === d.toDateString();
+            });
+
+            const dayRevenue = dayData?.revenue || 0;
+            const dayBookings = dayData?.bookings || 0;
+
+            // Add to totals
+            totalRevenueLast7Days += dayRevenue;
+            totalBookingsLast7Days += dayBookings;
+
             return {
               name: fmtDateLabel(d),
-              appointments: dayData?.bookings || 0,
-              value: dayData?.revenue || 0
+              appointments: dayBookings,
+              value: dayRevenue
             };
           });
-          setSalesData({
-            totalRevenue: dashboardData?.thisMonth?.revenue || 0,
-            totalBookings: dashboardData?.thisMonth?.totalBookings || 0,
-            graphData: salesGraphOptimized.length > 0 ? salesGraphOptimized : salesGraph
-          });
+
+          calculatedSalesData = {
+            totalRevenue: totalRevenueLast7Days,
+            totalBookings: totalBookingsLast7Days,
+            graphData: salesGraphOptimized
+          };
+
+          setSalesData(calculatedSalesData);
         } catch (err) {
-          // Fallback to dashboard data if daily revenue fetch fails
-          setSalesData({
-            totalRevenue: dashboardData?.thisMonth?.revenue || 0,
-            totalBookings: dashboardData?.thisMonth?.totalBookings || 0,
+          // Fallback to empty data if daily revenue fetch fails
+          console.error("Failed to fetch daily revenue:", err);
+          calculatedSalesData = {
+            totalRevenue: 0,
+            totalBookings: 0,
             graphData: salesGraph
-          });
+          };
+          setSalesData(calculatedSalesData);
         }
 
         // 3) Process booking trends from booking analytics (already fetched above)
@@ -189,13 +212,9 @@ const Graphs = () => {
 
         setAppointmentData(appointmentDataResult);
 
-        // Cache the results
+        // Cache the results with calculated data
         cacheRef.current = {
-          salesData: {
-            totalRevenue: dashboardData?.thisMonth?.revenue || 0,
-            totalBookings: dashboardData?.thisMonth?.totalBookings || 0,
-            graphData: salesGraph
-          },
+          salesData: calculatedSalesData,
           appointmentData: appointmentDataResult,
           cachedAt: Date.now()
         };
@@ -267,7 +286,7 @@ const Graphs = () => {
           {loading ? (
             <Loading />
           ) : error ? (
-            <Error500Page/>
+            <Error500Page />
           ) : salesData?.graphData?.length ? (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={salesData.graphData}>
@@ -280,67 +299,170 @@ const Graphs = () => {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-           <NoDataState/>
+            <NoDataState />
           )}
         </div>
       </div>
 
-      {/* FIXED: Booking trends appointments */}
-      <div className="card">
-        <div className="card-header">
-          <h3>Booking Trends</h3>
-          <span>Monthly Overview</span>
-          <h1>{appointmentData?.totalConfirmed || 0} total</h1>
-          <div className="appointments-info">
-            <div className="appointments-count">
-              <span>Confirmed + Completed</span>
-              <strong>{appointmentData?.totalConfirmed || 0}</strong>
-            </div>
-            <div className="appointments-count">
-              <span>Cancelled appointments</span>
-              <strong>{appointmentData?.totalCancelled || 0}</strong>
-            </div>
+      {/* Upcoming appointments - Next 7 days */}
+      <UpcomingAppointmentsGraph />
+    </div>
+  );
+};
+
+/* -------------------- Upcoming Appointments Graph (for Graphs Component) -------------------- */
+
+const UpcomingAppointmentsGraph = () => {
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUpcomingAppointments = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch all appointments
+        const response = await api.get(`/bookings/admin/all?limit=10000`);
+        const bookings = response.data?.data?.bookings || [];
+        
+        // Get today's date at start of day
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        
+        // Get date 7 days from now (end of the 7th day)
+        const next7DaysEnd = new Date(today);
+        next7DaysEnd.setDate(today.getDate() + 7);
+        next7DaysEnd.setHours(23, 59, 59, 999);
+        
+        console.log('📅 Filtering appointments for next 7 days:', {
+          today: today.toISOString(),
+          next7DaysEnd: next7DaysEnd.toISOString(),
+          totalBookings: bookings.length
+        });
+        
+        // Filter and format bookings for next 7 days (including today)
+        const upcomingBookings = bookings
+          .filter(b => {
+            const apptDate = new Date(b.appointmentDate);
+            const isInRange = apptDate >= today && apptDate <= next7DaysEnd;
+            return isInRange;
+          })
+          .map(b => ({
+            date: new Date(b.appointmentDate),
+            status: b.status,
+            dayLabel: new Date(b.appointmentDate).toLocaleDateString("en-GB", { 
+              weekday: "short", 
+              day: "2-digit",
+              month: "short"
+            })
+          }));
+        
+        console.log('✅ Filtered upcoming appointments:', upcomingBookings.length);
+        
+        setAppointments(upcomingBookings);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch upcoming appointments:", err);
+        setError("Could not load upcoming appointments.");
+        setAppointments([]);
+        setLoading(false);
+      }
+    };
+
+    fetchUpcomingAppointments();
+  }, []);
+
+  // Build data for the next 7 days
+  const buildNext7DaysData = () => {
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      // Count confirmed and cancelled appointments for this day
+      const dayAppointments = appointments.filter(app => {
+        return app.date.toDateString() === date.toDateString();
+      });
+      
+      const confirmed = dayAppointments.filter(app => 
+        app.status === 'confirmed' || app.status === 'completed'
+      ).length;
+      
+      const cancelled = dayAppointments.filter(app => 
+        app.status === 'cancelled'
+      ).length;
+      
+      days.push({
+        date: date,
+        label: date.toLocaleDateString("en-GB", { 
+          weekday: "short", 
+          day: "2-digit" 
+        }),
+        confirmed,
+        cancelled,
+        total: dayAppointments.length
+      });
+    }
+    
+    return days;
+  };
+
+  const next7DaysData = buildNext7DaysData();
+  const totalBooked = appointments.length;
+  const totalConfirmed = appointments.filter(app => 
+    app.status === 'confirmed' || app.status === 'completed'
+  ).length;
+  const totalCancelled = appointments.filter(app => 
+    app.status === 'cancelled'
+  ).length;
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <h3>Upcoming appointments</h3>
+        <span>Next 7 days</span>
+        <h1>{totalBooked} booked</h1>
+        <div className="appointments-info">
+          <div className="appointments-count">
+            <span>Confirmed appointments</span>
+            <strong>{totalConfirmed}</strong>
+          </div>
+          <div className="appointments-count">
+            <span>Cancelled appointments</span>
+            <strong>{totalCancelled}</strong>
           </div>
         </div>
-        <div
-          className="chart-wrapper"
-          style={{
-            minHeight: 220,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {loading ? (
-            <Loading />
-          ) : error ? (
-            <Error500Page message={error} />
-          ) : appointmentData?.graphData?.length ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={appointmentData.graphData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip
-                  formatter={(value, name) => [
-                    value,
-                    name === "totalBookings"
-                      ? "Total Bookings"
-                      : name === "confirmed"
-                      ? "Completed"
-                      : name === "cancelled"
-                      ? "Cancelled"
-                      : name,
-                  ]}
-                />
-                <Bar dataKey="totalBookings" fill="#3B82F6" name="Total Bookings" />
-                <Bar dataKey="confirmed" fill="#10B981" name="Completed" />
-                <Bar dataKey="cancelled" fill="#EF4444" name="Cancelled" />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-<NoDataState/>          )}
-        </div>
+      </div>
+      <div
+        className="chart-wrapper"
+        style={{
+          minHeight: 220,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {loading ? (
+          <Loading />
+        ) : error ? (
+          <Error500Page message={error} />
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={next7DaysData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="label" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="confirmed" stackId="a" fill="#6366f1" name="Confirmed" />
+              <Bar dataKey="cancelled" stackId="a" fill="#ef4444" name="Cancelled" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );
@@ -508,7 +630,7 @@ const AppointmentsRedesign = () => {
                   </div>
                 ))
               ) : (
-<NoDataState/>              )}
+                <NoDataState />)}
             </div>
           </div>
 
@@ -566,7 +688,7 @@ const AppointmentsRedesign = () => {
               </div>
             ))
           ) : (
-<NoDataState/>          )}
+            <NoDataState />)}
 
           {/* Pagination for Today's Next Appointments */}
           {!loading &&
@@ -609,11 +731,17 @@ const TopStats = () => {
   // -- Pagination (client-side, no API changes)
   const PAGE_SIZE = 7;
   const [servicePage, setServicePage] = useState(1);
+  const [teamMemberPage, setTeamMemberPage] = useState(1);
 
   // Reset to first page whenever data reloads
   useEffect(() => {
     setServicePage(1);
   }, [topServices]);
+
+  // Reset team member page when data reloads
+  useEffect(() => {
+    setTeamMemberPage(1);
+  }, [topTeamMembers]);
 
   // Compute visible slice
   const totalServicePages = Math.max(
@@ -630,6 +758,21 @@ const TopStats = () => {
   const onNextService = () =>
     setServicePage((p) => Math.min(totalServicePages, p + 1));
 
+  // Compute visible slice for team members
+  const totalTeamMemberPages = Math.max(
+    1,
+    Math.ceil(topTeamMembers.length / PAGE_SIZE)
+  );
+  const teamMemberStartIdx = (teamMemberPage - 1) * PAGE_SIZE;
+  const visibleTeamMembers = topTeamMembers.slice(
+    teamMemberStartIdx,
+    teamMemberStartIdx + PAGE_SIZE
+  );
+
+  const onPrevTeamMember = () => setTeamMemberPage((p) => Math.max(1, p - 1));
+  const onNextTeamMember = () =>
+    setTeamMemberPage((p) => Math.min(totalTeamMemberPages, p + 1));
+
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
@@ -637,6 +780,7 @@ const TopStats = () => {
       try {
         const bookingRes = await api.get("/admin/analytics/bookings");
         const employeeRes = await api.get("/admin/analytics/employees");
+        const allEmployeesRes = await api.get("/employees?limit=10000");
 
         // Prepare top services for TopStats
         const popularServices = bookingRes.data?.data?.popularServices || [];
@@ -648,11 +792,45 @@ const TopStats = () => {
           }))
         );
 
-        // Prepare top team members for TopStats
+        // Prepare top team members - show ALL employees with their performance
         const employeePerformance =
           employeeRes.data?.data?.employeePerformance || [];
+        const allEmployees = allEmployeesRes.data?.data?.employees || [];
+        
+        console.log('📊 Employee Performance Data:', {
+          totalWithBookings: employeePerformance.length,
+          totalEmployees: allEmployees.length,
+          performanceData: employeePerformance
+        });
+        
+        // Create a map of employee performance by ID
+        const performanceMap = new Map();
+        employeePerformance.forEach(perf => {
+          if (perf._id) {
+            performanceMap.set(perf._id.toString(), perf);
+          }
+        });
+        
+        // Map all employees with their performance data (or zeros if no bookings)
+        const allEmployeesWithPerformance = allEmployees.map(emp => {
+          const empId = emp._id.toString();
+          const performance = performanceMap.get(empId);
+          
+          return {
+            employeeName: `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim() || 'Unknown',
+            totalRevenue: performance?.totalRevenue || 0,
+            avgBookingValue: performance?.avgBookingValue || 0,
+            totalBookings: performance?.totalBookings || 0
+          };
+        });
+        
+        // Sort by totalRevenue descending to ensure top performers are first
+        const sortedEmployees = allEmployeesWithPerformance.sort(
+          (a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0)
+        );
+        
         setTopTeamMembers(
-          employeePerformance.slice(0, 5).map((e) => ({
+          sortedEmployees.map((e) => ({
             name: e.employeeName,
             thisMonth: `AED ${(
               e.totalRevenue || 0
@@ -662,6 +840,8 @@ const TopStats = () => {
             ).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
           }))
         );
+        
+        console.log('✅ Top Team Members Set:', sortedEmployees.length);
 
         setLoading(false);
       } catch (err) {
@@ -691,7 +871,7 @@ const TopStats = () => {
             <div className="stats-cell">Last Month</div>
           </div>
           {loading ? (
-            <Loading/>
+            <Loading />
           ) : error ? (
             <Error500Page message={error} />
           ) : visibleServices.length ? (
@@ -703,7 +883,7 @@ const TopStats = () => {
               </div>
             ))
           ) : (
-<NoDataState/>          )}
+            <NoDataState />)}
         </div>
         {!loading && !error && topServices.length > PAGE_SIZE && (
           <div className="stats-pagination">
@@ -737,11 +917,11 @@ const TopStats = () => {
             <div className="stats-cell">Last Month</div>
           </div>
           {loading ? (
-           <Loading/>
+            <Loading />
           ) : error ? (
             <Error500Page message={error} />
-          ) : topTeamMembers.length ? (
-            topTeamMembers.map((member, index) => (
+          ) : visibleTeamMembers.length ? (
+            visibleTeamMembers.map((member, index) => (
               <div key={index} className="stats-row">
                 <div className="stats-cell">{member.name}</div>
                 <div className="stats-cell">{member.thisMonth}</div>
@@ -749,8 +929,29 @@ const TopStats = () => {
               </div>
             ))
           ) : (
-<NoDataState/>          )}
+            <NoDataState />)}
         </div>
+        {!loading && !error && topTeamMembers.length > PAGE_SIZE && (
+          <div className="stats-pagination">
+            <button
+              className="page-btn"
+              onClick={onPrevTeamMember}
+              disabled={teamMemberPage === 1}
+            >
+              ‹
+            </button>
+            <span className="page-info">
+              {teamMemberPage} of {totalTeamMemberPages}
+            </span>
+            <button
+              className="page-btn"
+              onClick={onNextTeamMember}
+              disabled={teamMemberPage === totalTeamMemberPages}
+            >
+              ›
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

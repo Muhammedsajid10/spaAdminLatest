@@ -87,12 +87,46 @@ const ServiceMenu = () => {
   // Fetch categories from the API for dropdown
   const fetchAvailableCategories = async () => {
     try {
-      const response = await api.get('/services/categories');
-      if (response.data.success) {
-        setAvailableCategories(response.data.data.categories || []);
+      console.log('📋 Fetching available categories for dropdown...');
+      
+      // Try multiple endpoints to find categories
+      const endpoints = [
+        '/services/categories',
+        '/categories/categories',
+        '/categories'
+      ];
+      
+      let categoriesLoaded = false;
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🔍 Trying endpoint: ${endpoint}`);
+          const response = await api.get(endpoint);
+          console.log(`✅ Response from ${endpoint}:`, response.data);
+          
+          if (response.data.success && response.data.data) {
+            const categories = response.data.data.categories || response.data.data || [];
+            if (Array.isArray(categories) && categories.length > 0) {
+              console.log('📊 Available categories loaded:', categories.length, categories);
+              setAvailableCategories(categories);
+              categoriesLoaded = true;
+              break;
+            }
+          }
+        } catch (endpointErr) {
+          console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointErr.response?.status);
+          continue;
+        }
+      }
+      
+      if (!categoriesLoaded) {
+        console.warn('⚠️ No categories found from any endpoint');
+        setAvailableCategories([]);
       }
     } catch (err) {
       console.error('❌ Failed to fetch available categories:', err);
+      console.error('Error details:', err.response?.data || err.message);
+      setAvailableCategories([]);
     }
   };
 
@@ -735,7 +769,7 @@ const ServiceMenu = () => {
   useEffect(() => {
     const loadData = async () => {
       await fetchServices();
-      fetchAvailableCategories();
+      await fetchAvailableCategories(); // Await to ensure categories are loaded
     };
     loadData();
   }, []);
@@ -798,6 +832,8 @@ const ServiceMenu = () => {
   };
 
   const handleAddServiceFromMenu = () => {
+    console.log('🔍 Opening Add Service Modal');
+    console.log('📊 Available categories at modal open:', availableCategories.length, availableCategories);
     setShowAddModal(true);
     handleAddMenuClose(); // Close dropdown
   };
@@ -1251,9 +1287,15 @@ const ServiceMenu = () => {
             <FormControl fullWidth margin="normal" variant="outlined" className="service-menu__form-control">
               <InputLabel>Category</InputLabel>
               <Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} label="Category" required>
-                {availableCategories.map((category) => (
-                  <MenuItem key={category._id} value={category._id}>{category.displayName}</MenuItem>
-                ))}
+                {availableCategories.length === 0 ? (
+                  <MenuItem disabled>No categories available. Please add a category first.</MenuItem>
+                ) : (
+                  availableCategories.map((category) => (
+                    <MenuItem key={category._id} value={category._id}>
+                      {category.displayName || category.name || 'Unnamed Category'}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
             <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480}} variant="outlined" className="service-menu__form-input" />
@@ -1277,9 +1319,15 @@ const ServiceMenu = () => {
             <FormControl fullWidth margin="normal" variant="outlined" className="service-menu__form-control">
               <InputLabel>Category</InputLabel>
               <Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} label="Category" required>
-                {availableCategories.map((category) => (
-                  <MenuItem key={category._id} value={category._id}>{category.displayName}</MenuItem>
-                ))}
+                {availableCategories.length === 0 ? (
+                  <MenuItem disabled>No categories available. Please add a category first.</MenuItem>
+                ) : (
+                  availableCategories.map((category) => (
+                    <MenuItem key={category._id} value={category._id}>
+                      {category.displayName || category.name || 'Unnamed Category'}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
             <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480 }} variant="outlined" className="service-menu__form-input" />

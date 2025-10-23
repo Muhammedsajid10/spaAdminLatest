@@ -4,6 +4,7 @@ import api from '../Service/Api';
 import { SearchCheck, SearchXIcon } from 'lucide-react';
 import Loading from '../states/Loading';
 import Error500Page from '../states/ErrorPage';
+import NoDataState from '../states/NoData';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -270,6 +271,12 @@ const Membership = () => {
   const [paymentError, setPaymentError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
+  // Client search state
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [filteredClients, setFilteredClients] = useState([]);
+
   const fetchMemberships = async () => {
     setLoading(true);
     setError(null);
@@ -304,7 +311,7 @@ const Membership = () => {
       setTemplates(templateRes.data.data.memberships || []);
       // Clients (reuse employees or users endpoint?) -> assume admin users endpoint exists
       try {
-        const usersRes = await api.get('/admin/clients');
+        const usersRes = await api.get('/admin/clients?limit=10000');
         setClients(usersRes.data.data?.clients || usersRes.data.data?.users || []);
       } catch (e) {
         console.warn('Could not load clients list:', e.message);
@@ -359,6 +366,46 @@ const Membership = () => {
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
   const toggleFilters = () => setShowFilters(!showFilters);
   const toggleExportDropdown = () => setShowExportDropdown(!showExportDropdown);
+
+  // Client search handlers
+  const handleClientSearchChange = (e) => {
+    const value = e.target.value;
+    setClientSearch(value);
+    
+    if (value.trim()) {
+      const filtered = clients.filter(client => {
+        const fullName = `${client.firstName || ''} ${client.lastName || ''}`.trim().toLowerCase();
+        const email = (client.email || '').toLowerCase();
+        const searchTerm = value.toLowerCase();
+        
+        return fullName.includes(searchTerm) || email.includes(searchTerm);
+      });
+      setFilteredClients(filtered);
+      setShowClientDropdown(true);
+    } else {
+      setFilteredClients([]);
+      setShowClientDropdown(false);
+    }
+  };
+
+  const selectClient = (client) => {
+    setSelectedClient(client);
+    setClientSearch(`${client.firstName || ''} ${client.lastName || ''}`.trim());
+    setShowClientDropdown(false);
+    setAssignForm(f => ({
+      ...f,
+      clientId: client._id
+    }));
+  };
+
+  const clearClientSelection = () => {
+    setSelectedClient(null);
+    setClientSearch('');
+    setAssignForm(f => ({
+      ...f,
+      clientId: ''
+    }));
+  };
 
   const handleExportCSV = () => {
     const headers = ['Name', 'Client', 'Type', 'Sessions Remaining', 'Start Date', 'End Date', 'Status', 'Total Charged'];
@@ -508,6 +555,23 @@ const Membership = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showExportDropdown]);
 
+  // Close client dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showClientDropdown && !event.target.closest('.client-search-container')) {
+        setShowClientDropdown(false);
+      }
+    };
+
+    if (showClientDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showClientDropdown]);
+
   return (
     <div className="mem-container">
       {/* Success Notification */}
@@ -543,6 +607,9 @@ const Membership = () => {
                 setAssignForm({ templateId: '', clientId: '', startDate: '', price: '', paymentType: '' });
                 setAssignStep('details');
                 setPaymentError(null);
+                setSelectedClient(null);
+                setClientSearch('');
+                setShowClientDropdown(false);
                 setShowAssignModal(true);
               }}
             >
@@ -591,7 +658,10 @@ const Membership = () => {
         {loading ? (
           <Loading />
         ) : error ? (
-<Error500Page/>        ) : (
+          <Error500Page/>
+        ) : memberships.length === 0 ? (
+          <NoDataState />
+        ) : (
           <>
             <div className="mem-table-container">
               <div className="mem-table-wrapper">
@@ -711,12 +781,60 @@ const Membership = () => {
                   <>
                     <div className="mem-form-group">
                       <label>Client</label>
-                      <select value={assignForm.clientId} onChange={e=> setAssignForm(f=>({...f, clientId:e.target.value}))}>
-                        <option value="">Select client</option>
-                        {clients.map(c=> (
-                          <option key={c._id} value={c._id}>{c.firstName} {c.lastName} ({c.email})</option>
-                        ))}
-                      </select>
+                      {selectedClient ? (
+                        <div className="selected-client">
+                          <div className="selected-client-info">
+                            <div className="selected-client-name">
+                              {selectedClient.firstName} {selectedClient.lastName}
+                            </div>
+                            <div className="selected-client-email">{selectedClient.email}</div>
+                          </div>
+                          <button 
+                            type="button" 
+                            className="clear-selection-btn"
+                            onClick={clearClientSelection}
+                            title="Clear selection"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="client-search-container">
+                          <input
+                            type="text"
+                            placeholder="Search clients by name or email..."
+                            value={clientSearch}
+                            onChange={handleClientSearchChange}
+                            className="client-search-input"
+                            autoComplete="off"
+                          />
+                          {showClientDropdown && (
+                            <div className="client-dropdown">
+                              {filteredClients.length > 0 ? (
+                                filteredClients.map(client => (
+                                  <div
+                                    key={client._id}
+                                    className="client-option"
+                                    onClick={() => selectClient(client)}
+                                  >
+                                    <div className="client-name">
+                                      {client.firstName} {client.lastName}
+                                    </div>
+                                    <div className="client-email">{client.email}</div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="no-clients-found">
+                                  No clients found matching your search
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="mem-form-group">
                       <label>Template</label>
