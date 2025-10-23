@@ -4,6 +4,7 @@ import "./Paymentclient.css";
 import Loading from "../states/Loading";
 import Error500Page from "../states/ErrorPage";
 import NoDataState from "../states/NoData";
+import DatePicker from "../components/DatePicker/DatePicker";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -31,6 +32,7 @@ const PaymentClient = () => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  const [selectedDate, setSelectedDate] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,11 +87,23 @@ const PaymentClient = () => {
   
   // Logic for sorting and filtering
   const sortedAndFilteredPayments = payments
-    .filter(p => 
-      p.reference.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      p.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    .filter(p => {
+      const matchesSearch = 
+        p.reference.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        p.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (selectedDate) {
+        const paymentDate = new Date(p.date);
+        const selected = new Date(selectedDate);
+        return matchesSearch && 
+          paymentDate.getDate() === selected.getDate() &&
+          paymentDate.getMonth() === selected.getMonth() &&
+          paymentDate.getFullYear() === selected.getFullYear();
+      }
+      
+      return matchesSearch;
+    })
     .sort((a, b) => {
       if (sortConfig.key === 'date') {
         const aValue = a.date.getTime();
@@ -258,7 +272,7 @@ const PaymentClient = () => {
   // Reset to first page when search or sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, sortConfig]);
+  }, [searchTerm, sortConfig, selectedDate]);
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -466,21 +480,25 @@ const PaymentClient = () => {
           </div>
         </div>
         <div className="payControls">
-          <div className="pay-search">
-            <span className="pay-search-icon"><SearchIcon /></span>
-            <input 
-              type="text" 
-              placeholder="Search by reference, name, or payment method..." 
-              className="pay-search-input" 
-              value={searchTerm} 
-              onChange={e => setSearchTerm(e.target.value)} 
-            />
+          <div className="pay-controls-left">
+            <div className="pay-date-picker">
+              <DatePicker 
+                selectedDate={selectedDate}
+                onChange={setSelectedDate}
+                placeholder="Filter by date..."
+              />
+            </div>
+            <div className="pay-search">
+              <span className="pay-search-icon"><SearchIcon /></span>
+              <input 
+                type="text" 
+                placeholder="Search by reference, name, or payment method..." 
+                className="pay-search-input" 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)} 
+              />
+            </div>
           </div>
-          {/* Uncomment these if you want to add date range and filter functionality */}
-          {/* <div className="pay-filters">
-            <button className="pay-filter-btn"><CalendarIcon /> Date range</button>
-            <button className="pay-filter-btn"><FilterIcon /> Filters</button>
-          </div> */}
         </div>
       </div>
       

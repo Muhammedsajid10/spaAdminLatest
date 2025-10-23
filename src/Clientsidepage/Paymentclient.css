@@ -100,20 +100,34 @@
 }
 .pay-dropdown-item:hover { background-color: #f9fafb; }
 
-.pay-controls {
+.payControls {
   display: flex;
-  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
   align-items: center;
   flex-wrap: wrap;
-    background-color: #dfdfdf;
+}
+
+.pay-controls-left {
+  display: flex;
+  align-items: center;
   gap: 1rem;
-  padding: 1rem 1.5rem;
+}
+
+.pay-controls-right {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.pay-date-picker {
+  width: 180px;
 }
 
 .pay-search {
   position: relative;
-  flex-grow: 1;
-  min-width: 250px;
+  width: 300px;
+  min-width: 200px;
 }
 .pay-search-icon {
   position: absolute;
