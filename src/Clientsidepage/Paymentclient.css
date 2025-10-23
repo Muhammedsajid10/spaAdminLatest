@@ -149,7 +149,51 @@
 }
 .pay-filter-btn svg { width: 1.25rem; height: 1.25rem; color: #6b7280; }
 
-/* --- TABLE CONTAINER --- */
+/* --- Pagination Styles --- */
+.pay-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pay-pagination-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e5e5;
+  background: white;
+  cursor: pointer;
+  border-radius: 4px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pay-pagination-btn:hover:not(:disabled) {
+  background-color: #f8f8f8;
+  border-color: #d1d1d1;
+}
+
+.pay-pagination-btn.active {
+  background-color: #000;
+  color: white;
+  border-color: #000;
+}
+
+.pay-pagination-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pay-pagination-ellipsis {
+  padding: 0.5rem;
+  color: #666;
+}
+
+/* --- Table Styles --- */
 .pay-table-container {
   background-color: #fff;
   border-radius: 12px;

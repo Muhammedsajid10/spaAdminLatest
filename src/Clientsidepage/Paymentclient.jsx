@@ -31,6 +31,10 @@ const PaymentClient = () => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30; // Show 30 items per page
 
   useEffect(() => {
     // This effect can be used to close the dropdown if you click outside of it
@@ -240,6 +244,104 @@ const PaymentClient = () => {
   const hasNoData = !loading && !error && payments.length === 0;
   const hasNoResults = !loading && !error && payments.length > 0 && sortedAndFilteredPayments.length === 0;
 
+  // Pagination calculation
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sortedAndFilteredPayments.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedAndFilteredPayments.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo(0, 0); // Scroll to top when page changes
+  };
+
+  // Reset to first page when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortConfig]);
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    let startPage, endPage;
+
+    if (totalPages <= maxPagesToShow) {
+      startPage = 1;
+      endPage = totalPages;
+    } else {
+      if (currentPage <= 3) {
+        startPage = 1;
+        endPage = 5;
+      } else if (currentPage + 2 >= totalPages) {
+        startPage = totalPages - 4;
+        endPage = totalPages;
+      } else {
+        startPage = currentPage - 2;
+        endPage = currentPage + 2;
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="pay-pagination">
+        <button 
+          className="pay-pagination-btn"
+          onClick={() => paginate(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
+        
+        {startPage > 1 && (
+          <>
+            <button 
+              className={`pay-pagination-btn ${currentPage === 1 ? 'active' : ''}`}
+              onClick={() => paginate(1)}
+            >
+              1
+            </button>
+            {startPage > 2 && <span className="pay-pagination-ellipsis">...</span>}
+          </>
+        )}
+
+        {pageNumbers.map(number => (
+          <button
+            key={number}
+            className={`pay-pagination-btn ${currentPage === number ? 'active' : ''}`}
+            onClick={() => paginate(number)}
+          >
+            {number}
+          </button>
+        ))}
+
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="pay-pagination-ellipsis">...</span>}
+            <button 
+              className={`pay-pagination-btn ${currentPage === totalPages ? 'active' : ''}`}
+              onClick={() => paginate(totalPages)}
+            >
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        <button 
+          className="pay-pagination-btn"
+          onClick={() => paginate(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+    );
+  };
+
   const renderTable = () => (
     <div className="pay-table-wrapper">
       <table className="pay-table">
@@ -263,7 +365,7 @@ const PaymentClient = () => {
           </tr>
         </thead>
         <tbody>
-          {sortedAndFilteredPayments.map((payment) => (
+          {currentItems.map((payment) => (
             <tr key={payment.id} className="pay-row">
               <td className="pay-td">
                 {payment.date.toLocaleDateString('en-GB', {
@@ -402,9 +504,15 @@ const PaymentClient = () => {
         ) : (
           <>
             {/* Desktop Table */}
-            <div className="pay-desktop-table">{renderTable()}</div>
+            <div className="pay-desktop-table">
+              {renderTable()}
+              {renderPagination()}
+            </div>
             {/* Mobile Cards */}
-            <div className="pay-mobile-table">{renderMobileCards()}</div>
+            <div className="pay-mobile-table">
+              {renderMobileCards()}
+              {renderPagination()}
+            </div>
           </>
         )}
       </div>
