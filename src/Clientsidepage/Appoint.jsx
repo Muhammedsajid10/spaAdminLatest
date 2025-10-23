@@ -661,9 +661,10 @@ const Appoint = () => {
     setShowSingleDate(false);
   };
 
-  // Check if we should show NoDataState
-  const showNoData = !loading && !error && appointments.length === 0;
-  const showNoResults = !loading && !error && appointments.length > 0 && filteredAppointments.length === 0;
+  // Only show NoData/NoResults when both paginated and the "all appointments" fetch are finished
+  const dataFetchFinished = !loading && !isLoadingAll && !error;
+  const showNoData = dataFetchFinished && Array.isArray(appointments) && appointments.length === 0 && filteredAppointments.length === 0;
+  const showNoResults = dataFetchFinished && Array.isArray(appointments) && appointments.length > 0 && filteredAppointments.length === 0;
 
   /* ---------------------------------- UI ---------------------------------- */
 
