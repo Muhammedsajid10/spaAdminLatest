@@ -191,6 +191,15 @@ const ClientDirectory = () => {
   const [showExportMenu, setShowExportMenu] = useState(false); // For export dropdown
   const exportMenuRef = useRef(null);
 
+  // Toast notification state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success'); // 'success' or 'error'
+
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -431,6 +440,16 @@ const ClientDirectory = () => {
 
   // --- CRUD Operations ---
 
+  // Toast notification function
+  const showNotification = (message, type = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000); // Hide after 3 seconds
+  };
+
   const handleCreateClient = async (formData) => {
     setFormLoading(true); // Set form loading true here
     try {
@@ -448,13 +467,14 @@ const ClientDirectory = () => {
       console.log("Client created successfully:", response.data); // Log success
 
       setShowModal(false); // Close modal on success
+      showNotification('Client created successfully!', 'success');
       fetchClients(); // Refresh the list
     } catch (err) {
       console.error(
         "Error creating client:",
         err.response?.data || err.message
       ); // Log error details
-      alert(err.response?.data?.message || "Failed to create client");
+      showNotification(err.response?.data?.message || 'Failed to create client', 'error');
     } finally {
       setFormLoading(false); // Set form loading false here
     }
@@ -474,28 +494,48 @@ const ClientDirectory = () => {
 
       setShowModal(false);
       setEditingClient(null); // Clear editing state
+      showNotification('Client updated successfully!', 'success');
       fetchClients(); // Refresh the list
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update client");
+      showNotification(err.response?.data?.message || 'Failed to update client', 'error');
     } finally {
       setFormLoading(false); // Set form loading false here
     }
   };
 
-  const handleDeleteClient = async (clientId) => {
-    if (!window.confirm("Are you sure you want to delete this client?")) return;
+  const handleDeleteClient = (clientId) => {
+    setClientToDelete(clientId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteClient = async () => {
+    if (!clientToDelete) return;
 
     try {
       // Optimistically update UI first
-      setClients((prev) => prev.filter((client) => client.id !== clientId));
-      setSelectedClients((prev) => prev.filter((id) => id !== clientId)); // Remove from selected too
+      setClients((prev) => prev.filter((client) => client.id !== clientToDelete));
+      setSelectedClients((prev) => prev.filter((id) => id !== clientToDelete)); // Remove from selected too
 
       // API call to delete client
-      await api.delete(`/admin/clients/${clientId}`);
+      await api.delete(`/admin/clients/${clientToDelete}`);
+      
+      // Show success notification
+      showNotification('Client deleted successfully!', 'success');
+      
+      // Close modal
+      setShowDeleteModal(false);
+      setClientToDelete(null);
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete client");
+      showNotification(err.response?.data?.message || 'Failed to delete client', 'error');
       fetchClients(); // Re-fetch to sync if optimistic update failed
+      setShowDeleteModal(false);
+      setClientToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setClientToDelete(null);
   };
 
   // --- Effect Hook for Initial Data Load ---
@@ -890,6 +930,52 @@ const ClientDirectory = () => {
         onSubmit={editingClient ? handleUpdateClient : handleCreateClient}
         loading={formLoading}
       />
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div className={`toast-notification ${toastType}`}>
+          <div className="toast-content">
+            <span className="toast-icon">
+              {toastType === 'success' ? '✓' : '✕'}
+            </span>
+            <span className="toast-message">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="client-modal-overlay">
+          <div className="client-modal-content" style={{ maxWidth: '450px' }}>
+            <div className="client-modal-header">
+              <h2>Confirm Delete</h2>
+              <button onClick={cancelDelete} className="client-modal-close">
+                <X className="icon-small" />
+              </button>
+            </div>
+            <div className="delete-modal-body">
+              <p>Are you sure you want to delete this client? This action cannot be undone.</p>
+            </div>
+            <div className="client-modal-actions">
+              <button
+                type="button"
+                onClick={cancelDelete}
+                className="client-modal-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteClient}
+                className="client-modal-btn-primary"
+                style={{ backgroundColor: '#ef4444' }}
+              >
+                Delete Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

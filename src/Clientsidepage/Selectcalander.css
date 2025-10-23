@@ -9366,7 +9366,8 @@
 .gift-cards-loading {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  padding: 2rem;
   color: #6c757d;
 }
 
