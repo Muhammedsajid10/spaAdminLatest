@@ -2117,7 +2117,7 @@
 /* === CURRENT TIME INDICATOR LINE === */
 .current-time-line {
   position: absolute;
-  left: var(--time-column-width);
+  left: 120px;
   /* Starts after the time column */
   right: 0;
   height: 2px;
@@ -2126,6 +2126,7 @@
   z-index: 3;
   /* Above appointments, below sticky headers */
   pointer-events: none;
+  width:100%;
   /* Make it unclickable */
 }
 
