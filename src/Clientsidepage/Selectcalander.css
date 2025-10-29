@@ -384,7 +384,7 @@
   /* Increased height for 30-minute intervals */
   --staff-column-width: 200px;
   /* Fixed width for staff columns */
-  --time-column-width: 226px;
+  --time-column-width: 80px;
   /* Fixed width for time column */
 
   /* New availability color */
@@ -672,7 +672,7 @@
 
 .calendar-popup {
   position: absolute;
-  top: calc(100% + 126px);
+  top: calc(100% + 8px);
   right: 0;
   background: #ffffff;
   border: 1px solid #d1d5db;
@@ -1492,8 +1492,8 @@
   position: sticky;
   /* Sticky header for time column */
   top: 0;
-  z-index: 5002;
-  /* Higher than staff headers AND time-column itself to stay on top */
+  z-index: 5001;
+  /* Higher than staff headers to stay on top */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -2117,7 +2117,7 @@
 /* === CURRENT TIME INDICATOR LINE === */
 .current-time-line {
   position: absolute;
-  left: 400px ;
+  left: var(--time-column-width);
   /* Starts after the time column */
   right: 0;
   height: 2px;
@@ -6640,7 +6640,7 @@
 /* === CLEAN TEAM POPUP (modern, minimal) === */
 .team-popup-enhanced {
   position: absolute;
-  top: calc(100% + 126px);
+  top: calc(100% + 12px);
   left: 0;
   background: #ffffff;
   border-radius: 12px;
