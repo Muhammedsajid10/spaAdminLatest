@@ -683,6 +683,7 @@ const SelectCalendar = () => {
   const [giftCardError, setGiftCardError] = useState('');
   const [giftCardLoading, setGiftCardLoading] = useState(false);
   const [giftCardAppliedAmount, setGiftCardAppliedAmount] = useState(0);
+  const [isWalkIn, setIsWalkIn] = useState(false);
 
   // Month View More Appointments States
   const [showMoreAppointments, setShowMoreAppointments] = useState(false);
@@ -2468,25 +2469,37 @@ const SelectCalendar = () => {
         };
       } else {
         const nameString = clientInfo.name ? clientInfo.name.trim() : '';
-        if (!nameString) {
+        if(!isWalkIn){
+if (!nameString) {
           setBookingError('Client name is required.');
           setBookingLoading(false);
           return;
         }
+        }
+        
         const [firstName, ...rest] = nameString.split(' ');
         const lastName = rest.join(' ') || '';
         clientData = {
           firstName,
           lastName,
-          email: clientInfo.email.trim(),
-          phone: clientInfo.phone.trim()
+          email: (clientInfo.email || '').trim(),
+          phone: (clientInfo.phone || '').trim()
         };
       }
 
-      if (!clientData.email || !clientData.phone) {
-        setBookingError('Client email and phone are required.');
-        setBookingLoading(false);
-        return;
+      // If this is a walk-in booking, allow missing email/phone (no strict checking).
+      // Client name is still required.
+      if (!isWalkIn) {
+        if (!clientData.email || !clientData.phone) {
+          setBookingError('Client email and phone are required.');
+          setBookingLoading(false);
+          return;
+        }
+      } else {
+        firstName="Walkin"
+        // Normalize to empty strings so backend receives predictable fields
+        clientData.email = clientData.email ? clientData.email : '';
+        clientData.phone = clientData.phone ? clientData.phone : '';
       }
 
       // Create services array from multiple appointments
@@ -4301,10 +4314,7 @@ useEffect(() => {
                           </div>
                         );
                       })}
-                      {/* Placeholder when none added yet */}
-                      {multipleAppointments.length === 0 && bookingDefaults?.time && (
-                        <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
-                      )}
+                   
                       <button
                         type="button"
                         className="add-service-inline-btn"
@@ -4597,156 +4607,223 @@ useEffect(() => {
                     </div>
                   </div> */}
 
-                  {/* Client Search Section */}
-                  <div className="client-search-section">
-                    <div className="client-search-header">
-                      <h4>Search Existing Client</h4>
-                      {selectedExistingClient && (
-                        <button
-                          className="clear-client-btn"
-                          onClick={clearClientSelection}
-                        >
-                          Clear Selection
-                        </button>
-                      )}
-                    </div>
+                  <div className="client-step-grid">
+                    <aside className="client-right-panel">
+                      <h4 className="client-right-heading">Walk-in client</h4>
+                      <div className="walkin-control">
+                        <label className="walkin-switch" htmlFor="walkInSwitch">
+                          <input
+                            id="walkInSwitch"
+                            type="checkbox"
+                            checked={isWalkIn}
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              setIsWalkIn(checked);
+                              if (checked) {
+                                // If user marks as walk-in, clear any selected existing client
+                                setSelectedExistingClient(null);
+                                // Clear optional contact fields (they are not required)
+                                setClientInfo(f => ({ ...f, email: '', phone: '' }));
+                              }
+                            }}
+                          />
+                          <span className="walkin-slider" />
+                        </label>
+                        <div className="walkin-labels">
+                          <div className="walkin-title">Walk-in client</div>
+                          <div className="walkin-sub">No additional data required</div>
+                        </div>
+                      </div>
 
-                    {!selectedExistingClient && !isAddingNewClient && (
-                      <div className="client-search-input-wrapper">
-                        <input
-                          type="text"
-                          placeholder="Search by name, email, or phone..."
-                          value={clientSearchQuery}
-                          onChange={handleClientSearchChange}
-                          onFocus={() => {
-                            setShowClientSearch(true);
-                            searchClients(clientSearchQuery);
-                          }}
-                          onBlur={() => {
-                            setTimeout(() => setShowClientSearch(false), 200);
-                          }}
-                        />
-                        {showClientSearch && clientSearchResults.length > 0 && (
-                          <div className="client-search-results">
-                            {clientSearchResults.map(client => (
-                              <div
-                                key={client._id}
-                                className="client-search-result"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => selectExistingClient(client)}
+                      {/* <div className="walkin-help">
+                    <p>If checked, only client name is required. When you Continue, the summary will show the client as a walk-in.</p>
+                  </div> */}
+                    </aside>
+                    <div className="client-search-section">
+                      <div className="client-search-header">
+                        <h4>Search Existing Client</h4>
+                        <div className="client-search-right">
+                          {selectedExistingClient && (
+                            <button
+                              className="clear-client-btn"
+                              onClick={clearClientSelection}
+                            >
+                              Clear Selection
+                            </button>
+                          )}
+
+                          {/* Walk-in checkbox on the right side */}
+                          {/* <div className="walkin-control-inline">
+                                <label className="checkbox-container">
+                                <input
+                                  type="checkbox"
+                                  checked={isWalkIn}
+                                  onChange={e => {
+                                  const checked = e.target.checked;
+                                  setIsWalkIn(checked);
+                                  if (checked) {
+                                    setSelectedExistingClient(null);
+                                    setClientInfo(f => ({ ...f, email: '', phone: '' }));
+                                    setIsAddingNewClient(false);
+                                    setShowClientSearch(false);
+                                  }
+                                  }}
+                                />
+                                <span className="checkmark"></span>
+                                </label>
+                              </div> */}
+
+                          {/* <div className="walkin-text">Walk-in client (no data required)</div> */}
+                        </div>
+                      </div>
+
+                      {!selectedExistingClient && !isAddingNewClient && (
+                        <div className="client-search-input-wrapper">
+                          <input
+                            type="text"
+                            placeholder="Search by name, email, or phone..."
+                            value={clientSearchQuery}
+                            onChange={handleClientSearchChange}
+                            onFocus={() => {
+                              setShowClientSearch(true);
+                              searchClients(clientSearchQuery);
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => setShowClientSearch(false), 200);
+                            }}
+                          />
+                          {showClientSearch && clientSearchResults.length > 0 && (
+                            <div className="client-search-results">
+                              {clientSearchResults.map(client => (
+                                <div
+                                  key={client._id}
+                                  className="client-search-result"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => selectExistingClient(client)}
+                                >
+                                  <div className="client-result-avatar">
+                                    {(client.firstName?.[0] || '') + (client.lastName?.[0] || '')}
+                                  </div>
+                                  <div className="client-result-info">
+                                    <div className="client-result-name">
+                                      {client.firstName} {client.lastName}
+                                    </div>
+                                    <div className="client-result-contact">
+                                      {client.email} • {client.phone}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
+                            <div className="client-search-no-results">
+                              <p>No clients found for "{clientSearchQuery}"</p>
+                              <button
+                                className="add-new-client-btn"
+                                onClick={addNewClient}
                               >
-                                <div className="client-result-avatar">
-                                  {(client.firstName?.[0] || '') + (client.lastName?.[0] || '')}
-                                </div>
-                                <div className="client-result-info">
-                                  <div className="client-result-name">
-                                    {client.firstName} {client.lastName}
-                                  </div>
-                                  <div className="client-result-contact">
-                                    {client.email} • {client.phone}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                                Add New Client
+                              </button>
+                            </div>
+                          )}
 
-                        {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
-                          <div className="client-search-no-results">
-                            <p>No clients found for "{clientSearchQuery}"</p>
+                          {!showClientSearch && !isAddingNewClient && (
                             <button
                               className="add-new-client-btn"
                               onClick={addNewClient}
                             >
                               Add New Client
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
+                      )}
 
-                        {!showClientSearch && !isAddingNewClient && (
-                          <button
-                            className="add-new-client-btn"
-                            onClick={addNewClient}
-                          >
-                            Add New Client
-                          </button>
-                        )}
-                      </div>
-                    )}
+                      {/* Selected Client Display */}
+                      {selectedExistingClient && (
+                        <div className="selected-client-display">
+                          <div className="selected-client-avatar">
+                            {(selectedExistingClient.firstName?.[0] || '') + (selectedExistingClient.lastName?.[0] || '')}
+                          </div>
+                          <div className="selected-client-info">
+                            <div className="selected-client-name">
+                              {selectedExistingClient.firstName} {selectedExistingClient.lastName}
+                            </div>
+                            <div className="selected-client-contact">
+                              {selectedExistingClient.email} • {selectedExistingClient.phone}
+                            </div>
+                          </div>
+                          <div className="selected-client-badge">
+                            Existing Client
+                          </div>
+                        </div>
+                      )}
 
-                    {/* Selected Client Display */}
-                    {selectedExistingClient && (
-                      <div className="selected-client-display">
-                        <div className="selected-client-avatar">
-                          {(selectedExistingClient.firstName?.[0] || '') + (selectedExistingClient.lastName?.[0] || '')}
-                        </div>
-                        <div className="selected-client-info">
-                          <div className="selected-client-name">
-                            {selectedExistingClient.firstName} {selectedExistingClient.lastName}
+                      {/* New Client Form */}
+                      {isAddingNewClient && (
+                        <div className="new-client-form">
+                          <div className="new-client-header">
+                            <h4>Add New Client</h4>
+                            <button
+                              className="back-to-search-btn"
+                              onClick={() => {
+                                setIsAddingNewClient(false);
+                                setShowClientSearch(true);
+                                setClientInfo({ name: '', email: '', phone: '' });
+                                setIsWalkIn(false);
+                              }}
+                            >
+                              ← Back to Search
+                            </button>
                           </div>
-                          <div className="selected-client-contact">
-                            {selectedExistingClient.email} • {selectedExistingClient.phone}
-                          </div>
-                        </div>
-                        <div className="selected-client-badge">
-                          Existing Client
-                        </div>
-                      </div>
-                    )}
+                          <div className="booking-modal-form">
 
-                    {/* New Client Form */}
-                    {isAddingNewClient && (
-                      <div className="new-client-form">
-                        <div className="new-client-header">
-                          <h4>Add New Client</h4>
-                          <button
-                            className="back-to-search-btn"
-                            onClick={() => {
-                              setIsAddingNewClient(false);
-                              setShowClientSearch(true);
-                              setClientInfo({ name: '', email: '', phone: '' });
-                            }}
-                          >
-                            ← Back to Search
-                          </button>
-                        </div>
-                        <div className="booking-modal-form">
-                          <div className="form-group">
-                            <label htmlFor="clientName">Client Name *</label>
-                            <input
-                              id="clientName"
-                              type="text"
-                              placeholder="Enter client's full name"
-                              value={clientInfo.name}
-                              onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))}
-                              required
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label htmlFor="clientEmail">Email Address *</label>
-                            <input
-                              id="clientEmail"
-                              type="email"
-                              placeholder="Enter client's email address"
-                              value={clientInfo.email}
-                              onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
-                              required
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label htmlFor="clientPhone">Phone Number *</label>
-                            <input
-                              id="clientPhone"
-                              type="tel"
-                              placeholder="Enter client's phone number"
-                              value={clientInfo.phone}
-                              onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
-                              required
-                            />
+                            <div className="form-group">
+                              <label htmlFor="clientName">Client Name {isWalkIn ? '(optional for walk-ins)' : '*'}</label>
+                              <input
+                                id="clientName"
+                                type="text"
+                                placeholder="Enter client's full name"
+                                value={clientInfo.name}
+                                onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))}
+                                required={!isWalkIn}
+                              />
+                            </div>
+                            {/* Email and phone are optional/hidden for walk-in bookings */}
+                            {!isWalkIn && (
+                              <>
+                                <div className="form-group">
+                                  <label htmlFor="clientEmail">Email Address *</label>
+                                  <input
+                                    id="clientEmail"
+                                    type="email"
+                                    placeholder="Enter client's email address"
+                                    value={clientInfo.email}
+                                    onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
+                                    required={!isWalkIn}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label htmlFor="clientPhone">Phone Number *</label>
+                                  <input
+                                    id="clientPhone"
+                                    type="tel"
+                                    placeholder="Enter client's phone number"
+                                    value={clientInfo.phone}
+                                    onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
+                                    required={!isWalkIn}
+                                  />
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    {/* Right-side panel: Walk-in toggle and helpers */}
+
                   </div>
 
                   <div className="booking-modal-actions">
@@ -4754,8 +4831,9 @@ useEffect(() => {
                       className="booking-modal-next"
                       onClick={() => setBookingStep(6)}
                       disabled={
-                        !selectedExistingClient &&
-                        (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
+                        !selectedExistingClient && !(
+                          isWalkIn || (clientInfo.name.trim() && clientInfo.email.trim() && clientInfo.phone.trim())
+                        )
                       }
                     >
                       Continue to Payment

@@ -3524,12 +3524,7 @@
 }
 
 /* Client step two-column layout: left = search/form, right = walk-in switch/help */
-.client-step-grid {
-  display: grid;
-  grid-template-columns: fr 300px;
-  gap: 20px;
-  align-items: start;
-}
+
 
 /* Make the left column (search & form) expand and use full width of its cell */
 .client-search-section {
@@ -3629,6 +3624,7 @@
   border-radius: 8px;
   box-shadow: 0 6px 18px rgba(2,6,23,0.06);
 }
+
 
 .walkin-control {
   display: flex;
@@ -10064,7 +10060,12 @@
 .date-picker-week:nth-child(3) {
   animation-delay: 0.15s;
 }
-
+.client-step-grid {
+  display: grid;
+  grid-template-columns: fr 300px;
+  gap: 20px;
+  align-items: start;
+}
 .date-picker-week:nth-child(4) {
   animation-delay: 0.2s;
 }
