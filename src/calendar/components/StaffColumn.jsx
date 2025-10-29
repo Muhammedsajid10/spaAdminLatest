@@ -15,7 +15,8 @@ export const StaffColumn = ({
   showTimeHoverHandler,
   hideTimeHover,
   setSelectedBookingForStatus,
-  setShowBookingStatusModal
+  setShowBookingStatusModal,
+  hideHeader = false
 }) => {
   // Normalize employee id (backend might use _id or employeeId)
   const employeeId = employee.id || employee._id || employee.employeeId;
@@ -55,20 +56,22 @@ export const StaffColumn = ({
 
   return (
     <div key={employeeId} className={`staff-column ${!hasShift ? 'staff-absent' : ''} ${!hasValidShifts ? 'no-shifts' : ''}`}>
-      <div className="staff-header">
-        <div className="staff-avatar" style={{
-          backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
-          opacity: hasShift && hasValidShifts ? 1 : 0.5
-        }}>
-          {employee.avatar ?
-            <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{ opacity: hasShift && hasValidShifts ? 1 : 0.5 }} /> :
-            employee.name.charAt(0)
-          }
+      {!hideHeader && (
+        <div className="staff-header">
+          <div className="staff-avatar" style={{
+            backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
+            opacity: hasShift && hasValidShifts ? 1 : 0.5
+          }}>
+            {employee.avatar ?
+              <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{ opacity: hasShift && hasValidShifts ? 1 : 0.5 }} /> :
+              employee.name.charAt(0)
+            }
+          </div>
+          <div className="staff-info">
+            <div className="staff-name" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.name}</div>
+          </div>
         </div>
-        <div className="staff-info">
-          <div className="staff-name" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.name}</div>
-        </div>
-      </div>
+      )}
       <div className="time-slots-column" style={{ position: 'relative' }}>
   {timeSlots.map(slot=>{
           const slotKey = `${dayKey}_${slot}`;

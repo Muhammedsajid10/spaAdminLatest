@@ -1456,6 +1456,8 @@
   /* Time column and staff grid side-by-side */
   flex-grow: 1;
   /* Allow it to fill the available height within scheduler-content */
+  overflow: visible;
+  /* Allow sticky headers from children */
 }
 
 /* === TIME COLUMN === */
@@ -1468,6 +1470,8 @@
   /* Prevent shrinking */
   display: flex;
   flex-direction: column;
+  overflow: visible;
+  /* Allow sticky header to work */
 }
 
 .time-header {
@@ -1482,10 +1486,11 @@
   border-bottom: 2px solid #e5e7eb;
   font-size: 14px;
   position: sticky;
-  /* Sticky header for time column: sit below the top scheduler header */
-  top: var(--scheduler-header-height);
-  z-index: 2;
-  /* Ensure it stays above content when scrolling */
+  /* Sticky header for time column */
+  top: 0;
+  z-index: 5001;
+  /* Higher than staff headers to stay on top */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .time-slots {
@@ -1523,13 +1528,113 @@
   letter-spacing: 0.5px;
 }
 
-/* === STAFF GRID === */
+/* === STAFF GRID WRAPPER (contains sticky headers + scrollable grid) === */
+.staff-grid-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: visible; /* Allow sticky headers to work properly */
+}
+
+/* === STICKY STAFF HEADERS ROW (all headers in one row) === */
+.staff-headers-row {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 5000;
+  background: #ffffff;
+  border-bottom: 2px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.staff-header-cell {
+  min-height: 102px;
+  height: auto;
+  padding: 12px 8px;
+  background: #ffffff;
+  border-right: 2px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Match column widths */
+.staff-grid.cols-1 ~ .staff-headers-row .staff-header-cell,
+.staff-headers-row .staff-header-cell:only-child {
+  width: 100%;
+  min-width: 300px;
+  flex: 1;
+}
+
+.staff-grid.cols-2 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-2) .staff-headers-row .staff-header-cell {
+  width: 50%;
+  min-width: 280px;
+  flex: 1;
+}
+
+.staff-grid.cols-3 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-3) .staff-headers-row .staff-header-cell {
+  width: 33.33%;
+  min-width: 250px;
+  flex: 1;
+}
+
+.staff-grid.cols-4 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-4) .staff-headers-row .staff-header-cell {
+  width: 25%;
+  min-width: 220px;
+  flex: 1;
+}
+
+.staff-grid.cols-5 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-5) .staff-headers-row .staff-header-cell {
+  width: 20%;
+  min-width: 200px;
+  flex: 1;
+}
+
+.staff-grid.cols-6 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-6) .staff-headers-row .staff-header-cell {
+  width: 16.66%;
+  min-width: 180px;
+  flex: 1;
+}
+
+/* 7+ employees - fixed width */
+.staff-grid-wrapper:has(.staff-grid.cols-7) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-8) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-9) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-10) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-11) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-12) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-13) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-14) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-15) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-16) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-17) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-18) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-19) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-20) .staff-headers-row .staff-header-cell {
+  width: var(--staff-column-width);
+  min-width: var(--staff-column-width);
+  flex: 0 0 var(--staff-column-width);
+}
+
+/* === STAFF GRID (scrollable content area) === */
 .staff-grid {
   flex: 1;
   display: flex;
   /* For horizontal arrangement of staff columns */
   overflow-x: auto;
   /* THIS IS YOUR HORIZONTAL SCROLL FOR EMPLOYEES */
+  overflow-y: visible;
+  /* Allow sticky headers to work with parent scroll */
   position: relative;
   /* Important for sticky children */
 }
@@ -1682,6 +1787,8 @@
   border-right: 2px solid #e5e7eb;
   display: flex;
   flex-direction: column;
+  overflow: visible;
+  /* Allow sticky headers to work */
 }
 
 .staff-header {
@@ -1699,14 +1806,8 @@
   /* Sticky header for each staff column */
   top: 0;
   left: 0;
-  z-index: 3000;
-
-
-      /* position: fixed;
-    top: 144px;
-    
-    width: 100%; */
-  
+  z-index: 5000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .staff-avatar {
@@ -9688,7 +9789,7 @@
 
 .week-info {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; 
   gap: 4px;
 }
 
