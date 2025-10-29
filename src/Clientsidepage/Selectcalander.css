@@ -1534,18 +1534,19 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden; /* Prevent wrapper from scrolling */
+  overflow: visible; /* Allow sticky headers to work properly */
 }
 
 /* === STICKY STAFF HEADERS ROW (all headers in one row) === */
 .staff-headers-row {
   display: flex;
-  position: fixed;
-  top: 100;
+  position: sticky;
+  top: 0;
   z-index: 5000;
   background: #ffffff;
   border-bottom: 2px solid #e5e7eb;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .staff-header-cell {
