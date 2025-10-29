@@ -672,7 +672,7 @@
 
 .calendar-popup {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 126px);
   right: 0;
   background: #ffffff;
   border: 1px solid #d1d5db;
@@ -1472,6 +1472,10 @@
   flex-direction: column;
   overflow: visible;
   /* Allow sticky header to work */
+  position: sticky;
+  left: 0;
+  z-index: 100;
+  /* Stay on top when staff grid scrolls horizontally */
 }
 
 .time-header {
@@ -1488,8 +1492,8 @@
   position: sticky;
   /* Sticky header for time column */
   top: 0;
-  z-index: 5001;
-  /* Higher than staff headers to stay on top */
+  z-index: 5002;
+  /* Higher than staff headers AND time-column itself to stay on top */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -1561,6 +1565,7 @@
   justify-content: center;
   gap: 6px;
   flex-shrink: 0;
+  /* flex-grow:1; */
 }
 
 /* Match column widths */
@@ -1623,7 +1628,7 @@
 .staff-grid-wrapper:has(.staff-grid.cols-20) .staff-headers-row .staff-header-cell {
   width: var(--staff-column-width);
   min-width: var(--staff-column-width);
-  flex: 0 0 var(--staff-column-width);
+  /* flex: 0 0 var(--staff-column-width); */
 }
 
 /* === STAFF GRID (scrollable content area) === */
@@ -6635,7 +6640,7 @@
 /* === CLEAN TEAM POPUP (modern, minimal) === */
 .team-popup-enhanced {
   position: absolute;
-  top: calc(100% + 12px);
+  top: calc(100% + 126px);
   left: 0;
   background: #ffffff;
   border-radius: 12px;

@@ -476,23 +476,23 @@ const getDatePickerCalendarDays = (month) => {
 const getWeeksInMonth = (date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
-  
+
   // First day of the month
   const firstDay = new Date(year, month, 1);
   // Last day of the month
   const lastDay = new Date(year, month + 1, 0);
-  
+
   const weeks = [];
   let currentWeekStart = new Date(firstDay);
-  
+
   // Adjust to start of the week (Monday)
   const dayOfWeek = (firstDay.getDay() + 6) % 7;
   currentWeekStart.setDate(firstDay.getDate() - dayOfWeek);
-  
+
   while (currentWeekStart <= lastDay) {
     const weekEnd = new Date(currentWeekStart);
     weekEnd.setDate(currentWeekStart.getDate() + 6);
-    
+
     weeks.push({
       startDate: new Date(currentWeekStart),
       endDate: new Date(weekEnd),
@@ -503,10 +503,10 @@ const getWeeksInMonth = (date) => {
         return todayStart >= currentWeekStart && todayStart <= weekEnd;
       })()
     });
-    
+
     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
   }
-  
+
   return weeks;
 };
 
@@ -516,7 +516,7 @@ const getMonthsInYear = (year) => {
   const today = new Date();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
-  
+
   for (let i = 0; i < 12; i++) {
     const monthDate = new Date(year, i, 1);
     months.push({
@@ -527,7 +527,7 @@ const getMonthsInYear = (year) => {
       isCurrentMonth: year === currentYear && i === currentMonth
     });
   }
-  
+
   return months;
 };
 
@@ -665,7 +665,7 @@ const SelectCalendar = () => {
   const [upiId, setUpiId] = useState('');
   const [availableGiftCards, setAvailableGiftCards] = useState([]); // [{_id, code, remainingValue}]
   const [availableMemberships, setAvailableMemberships] = useState([]); // [{_id, name, status, expiresAt}]
-  
+
   // Membership integration states
   const [appliedMembership, setAppliedMembership] = useState(null);
   const [membershipDiscountAmount, setMembershipDiscountAmount] = useState(0);
@@ -968,7 +968,7 @@ const SelectCalendar = () => {
         startTime,
         endTime
       };
-  addAppointmentToSessionLocal(newAppointment);
+      addAppointmentToSessionLocal(newAppointment);
       // Persist selected professional for potential later use
       setSelectedProfessional(professionalObj);
       setSelectedService(null); // We store service in appointment card instead
@@ -984,8 +984,8 @@ const SelectCalendar = () => {
       setSelectedProfessional(bookingDefaults.professional);
       setBookingStep(3); // Skip professional selection, go directly to time selection
       const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
-  // use thunk to fetch timeslots (fallback will still use local generator if API not available)
-  dispatch(fetchBookingTimeSlotsThunk({ employeeId: bookingDefaults.professional._id || bookingDefaults.professional.id, serviceId: service._id, date: bookingDate }));
+      // use thunk to fetch timeslots (fallback will still use local generator if API not available)
+      dispatch(fetchBookingTimeSlotsThunk({ employeeId: bookingDefaults.professional._id || bookingDefaults.professional.id, serviceId: service._id, date: bookingDate }));
       return;
     }
 
@@ -1394,17 +1394,17 @@ const SelectCalendar = () => {
     setBookingError(null);
     try {
       // console.log('Fetching services from:', `${Base_url}/bookings/services`);
-        // Try to load services via thunk-backed API first
-        try {
-          const services = await dispatch(fetchServicesThunk()).unwrap();
-          setAvailableServices(services || MOCK_SERVICES_DATA);
-          setBookingLoading(false);
-          return;
-        } catch (err) {
-          console.warn('fetchServicesThunk failed, falling back to direct fetch', err);
-        }
-        const res = await fetch(`${Base_url}/bookings/services`);
-        const data = await res.json();
+      // Try to load services via thunk-backed API first
+      try {
+        const services = await dispatch(fetchServicesThunk()).unwrap();
+        setAvailableServices(services || MOCK_SERVICES_DATA);
+        setBookingLoading(false);
+        return;
+      } catch (err) {
+        console.warn('fetchServicesThunk failed, falling back to direct fetch', err);
+      }
+      const res = await fetch(`${Base_url}/bookings/services`);
+      const data = await res.json();
 
       // console.log('Services API response:', data);
 
@@ -1636,7 +1636,7 @@ const SelectCalendar = () => {
     console.log('Service ID:', serviceId);
     console.log('Date:', date?.toDateString());
 
-  setBookingLoading(true);
+    setBookingLoading(true);
     setBookingError(null);
 
     try {
@@ -1731,17 +1731,22 @@ const SelectCalendar = () => {
         return;
       }
 
-      const res = await fetch(`${Base_url}/admin/clients`, {
+      // Fetch ALL clients without pagination for search functionality
+      const res = await fetch(`${Base_url}/admin/clients?limit=10000`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       const data = await res.json();
 
-      // console.log('Clients API response:', data);
+      console.log('📋 Clients API response:', data);
+      console.log('📋 Number of clients fetched:', data.data?.clients?.length || 0);
+      console.log('📋 Total clients in database:', data.totalCount || 0);
 
       if (res.ok && data.success) {
-        setExistingClients(data.data?.clients || []);
+        const clients = data.data?.clients || [];
+        console.log('✅ Setting existing clients:', clients.length);
+        setExistingClients(clients);
       } else {
         console.error('Failed to fetch clients:', data.message);
         setExistingClients(MOCK_CLIENTS_DATA);
@@ -1753,8 +1758,13 @@ const SelectCalendar = () => {
   }, []);
 
   const searchClients = useCallback((query) => {
+    console.log('🔍 Search triggered with query:', query);
+    console.log('🔍 Total existing clients:', existingClients.length);
+    
     if (!query.trim()) {
-      setClientSearchResults(existingClients.slice(0, 10));
+      // Show all clients when search is empty
+      console.log('🔍 Empty query - showing all clients:', existingClients.length);
+      setClientSearchResults(existingClients);
       return;
     }
 
@@ -1768,6 +1778,9 @@ const SelectCalendar = () => {
         email.includes(searchTerm) ||
         phone.includes(searchTerm);
     });
+    
+    console.log('🔍 Filtered results:', filtered.length);
+    console.log('🔍 Sample filtered clients:', filtered.slice(0, 3).map(c => `${c.firstName} ${c.lastName}`));
     setClientSearchResults(filtered);
   }, [existingClients]);
 
@@ -1784,8 +1797,8 @@ const SelectCalendar = () => {
     setShowClientSearch(false);
     setIsAddingNewClient(false);
     if (client._id) {
-    loadBenefitsIfNeeded(true);
-  }
+      loadBenefitsIfNeeded(true);
+    }
   };
 
   const clearClientSelection = () => {
@@ -2245,8 +2258,8 @@ const SelectCalendar = () => {
       finalAppointmentDate: appointmentDate,
       formatDateLocalResult: bookingDate instanceof Date ? formatDateLocal(bookingDate) : 'N/A'
     });
-  console.log('Full appointment:', appointment);
-  const newAppointment = addAppointmentToSessionLocal(appointment);
+    console.log('Full appointment:', appointment);
+    const newAppointment = addAppointmentToSessionLocal(appointment);
     console.log('New appointment added:', newAppointment);
 
     // Clear the current selection to show empty "Ready to Add" section
@@ -2266,20 +2279,20 @@ const SelectCalendar = () => {
   // Membership integration handlers
   const handleMembershipApplied = (membership, matchingService) => {
     console.log('🎯 Admin applying membership:', membership, 'for service:', matchingService);
-    
+
     setAppliedMembership(membership);
     setMembershipDiscountAmount(matchingService.price || 0);
-    
+
     // Show success feedback
     alert(` Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`);
   };
 
   const handleMembershipRemoved = () => {
     console.log('❌ Admin removing applied membership');
-    
+
     setAppliedMembership(null);
     setMembershipDiscountAmount(0);
-    
+
     // Show feedback
     alert('Membership removed. Regular pricing restored.');
   };
@@ -2356,18 +2369,18 @@ const SelectCalendar = () => {
   const calculateTotalWithGiftCard = () => {
     const total = getTotalSessionPrice();
     const discountFromMembership = membershipDiscountAmount || 0;
-    
+
     let giftCardDiscount = 0;
     if (selectedGiftCard) {
       const availableValue = calculateGiftCardValue(selectedGiftCard);
       giftCardDiscount = Math.min(total - discountFromMembership, availableValue);
-      
+
       // Update the applied amount for display if it changed
       if (giftCardAppliedAmount !== giftCardDiscount) {
         setGiftCardAppliedAmount(giftCardDiscount);
       }
     }
-    
+
     return {
       subtotal: total,
       membershipDiscount: discountFromMembership,
@@ -2380,15 +2393,15 @@ const SelectCalendar = () => {
   const handleGiftCardSelect = (giftCard) => {
     console.log('🎁 Selected gift card:', giftCard);
     setSelectedGiftCard(giftCard);
-    
+
     // Auto-calculate the maximum redeemable amount
     const totalAmount = getTotalSessionPrice();
     const availableValue = calculateGiftCardValue(giftCard);
     const maxRedeemable = Math.min(availableValue, totalAmount);
-    
+
     setRedeemGiftCardAmount(maxRedeemable);
     setGiftCardAppliedAmount(maxRedeemable);
-    
+
     console.log('Auto-applied gift card amount:', maxRedeemable);
   };
 
@@ -2403,31 +2416,31 @@ const SelectCalendar = () => {
     if (!code || !code.trim()) {
       throw new Error('Gift card code is required');
     }
-    
+
     try {
       setGiftCardLoading(true);
       setGiftCardError('');
-      
+
       const response = await getGiftCardDetails(code.trim());
       const giftCard = response.giftCard;
-      
+
       if (!giftCard) {
         throw new Error('Invalid gift card code');
       }
-      
+
       // Validate gift card status and value
       if (giftCard.status !== 'active') {
         throw new Error('Gift card is not active');
       }
-      
+
       if (giftCard.remainingValue <= 0) {
         throw new Error('Gift card has no remaining value');
       }
-      
+
       if (giftCard.expiresAt && new Date(giftCard.expiresAt) <= new Date()) {
         throw new Error('Gift card has expired');
       }
-      
+
       return giftCard;
     } catch (error) {
       setGiftCardError(error.message);
@@ -2469,37 +2482,31 @@ const SelectCalendar = () => {
         };
       } else {
         const nameString = clientInfo.name ? clientInfo.name.trim() : '';
-        if(!isWalkIn){
-if (!nameString) {
-          setBookingError('Client name is required.');
-          setBookingLoading(false);
-          return;
+        if (!isWalkIn) {
+          if (!nameString) {
+            setBookingError('Client name is required.');
+            setBookingLoading(false);
+            return;
+          }
         }
-        }
-        
+
         const [firstName, ...rest] = nameString.split(' ');
         const lastName = rest.join(' ') || '';
         clientData = {
-          firstName,
-          lastName,
-          email: (clientInfo.email || '').trim(),
-          phone: (clientInfo.phone || '').trim()
+          firstName: firstName || 'Walk-in',
+          lastName: lastName || 'Customer',
+          email: clientInfo.email ? clientInfo.email.trim() : '',
+          phone: clientInfo.phone ? clientInfo.phone.trim() : ''
         };
       }
 
-      // If this is a walk-in booking, allow missing email/phone (no strict checking).
-      // Client name is still required.
+      // Only validate email and phone if NOT a walk-in
       if (!isWalkIn) {
         if (!clientData.email || !clientData.phone) {
           setBookingError('Client email and phone are required.');
           setBookingLoading(false);
           return;
         }
-      } else {
-        firstName="Walkin"
-        // Normalize to empty strings so backend receives predictable fields
-        clientData.email = clientData.email ? clientData.email : '';
-        clientData.phone = clientData.phone ? clientData.phone : '';
       }
 
       // Create services array from multiple appointments
@@ -2587,7 +2594,7 @@ if (!nameString) {
           discount: membershipDiscountAmount,
           originalAmount: totalAmount
         });
-        
+
         paymentDetails.adminMembership = {
           membershipId: appliedMembership._id,
           discountAmount: membershipDiscountAmount,
@@ -2602,14 +2609,14 @@ if (!nameString) {
         const giftCardId = selectedGiftCard._id || selectedGiftCard.id;
         const giftCardCode = selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber;
         const availableValue = calculateGiftCardValue(selectedGiftCard);
-        
+
         console.log(' Applying gift card:', {
           id: giftCardId,
           code: giftCardCode,
           appliedAmount: giftCardAppliedAmount,
           remainingOnCard: availableValue - giftCardAppliedAmount
         });
-        
+
         paymentDetails.giftCard = {
           giftCardId: giftCardId,
           code: giftCardCode,
@@ -2713,7 +2720,7 @@ if (!nameString) {
           });
 
           // Update any availableMemberships list we have cached to reflect the deduction
-          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions||0)+1)) : m.remainingSessions)) }) : m));
+          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
 
           // Also refresh memberships list from server in background to keep authoritative state
           // bump signal to force AdminMembershipChecker to refetch
@@ -2778,13 +2785,13 @@ if (!nameString) {
     setGiftCardCode('');
     setGiftCardError('');
     setGiftCardLoading(false);
-    
+
     // Reset membership states
     setAvailableMemberships([]);
     setSelectedMembership(null);
     setAppliedMembership(null);
     setMembershipDiscountAmount(0);
-    
+
     // Reset benefits loading states
     setBenefitsLoading(false);
     setBenefitsError(null);
@@ -2850,81 +2857,89 @@ if (!nameString) {
     }
   }, [showAddBookingModal, fetchBookingServices, fetchExistingClients]);
 
+  // Debug: Track when existing clients state changes
+  useEffect(() => {
+    console.log('📊 Existing clients state updated:', existingClients.length, 'clients');
+    if (existingClients.length > 0) {
+      console.log('📊 Sample clients:', existingClients.slice(0, 3).map(c => `${c.firstName} ${c.lastName}`));
+    }
+  }, [existingClients]);
+
   // Auto-fetch gift cards useEffect moved after function definition
 
   // Load client gift cards when entering payment step
-const loadBenefitsIfNeeded = useCallback(async (force = false) => {
-  // Only proceed if we have a selected client
-  if (!selectedExistingClient?._id && !force) {
-    console.log('No client selected, skipping benefits load');
-    return;
-  }
-
-  setBenefitsLoading(true);
-  setBenefitsError(null);
-
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication required');
+  const loadBenefitsIfNeeded = useCallback(async (force = false) => {
+    // Only proceed if we have a selected client
+    if (!selectedExistingClient?._id && !force) {
+      console.log('No client selected, skipping benefits load');
+      return;
     }
 
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
+    setBenefitsLoading(true);
+    setBenefitsError(null);
 
-    // Fetch gift cards
-    const gcRes = await fetch(`${Base_url}/giftcards/purchased`, { headers });
-    const gcData = await gcRes.json();
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
 
-    console.log('Gift cards API response:', gcData); // Debug log
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
 
-    if (!gcRes.ok) {
-      throw new Error('Failed to fetch gift cards');
+      // Fetch gift cards
+      const gcRes = await fetch(`${Base_url}/giftcards/purchased`, { headers });
+      const gcData = await gcRes.json();
+
+      console.log('Gift cards API response:', gcData); // Debug log
+
+      if (!gcRes.ok) {
+        throw new Error('Failed to fetch gift cards');
+      }
+
+      // Filter gift cards for the current client
+      const clientId = selectedExistingClient._id;
+      const ownedGiftCards = (gcData.data?.giftCards || []).filter(card => {
+        // Check ownership
+        const isOwner = card.purchasedBy?._id === clientId;
+        const isRecipient = card.recipientName?.toLowerCase?.()
+          .includes(selectedExistingClient.firstName?.toLowerCase() || '');
+
+        // Check validity
+        const now = new Date();
+        const isExpired = card.expiryDate && new Date(card.expiryDate) < now;
+        const hasValue = card.remainingValue > 0;
+        const isActive = card.status?.toLowerCase() === 'active';
+
+        return (isOwner || isRecipient) && !isExpired && hasValue && isActive;
+      });
+
+      console.log('Filtered gift cards:', ownedGiftCards); // Debug log
+      setAvailableGiftCards(ownedGiftCards);
+
+      // Clear selected gift card if it's no longer valid
+      if (selectedGiftCard && !ownedGiftCards.some(gc => gc._id === selectedGiftCard._id)) {
+        setSelectedGiftCard(null);
+        setGiftCardAppliedAmount(0);
+      }
+
+    } catch (error) {
+      console.error('Error loading gift cards:', error);
+      setBenefitsError(error.message);
+      setAvailableGiftCards([]);
+    } finally {
+      setBenefitsLoading(false);
     }
+  }, [selectedExistingClient, selectedGiftCard]);
 
-    // Filter gift cards for the current client
-    const clientId = selectedExistingClient._id;
-    const ownedGiftCards = (gcData.data?.giftCards || []).filter(card => {
-      // Check ownership
-      const isOwner = card.purchasedBy?._id === clientId;
-      const isRecipient = card.recipientName?.toLowerCase?.()
-        .includes(selectedExistingClient.firstName?.toLowerCase() || '');
-
-      // Check validity
-      const now = new Date();
-      const isExpired = card.expiryDate && new Date(card.expiryDate) < now;
-      const hasValue = card.remainingValue > 0;
-      const isActive = card.status?.toLowerCase() === 'active';
-
-      return (isOwner || isRecipient) && !isExpired && hasValue && isActive;
-    });
-
-    console.log('Filtered gift cards:', ownedGiftCards); // Debug log
-    setAvailableGiftCards(ownedGiftCards);
-
-    // Clear selected gift card if it's no longer valid
-    if (selectedGiftCard && !ownedGiftCards.some(gc => gc._id === selectedGiftCard._id)) {
-      setSelectedGiftCard(null);
-      setGiftCardAppliedAmount(0);
+  // Add useEffect to trigger benefits load when needed
+  useEffect(() => {
+    if (bookingStep === 6 && selectedExistingClient?._id) {
+      loadBenefitsIfNeeded();
     }
-
-  } catch (error) {
-    console.error('Error loading gift cards:', error);
-    setBenefitsError(error.message);
-    setAvailableGiftCards([]);
-  } finally {
-    setBenefitsLoading(false);
-  }
-}, [selectedExistingClient, selectedGiftCard]);
-
-// Add useEffect to trigger benefits load when needed
-useEffect(() => {
-  if (bookingStep === 6 && selectedExistingClient?._id) {
-    loadBenefitsIfNeeded();
-  }
-}, [bookingStep, selectedExistingClient, loadBenefitsIfNeeded]);
+  }, [bookingStep, selectedExistingClient, loadBenefitsIfNeeded]);
 
   // Auto-selection effects for booking modal (when defaults are available)
   useEffect(() => {
@@ -3018,7 +3033,7 @@ useEffect(() => {
       }
 
       // Add session appointment with a distinctive styling
-   
+
     });
 
     return merged;
@@ -3214,7 +3229,7 @@ useEffect(() => {
                 const hasShift = hasShiftOnDate(employee, currentDate);
                 const shiftHours = getEmployeeShiftHours(employee, currentDate);
                 const hasValidShifts = shiftHours.length > 0;
-                
+
                 return (
                   <div key={`header-${employee.id}`} className="staff-header-cell">
                     <div className="staff-avatar" style={{
@@ -3264,140 +3279,193 @@ useEffect(() => {
                 hideHeader={true}
               />
             ))}
-          {currentView === 'Week' && (
-            <div className="week-view-container">
-              {/* Week Day Headers */}
-              <div className="week-headers-row">
-                <div className="week-staff-header-cell">Staff</div>
-                {calendarDays.map(day => {
-                  const isToday = day.toDateString() === new Date().toDateString();
-                  return (
-                    <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
-                      <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                      <div className="week-day-number">{day.getDate()}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Employee Rows with Daily Appointments */}
-              {displayEmployees.map(employee => (
-                <div key={employee.id} className="week-employee-row">
-                  <div className="week-staff-cell">
-                    <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
-                      {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
-                    </div>
-                    <div className="staff-info">
-                      <div className="staff-name">{employee.name}</div>
-                      <div className="staff-position">{employee.position}</div>
-                    </div>
-                  </div>
-
-                  {/* Daily appointment cells for this employee */}
+            {currentView === 'Week' && (
+              <div className="week-view-container">
+                {/* Week Day Headers */}
+                <div className="week-headers-row">
+                  <div className="week-staff-header-cell">Staff</div>
                   {calendarDays.map(day => {
-                    const dayKey = formatDateLocal(day); // Use same format as session appointments
-                    const hasShift = hasShiftOnDate(employee, day);
-
-                    // Get appointments for this employee on this day
-                    const dayAppointments = [];
-                    if (mergedAppointments[employee.id]) {
-                      Object.entries(mergedAppointments[employee.id]).forEach(([slotKey, appointment]) => {
-                        if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                          const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                          dayAppointments.push({
-                            ...appointment,
-                            time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
-                            slotKey,
-                            timeSlot: timeFromKey,
-
-                          });
-                        }
-                      });
-                    }
-
+                    const isToday = day.toDateString() === new Date().toDateString();
                     return (
-                      <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
-                        {!hasShift ? (
-                          <div className="week-no-shift">
-                            <span className="no-shift-text">No shift today</span>
-                          </div>
-                        ) : dayAppointments.length > 0 ? (
-                          <div className="week-appointments-container">
-                            {dayAppointments.slice(0, 3).map((app, index) => (
-                              <div
-                                key={index}
-                                className="week-appointment-block"
-                                style={{ backgroundColor: app.color }}
-                                onClick={(e) => {
-                                  e.stopPropagation(); // Prevent event bubbling
-                                  console.log('Week appointment clicked:', app);
+                      <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
+                        <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                        <div className="week-day-number">{day.getDate()}</div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                                  if (app.timeSlot && app.bookingId) {
-                                    // Show booking status for existing appointment
-                                    const appointmentDetails = {
-                                      ...app,
-                                      employeeId: employee.id,
-                                      employeeName: employee.name,
-                                      slotTime: app.timeSlot,
-                                      date: dayKey,
-                                      slotKey: app.slotKey,
-                                      serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
-                                    };
-                                    console.log('Opening booking status modal:', appointmentDetails);
-                                    setSelectedBookingForStatus(appointmentDetails);
-                                    setShowBookingStatusModal(true);
-                                  } else if (app.timeSlot) {
-                                    // Fallback to regular time slot click
-                                    console.log('Fallback to time slot click');
-                                    handleTimeSlotClick(employee.id, app.timeSlot, day);
-                                  } else {
-                                    // No time slot info, show general appointment booking
-                                    console.log('No time slot, showing add appointment modal');
-                                    const staff = employees.find(emp => emp.id === employee.id);
-                                    if (staff) {
-                                      setBookingDefaults({
-                                        professional: {
-                                          _id: staff._id || staff.id,
-                                          id: staff.id,
-                                          user: {
-                                            firstName: staff.name.split(' ')[0],
-                                            lastName: staff.name.split(' ')[1] || ''
+                {/* Employee Rows with Daily Appointments */}
+                {displayEmployees.map(employee => (
+                  <div key={employee.id} className="week-employee-row">
+                    <div className="week-staff-cell">
+                      <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
+                        {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
+                      </div>
+                      <div className="staff-info">
+                        <div className="staff-name">{employee.name}</div>
+                        <div className="staff-position">{employee.position}</div>
+                      </div>
+                    </div>
+
+                    {/* Daily appointment cells for this employee */}
+                    {calendarDays.map(day => {
+                      const dayKey = formatDateLocal(day); // Use same format as session appointments
+                      const hasShift = hasShiftOnDate(employee, day);
+
+                      // Get appointments for this employee on this day
+                      const dayAppointments = [];
+                      if (mergedAppointments[employee.id]) {
+                        Object.entries(mergedAppointments[employee.id]).forEach(([slotKey, appointment]) => {
+                          if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
+                            const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
+                            dayAppointments.push({
+                              ...appointment,
+                              time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
+                              slotKey,
+                              timeSlot: timeFromKey,
+
+                            });
+                          }
+                        });
+                      }
+
+                      return (
+                        <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
+                          {!hasShift ? (
+                            <div className="week-no-shift">
+                              <span className="no-shift-text">No shift today</span>
+                            </div>
+                          ) : dayAppointments.length > 0 ? (
+                            <div className="week-appointments-container">
+                              {dayAppointments.slice(0, 3).map((app, index) => (
+                                <div
+                                  key={index}
+                                  className="week-appointment-block"
+                                  style={{ backgroundColor: app.color }}
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent event bubbling
+                                    console.log('Week appointment clicked:', app);
+
+                                    if (app.timeSlot && app.bookingId) {
+                                      // Show booking status for existing appointment
+                                      const appointmentDetails = {
+                                        ...app,
+                                        employeeId: employee.id,
+                                        employeeName: employee.name,
+                                        slotTime: app.timeSlot,
+                                        date: dayKey,
+                                        slotKey: app.slotKey,
+                                        serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
+                                      };
+                                      console.log('Opening booking status modal:', appointmentDetails);
+                                      setSelectedBookingForStatus(appointmentDetails);
+                                      setShowBookingStatusModal(true);
+                                    } else if (app.timeSlot) {
+                                      // Fallback to regular time slot click
+                                      console.log('Fallback to time slot click');
+                                      handleTimeSlotClick(employee.id, app.timeSlot, day);
+                                    } else {
+                                      // No time slot info, show general appointment booking
+                                      console.log('No time slot, showing add appointment modal');
+                                      const staff = employees.find(emp => emp.id === employee.id);
+                                      if (staff) {
+                                        setBookingDefaults({
+                                          professional: {
+                                            _id: staff._id || staff.id,
+                                            id: staff.id,
+                                            user: {
+                                              firstName: staff.name.split(' ')[0],
+                                              lastName: staff.name.split(' ')[1] || ''
+                                            },
+                                            name: staff.name,
+                                            position: staff.position,
+                                            ...staff
                                           },
-                                          name: staff.name,
-                                          position: staff.position,
-                                          ...staff
-                                        },
-                                        date: day,
-                                        isDirectEmployeeSelection: true
-                                      });
-                                      setSelectedBookingDate(day);
-                                      setIsNewAppointment(true);
-                                      setShowAddBookingModal(true);
-                                      setShowServiceCatalog(true);
+                                          date: day,
+                                          isDirectEmployeeSelection: true
+                                        });
+                                        setSelectedBookingDate(day);
+                                        setIsNewAppointment(true);
+                                        setShowAddBookingModal(true);
+                                        setShowServiceCatalog(true);
+                                      }
                                     }
-                                  }
-                                }}
-                                onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                                  client: app.client,
-                                  service: app.service,
-                                  time: app.time,
-                                  professional: employee.name,
-                                  status: app.status || 'Confirmed',
-                                  notes: app.notes
-                                })}
-                                onMouseLeave={hideBookingTooltip}
-                              >
-                                <div className="appointment-client">{app.client}</div>
-                                <div className="appointment-service">{app.service}</div>
-                              </div>
-                            ))}
+                                  }}
+                                  onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                                    client: app.client,
+                                    service: app.service,
+                                    time: app.time,
+                                    professional: employee.name,
+                                    status: app.status || 'Confirmed',
+                                    notes: app.notes
+                                  })}
+                                  onMouseLeave={hideBookingTooltip}
+                                >
+                                  <div className="appointment-client">{app.client}</div>
+                                  <div className="appointment-service">{app.service}</div>
+                                </div>
+                              ))}
 
-                            {/* Add appointment button for days with existing appointments */}
+                              {/* Add appointment button for days with existing appointments */}
+                              <div
+                                className="week-add-appointment-btn"
+                                // onClick={hasShift ? (e) => {
+                                //   e.stopPropagation(); // Prevent event bubbling
+                                //   console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+
+                                //   // Show service selection for this employee and day
+                                //   const staff = employees.find(emp => emp.id === employee.id);
+                                //   if (staff) {
+                                //     setBookingDefaults({
+                                //       professional: {
+                                //         _id: staff._id || staff.id,
+                                //         id: staff.id,
+                                //         user: {
+                                //           firstName: staff.name.split(' ')[0],
+                                //           lastName: staff.name.split(' ')[1] || ''
+                                //         },
+                                //         name: staff.name,
+                                //         position: staff.position,
+                                //         ...staff
+                                //       },
+                                //       date: day,
+                                //       isDirectEmployeeSelection: true // Flag for skipping professional selection
+                                //     });
+                                //     setSelectedBookingDate(day);
+                                //     setIsNewAppointment(true);
+                                //     setShowAddBookingModal(true);
+                                //     setShowServiceCatalog(true); // Show service selection first
+                                //     console.log('Opening booking modal with defaults:', {
+                                //       professional: staff.name,
+                                //       date: day.toLocaleDateString(),
+                                //       isDirectEmployeeSelection: true
+                                //     });
+                                //   }
+                                // }
+                                //   : undefined}
+                                style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                                title={hasShift ? `Add another appointment with ${employee.name}` : 'No shift scheduled'}
+                              >
+                                {/* <span className="add-appointment-icon">+</span>
+                              <span className="add-appointment-text">Add Appointment</span> */}
+                              </div>
+
+                              {dayAppointments.length > 3 && (
+                                <div
+                                  className="week-more-appointments"
+                                  onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
+                                >
+                                  +{dayAppointments.length - 3} more
+                                </div>
+                              )}
+                            </div>
+                          ) : (
                             <div
-                              className="week-add-appointment-btn"
+                              className="week-empty-cell clickable-slot"
                               // onClick={hasShift ? (e) => {
                               //   e.stopPropagation(); // Prevent event bubbling
-                              //   console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+                              //   console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
 
                               //   // Show service selection for this employee and day
                               //   const staff = employees.find(emp => emp.id === employee.id);
@@ -3427,64 +3495,11 @@ useEffect(() => {
                               //       isDirectEmployeeSelection: true
                               //     });
                               //   }
-                              // }
-                              //   : undefined}
-                              style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
-                              title={hasShift ? `Add another appointment with ${employee.name}` : 'No shift scheduled'}
+                              // } : undefined}
+                              // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                              title={hasShift ? `Book appointment with ${employee.name} on ${day.toLocaleDateString()}` : 'No shift scheduled'}
                             >
-                              {/* <span className="add-appointment-icon">+</span>
-                              <span className="add-appointment-text">Add Appointment</span> */}
-                            </div>
-
-                            {dayAppointments.length > 3 && (
-                              <div
-                                className="week-more-appointments"
-                                onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
-                              >
-                                +{dayAppointments.length - 3} more
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div
-                            className="week-empty-cell clickable-slot"
-                            // onClick={hasShift ? (e) => {
-                            //   e.stopPropagation(); // Prevent event bubbling
-                            //   console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
-
-                            //   // Show service selection for this employee and day
-                            //   const staff = employees.find(emp => emp.id === employee.id);
-                            //   if (staff) {
-                            //     setBookingDefaults({
-                            //       professional: {
-                            //         _id: staff._id || staff.id,
-                            //         id: staff.id,
-                            //         user: {
-                            //           firstName: staff.name.split(' ')[0],
-                            //           lastName: staff.name.split(' ')[1] || ''
-                            //         },
-                            //         name: staff.name,
-                            //         position: staff.position,
-                            //         ...staff
-                            //       },
-                            //       date: day,
-                            //       isDirectEmployeeSelection: true // Flag for skipping professional selection
-                            //     });
-                            //     setSelectedBookingDate(day);
-                            //     setIsNewAppointment(true);
-                            //     setShowAddBookingModal(true);
-                            //     setShowServiceCatalog(true); // Show service selection first
-                            //     console.log('Opening booking modal with defaults:', {
-                            //       professional: staff.name,
-                            //       date: day.toLocaleDateString(),
-                            //       isDirectEmployeeSelection: true
-                            //     });
-                            //   }
-                            // } : undefined}
-                            // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
-                            title={hasShift ? `Book appointment with ${employee.name} on ${day.toLocaleDateString()}` : 'No shift scheduled'}
-                          >
-                            {/* <span className="book-appointment-text">
+                              {/* <span className="book-appointment-text">
                               {hasShift ? 'Click to Book' : 'No Shift'}
                             </span>
                             {hasShift && (
@@ -3492,15 +3507,15 @@ useEffect(() => {
                                 <span className="plus-icon">+</span>
                               </div>
                             )} */}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -3682,7 +3697,7 @@ useEffect(() => {
                               <div className="week-info">
                                 <span className="week-number">Week {week.weekNumber}</span>
                                 <span className="week-range">
-                                  {week.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - 
+                                  {week.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -
                                   {week.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                 </span>
                               </div>
@@ -3732,7 +3747,7 @@ useEffect(() => {
                       <div className="date-picker-months">
                         {getMonthsInYear(datePickerCurrentMonth.getFullYear()).map((monthObj) => {
                           const isCurrentMonth = monthObj.isCurrentMonth;
-                          const isSelectedMonth = currentDate.getFullYear() === monthObj.year && 
+                          const isSelectedMonth = currentDate.getFullYear() === monthObj.year &&
                             currentDate.getMonth() === monthObj.month;
 
                           return (
@@ -3911,21 +3926,7 @@ useEffect(() => {
 
                   {/* Footer with summary */}
                   <div className="team-popup-footer-enhanced">
-                    <div className="selection-summary">
-                      <div className="summary-stats">
-                        <div className="summary-item">
-                          <span className="summary-number">{selectedEmployees.size}</span>
-                          <span className="summary-label">Selected</span>
-                        </div>
-                        <div className="summary-divider"></div>
-                        <div className="summary-item">
-                          <span className="summary-number">
-                            {employees.filter(emp => hasShiftOnDate(emp, currentDate) && selectedEmployees.has(emp.id)).length}
-                          </span>
-                          <span className="summary-label">Working Today</span>
-                        </div>
-                      </div>
-                    </div>
+                   
 
                     <div className="footer-actions">
                       <button
@@ -4306,7 +4307,7 @@ useEffect(() => {
                               </div>
                             </div>
                             <div className="service-card-actions">
-                          
+
                               <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSessionLocal(apt.id)}>
                                 🗑️
                               </button>
@@ -4314,7 +4315,7 @@ useEffect(() => {
                           </div>
                         );
                       })}
-                   
+
                       <button
                         type="button"
                         className="add-service-inline-btn"
@@ -4719,7 +4720,7 @@ useEffect(() => {
 
                           {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
                             <div className="client-search-no-results">
-                              <p>No clients found for "{clientSearchQuery}"</p>
+                              <p>No clients found</p>
                               <button
                                 className="add-new-client-btn"
                                 onClick={addNewClient}
@@ -4942,90 +4943,90 @@ useEffect(() => {
                   {/* Gift Card Redemption Section - FIRST */}
                   <div className="booking-modal-form">
                     <h4> Gift Card Redemption</h4>
-                    
-                     {!selectedGiftCard ? (
-    <div className="available-gift-cards-section">
-      {benefitsLoading && (
-        <div className="gift-cards-loading">
-          <div className="loading-spinner"></div>
-          Loading available gift cards...
-        </div>
-      )}
-      
-      {!benefitsLoading && availableGiftCards.length === 0 && (
-        <div className="no-gift-cards">
-          <div className="no-cards-icon"></div>
-          <p>No gift cards available for this client.</p>
-        </div>
-      )}
-      
-      {!benefitsLoading && availableGiftCards.length > 0 && (
-        <div className="form-group">
-          <label>Select a gift card to redeem:</label>
-          <div className="available-gift-cards-list">
-            {availableGiftCards.map(giftCard => {
-              const giftCardId = giftCard._id || giftCard.id;
-              const giftCardCode = giftCard.code || giftCard.giftCardCode || giftCard.cardNumber;
-              const availableValue = calculateGiftCardValue(giftCard);
-              const expiryDate = giftCard.expiresAt || giftCard.expiryDate || giftCard.expiry;
-              
-              return (
-                <div 
-                  key={giftCardId}
-                  className={`gift-card-item ${selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId ? 'selected' : ''}`}
-                  onClick={() => {
-                    console.log('🎁 Selected gift card:', giftCard);
-                    setSelectedGiftCard(giftCard);
-                    const totalAmount = getTotalSessionPrice();
-                    const maxRedeemable = Math.min(availableValue, totalAmount);
-                    setGiftCardAppliedAmount(maxRedeemable);
-                    setGiftCardError('');
-                  }}
-                >
-                  <div className="gift-card-icon"></div>
-                  <div className="gift-card-info">
-                    <div className="gift-card-code">Code: {giftCardCode}</div>
-                    <div className="gift-card-balance">Available: AED {availableValue.toFixed(2)}</div>
-                    {expiryDate && (
-                      <div className="gift-card-expiry">
-                        Expires: {new Date(expiryDate).toLocaleDateString()}
+
+                    {!selectedGiftCard ? (
+                      <div className="available-gift-cards-section">
+                        {benefitsLoading && (
+                          <div className="gift-cards-loading">
+                            <Loading/>
+                            Loading available gift cards...
+                          </div>
+                        )}
+
+                        {!benefitsLoading && availableGiftCards.length === 0 && (
+                          <div className="no-gift-cards">
+                            <div className="no-cards-icon"></div>
+                            <p>No gift cards available for this client.</p>
+                          </div>
+                        )}
+
+                        {!benefitsLoading && availableGiftCards.length > 0 && (
+                          <div className="form-group">
+                            <label>Select a gift card to redeem:</label>
+                            <div className="available-gift-cards-list">
+                              {availableGiftCards.map(giftCard => {
+                                const giftCardId = giftCard._id || giftCard.id;
+                                const giftCardCode = giftCard.code || giftCard.giftCardCode || giftCard.cardNumber;
+                                const availableValue = calculateGiftCardValue(giftCard);
+                                const expiryDate = giftCard.expiresAt || giftCard.expiryDate || giftCard.expiry;
+
+                                return (
+                                  <div
+                                    key={giftCardId}
+                                    className={`gift-card-item ${selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId ? 'selected' : ''}`}
+                                    onClick={() => {
+                                      console.log('🎁 Selected gift card:', giftCard);
+                                      setSelectedGiftCard(giftCard);
+                                      const totalAmount = getTotalSessionPrice();
+                                      const maxRedeemable = Math.min(availableValue, totalAmount);
+                                      setGiftCardAppliedAmount(maxRedeemable);
+                                      setGiftCardError('');
+                                    }}
+                                  >
+                                    <div className="gift-card-icon"></div>
+                                    <div className="gift-card-info">
+                                      <div className="gift-card-code">Code: {giftCardCode}</div>
+                                      <div className="gift-card-balance">Available: AED {availableValue.toFixed(2)}</div>
+                                      {expiryDate && (
+                                        <div className="gift-card-expiry">
+                                          Expires: {new Date(expiryDate).toLocaleDateString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="gift-card-select-btn">
+                                      {(selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId) ? 'Selected' : 'Select'}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {giftCardError && (
+                          <div className="gift-card-error">{giftCardError}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="applied-gift-card-section">
+                        <div className="applied-gift-card-info">
+                          <div className="gift-card-icon"></div>
+                          <div className="gift-card-details">
+                            <div className="gift-card-code">Code: {selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber}</div>
+                            <div className="gift-card-value">Applied: AED {giftCardAppliedAmount}</div>
+                            <div className="gift-card-remaining">Remaining on card: AED {(calculateGiftCardValue(selectedGiftCard) - giftCardAppliedAmount).toFixed(2)}</div>
+                          </div>
+                          <button
+                            type="button"
+                            className="remove-gift-card-btn"
+                            onClick={removeAppliedGiftCard}
+                            title="Remove gift card"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     )}
-                  </div>
-                  <div className="gift-card-select-btn">
-                    {(selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId) ? 'Selected' : 'Select'}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      
-      {giftCardError && (
-        <div className="gift-card-error">{giftCardError}</div>
-      )}
-    </div>
-  ) : (
-    <div className="applied-gift-card-section">
-      <div className="applied-gift-card-info">
-        <div className="gift-card-icon"></div>
-        <div className="gift-card-details">
-          <div className="gift-card-code">Code: {selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber}</div>
-          <div className="gift-card-value">Applied: AED {giftCardAppliedAmount}</div>
-          <div className="gift-card-remaining">Remaining on card: AED {(calculateGiftCardValue(selectedGiftCard) - giftCardAppliedAmount).toFixed(2)}</div>
-        </div>
-        <button
-          type="button"
-          className="remove-gift-card-btn"
-          onClick={removeAppliedGiftCard}
-          title="Remove gift card"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  )}
 
                     {/* Payment Summary */}
                     <div className="payment-summary-box">
@@ -5126,7 +5127,7 @@ useEffect(() => {
                     {calculateTotalWithGiftCard().remainingAmount === 0 && selectedGiftCard && (
                       <div className="full-payment-message">
                         <div className="success-message">
-                           Your gift card covers the full amount! No additional payment required.
+                          Your gift card covers the full amount! No additional payment required.
                         </div>
                       </div>
                     )}
@@ -5147,7 +5148,7 @@ useEffect(() => {
                       className="booking-modal-confirm"
                       onClick={handleCreateBooking}
                       disabled={
-                        bookingLoading || 
+                        bookingLoading ||
                         multipleAppointments.length === 0 ||
                         (calculateTotalWithGiftCard().remainingAmount > 0 && (
                           (paymentMethod === 'card' && (!cardDetails.number || cardDetails.number.replace(/\s+/g, '').length < 12 || !cardDetails.expiry || !cardDetails.cvv)) ||
@@ -5159,7 +5160,7 @@ useEffect(() => {
                       {bookingLoading ? ' Processing Payment...' : (() => {
                         const remainingAmount = calculateTotalWithGiftCard().remainingAmount;
                         const serviceCount = multipleAppointments.length;
-                        
+
                         if (remainingAmount === 0) {
                           return ` Confirm ${serviceCount} Service${serviceCount > 1 ? 's' : ''} - Fully Paid with Gift Card!`;
                         } else {

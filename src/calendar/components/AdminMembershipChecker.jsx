@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './AdminMembershipChecker.css';
 import api from '../../Service/Api';
+import Loading from '../../states/Loading';
 
 const AdminMembershipChecker = ({ 
   selectedClient, 
@@ -240,7 +241,7 @@ const AdminMembershipChecker = ({
     return (
       <div className="admin-membership-checker">
         <div className="membership-loading">
-          <div className="loading-spinner"></div>
+          <Loading/>
           <span>Checking client memberships...</span>
         </div>
       </div>
