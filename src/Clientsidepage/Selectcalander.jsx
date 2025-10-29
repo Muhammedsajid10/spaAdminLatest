@@ -708,7 +708,11 @@ const SelectCalendar = () => {
 
   // Add this helper function:
   const getFilteredAndSearchedEmployees = () => {
-    let filtered = employees;
+    // First filter out "Allora Spa Dubai" staff
+    let filtered = employees.filter(emp => 
+      emp.name !== 'Allora Spa Dubai' && 
+      emp.name?.toLowerCase() !== 'allora spa dubai'
+    );
 
     // Apply team filter
     if (teamFilter === 'scheduled') {
@@ -1971,15 +1975,21 @@ const SelectCalendar = () => {
   // NEW: Filter employees based on team selection and selected employees
 
   const getFilteredEmployees = () => {
-    let filteredByTeam = employees;
+    // First filter out "Allora Spa Dubai" staff
+    let filteredByName = employees.filter(emp => 
+      emp.name !== 'Allora Spa Dubai' && 
+      emp.name?.toLowerCase() !== 'allora spa dubai'
+    );
+
+    let filteredByTeam = filteredByName;
 
     if (teamFilter === 'scheduled') {
       // Only show employees who have shifts today
-      filteredByTeam = employees.filter(emp => hasShiftOnDate(emp, currentDate));
+      filteredByTeam = filteredByName.filter(emp => hasShiftOnDate(emp, currentDate));
     } else if (teamFilter === 'active') {
-      filteredByTeam = employees.filter(emp => emp.isActive !== false);
+      filteredByTeam = filteredByName.filter(emp => emp.isActive !== false);
     } else if (teamFilter === 'inactive') {
-      filteredByTeam = employees.filter(emp => emp.isActive === false);
+      filteredByTeam = filteredByName.filter(emp => emp.isActive === false);
     }
 
     // Then filter by selected employees

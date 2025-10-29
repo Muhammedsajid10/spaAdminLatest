@@ -384,7 +384,7 @@
   /* Increased height for 30-minute intervals */
   --staff-column-width: 200px;
   /* Fixed width for staff columns */
-  --time-column-width: 80px;
+  --time-column-width: 226px;
   /* Fixed width for time column */
 
   /* New availability color */
@@ -2117,7 +2117,7 @@
 /* === CURRENT TIME INDICATOR LINE === */
 .current-time-line {
   position: absolute;
-  left: var(--time-column-width);
+  left: 400px ;
   /* Starts after the time column */
   right: 0;
   height: 2px;
