@@ -1,0 +1,349 @@
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Email Test - Allora Spa</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .url-selector {
+      margin-bottom: 30px;
+    }
+
+    .url-selector label {
+      display: block;
+      margin-bottom: 10px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .url-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .url-btn {
+      padding: 12px 20px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .url-btn.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .url-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .current-url {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #666;
+      word-break: break-all;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .result.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .result.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .result.info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+
+    .result pre {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .instructions {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .instructions h3 {
+      margin-bottom: 10px;
+      color: #856404;
+      font-size: 16px;
+    }
+
+    .instructions ol {
+      margin-left: 20px;
+      color: #856404;
+      font-size: 14px;
+    }
+
+    .instructions li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Production Email Test</h1>
+    <p class="subtitle">Test if email configuration is working on your production server</p>
+
+    <div class="instructions">
+      <h3>📋 Instructions:</h3>
+      <ol>
+        <li>Select your backend URL (localhost or production)</li>
+        <li>Enter the email address where you want to receive the test email</li>
+        <li>Click "Send Test Email"</li>
+        <li>Check the result and your email inbox</li>
+      </ol>
+    </div>
+
+    <div class="url-selector">
+      <label>Select Backend URL:</label>
+      <div class="url-buttons">
+        <button class="url-btn active" onclick="setUrl('http://localhost:5000/api/v1')">
+          🏠 Localhost
+        </button>
+        <button class="url-btn" onclick="setUrl('https://api.alloraspadubai.com/api/v1')">
+          🌐 Production
+        </button>
+      </div>
+      <div class="current-url">
+        Current: <strong id="currentUrl">http://localhost:5000/api/v1</strong>
+      </div>
+    </div>
+
+    <form id="testForm">
+      <div class="form-group">
+        <label for="email">Email Address:</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          placeholder="your-email@example.com"
+          required
+        />
+      </div>
+
+      <button type="submit" id="submitBtn">
+        📧 Send Test Email
+      </button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    let currentUrl = 'http://localhost:5000/api/v1';
+
+    function setUrl(url) {
+      currentUrl = url;
+      document.getElementById('currentUrl').textContent = url;
+      
+      // Update button styles
+      document.querySelectorAll('.url-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+    }
+
+    document.getElementById('testForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const submitBtn = document.getElementById('submitBtn');
+      const resultDiv = document.getElementById('result');
+
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span>Sending...';
+      resultDiv.innerHTML = '<div class="result info">⏳ Sending test email...</div>';
+
+      try {
+        const response = await fetch(`${currentUrl}/auth/test-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div class="result success">
+              <strong>✅ Success!</strong><br>
+              ${data.message}<br>
+              <strong>Sent to:</strong> ${data.details.sentTo}<br>
+              <strong>Message ID:</strong> ${data.details.messageId}<br><br>
+              <strong>📬 Check your inbox!</strong> The test email should arrive within a few seconds.
+              <pre>${JSON.stringify(data.details.configuration, null, 2)}</pre>
+            </div>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <div class="result error">
+              <strong>❌ Failed</strong><br>
+              ${data.message}<br><br>
+              <strong>Configuration Status:</strong>
+              <pre>${JSON.stringify(data.configuration || {}, null, 2)}</pre>
+              <br>
+              ${data.error ? `<strong>Error:</strong> ${data.error}` : ''}
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="result error">
+            <strong>❌ Connection Error</strong><br>
+            Could not connect to the backend server.<br><br>
+            <strong>Error:</strong> ${error.message}<br><br>
+            <strong>Make sure:</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+              <li>Backend server is running</li>
+              <li>CORS is configured correctly</li>
+              <li>URL is correct: ${currentUrl}</li>
+            </ul>
+          </div>
+        `;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '📧 Send Test Email';
+      }
+    });
+  </script>
+</body>
+</html>

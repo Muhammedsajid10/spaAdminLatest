@@ -6,14 +6,12 @@ import { StaffColumn } from '../calendar/components/StaffColumn';
 import { setEmployees } from '../store/employeesSlice';
 import { setTimeSlots, setLoading as setCalendarLoading, setError as setCalendarError, setSelectedStaff as setCalendarSelectedStaff, setCurrentDateISO } from '../store/calendarSlice';
 import { setAppointments } from '../store/appointmentsSlice';
-import { IoIosPeople } from "react-icons/io";
 import { fetchCalendarThunk, fetchServicesThunk, fetchClientsThunk, fetchBookingTimeSlotsThunk } from '../store/thunks';
 import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction } from '../store/bookingSessionSlice';
 import axios from 'axios';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
-// import './Selectcalander.css';
-import './Selectcalander.css'
+import './Selectcalander.css';
 import ClientSummary from '../calendar/components/ClientInformation.jsx';
 import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
 
@@ -650,8 +648,6 @@ const SelectCalendar = () => {
 
   // Form States
   const [clientInfo, setClientInfo] = useState({ name: '', email: '', phone: '' });
-  // If true, this is a walk-in booking: only client name is required
-  const [isWalkIn, setIsWalkIn] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
@@ -834,14 +830,6 @@ const SelectCalendar = () => {
       };
       setSelectedBookingForStatus(appointmentDetails);
       setShowBookingStatusModal(true);
-      return;
-    }
-
-    // Check if time is after 11 PM (23:00)
-    const [hours] = slotTime.split(':').map(Number);
-    if (hours >= 23) {
-      setUnavailableMessage('Bookings are not allowed after 11:00 PM');
-      setShowUnavailablePopup(true);
       return;
     }
 
@@ -1046,8 +1034,6 @@ const SelectCalendar = () => {
       notes: '',
       giftCardCode: '',
     });
-    // Reset walk-in flag when closing the modal
-    setIsWalkIn(false);
   };
 
   const closeBookingStatusModal = () => {
@@ -1744,20 +1730,17 @@ const SelectCalendar = () => {
         return;
       }
 
-      // Request all clients with a high limit to avoid pagination issues
-      const res = await fetch(`${Base_url}/admin/clients?limit=10000`, {
+      const res = await fetch(`${Base_url}/admin/clients`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       const data = await res.json();
 
-      console.log('📋 Clients API response:', data);
+      // console.log('Clients API response:', data);
 
       if (res.ok && data.success) {
-        const clients = data.data?.clients || [];
-        console.log('✅ Loaded clients:', clients.length, 'Sample:', clients.slice(0, 3));
-        setExistingClients(clients);
+        setExistingClients(data.data?.clients || []);
       } else {
         console.error('Failed to fetch clients:', data.message);
         setExistingClients(MOCK_CLIENTS_DATA);
@@ -1769,19 +1752,8 @@ const SelectCalendar = () => {
   }, []);
 
   const searchClients = useCallback((query) => {
-    console.log('🔍 Searching clients:', { 
-      query, 
-      totalClients: existingClients.length,
-      sampleClients: existingClients.slice(0, 3).map(c => ({
-        name: `${c.firstName} ${c.lastName}`,
-        email: c.email
-      }))
-    });
-
     if (!query.trim()) {
-      // Show all clients when search is empty (no limit)
-      console.log('📝 Showing all clients:', existingClients.length);
-      setClientSearchResults(existingClients);
+      setClientSearchResults(existingClients.slice(0, 10));
       return;
     }
 
@@ -1791,18 +1763,10 @@ const SelectCalendar = () => {
       const phone = (client.phone || '').toLowerCase();
       const searchTerm = query.toLowerCase();
 
-      const matches = fullName.includes(searchTerm) ||
+      return fullName.includes(searchTerm) ||
         email.includes(searchTerm) ||
         phone.includes(searchTerm);
-
-      if (matches) {
-        console.log('✅ Match found:', { fullName, email, searchTerm });
-      }
-
-      return matches;
     });
-
-    console.log('🎯 Filtered results:', filtered.length, 'clients');
     setClientSearchResults(filtered);
   }, [existingClients]);
 
@@ -1963,17 +1927,11 @@ const SelectCalendar = () => {
       minute: '2-digit'
     });
 
-    // Check if time slot is after 11 PM
-    const [hours] = timeSlot.split(':').map(Number);
-    const isAfter11PM = hours >= 23;
-
     setHoverTimePosition({ x, y });
     setHoverTimeData({
       timeSlot,
       currentTime: currentTimeStr,
-      date: currentDate.toLocaleDateString(),
-      isRestricted: isAfter11PM,
-      restrictionMessage: isAfter11PM ? 'Bookings not allowed after 11:00 PM' : null
+      date: currentDate.toLocaleDateString()
     });
     setShowTimeHover(true);
   };
@@ -2040,32 +1998,30 @@ const SelectCalendar = () => {
   };
   const handleTeamFilterChange = (filter) => {
     setTeamFilter(filter);
-    // 'all' -> select every employee
-    if (filter === 'all') {
-      const allIds = employees.map(emp => emp.id);
-      setSelectedEmployees(new Set(allIds));
-      return;
-    }
-
-    // 'scheduled' -> select employees who have shifts on the current date
     if (filter === 'scheduled') {
+      // When switching to scheduled team, update selected employees to only include those with shifts
       const employeesWithShifts = employees.filter(emp => hasShiftOnDate(emp, currentDate));
-      const newSelected = new Set(employeesWithShifts.map(emp => emp.id));
-      // fallback: keep at least one if available
+      const newSelected = new Set();
+      employeesWithShifts.forEach(emp => {
+        if (selectedEmployees.has(emp.id)) {
+          newSelected.add(emp.id);
+        }
+      });
+      // Ensure at least one employee is selected
       if (newSelected.size === 0 && employeesWithShifts.length > 0) {
         newSelected.add(employeesWithShifts[0].id);
       }
       setSelectedEmployees(newSelected);
-      return;
-    }
-
-    // 'active' / 'inactive' -> select all matching employees
-    if (filter === 'active' || filter === 'inactive') {
+    } else if (filter === 'active' || filter === 'inactive') {
+      // Narrow selectedEmployees to only those matching the active/inactive filter
       const matched = employees.filter(emp => filter === 'active' ? emp.isActive !== false : emp.isActive === false);
-      const newSet = new Set(matched.map(emp => emp.id));
+      const newSet = new Set();
+      matched.forEach(emp => {
+        if (selectedEmployees.has(emp.id)) newSet.add(emp.id);
+      });
+      // If none selected, pick first matching employee to keep UI sane
       if (newSet.size === 0 && matched.length > 0) newSet.add(matched[0].id);
       setSelectedEmployees(newSet);
-      return;
     }
   };
   // NEW: Get appointments for calendar popup
@@ -2512,44 +2468,29 @@ const SelectCalendar = () => {
         };
       } else {
         const nameString = clientInfo.name ? clientInfo.name.trim() : '';
-        // For walk-ins we allow an empty name and default to 'Walk-in' in the payload
-        if (!isWalkIn && !nameString) {
+        if (!nameString) {
           setBookingError('Client name is required.');
           setBookingLoading(false);
           return;
         }
-
-        const effectiveName = nameString || (isWalkIn ? 'Walk-in' : '');
-        const [firstName, ...rest] = effectiveName.split(' ');
+        const [firstName, ...rest] = nameString.split(' ');
         const lastName = rest.join(' ') || '';
         clientData = {
           firstName,
           lastName,
           email: clientInfo.email.trim(),
-          phone: clientInfo.phone.trim(),
-          walkIn: !!isWalkIn
+          phone: clientInfo.phone.trim()
         };
       }
 
-      // If not a walk-in booking, require email and phone
-      if (!selectedExistingClient && !isWalkIn) {
-        if (!clientData.email || !clientData.phone) {
-          setBookingError('Client email and phone are required.');
-          setBookingLoading(false);
-          return;
-        }
+      if (!clientData.email || !clientData.phone) {
+        setBookingError('Client email and phone are required.');
+        setBookingLoading(false);
+        return;
       }
 
       // Create services array from multiple appointments
       const services = multipleAppointments.map(apt => {
-        console.log('🔍 Processing appointment:', {
-          service: apt.service?.name,
-          date: apt.date,
-          dateType: typeof apt.date,
-          timeSlot: apt.timeSlot,
-          professional: apt.professional?.name
-        });
-
         // Ensure we have a valid date object
         let appointmentDate;
         if (apt.date instanceof Date) {
@@ -2567,6 +2508,8 @@ const SelectCalendar = () => {
           console.error('Invalid date created from:', apt.date);
           appointmentDate = new Date(); // Fallback to current date
         }
+
+        // const [hours, minutes] = apt.timeSlot.split(':');
 
         // TIMEZONE FIX: Create UTC datetime that represents the exact date/time user selected
         // This ensures the appointment appears on the correct date regardless of server timezone
@@ -2597,46 +2540,23 @@ const SelectCalendar = () => {
         const endTime = new Date(appointmentDateTime);
         endTime.setUTCMinutes(endTime.getUTCMinutes() + apt.service.duration);
 
-        console.log('✅ Created appointment datetime:', {
-          dateStr,
-          timeStr,
-          hours,
-          minutes,
-          appointmentDateTime: appointmentDateTime.toISOString(),
-          endTime: endTime.toISOString()
-        });
-
         // Validate that the dates were created successfully
         if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {
           console.error('❌ Invalid date created');
           throw new Error('Failed to create valid dates');
         }
 
-        // --- MEMBERSHIP LOGIC ---
-        let price = apt.service.price;
-        let coveredByMembership = false;
-        let sessionDeduction = false;
-        if (appliedMembership && Array.isArray(appliedMembership.services)) {
-          // Check if this service is included in the membership
-          const isCovered = appliedMembership.services.some(
-            sId => (typeof sId === 'string' ? sId : sId?._id) === apt.service._id
-          );
-          if (isCovered) {
-            price = 0;
-            coveredByMembership = true;
-            sessionDeduction = true;
-          }
-        }
+        console.log(`📅 Booking: ${apt.service.name} on ${dateStr} at ${timeStr}`);
+        console.log(`🕐 Created UTC datetime: ${appointmentDateTime.toISOString()}`);
+        console.log(`✅ Time will display correctly as: ${timeStr}`);
 
         return {
           service: apt.service._id,
           employee: apt.professional._id || apt.professional.id,
           duration: apt.service.duration,
-          price,
+          price: apt.service.price,
           startTime: appointmentDateTime.toISOString(),
           endTime: endTime.toISOString(),
-          coveredByMembership,
-          sessionDeduction
         };
       });
 
@@ -2702,7 +2622,7 @@ const SelectCalendar = () => {
 
       // Determine the effective payment method for the booking (normalize unknown aliases)
       let effectivePaymentMethod;
-      if (selectedGiftCard) {
+      if (finalAmount === 0 && selectedGiftCard) {
         effectivePaymentMethod = 'giftcard';
       } else {
         effectivePaymentMethod = paymentMethodMapping[paymentMethod] || paymentMethod || 'cash';
@@ -2864,8 +2784,6 @@ const SelectCalendar = () => {
       notes: '',
       giftCardCode: '',
     });
-    // reset walk-in flag
-    setIsWalkIn(false);
   };
   const getDisplayDateRange = () => {
     let startDate, endDate;
@@ -2924,9 +2842,7 @@ const SelectCalendar = () => {
   // Load client gift cards when entering payment step
 const loadBenefitsIfNeeded = useCallback(async (force = false) => {
   // Only proceed if we have a selected client
-  if (!selectedExistingClient || !selectedExistingClient._id) {
-    setAvailableMemberships([]);
-    setAppliedMembership(null);
+  if (!selectedExistingClient?._id && !force) {
     console.log('No client selected, skipping benefits load');
     return;
   }
@@ -2949,6 +2865,8 @@ const loadBenefitsIfNeeded = useCallback(async (force = false) => {
     const gcRes = await fetch(`${Base_url}/giftcards/purchased`, { headers });
     const gcData = await gcRes.json();
 
+    console.log('Gift cards API response:', gcData); // Debug log
+
     if (!gcRes.ok) {
       throw new Error('Failed to fetch gift cards');
     }
@@ -2969,6 +2887,8 @@ const loadBenefitsIfNeeded = useCallback(async (force = false) => {
 
       return (isOwner || isRecipient) && !isExpired && hasValue && isActive;
     });
+
+    console.log('Filtered gift cards:', ownedGiftCards); // Debug log
     setAvailableGiftCards(ownedGiftCards);
 
     // Clear selected gift card if it's no longer valid
@@ -2977,31 +2897,10 @@ const loadBenefitsIfNeeded = useCallback(async (force = false) => {
       setGiftCardAppliedAmount(0);
     }
 
-    // --- Fetch memberships for the client ---
-    const memRes = await fetch(`${Base_url}/memberships/my-memberships/${clientId}`, { headers });
-    const memData = await memRes.json();
-    console.log('Memberships API response:', memData); // Debug log
-    if (!memRes.ok) {
-      throw new Error('Failed to fetch memberships');
-    }
-    // Filter memberships for active and not expired
-    const validMemberships = Array.isArray(memData)
-      ? memData.filter(m => m.status === 'active' && (!m.expiresAt || new Date(m.expiresAt) > new Date()))
-      : [];
-    setAvailableMemberships(validMemberships);
-    // Auto-select membership if only one is available
-    if (validMemberships.length === 1) {
-      setAppliedMembership(validMemberships[0]);
-    } else {
-      setAppliedMembership(null);
-    }
-
   } catch (error) {
-    console.error('Error loading benefits:', error);
+    console.error('Error loading gift cards:', error);
     setBenefitsError(error.message);
     setAvailableGiftCards([]);
-    setAvailableMemberships([]);
-    setAppliedMembership(null);
   } finally {
     setBenefitsLoading(false);
   }
@@ -3294,33 +3193,64 @@ useEffect(() => {
           </div>
         )}
 
-        <div
-          className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 20)}`}
-          style={{
-            '--dynamic-employee-count': displayEmployees.length || 1,
-            '--dynamic-column-width': displayEmployees.length <= 6
-              ? `${100 / (displayEmployees.length || 1)}%`
-              : 'var(--staff-column-width)'
-          }}
-        // Dynamic width allocation: 1-6 employees get equal width, 7+ get fixed width with scroll
-        >
-          {currentView === 'Day' && displayEmployees.map(employee => (
-            <StaffColumn
-              key={employee.id}
-              employee={employee}
-              timeSlots={timeSlots}
-              appointments={mergedAppointments}
-              currentDate={currentDate}
-              isTimeSlotUnavailable={isTimeSlotUnavailable}
-              handleTimeSlotClick={handleTimeSlotClick}
-              showBookingTooltipHandler={showBookingTooltipHandler}
-              hideBookingTooltip={hideBookingTooltip}
-              showTimeHoverHandler={showTimeHoverHandler}
-              hideTimeHover={hideTimeHover}
-              setSelectedBookingForStatus={setSelectedBookingForStatus}
-              setShowBookingStatusModal={setShowBookingStatusModal}
-            />
-          ))}
+        <div className="staff-grid-wrapper">
+          {/* Sticky Headers Row - All staff headers in one fixed row */}
+          {currentView === 'Day' && (
+            <div className="staff-headers-row">
+              {displayEmployees.map(employee => {
+                const hasShift = hasShiftOnDate(employee, currentDate);
+                const shiftHours = getEmployeeShiftHours(employee, currentDate);
+                const hasValidShifts = shiftHours.length > 0;
+                
+                return (
+                  <div key={`header-${employee.id}`} className="staff-header-cell">
+                    <div className="staff-avatar" style={{
+                      backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
+                      opacity: hasShift && hasValidShifts ? 1 : 0.5
+                    }}>
+                      {employee.avatar ?
+                        <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{ opacity: hasShift && hasValidShifts ? 1 : 0.5 }} /> :
+                        employee.name.charAt(0)
+                      }
+                    </div>
+                    <div className="staff-info">
+                      <div className="staff-name" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.name}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Scrollable Content - Time slots for each employee */}
+          <div
+            className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 20)}`}
+            style={{
+              '--dynamic-employee-count': displayEmployees.length || 1,
+              '--dynamic-column-width': displayEmployees.length <= 6
+                ? `${100 / (displayEmployees.length || 1)}%`
+                : 'var(--staff-column-width)'
+            }}
+          // Dynamic width allocation: 1-6 employees get equal width, 7+ get fixed width with scroll
+          >
+            {currentView === 'Day' && displayEmployees.map(employee => (
+              <StaffColumn
+                key={employee.id}
+                employee={employee}
+                timeSlots={timeSlots}
+                appointments={mergedAppointments}
+                currentDate={currentDate}
+                isTimeSlotUnavailable={isTimeSlotUnavailable}
+                handleTimeSlotClick={handleTimeSlotClick}
+                showBookingTooltipHandler={showBookingTooltipHandler}
+                hideBookingTooltip={hideBookingTooltip}
+                showTimeHoverHandler={showTimeHoverHandler}
+                hideTimeHover={hideTimeHover}
+                setSelectedBookingForStatus={setSelectedBookingForStatus}
+                setShowBookingStatusModal={setShowBookingStatusModal}
+                hideHeader={true}
+              />
+            ))}
           {currentView === 'Week' && (
             <div className="week-view-container">
               {/* Week Day Headers */}
@@ -3346,6 +3276,7 @@ useEffect(() => {
                     </div>
                     <div className="staff-info">
                       <div className="staff-name">{employee.name}</div>
+                      <div className="staff-position">{employee.position}</div>
                     </div>
                   </div>
 
@@ -3557,6 +3488,7 @@ useEffect(() => {
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
     );
@@ -3841,28 +3773,49 @@ useEffect(() => {
                 <div className="popup-backdrop" onClick={() => setShowTeamPopup(false)} />
                 <div className="team-popup-enhanced">
                   {/* Close button */}
-                 
+                  <button
+                    type="button"
+                    className="team-popup-close-btn"
+                    aria-label="Close team selector"
+                    title="Close"
+                    onClick={() => setShowTeamPopup(false)}
+                  >
+                    ×
+                  </button>
                   {/* Header with filters */}
                   <div className="team-popup-header-enhanced">
                     <div className="team-filters">
                       <button
+                        className={`team-filter-pill ${teamFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => handleTeamFilterChange('all')}
+                      >
+                        All Team
+                        <span className="filter-count">{employees.length}</span>
+                      </button>
+                      <button
                         className={`team-filter-pill ${teamFilter === 'scheduled' ? 'active' : ''}`}
                         onClick={() => handleTeamFilterChange('scheduled')}
                       >
-                        <span className="team-filter-icon"><IoIosPeople /></span>
-                        <span className="team-filter-label">Scheduled team</span>
+                        Scheduled Today
+                        <span className="filter-count">
+                          {employees.filter(emp => hasShiftOnDate(emp, currentDate)).length}
+                        </span>
                       </button>
-                      <button
-                        className={`team-filter-pill all-team ${teamFilter === 'all' ? 'active' : ''}`}
-                        onClick={() => handleTeamFilterChange('all')}
-                      >
-                        <span className="team-filter-icon"><IoIosPeople /></span>
-                        <span className="team-filter-label">All team</span>
-                      </button>
+
                     </div>
                     <div className="team-actions">
-                     
-                     
+                      <button
+                        className="select-all-btn"
+                        onClick={() => setSelectedEmployees(new Set(employees.map(emp => emp.id)))}
+                      >
+                        Select All
+                      </button>
+                      <button
+                        className="clear-all-btn"
+                        onClick={handleClearSelection}
+                      >
+                        Clear
+                      </button>
                     </div>
                   </div>
 
@@ -3870,7 +3823,13 @@ useEffect(() => {
                   <div className="team-search-container">
                     <div className="search-input-wrapper">
                       {/* <span className="search-icon">🔍</span> */}
-                  
+                      <input
+                        type="text"
+                        placeholder="Search team members..."
+                        className="team-search-input"
+                        value={teamSearchQuery || ''}
+                        onChange={(e) => setTeamSearchQuery(e.target.value)}
+                      />
                       {teamSearchQuery && (
                         <button
                           className="clear-search-btn"
@@ -3884,11 +3843,6 @@ useEffect(() => {
 
                   {/* Team members list */}
                   <div className="team-members-container">
-
-                    <div className="team-members-header">
-                      <div className="members-title">Team members</div>
-                      <div className="members-clear-link" onClick={handleClearSelection}>Clear all</div>
-                    </div>
 
 
                     <div className={`team-members-list ${teamViewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
@@ -3924,23 +3878,9 @@ useEffect(() => {
                             </div>
 
                             <div className="member-checkbox-section">
-                              <label
-                                className="checkbox-wrapper"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <input
-                                  type="checkbox"
-                                  className="member-checkbox-input"
-                                  checked={isSelected}
-                                  onChange={() => handleEmployeeToggle(employee.id)}
-                                  aria-label={`Select ${employee.name}`}
-                                />
-                                <span className={`checkbox-custom ${isSelected ? 'checked' : ''}`} aria-hidden="true">
-                                  <svg className="checkbox-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                </span>
-                              </label>
+                              <div className={`checkbox-custom ${isSelected ? 'checked' : ''}`}>
+                                {isSelected && <span className="checkmark">✓</span>}
+                              </div>
                             </div>
                           </div>
                         );
@@ -3957,7 +3897,32 @@ useEffect(() => {
                   </div>
 
                   {/* Footer with summary */}
-  
+                  <div className="team-popup-footer-enhanced">
+                    <div className="selection-summary">
+                      <div className="summary-stats">
+                        <div className="summary-item">
+                          <span className="summary-number">{selectedEmployees.size}</span>
+                          <span className="summary-label">Selected</span>
+                        </div>
+                        <div className="summary-divider"></div>
+                        <div className="summary-item">
+                          <span className="summary-number">
+                            {employees.filter(emp => hasShiftOnDate(emp, currentDate) && selectedEmployees.has(emp.id)).length}
+                          </span>
+                          <span className="summary-label">Working Today</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="footer-actions">
+                      <button
+                        className="apply-selection-btn"
+                        onClick={() => setShowTeamPopup(false)}
+                      >
+                        Apply Selection
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -4337,7 +4302,9 @@ useEffect(() => {
                         );
                       })}
                       {/* Placeholder when none added yet */}
-                   
+                      {multipleAppointments.length === 0 && bookingDefaults?.time && (
+                        <div className="service-card-placeholder">Select a service below to add it at {bookingDefaults.time}</div>
+                      )}
                       <button
                         type="button"
                         className="add-service-inline-btn"
@@ -4392,7 +4359,11 @@ useEffect(() => {
                       </div>
                     </div>
                   )}
-                
+                  {/* <div className="booking-modal-actions">
+                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
+                      Cancel
+                    </button>
+                  </div> */}
                 </>
               )}
 
@@ -4626,74 +4597,18 @@ useEffect(() => {
                     </div>
                   </div> */}
 
-                            <div className="client-step-grid">
-                              <aside className="client-right-panel">
-                  <h4 className="client-right-heading">Walk-in client</h4>
-                  <div className="walkin-control">
-                    <label className="walkin-switch" htmlFor="walkInSwitch">
-                      <input
-                        id="walkInSwitch"
-                        type="checkbox"
-                        checked={isWalkIn}
-                        onChange={e => {
-                          const checked = e.target.checked;
-                          setIsWalkIn(checked);
-                          if (checked) {
-                            // If user marks as walk-in, clear any selected existing client
-                            setSelectedExistingClient(null);
-                            // Clear optional contact fields (they are not required)
-                            setClientInfo(f => ({ ...f, email: '', phone: '' }));
-                          }
-                        }}
-                      />
-                      <span className="walkin-slider" />
-                    </label>
-                    <div className="walkin-labels">
-                      <div className="walkin-title">Walk-in client</div>
-                      <div className="walkin-sub">No additional data required</div>
-                    </div>
-                  </div>
-
-                  {/* <div className="walkin-help">
-                    <p>If checked, only client name is required. When you Continue, the summary will show the client as a walk-in.</p>
-                  </div> */}
-                </aside>
-                            <div className="client-search-section">
-                            <div className="client-search-header">
-                              <h4>Search Existing Client</h4>
-                              <div className="client-search-right">
-                              {selectedExistingClient && (
-                                <button
-                                className="clear-client-btn"
-                                onClick={clearClientSelection}
-                                >
-                                Clear Selection
-                                </button>
-                              )}
-
-                              {/* Walk-in checkbox on the right side */}
-                              {/* <div className="walkin-control-inline">
-                                <label className="checkbox-container">
-                                <input
-                                  type="checkbox"
-                                  checked={isWalkIn}
-                                  onChange={e => {
-                                  const checked = e.target.checked;
-                                  setIsWalkIn(checked);
-                                  if (checked) {
-                                    setSelectedExistingClient(null);
-                                    setClientInfo(f => ({ ...f, email: '', phone: '' }));
-                                    setIsAddingNewClient(false);
-                                    setShowClientSearch(false);
-                                  }
-                                  }}
-                                />
-                                <span className="checkmark"></span>
-                                </label>
-                              </div> */}
-                        
-                        {/* <div className="walkin-text">Walk-in client (no data required)</div> */}
-                      </div>
+                  {/* Client Search Section */}
+                  <div className="client-search-section">
+                    <div className="client-search-header">
+                      <h4>Search Existing Client</h4>
+                      {selectedExistingClient && (
+                        <button
+                          className="clear-client-btn"
+                          onClick={clearClientSelection}
+                        >
+                          Clear Selection
+                        </button>
+                      )}
                     </div>
 
                     {!selectedExistingClient && !isAddingNewClient && (
@@ -4790,75 +4705,63 @@ useEffect(() => {
                               setIsAddingNewClient(false);
                               setShowClientSearch(true);
                               setClientInfo({ name: '', email: '', phone: '' });
-                              setIsWalkIn(false);
                             }}
                           >
                             ← Back to Search
                           </button>
                         </div>
                         <div className="booking-modal-form">
-                          
                           <div className="form-group">
-                            <label htmlFor="clientName">Client Name {isWalkIn ? '(optional for walk-ins)' : '*'}</label>
+                            <label htmlFor="clientName">Client Name *</label>
                             <input
                               id="clientName"
                               type="text"
                               placeholder="Enter client's full name"
                               value={clientInfo.name}
                               onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))}
-                              required={!isWalkIn}
+                              required
                             />
                           </div>
-                          {/* Email and phone are optional/hidden for walk-in bookings */}
-                          {!isWalkIn && (
-                            <>
-                              <div className="form-group">
-                                <label htmlFor="clientEmail">Email Address *</label>
-                                <input
-                                  id="clientEmail"
-                                  type="email"
-                                  placeholder="Enter client's email address"
-                                  value={clientInfo.email}
-                                  onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
-                                  required={!isWalkIn}
-                                />
-                              </div>
-                              <div className="form-group">
-                                <label htmlFor="clientPhone">Phone Number *</label>
-                                <input
-                                  id="clientPhone"
-                                  type="tel"
-                                  placeholder="Enter client's phone number"
-                                  value={clientInfo.phone}
-                                  onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
-                                  required={!isWalkIn}
-                                />
-                              </div>
-                            </>
-                          )}
+                          <div className="form-group">
+                            <label htmlFor="clientEmail">Email Address *</label>
+                            <input
+                              id="clientEmail"
+                              type="email"
+                              placeholder="Enter client's email address"
+                              value={clientInfo.email}
+                              onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label htmlFor="clientPhone">Phone Number *</label>
+                            <input
+                              id="clientPhone"
+                              type="tel"
+                              placeholder="Enter client's phone number"
+                              value={clientInfo.phone}
+                              onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
+                              required
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
 
-                {/* Right-side panel: Walk-in toggle and helpers */}
-                
-              </div>
-
-                    <div className="booking-modal-actions">
-                      <button
-                        className="booking-modal-next"
-                        onClick={() => setBookingStep(6)}
-                        disabled={
-                          !selectedExistingClient && !(
-                            isWalkIn || (clientInfo.name.trim() && clientInfo.email.trim() && clientInfo.phone.trim())
-                          )
-                        }
-                      >
-                        Continue to Payment
-                      </button>
-                      <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back to Services</button>
-                    </div>
+                  <div className="booking-modal-actions">
+                    <button
+                      className="booking-modal-next"
+                      onClick={() => setBookingStep(6)}
+                      disabled={
+                        !selectedExistingClient &&
+                        (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim())
+                      }
+                    >
+                      Continue to Payment
+                    </button>
+                    <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back to Services</button>
+                  </div>
                 </>
               )}
 
@@ -4916,40 +4819,31 @@ useEffect(() => {
                       <span>
                         {selectedExistingClient
                           ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-                          : (clientInfo.name && clientInfo.name.trim()) || (isWalkIn ? 'Walk-in' : '')
+                          : clientInfo.name
                         }
                         {selectedExistingClient && (
                           <span className="existing-client-indicator"> VIP Member</span>
                         )}
                       </span>
                     </div>
-                    {(!selectedExistingClient && isWalkIn) ? (
-                      <div className="summary-item">
-                        <span>Type:</span>
-                        <span>Walk-in</span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="summary-item">
-                          <span> Email:</span>
-                          <span>
-                            {selectedExistingClient
-                              ? selectedExistingClient.email
-                              : clientInfo.email
-                            }
-                          </span>
-                        </div>
-                        <div className="summary-item">
-                          <span> Phone:</span>
-                          <span>
-                            {selectedExistingClient
-                              ? selectedExistingClient.phone
-                              : clientInfo.phone
-                            }
-                          </span>
-                        </div>
-                      </>
-                    )}
+                    <div className="summary-item">
+                      <span> Email:</span>
+                      <span>
+                        {selectedExistingClient
+                          ? selectedExistingClient.email
+                          : clientInfo.email
+                        }
+                      </span>
+                    </div>
+                    <div className="summary-item">
+                      <span> Phone:</span>
+                      <span>
+                        {selectedExistingClient
+                          ? selectedExistingClient.phone
+                          : clientInfo.phone
+                        }
+                      </span>
+                    </div>
                   </div>
 
                   {/* Admin Membership Checker */}
@@ -4975,7 +4869,8 @@ useEffect(() => {
     <div className="available-gift-cards-section">
       {benefitsLoading && (
         <div className="gift-cards-loading">
-          <Loading />
+          <div className="loading-spinner"></div>
+          Loading available gift cards...
         </div>
       )}
       
@@ -5102,7 +4997,7 @@ useEffect(() => {
                         </div>
 
                         {/* Conditional Payment Inputs */}
-                        {/* {paymentMethod === 'card' && (
+                        {paymentMethod === 'card' && (
                           <div className="payment-conditional card-details">
                             <h5>Card Details</h5>
                             <div className="card-grid">
@@ -5134,9 +5029,9 @@ useEffect(() => {
                               />
                             </div>
                           </div>
-                        )} */}
+                        )}
 
-                        {/* {paymentMethod === 'upi' && (
+                        {paymentMethod === 'upi' && (
                           <div className="payment-conditional upi-details">
                             <h5>UPI Payment</h5>
                             <input
@@ -5146,7 +5041,7 @@ useEffect(() => {
                               onChange={e => setUpiId(e.target.value)}
                             />
                           </div>
-                        )} */}
+                        )}
                       </div>
                     )}
 
@@ -5169,16 +5064,18 @@ useEffect(() => {
                     </div>
                   </div>
 
-                    <div className="booking-modal-actions">
+                  <div className="booking-modal-actions">
                     <button
                       className="booking-modal-confirm"
                       onClick={handleCreateBooking}
                       disabled={
-                        bookingLoading ||
+                        bookingLoading || 
                         multipleAppointments.length === 0 ||
-                        (
-                          calculateTotalWithGiftCard().remainingAmount > 0 && (!paymentMethod || paymentMethod === '')
-                        )
+                        (calculateTotalWithGiftCard().remainingAmount > 0 && (
+                          (paymentMethod === 'card' && (!cardDetails.number || cardDetails.number.replace(/\s+/g, '').length < 12 || !cardDetails.expiry || !cardDetails.cvv)) ||
+                          (paymentMethod === 'upi' && (!upiId || !upiId.includes('@'))) ||
+                          (!paymentMethod || paymentMethod === '')
+                        ))
                       }
                     >
                       {bookingLoading ? ' Processing Payment...' : (() => {
