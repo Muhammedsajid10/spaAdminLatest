@@ -27,6 +27,7 @@
   flex-direction: column;
   position: relative;
   margin: auto;
+  padding: 20px;
 }
 
 .modal-content {
@@ -217,7 +218,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  width: 80px;
+  width: 93px;
   text-align: center;
   background: white;
   transition: border-color 0.2s;

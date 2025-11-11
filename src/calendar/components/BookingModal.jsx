@@ -405,7 +405,7 @@ export const BookingModal = ({
                             </div>
                             <div className="client-result-info">
                               <div className="client-result-name">{client.firstName} {client.lastName}</div>
-                              <div className="client-result-contact">{client.email} • {client.phone}</div>
+                              <div className="client-result-contact">{client.phone}</div>
                             </div>
                           </div>
                         ))}

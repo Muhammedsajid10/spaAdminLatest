@@ -550,6 +550,11 @@ const SelectCalendar = () => {
   const isAddingAdditionalService = useSelector(state => state.bookingSession.isAddingAdditionalService);
   const dispatch = useDispatch();
 
+  // Price editing states - MUST be declared before getTotalSessionPrice
+  const [editingTotalPrice, setEditingTotalPrice] = useState(false);
+  const [tempTotalPrice, setTempTotalPrice] = useState('');
+  const [customTotalDiscount, setCustomTotalDiscount] = useState(0);
+
   const setCurrentAppointmentIndex = (idx) => { /* UI-only; kept local for now */ dispatch({ type: 'bookingSession/setCurrentAppointmentIndex', payload: idx }); };
   const setShowServiceCatalog = (val) => dispatch(setShowServiceCatalogAction(val));
   const setIsAddingAdditionalService = (val) => dispatch({ type: 'bookingSession/setIsAddingAdditionalService', payload: val });
@@ -560,6 +565,37 @@ const SelectCalendar = () => {
     dispatch(removeAppointmentFromSession(id));
   };
   const clearSessionLocal = () => dispatch(clearSessionAction());
+
+  // Total price editing functions
+  const startEditingTotalPrice = () => {
+    const currentTotal = getTotalSessionPrice();
+    setTempTotalPrice(currentTotal.toString());
+    setEditingTotalPrice(true);
+  };
+
+  const cancelEditingTotalPrice = () => {
+    setEditingTotalPrice(false);
+    setTempTotalPrice('');
+  };
+
+  const saveEditedTotalPrice = () => {
+    const originalTotal = multipleAppointments.reduce((sum, a) => {
+      const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
+      return sum + Number(price || 0);
+    }, 0);
+    
+    const newTotal = parseFloat(tempTotalPrice);
+    if (!isNaN(newTotal) && newTotal >= 0) {
+      const discount = originalTotal - newTotal;
+      setCustomTotalDiscount(discount);
+      setEditingTotalPrice(false);
+      setTempTotalPrice('');
+    }
+  };
+
+  const clearCustomDiscount = () => {
+    setCustomTotalDiscount(0);
+  };
 
   // Week and Month navigation functions for date picker
   const goToDatePickerPreviousWeek = useCallback(() => {
@@ -604,12 +640,14 @@ const SelectCalendar = () => {
   // Calculate total session price from Redux booking session
   const getTotalSessionPrice = useCallback(() => {
     if (!Array.isArray(multipleAppointments)) return 0;
-    return multipleAppointments.reduce((sum, a) => {
-      // price might be on the appointment directly or nested in service
+    const originalTotal = multipleAppointments.reduce((sum, a) => {
+      // Use original price (not custom price)
       const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
       return sum + Number(price || 0);
     }, 0);
-  }, [multipleAppointments]);
+    // Apply custom discount to total
+    return Math.max(0, originalTotal - customTotalDiscount);
+  }, [multipleAppointments, customTotalDiscount]);
 
   // Core scheduler state (moved to Redux)
   const employees = useSelector(state => state.employees.list);
@@ -2510,14 +2548,7 @@ const SelectCalendar = () => {
         };
       }
 
-      // Only validate email and phone if NOT a walk-in
-      if (!isWalkIn) {
-        if (!clientData.email || !clientData.phone) {
-          setBookingError('Client email and phone are required.');
-          setBookingLoading(false);
-          return;
-        }
-      }
+      // Email and phone are now optional - booking can proceed without them
 
       // Create services array from multiple appointments
       const services = multipleAppointments.map(apt => {
@@ -2620,11 +2651,12 @@ const SelectCalendar = () => {
         const giftCardCode = selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber;
         const availableValue = calculateGiftCardValue(selectedGiftCard);
 
-        console.log(' Applying gift card:', {
+        console.log('🎁 Applying gift card to booking:', {
           id: giftCardId,
           code: giftCardCode,
           appliedAmount: giftCardAppliedAmount,
-          remainingOnCard: availableValue - giftCardAppliedAmount
+          remainingOnCard: availableValue - giftCardAppliedAmount,
+          selectedGiftCard: selectedGiftCard
         });
 
         paymentDetails.giftCard = {
@@ -2632,6 +2664,13 @@ const SelectCalendar = () => {
           code: giftCardCode,
           redeemAmount: giftCardAppliedAmount
         };
+        
+        console.log('🎁 Payment details with gift card:', paymentDetails);
+      } else {
+        console.log('⚠️ No gift card applied:', {
+          hasSelectedGiftCard: !!selectedGiftCard,
+          giftCardAppliedAmount
+        });
       }
 
       // Normalize payment methods to backend-accepted enums and attach details
@@ -2641,12 +2680,14 @@ const SelectCalendar = () => {
       };
 
       // Attach payment details for remaining amount (if any)
+      // Card and UPI details are optional - payment method selection is sufficient
       if (finalAmount > 0) {
         if (paymentMethod === 'card') {
-          paymentDetails.card = { ...cardDetails };
+          // Card payment selected - no additional details required
+          paymentDetails.paymentType = 'card';
         } else if (paymentMethod === 'upi' || paymentMethod === 'online') {
-          // Keep upiId under paymentDetails so backend can process online payments
-          paymentDetails.upiId = upiId;
+          // UPI/Online payment selected - no additional details required
+          paymentDetails.paymentType = 'upi';
         }
       }
 
@@ -2670,10 +2711,17 @@ const SelectCalendar = () => {
         client: clientData,
         notes: bookingForm.notes || '',
         giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
-        bookingSource: 'admin'
+        bookingSource: 'admin',
+        customDiscount: customTotalDiscount > 0 ? customTotalDiscount : undefined
       };
 
-      console.log('Multiple appointments booking payload:', JSON.stringify(bookingPayload, null, 2));
+      console.log('📦 Multiple appointments booking payload:', JSON.stringify(bookingPayload, null, 2));
+      console.log('🎁 Gift card in payload:', {
+        giftCardCode: bookingPayload.giftCardCode,
+        paymentMethod: bookingPayload.paymentMethod,
+        hasGiftCardInPaymentDetails: !!bookingPayload.paymentDetails?.giftCard,
+        giftCardDetails: bookingPayload.paymentDetails?.giftCard
+      });
 
       const res = await fetch(`${Base_url}/bookings`, {
         method: 'POST',
@@ -2700,11 +2748,12 @@ const SelectCalendar = () => {
 
       setBookingSuccess(` ${multipleAppointments.length} service(s) booked successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
 
+      console.log('✅ Booking created successfully. Preparing to refresh gift cards...');
+
       // Clear the appointments session after successful booking
       setTimeout(() => {
         clearAppointmentSession();
         // Clear new gift card states
-        // Gift card state already cleared by setSelectedGiftCard(null) above
         setGiftCardAppliedAmount(0);
         setGiftCardCode('');
         setGiftCardError('');
@@ -2712,7 +2761,16 @@ const SelectCalendar = () => {
         setAvailableGiftCards([]);
         setSelectedGiftCard(null);
         setRedeemGiftCardAmount(0);
-        loadBenefitsIfNeeded(true);
+        
+        console.log('🔄 Triggering gift card refresh after booking...');
+        
+        // Add additional delay to ensure backend DB has been fully updated
+        setTimeout(() => {
+          if (selectedExistingClient?._id) {
+            console.log('🎁 Fetching updated gift cards for client:', selectedExistingClient._id);
+            loadBenefitsIfNeeded(true);
+          }
+        }, 500);
       }, 1500);
 
       // If booking used an admin-applied membership, update local membership counters so UI shows reduced remaining sessions
@@ -2801,6 +2859,11 @@ const SelectCalendar = () => {
     setSelectedMembership(null);
     setAppliedMembership(null);
     setMembershipDiscountAmount(0);
+
+    // Reset custom discount
+    setCustomTotalDiscount(0);
+    setEditingTotalPrice(false);
+    setTempTotalPrice('');
 
     // Reset benefits loading states
     setBenefitsLoading(false);
@@ -2921,9 +2984,22 @@ const SelectCalendar = () => {
         const now = new Date();
         const isExpired = card.expiryDate && new Date(card.expiryDate) < now;
         const hasValue = card.remainingValue > 0;
-        const isActive = card.status?.toLowerCase() === 'active';
+        // Only include active or partially used cards that still have value
+        const isUsable = ['active', 'partially used'].includes(card.status?.toLowerCase());
+        
+        // Debug logging for each card
+        console.log(`🎁 Gift card filter check for ${card.code}:`, {
+          status: card.status,
+          remainingValue: card.remainingValue,
+          isOwner,
+          isRecipient,
+          isExpired,
+          hasValue,
+          isUsable,
+          willInclude: (isOwner || isRecipient) && !isExpired && hasValue && isUsable
+        });
 
-        return (isOwner || isRecipient) && !isExpired && hasValue && isActive;
+        return (isOwner || isRecipient) && !isExpired && hasValue && isUsable;
       });
 
       console.log('Filtered gift cards:', ownedGiftCards); // Debug log
@@ -4805,25 +4881,23 @@ const SelectCalendar = () => {
                             {!isWalkIn && (
                               <>
                                 <div className="form-group">
-                                  <label htmlFor="clientEmail">Email Address *</label>
+                                  <label htmlFor="clientEmail">Email Address (Optional)</label>
                                   <input
                                     id="clientEmail"
                                     type="email"
                                     placeholder="Enter client's email address"
                                     value={clientInfo.email}
                                     onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
-                                    required={!isWalkIn}
                                   />
                                 </div>
                                 <div className="form-group">
-                                  <label htmlFor="clientPhone">Phone Number *</label>
+                                  <label htmlFor="clientPhone">Phone Number (Optional)</label>
                                   <input
                                     id="clientPhone"
                                     type="tel"
                                     placeholder="Enter client's phone number"
                                     value={clientInfo.phone}
                                     onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
-                                    required={!isWalkIn}
                                   />
                                 </div>
                               </>
@@ -4893,9 +4967,79 @@ const SelectCalendar = () => {
                         <span>Total Duration:</span>
                         <span>{multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0)} minutes</span>
                       </div>
+                      
+                      {customTotalDiscount > 0 && (
+                        <div className="total-item original-total">
+                          <span>Original Total:</span>
+                          <span className="strike-through">
+                            AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {customTotalDiscount > 0 && (
+                        <div className="total-item discount-applied">
+                          <span>Discount Applied:</span>
+                          <span className="discount-value">- AED {customTotalDiscount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      
                       <div className="total-item total-price">
-                        <span>Total Amount:</span>
-                        <span>AED {getTotalSessionPrice()}</span>
+                        <div className="total-price-content">
+                          <span>Total Amount:</span>
+                          {editingTotalPrice ? (
+                            <div className="price-edit-controls-inline">
+                              <span className="currency-label">AED</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={tempTotalPrice}
+                                onChange={(e) => setTempTotalPrice(e.target.value)}
+                                className="price-edit-input"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveEditedTotalPrice();
+                                  if (e.key === 'Escape') cancelEditingTotalPrice();
+                                }}
+                              />
+                              <button
+                                className="price-save-btn"
+                                onClick={saveEditedTotalPrice}
+                                title="Save total"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                className="price-cancel-btn"
+                                onClick={cancelEditingTotalPrice}
+                                title="Cancel"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="total-display-controls">
+                              <span className="total-value">AED {getTotalSessionPrice().toFixed(2)}</span>
+                              <button
+                                className="price-edit-btn"
+                                onClick={startEditingTotalPrice}
+                                title="Edit total amount"
+                              >
+                                ✏️
+                              </button>
+                              {customTotalDiscount > 0 && (
+                                <button
+                                  className="clear-discount-btn"
+                                  onClick={clearCustomDiscount}
+                                  title="Remove discount"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -5085,52 +5229,8 @@ const SelectCalendar = () => {
                           </div>
                         </div>
 
-                        {/* Conditional Payment Inputs */}
-                        {paymentMethod === 'card' && (
-                          <div className="payment-conditional card-details">
-                            <h5>Card Details</h5>
-                            <div className="card-grid">
-                              <input
-                                type="text"
-                                placeholder="Card Number"
-                                value={cardDetails.number}
-                                onChange={e => setCardDetails(d => ({ ...d, number: e.target.value }))}
-                              />
-                              <input
-                                type="text"
-                                placeholder="Name on Card"
-                                value={cardDetails.name}
-                                onChange={e => setCardDetails(d => ({ ...d, name: e.target.value }))}
-                              />
-                              <input
-                                type="text"
-                                placeholder="MM/YY"
-                                value={cardDetails.expiry}
-                                onChange={e => setCardDetails(d => ({ ...d, expiry: e.target.value }))}
-                                style={{ maxWidth: '110px' }}
-                              />
-                              <input
-                                type="password"
-                                placeholder="CVV"
-                                value={cardDetails.cvv}
-                                onChange={e => setCardDetails(d => ({ ...d, cvv: e.target.value }))}
-                                style={{ maxWidth: '90px' }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {paymentMethod === 'upi' && (
-                          <div className="payment-conditional upi-details">
-                            <h5>UPI Payment</h5>
-                            <input
-                              type="text"
-                              placeholder="Customer UPI ID (e.g. name@bank)"
-                              value={upiId}
-                              onChange={e => setUpiId(e.target.value)}
-                            />
-                          </div>
-                        )}
+                        {/* Card and UPI payment methods don't require additional input */}
+                        {/* Payment method selection is sufficient */}
                       </div>
                     )}
 
@@ -5160,11 +5260,7 @@ const SelectCalendar = () => {
                       disabled={
                         bookingLoading ||
                         multipleAppointments.length === 0 ||
-                        (calculateTotalWithGiftCard().remainingAmount > 0 && (
-                          (paymentMethod === 'card' && (!cardDetails.number || cardDetails.number.replace(/\s+/g, '').length < 12 || !cardDetails.expiry || !cardDetails.cvv)) ||
-                          (paymentMethod === 'upi' && (!upiId || !upiId.includes('@'))) ||
-                          (!paymentMethod || paymentMethod === '')
-                        ))
+                        (calculateTotalWithGiftCard().remainingAmount > 0 && !paymentMethod)
                       }
                     >
                       {bookingLoading ? ' Processing Payment...' : (() => {

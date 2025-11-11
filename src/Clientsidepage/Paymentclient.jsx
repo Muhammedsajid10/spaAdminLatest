@@ -64,13 +64,13 @@ const PaymentClient = () => {
           date: p.createdAt ? new Date(p.createdAt) : new Date(),
             // bookingNumber populated as 'bookingNumber' in booking select
           reference: p.booking?.bookingNumber || p._id || "-",
-          amount: typeof p.amount === 'number' ? p.amount / 100 : 0,
+          amount: typeof p.amount === 'number' ? p.amount : 0,
           status: p.status || "-",
           paymentMethod: p.paymentMethod || "-",
           user: `${p.user?.firstName || ''} ${p.user?.lastName || ''}`.trim() || "-",
           gateway: p.paymentGateway || "-",
           bookingStatus: p.booking?.status || "-",
-          refundAmount: p.refundAmount ? (p.refundAmount / 100) : 0,
+          refundAmount: p.refundAmount ? p.refundAmount : 0,
         }));
 
         setPayments(mapped);

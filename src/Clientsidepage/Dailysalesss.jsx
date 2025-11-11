@@ -74,14 +74,22 @@ const DailySales = () => {
         // Process cash movement summary
         const cashMovementData = cashMovementRes.data?.data || {};
         
-        const paymentTypes = ['Card', 'Cash', 'Upi', 'GiftCard Redemption', 'Membership Card'];
+        const paymentTypes = ['card', 'cash', 'upi', 'giftcard', 'membership'];
+        const paymentTypeLabels = {
+          'card': 'Card',
+          'cash': 'Cash',
+          'upi': 'Upi',
+          'giftcard': 'GiftCard Redemption',
+          'membership': 'Membership Card'
+        };
+        
         const processedCashMovement = paymentTypes.map(type => {
           const typeData = cashMovementData[type] || {};
           const paymentsCollected = typeData.paymentsCollected || 0;
           const refundsPaid = typeData.refundsPaid || 0;
           
           return {
-            paymentType: type,
+            paymentType: paymentTypeLabels[type],
             paymentsCollected: paymentsCollected > 0 
               ? `AED ${(paymentsCollected).toFixed(2)}` 
               : "AED 0.00",

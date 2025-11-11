@@ -98,10 +98,19 @@ const generateTimesheetFromEmployees = (employees, date) => {
       hoursWorked = calculateHoursWorked(clockIn, clockOut);
     }
     
-    // Determine if this entry has actual attendance data
+    // Determine status based on check-in/check-out state
+    let status = 'Absent';
+    let statusColor = 'red';
+    
+    if (clockIn !== '-' && clockOut !== '-') {
+      status = 'Checked Out';
+      statusColor = 'green';
+    } else if (clockIn !== '-' && clockOut === '-') {
+      status = 'Checked In';
+      statusColor = 'blue';
+    }
+    
     const hasData = clockIn !== '-' && clockOut !== '-';
-    const status = hasData ? 'Recorded' : 'No data';
-    const statusColor = hasData ? 'green' : 'gray';
 
     timesheetEntries.push({
       id: employee._id || employee.id,
@@ -667,6 +676,18 @@ const TimesheetApp = () => {
             
             const hasData = clockIn !== '-' && clockOut !== '-';
             
+            // Determine status based on check-in/check-out state
+            let status = 'Absent';
+            let statusColor = 'red';
+            
+            if (clockIn !== '-' && clockOut !== '-') {
+              status = 'Checked Out';
+              statusColor = 'green';
+            } else if (clockIn !== '-' && clockOut === '-') {
+              status = 'Checked In';
+              statusColor = 'blue';
+            }
+            
             monthlyTimesheetData.push({
               id: employeeId,
               initials: getInitials(fullName),
@@ -678,8 +699,8 @@ const TimesheetApp = () => {
               clockOut: clockOut,
               breaks: attendanceData?.breaks || '-',
               hoursWorked: hoursWorked,
-              status: hasData ? 'Recorded' : 'No data',
-              statusColor: hasData ? 'green' : 'gray',
+              status: status,
+              statusColor: statusColor,
               employeeId: employeeId
             });
           });
@@ -702,8 +723,8 @@ const TimesheetApp = () => {
               clockOut: '-',
               breaks: '-',
               hoursWorked: '-',
-              status: 'No data',
-              statusColor: 'gray',
+              status: 'Absent',
+              statusColor: 'red',
               employeeId: employee._id || employee.id
             });
           });
@@ -918,7 +939,9 @@ const TimesheetApp = () => {
                     <span style={{
                       padding: '6px 8px',
                       borderRadius: 6,
-                      background: item.statusColor === 'green' ? '#e8f5ea' : '#f0f0f0',
+                      background: item.statusColor === 'green' ? '#e8f5ea' : 
+                                 item.statusColor === 'blue' ? '#e3f2fd' : 
+                                 item.statusColor === 'red' ? '#ffebee' : '#f0f0f0',
                       color: '#111',
                       fontWeight: 600,
                       fontSize: 13

@@ -225,7 +225,7 @@
 }
 .secondary-btn:hover { background:#e5e7eb; }
 
-.header-actions { display:flex; gap:12px; }
+.header-actions { display:flex; gap:12px; margin-left: auto;}
 
 /* Modal styles - Minimal and Professional */
 .modal-overlay {

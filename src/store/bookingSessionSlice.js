@@ -38,11 +38,19 @@ const bookingSessionSlice = createSlice({
     clearSession(state) {
       state.multipleAppointments = [];
     },
+    updateAppointmentPrice(state, action) {
+      const { appointmentId, customPrice } = action.payload;
+      const appointment = state.multipleAppointments.find(a => a.id === appointmentId);
+      if (appointment) {
+        appointment.customPrice = customPrice;
+        console.log('💰 Updated appointment price:', appointmentId, 'to', customPrice);
+      }
+    },
     setShowServiceCatalog(state, action) {
       state.showServiceCatalog = action.payload;
     }
   }
 });
 
-export const { setMultipleAppointments, addAppointmentToSession, removeAppointmentFromSession, clearSession, setShowServiceCatalog } = bookingSessionSlice.actions;
+export const { setMultipleAppointments, addAppointmentToSession, removeAppointmentFromSession, clearSession, updateAppointmentPrice, setShowServiceCatalog } = bookingSessionSlice.actions;
 export default bookingSessionSlice.reducer;

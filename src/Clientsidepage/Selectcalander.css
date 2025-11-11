@@ -10187,3 +10187,130 @@
 
 /* Ensure clicks on row don't display default focus on hidden input */
 .member-checkbox-input:focus + .checkbox-custom { box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+
+/* Total Price Editing Styles */
+.session-totals .total-item.original-total {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.session-totals .total-item.original-total .strike-through {
+  text-decoration: line-through;
+}
+
+.session-totals .total-item.discount-applied {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.session-totals .total-item.discount-applied .discount-value {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.session-totals .total-item.total-price {
+  border-top: 2px solid #e2e8f0;
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+.total-price-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.total-display-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.price-edit-controls-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.currency-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.price-edit-input {
+  width: 100px;
+  padding: 6px 10px;
+  border: 2px solid #6366f1;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.price-edit-input:focus {
+  border-color: #4f46e5;
+}
+
+.price-save-btn,
+.price-cancel-btn,
+.clear-discount-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.price-save-btn {
+  background: #10b981;
+  color: white;
+}
+
+.price-save-btn:hover {
+  background: #059669;
+  transform: scale(1.05);
+}
+
+.price-cancel-btn,
+.clear-discount-btn {
+  background: #f87171;
+  color: white;
+}
+
+.price-cancel-btn:hover,
+.clear-discount-btn:hover {
+  background: #ef4444;
+  transform: scale(1.05);
+}
+
+.price-edit-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+}
+
+.price-edit-btn:hover {
+  opacity: 1;
+  background: #f1f5f9;
+}

@@ -781,6 +781,10 @@ const TopStats = () => {
         const bookingRes = await api.get("/admin/analytics/bookings");
         const employeeRes = await api.get("/admin/analytics/employees");
         const allEmployeesRes = await api.get("/employees?limit=10000");
+        
+        // Get all bookings to calculate monthly revenue per employee
+        const allBookingsRes = await api.get("/bookings/admin/all?limit=10000");
+        const allBookings = allBookingsRes.data?.data?.bookings || [];
 
         // Prepare top services for TopStats
         const popularServices = bookingRes.data?.data?.popularServices || [];
@@ -792,52 +796,76 @@ const TopStats = () => {
           }))
         );
 
-        // Prepare top team members - show ALL employees with their performance
-        const employeePerformance =
-          employeeRes.data?.data?.employeePerformance || [];
+        // Calculate this month and last month revenue for each employee
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-11
+        
+        const thisMonthStart = new Date(currentYear, currentMonth, 1);
+        const thisMonthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
+        const lastMonthStart = new Date(currentYear, currentMonth - 1, 1);
+        const lastMonthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+        
+        console.log('📅 Date ranges:', {
+          thisMonth: `${thisMonthStart.toISOString()} - ${thisMonthEnd.toISOString()}`,
+          lastMonth: `${lastMonthStart.toISOString()} - ${lastMonthEnd.toISOString()}`
+        });
+
+        // Prepare top team members - show ALL employees with their monthly performance
         const allEmployees = allEmployeesRes.data?.data?.employees || [];
         
-        console.log('📊 Employee Performance Data:', {
-          totalWithBookings: employeePerformance.length,
-          totalEmployees: allEmployees.length,
-          performanceData: employeePerformance
-        });
-        
-        // Create a map of employee performance by ID
-        const performanceMap = new Map();
-        employeePerformance.forEach(perf => {
-          if (perf._id) {
-            performanceMap.set(perf._id.toString(), perf);
-          }
-        });
-        
-        // Map all employees with their performance data (or zeros if no bookings)
         const allEmployeesWithPerformance = allEmployees.map(emp => {
           const empId = emp._id.toString();
-          const performance = performanceMap.get(empId);
+          
+          // Calculate this month's revenue
+          const thisMonthRevenue = allBookings
+            .filter(booking => {
+              const bookingDate = new Date(booking.appointmentDate);
+              return bookingDate >= thisMonthStart && 
+                     bookingDate <= thisMonthEnd &&
+                     booking.status === 'completed' &&
+                     booking.services?.some(s => s.employee?._id?.toString() === empId || s.employee?.toString() === empId);
+            })
+            .reduce((sum, booking) => {
+              const employeeServices = booking.services.filter(s => 
+                s.employee?._id?.toString() === empId || s.employee?.toString() === empId
+              );
+              return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
+            }, 0);
+          
+          // Calculate last month's revenue
+          const lastMonthRevenue = allBookings
+            .filter(booking => {
+              const bookingDate = new Date(booking.appointmentDate);
+              return bookingDate >= lastMonthStart && 
+                     bookingDate <= lastMonthEnd &&
+                     booking.status === 'completed' &&
+                     booking.services?.some(s => s.employee?._id?.toString() === empId || s.employee?.toString() === empId);
+            })
+            .reduce((sum, booking) => {
+              const employeeServices = booking.services.filter(s => 
+                s.employee?._id?.toString() === empId || s.employee?.toString() === empId
+              );
+              return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
+            }, 0);
           
           return {
             employeeName: `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim() || 'Unknown',
-            totalRevenue: performance?.totalRevenue || 0,
-            avgBookingValue: performance?.avgBookingValue || 0,
-            totalBookings: performance?.totalBookings || 0
+            thisMonthRevenue,
+            lastMonthRevenue
           };
         });
         
-        // Sort by totalRevenue descending to ensure top performers are first
+        // Sort by this month's revenue descending
         const sortedEmployees = allEmployeesWithPerformance.sort(
-          (a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0)
+          (a, b) => (b.thisMonthRevenue || 0) - (a.thisMonthRevenue || 0)
         );
         
         setTopTeamMembers(
           sortedEmployees.map((e) => ({
             name: e.employeeName,
-            thisMonth: `AED ${(
-              e.totalRevenue || 0
-            ).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-            lastMonth: `AED ${(
-              e.avgBookingValue || 0
-            ).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            thisMonth: `AED ${(e.thisMonthRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            lastMonth: `AED ${(e.lastMonthRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
           }))
         );
         
