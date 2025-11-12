@@ -1,0 +1,29 @@
+/* 
+ * Calendar Component Styles
+ * Placeholder CSS - Uses existing Selectcalander.css styles
+ * Import your existing calendar styles here
+ */
+
+@import '../Clientsidepage/Selectcalander.css';
+
+/* Additional component-specific overrides can go here */
+
+.calendar-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.calendar-grid-container {
+  flex: 1;
+  overflow: auto;
+}
