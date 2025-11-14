@@ -6,10 +6,12 @@ import LoginPage from "./Clientsidepage/Loginpage";
 import ProtectedRoute from "./ProtectedRoute";
 import React, { Suspense } from 'react';
 import LazyLoader from './components/LazyLoader';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy-load heavy routes to reduce initial bundle size
 const DashboardPage = React.lazy(() => import('./Clientsidepage/HomePage'));
 const Scheduler = React.lazy(() => import('./components/Calendar'));
+const CalendarTest = React.lazy(() => import('./components/CalendarTest'));
 const ClientsList = React.lazy(() => import('./Clientsidepage/Clientlist'));
 const DailySalesSummary = React.lazy(() => import('./Clientsidepage/Dailysalesss'));
 const SalesAppointments = React.lazy(() => import('./Clientsidepage/Appoint'));
@@ -48,9 +50,9 @@ function App() {
         >
 
           {/* Top-level pages */}
-          <Route index element={<Scheduler />} />
+          <Route index element={<ErrorBoundary><Scheduler /></ErrorBoundary>} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="calendar" element={<Scheduler />} />
+          <Route path="calendar" element={<ErrorBoundary><Scheduler /></ErrorBoundary>} />
           <Route path="clients-list" element={<ClientsList />} />
           <Route path="search-bar" element={<Searchbar />} />
            {/* Reports Routes - Use the ReportsRoutes component */}

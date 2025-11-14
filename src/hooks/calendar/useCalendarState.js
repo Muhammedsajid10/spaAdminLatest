@@ -3,11 +3,11 @@
  * Manages calendar view state (date, view type, navigation)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { formatDateLocal } from '../../utils/calendar';
 
-export const useCalendarState = (initialDate = new Date()) => {
-  const [currentDate, setCurrentDate] = useState(initialDate);
+export const useCalendarState = (initialDate) => {
+  const [currentDate, setCurrentDate] = useState(() => initialDate || new Date());
   const [currentView, setCurrentView] = useState('Week');
   const [selectedStaffFilter, setSelectedStaffFilter] = useState(null);
   const [teamFilter, setTeamFilter] = useState([]);
@@ -93,8 +93,14 @@ export const useCalendarState = (initialDate = new Date()) => {
   }, []);
 
   // Utility computed values
-  const currentDateKey = formatDateLocal(currentDate);
-  const isToday = formatDateLocal(currentDate) === formatDateLocal(new Date());
+  const currentDateKey = useMemo(() => {
+    return currentDate ? formatDateLocal(currentDate) : formatDateLocal(new Date());
+  }, [currentDate]);
+  
+  const isToday = useMemo(() => {
+    if (!currentDate) return false;
+    return formatDateLocal(currentDate) === formatDateLocal(new Date());
+  }, [currentDate]);
 
   return {
     // State

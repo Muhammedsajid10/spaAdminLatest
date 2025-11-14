@@ -13,6 +13,38 @@ export const getRandomAppointmentColor = () => {
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
+export const getAppointmentColorByStatus = (status, fallback = '#e0e7ff') => {
+  if (!status) return fallback;
+  const s = status.toLowerCase();
+  
+  // Define a light palette for appointment cards
+  const statusColorMap = {
+    booked: '#e0e7ff',        // Light indigo
+    pending: '#e0e7ff',       // Light indigo
+    confirmed: '#e0f2fe',     // Light sky blue
+    arrived: '#cffafe',       // Light cyan
+    started: '#fef3c7',       // Light amber
+    'in-progress': '#fef3c7', // Light amber
+    completed: '#dcfce7',     // Light green
+    cancelled: '#fee2e2',     // Light red
+    'no-show': '#f3e8ff',     // Light purple
+    rescheduled: '#fce7f3'    // Light rose
+  };
+  
+  // Exact match
+  if (statusColorMap[s]) return statusColorMap[s];
+  
+  // Fuzzy match
+  if (s.includes('confirm')) return statusColorMap.confirmed;
+  if (s.includes('cancel')) return statusColorMap.cancelled;
+  if (s.includes('progress') || s.includes('start')) return statusColorMap.started;
+  if (s.includes('complete')) return statusColorMap.completed;
+  if (s.includes('show')) return statusColorMap['no-show'];
+  if (s.includes('book')) return statusColorMap.booked;
+  
+  return fallback;
+};
+
 export const calculateAppointmentHeight = (startTime, endTime, timeSlotHeight = 80, slotInterval = 30) => {
   const parseHM = (t = '00:00') => {
     if (!t) return 0;

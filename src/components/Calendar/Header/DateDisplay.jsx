@@ -8,7 +8,17 @@ import { formatDateLocal } from '../../../utils/calendar';
 
 const DateDisplay = ({ currentDate, currentView }) => {
   const getDateRangeText = () => {
+    // Safety check: return early if currentDate is undefined
+    if (!currentDate) {
+      return 'Loading...';
+    }
+    
     const date = new Date(currentDate);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
     
     if (currentView === 'Day') {
       return date.toLocaleDateString('en-US', { 

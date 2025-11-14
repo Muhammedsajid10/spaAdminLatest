@@ -1,6 +1,6 @@
 /**
  * StaffColumn Component
- * Individual staff member column with appointments
+ * Individual staff member column with appointments - CSS Grid Layout
  */
 
 import React from 'react';
@@ -15,6 +15,11 @@ const StaffColumn = ({
   onTimeSlotClick,
   onAppointmentClick
 }) => {
+  // Safety check
+  if (!currentDate) {
+    return null;
+  }
+
   const dateKey = localDateKey(currentDate);
 
   const getAppointmentsForDate = () => {
@@ -43,57 +48,42 @@ const StaffColumn = ({
     <div className="staff-column">
       {/* Header */}
       <div className="staff-header">
-        <div className="staff-avatar">
-          {employee.avatar ? (
-            <img src={employee.avatar} alt={employee.name} />
-          ) : (
-            <div className="avatar-placeholder" style={{ backgroundColor: employee.avatarColor || '#ccc' }}>
-              {(employee.name || employee.firstName || 'U')[0].toUpperCase()}
-            </div>
-          )}
+        <div className="staff-header-name">
+          {employee.name || employee.user?.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Staff'}
         </div>
-        <div className="staff-info">
-          <div className="staff-name">
-            {employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim()}
-          </div>
-          <div className="staff-position">
-            {employee.position || 'Staff'}
-          </div>
+        <div className="staff-header-role">
+          {employee.position || employee.role || 'Staff Member'}
         </div>
       </div>
 
-      {/* Time slots */}
-      <div className="staff-time-slots">
+      {/* Schedule with time slots */}
+      <div className="staff-schedule">
         {timeSlots.map((time, index) => (
           <div
             key={index}
             className="time-slot"
             onClick={() => handleTimeSlotClick(time)}
-          >
-            {/* Empty slot - click to book */}
-          </div>
+          />
         ))}
 
         {/* Appointments overlay */}
-        <div className="appointments-overlay">
-          {dateAppointments.map((apt) => {
-            const height = calculateAppointmentHeight(
-              apt.startTime || apt.time,
-              apt.endTime,
-              80, // timeSlotHeight
-              30  // slotInterval
-            );
+        {dateAppointments.map((apt) => {
+          const height = calculateAppointmentHeight(
+            apt.startTime || apt.time,
+            apt.endTime,
+            60, // timeSlotHeight - matches CSS
+            30  // slotInterval
+          );
 
-            return (
-              <AppointmentCard
-                key={apt.key}
-                appointment={apt}
-                height={height}
-                onClick={() => onAppointmentClick && onAppointmentClick(apt)}
-              />
-            );
-          })}
-        </div>
+          return (
+            <AppointmentCard
+              key={apt.key}
+              appointment={apt}
+              height={height}
+              onClick={() => onAppointmentClick && onAppointmentClick(apt)}
+            />
+          );
+        })}
       </div>
     </div>
   );

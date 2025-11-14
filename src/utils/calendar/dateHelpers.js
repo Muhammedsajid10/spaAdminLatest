@@ -3,12 +3,36 @@
  * Pure functions for date manipulation and formatting
  */
 
-import { localDateKey, formatDateLocal } from '../../calendar';
+/**
+ * Format date to local string (YYYY-MM-DD)
+ */
+export const formatDateLocal = (date) => {
+  try {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error('formatDateLocal error:', error, 'date:', date);
+    return '';
+  }
+};
 
-// Re-export from existing calendar utils
-export { localDateKey, formatDateLocal };
+/**
+ * Get local date key for comparison
+ */
+export const localDateKey = (date) => {
+  return formatDateLocal(date);
+};
 
 export const getDatePickerCalendarDays = (month) => {
+  if (!month) {
+    month = new Date();
+  }
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
   const firstDay = new Date(year, monthIndex, 1);

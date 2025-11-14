@@ -18,6 +18,7 @@ export {
 export {
   getRandomColor,
   getRandomAppointmentColor,
+  getAppointmentColorByStatus,
   calculateAppointmentHeight,
   isTimeSlotConflicting,
   getAccumulatedBookings

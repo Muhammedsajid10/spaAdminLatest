@@ -2,7 +2,8 @@
  * Calendar Components - Central Export
  */
 
-// Main Calendar
+// Main Calendar - Default export for React.lazy
+export { default } from './Calendar';
 export { default as Calendar } from './Calendar';
 
 // Header Components

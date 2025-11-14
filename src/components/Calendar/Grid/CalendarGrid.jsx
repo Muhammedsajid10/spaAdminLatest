@@ -18,6 +18,15 @@ const CalendarGrid = ({
   selectedStaff,
   teamFilter
 }) => {
+  // Safety check
+  if (!currentDate || !timeSlots) {
+    return (
+      <div className="calendar-grid-empty">
+        <p>Loading calendar...</p>
+      </div>
+    );
+  }
+
   // Filter employees based on selection
   const displayEmployees = React.useMemo(() => {
     if (selectedStaff) {
