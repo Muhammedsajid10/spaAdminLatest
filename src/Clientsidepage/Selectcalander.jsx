@@ -2422,9 +2422,18 @@ const SelectCalendar = () => {
     if (selectedGiftCard) {
       const availableValue = calculateGiftCardValue(selectedGiftCard);
       giftCardDiscount = Math.min(total - discountFromMembership, availableValue);
+      
+      console.log('💰 calculateTotalWithGiftCard:', {
+        total,
+        discountFromMembership,
+        availableValue,
+        giftCardDiscount,
+        currentAppliedAmount: giftCardAppliedAmount
+      });
 
       // Update the applied amount for display if it changed
       if (giftCardAppliedAmount !== giftCardDiscount) {
+        console.log('🔄 Updating giftCardAppliedAmount from', giftCardAppliedAmount, 'to', giftCardDiscount);
         setGiftCardAppliedAmount(giftCardDiscount);
       }
     }
@@ -2628,6 +2637,18 @@ const SelectCalendar = () => {
       let finalAmount = paymentCalculation.remainingAmount;
       const paymentDetails = {};
 
+      console.log('💳 Payment Calculation:', {
+        totalAmount,
+        membershipDiscount: paymentCalculation.membershipDiscount,
+        giftCardDiscount: paymentCalculation.giftCardDiscount,
+        finalAmount,
+        selectedGiftCard: selectedGiftCard ? {
+          id: selectedGiftCard._id || selectedGiftCard.id,
+          code: selectedGiftCard.code || selectedGiftCard.giftCardCode,
+          availableValue: calculateGiftCardValue(selectedGiftCard)
+        } : null
+      });
+
       // Apply admin membership discount first
       if (appliedMembership && membershipDiscountAmount > 0) {
         console.log(' Applying admin membership discount:', {
@@ -2646,31 +2667,53 @@ const SelectCalendar = () => {
       }
 
       // Apply gift card if one was selected
-      if (selectedGiftCard && giftCardAppliedAmount > 0) {
+      if (selectedGiftCard) {
         const giftCardId = selectedGiftCard._id || selectedGiftCard.id;
         const giftCardCode = selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber;
         const availableValue = calculateGiftCardValue(selectedGiftCard);
-
-        console.log('🎁 Applying gift card to booking:', {
-          id: giftCardId,
-          code: giftCardCode,
-          appliedAmount: giftCardAppliedAmount,
-          remainingOnCard: availableValue - giftCardAppliedAmount,
-          selectedGiftCard: selectedGiftCard
-        });
-
-        paymentDetails.giftCard = {
-          giftCardId: giftCardId,
-          code: giftCardCode,
-          redeemAmount: giftCardAppliedAmount
-        };
         
-        console.log('🎁 Payment details with gift card:', paymentDetails);
-      } else {
-        console.log('⚠️ No gift card applied:', {
-          hasSelectedGiftCard: !!selectedGiftCard,
-          giftCardAppliedAmount
+        // Calculate the actual amount to redeem at booking time
+        const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
+        const actualRedeemAmount = Math.min(availableValue, amountAfterMembership);
+
+        console.log('🎁 Gift Card Application Check:', {
+          giftCardId,
+          giftCardCode,
+          availableValue,
+          totalAmount,
+          membershipDiscountAmount,
+          amountAfterMembership,
+          actualRedeemAmount,
+          willApply: actualRedeemAmount > 0
         });
+
+        // Only apply if there's actually an amount to redeem
+        if (actualRedeemAmount > 0) {
+          console.log('✅ Applying gift card to booking:', {
+            id: giftCardId,
+            code: giftCardCode,
+            redeemAmount: actualRedeemAmount
+          });
+
+          paymentDetails.giftCard = {
+            giftCardId: giftCardId,
+            code: giftCardCode,
+            redeemAmount: actualRedeemAmount
+          };
+          
+          // Update finalAmount to reflect gift card redemption
+          finalAmount = Math.max(0, amountAfterMembership - actualRedeemAmount);
+          
+          console.log('💰 Updated finalAmount after gift card:', finalAmount);
+        } else {
+          console.log('⚠️ Gift card selected but no amount to redeem:', {
+            availableValue,
+            totalAmount,
+            membershipDiscount: membershipDiscountAmount
+          });
+        }
+      } else {
+        console.log('⚠️ No gift card selected');
       }
 
       // Normalize payment methods to backend-accepted enums and attach details
@@ -5130,9 +5173,16 @@ const SelectCalendar = () => {
                                     className={`gift-card-item ${selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId ? 'selected' : ''}`}
                                     onClick={() => {
                                       console.log('🎁 Selected gift card:', giftCard);
+                                      console.log('🎁 Gift card details:', {
+                                        availableValue,
+                                        totalAmount: getTotalSessionPrice(),
+                                        membershipDiscount: membershipDiscountAmount
+                                      });
                                       setSelectedGiftCard(giftCard);
                                       const totalAmount = getTotalSessionPrice();
-                                      const maxRedeemable = Math.min(availableValue, totalAmount);
+                                      const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
+                                      const maxRedeemable = Math.min(availableValue, amountAfterMembership);
+                                      console.log('🎁 Setting giftCardAppliedAmount to:', maxRedeemable);
                                       setGiftCardAppliedAmount(maxRedeemable);
                                       setGiftCardError('');
                                     }}
