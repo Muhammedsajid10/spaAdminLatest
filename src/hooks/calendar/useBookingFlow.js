@@ -101,6 +101,7 @@ export const useBookingFlow = () => {
   }, []);
 
   const selectTimeSlot = useCallback((timeSlot) => {
+    console.log('⏰ selectTimeSlot called with:', timeSlot);
     setSelectedTimeSlotForBooking(timeSlot);
   }, []);
 

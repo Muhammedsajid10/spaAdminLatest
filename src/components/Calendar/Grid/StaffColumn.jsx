@@ -121,6 +121,16 @@ const StaffColumn = ({
 
         {/* Appointments overlay */}
         {dateAppointments.map((apt) => {
+          // Calculate position based on time
+          const calculateTopPosition = (timeStr) => {
+            if (!timeStr) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const totalMinutes = hours * 60 + minutes;
+            // 60px per 30-minute slot = 2px per minute
+            return (totalMinutes / 30) * 60;
+          };
+
+          const top = calculateTopPosition(apt.startTime || apt.time);
           const height = calculateAppointmentHeight(
             apt.startTime || apt.time,
             apt.endTime,
@@ -128,13 +138,30 @@ const StaffColumn = ({
             30  // slotInterval
           );
 
+          console.log('📍 Positioning appointment:', {
+            time: apt.startTime || apt.time,
+            top: `${top}px`,
+            height: `${height}px`,
+            service: apt.serviceName
+          });
+
           return (
-            <AppointmentCard
+            <div
               key={apt.key}
-              appointment={apt}
-              height={height}
-              onClick={() => onAppointmentClick && onAppointmentClick(apt)}
-            />
+              style={{
+                position: 'absolute',
+                top: `${top}px`,
+                left: '6px',
+                right: '6px',
+                zIndex: 5
+              }}
+            >
+              <AppointmentCard
+                appointment={apt}
+                height={height}
+                onClick={() => onAppointmentClick && onAppointmentClick(apt)}
+              />
+            </div>
           );
         })}
       </div>

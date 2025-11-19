@@ -14,7 +14,7 @@ import BookingModal from './BookingFlow/BookingModal';
 import TeamFilter from './Header/TeamFilter';
 
 // Import utilities
-import { generateTimeSlots } from '../../utils/calendar/timeHelpers';
+import { generateTimeSlots, addMinutesToTime } from '../../utils/calendar/timeHelpers';
 
 // Import Redux actions and API
 import { setEmployees, setEmployeesLoading, setEmployeesError } from '../../store/employeesSlice';
@@ -138,6 +138,7 @@ const Calendar = () => {
   // Local state
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
+  const [bookingDefaults, setBookingDefaults] = useState(null); // Track grid booking context (professional, time, date)
   const timeSlots = useMemo(() => generateTimeSlots('00:00', '23:30', 30), []);
 
   // Fetch employees on component mount
@@ -185,59 +186,173 @@ const Calendar = () => {
 
   // Fetch clients on component mount
   useEffect(() => {
-    console.log('🔄 Checking clients... current count:', clients.length);
+    console.log('🔄 CLIENT FETCH CHECK');
+    console.log('🔄 Current clients in Redux:', clients);
+    console.log('🔄 Clients count:', clients.length);
+    console.log('🔄 Clients is array?:', Array.isArray(clients));
+    
     if (clients.length === 0) {
-      console.log('🔄 Fetching clients...');
-      dispatch(fetchClientsThunk());
+      console.log('🔄 Fetching clients from API...');
+      dispatch(fetchClientsThunk())
+        .unwrap()
+        .then((result) => {
+          console.log('✅ Clients fetched successfully:', result);
+          console.log('✅ Clients count:', result?.length);
+        })
+        .catch((error) => {
+          console.error('❌ Error fetching clients:', error);
+        });
+    } else {
+      console.log('✅ Clients already loaded:', clients.length);
     }
   }, [dispatch, clients.length]);
 
   // Handlers
   const handleOpenBooking = (options = {}) => {
-    // Clear any existing session when opening new booking
-    dispatch(clearSession());
+    // Only clear session if we're starting a fresh booking (not adding to existing session)
+    // Don't clear if we already have appointments in the session
+    if (multipleAppointments.length === 0) {
+      console.log('🆕 Starting fresh booking - clearing session');
+      dispatch(clearSession());
+    } else {
+      console.log('➡️ Continuing existing session with', multipleAppointments.length, 'appointments');
+    }
+    
+    // If time and employee are provided (grid selection), store as bookingDefaults
+    // This is used to detect grid booking mode and chain times for multiple services
+    if (options.time && options.employee) {
+      console.log('🎯 Grid booking detected - storing bookingDefaults');
+      setBookingDefaults({
+        professional: options.employee,
+        time: options.time,
+        date: options.date || currentDate,
+        isDirectTimeSlotSelection: true
+      });
+    } else {
+      // Manual booking mode ("Add Appointment" button)
+      setBookingDefaults(null);
+    }
     
     openBookingModal(
       options.date || currentDate,
       options.time,
       options.employee
     );
+    
+    // If booking from grid, we already have time and employee, so stay at step 1 (service)
+    // The flow will be: Service → Client → Confirmation
+    // If booking from button, flow will be: Service → Professional → Time → Client → Confirmation
   };
 
   // Enhanced next step handler that adds appointment to session at the right time
   const handleNextStep = () => {
-    console.log(`🔄 Moving from step ${bookingModalStep} to ${bookingModalStep + 1}`);
+    console.log(`🔄 HANDLE NEXT STEP - Current step: ${bookingModalStep}`);
+    console.log('📊 bookingDefaults:', bookingDefaults);
+    console.log('📊 multipleAppointments:', multipleAppointments.length);
+    console.log('📊 selectedServiceForBooking:', selectedServiceForBooking);
     
-    // If moving from step 3 (time selection) to step 4 (client selection)
-    // Add the current appointment to the session IMMEDIATELY
-    if (bookingModalStep === 3 && selectedTimeSlotForBooking) {
-      console.log('📝 Adding appointment to session after time selection');
+    // Check if we're in GRID BOOKING MODE (bookingDefaults set with professional and time)
+    const isGridBooking = bookingDefaults?.professional && bookingDefaults?.time;
+    
+    // GRID BOOKING: If at step 1 with appointments but NO selected service
+    // This means "Proceed to Checkout" was clicked - go to client selection
+    if (isGridBooking && bookingModalStep === 1 && !selectedServiceForBooking && multipleAppointments.length > 0) {
+      console.log('🛒 Proceeding to checkout - going to client selection (step 4)');
+      goToStep(4);
+      return;
+    }
+    
+    // GRID BOOKING: After selecting service at step 1, add to session IMMEDIATELY
+    if (isGridBooking && bookingModalStep === 1 && selectedServiceForBooking) {
+      console.log('🎯 Grid booking mode - adding service to session');
       
+      const prof = bookingDefaults.professional;
+      const bookingDate = bookingDefaults.date || selectedDateForBooking || currentDate;
+      
+      // Calculate start time: first service uses clicked time, subsequent chain from last end time
+      let startTime;
+      if (multipleAppointments.length === 0) {
+        startTime = bookingDefaults.time;
+        console.log('⏰ First service - using clicked time:', startTime);
+      } else {
+        const lastAppointment = multipleAppointments[multipleAppointments.length - 1];
+        startTime = addMinutesToTime(lastAppointment.timeSlot, lastAppointment.duration);
+        console.log('⏰ Chaining from last appointment - new start time:', startTime);
+      }
+      
+      const endTime = addMinutesToTime(startTime, selectedServiceForBooking.duration);
+      
+      // Create appointment and add to session
       const appointmentData = {
         id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         serviceId: selectedServiceForBooking?._id || selectedServiceForBooking?.id,
         serviceName: selectedServiceForBooking?.name,
         service: selectedServiceForBooking,
-        professionalId: selectedProfessionalForBooking?._id || selectedProfessionalForBooking?.id,
-        professionalName: selectedProfessionalForBooking?.user?.firstName 
-          ? `${selectedProfessionalForBooking.user.firstName} ${selectedProfessionalForBooking.user.lastName || ''}`.trim()
-          : selectedProfessionalForBooking?.name || 'Staff',
-        professional: selectedProfessionalForBooking,
-        time: selectedTimeSlotForBooking,
-        timeSlot: selectedTimeSlotForBooking, // Add both for compatibility
-        date: selectedDateForBooking,
+        professionalId: prof?._id || prof?.id,
+        professionalName: prof?.user?.firstName 
+          ? `${prof.user.firstName} ${prof.user.lastName || ''}`.trim()
+          : prof?.name || 'Staff',
+        professional: prof,
+        time: startTime,
+        timeSlot: startTime,
+        startTime: startTime,
+        endTime: endTime,
+        date: bookingDate,
         duration: selectedServiceForBooking?.duration || 30,
         price: selectedServiceForBooking?.price || 0,
         addedAt: new Date().toISOString()
       };
-
+      
       console.log('✅ Adding appointment to session:', appointmentData);
       addAppointmentToSessionLocal(appointmentData);
       
-      // Clear selections to allow adding another service
+      // Update bookingDefaults time for next service (chain continuation)
+      setBookingDefaults({
+        ...bookingDefaults,
+        time: endTime // Next service will start when this one ends
+      });
+      
+      // Clear service selection to show it was added
       selectService(null);
-      selectProfessional(null);
-      selectTimeSlot(null);
+      
+      // STAY at step 1 - showing stacked services
+      console.log('✅ Service added, staying at step 1');
+      
+      return; // Don't advance step
+    }
+    
+    // MANUAL BOOKING: Normal flow through all steps
+    if (!isGridBooking) {
+      // If moving from step 3 (time selection) to step 4 (client)
+      if (bookingModalStep === 3 && selectedTimeSlotForBooking && selectedServiceForBooking) {
+        console.log('📝 Manual booking - adding appointment to session after time selection');
+        
+        const appointmentData = {
+          id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          serviceId: selectedServiceForBooking?._id || selectedServiceForBooking?.id,
+          serviceName: selectedServiceForBooking?.name,
+          service: selectedServiceForBooking,
+          professionalId: selectedProfessionalForBooking?._id || selectedProfessionalForBooking?.id,
+          professionalName: selectedProfessionalForBooking?.user?.firstName 
+            ? `${selectedProfessionalForBooking.user.firstName} ${selectedProfessionalForBooking.user.lastName || ''}`.trim()
+            : selectedProfessionalForBooking?.name || 'Staff',
+          professional: selectedProfessionalForBooking,
+          time: selectedTimeSlotForBooking,
+          timeSlot: selectedTimeSlotForBooking,
+          date: selectedDateForBooking,
+          duration: selectedServiceForBooking?.duration || 30,
+          price: selectedServiceForBooking?.price || 0,
+          addedAt: new Date().toISOString()
+        };
+
+        console.log('✅ Adding appointment to session:', appointmentData);
+        addAppointmentToSessionLocal(appointmentData);
+        
+        // Clear selections
+        selectService(null);
+        selectProfessional(null);
+        selectTimeSlot(null);
+      }
     }
     
     goToNextStep();
@@ -247,15 +362,30 @@ const Calendar = () => {
   const handlePreviousStep = () => {
     console.log(`⬅️ Going back from step ${bookingModalStep} to ${bookingModalStep - 1}`);
     
+    // Check if we're in grid booking mode
+    const isGridBooking = bookingDefaults?.professional && bookingDefaults?.time;
+    
     // If going back from step 5 (confirmation) to step 4 (client)
     // Don't remove appointments, just allow editing
     if (bookingModalStep === 5) {
       console.log('✅ Going back to client selection - keeping appointments');
+      goToPreviousStep();
+      return;
     }
     
-    // If going back from step 4 (client) to step 3 (time)
+    // If going back from step 4 (client) in grid booking mode
+    // DON'T remove appointments - user may want to change client for all services
+    // Just go back to step 1 to show the "Add Another Service" option
+    if (bookingModalStep === 4 && isGridBooking) {
+      console.log('⬅️ Grid booking - going back to allow adding more services');
+      console.log('✅ Keeping all', multipleAppointments.length, 'appointments in session');
+      goToStep(1);
+      return;
+    }
+    
+    // If going back from step 4 (client) to step 3 (time) in manual flow
     // Remove the last appointment that was auto-added
-    if (bookingModalStep === 4 && multipleAppointments.length > 0) {
+    if (bookingModalStep === 4 && !isGridBooking && multipleAppointments.length > 0) {
       const lastAppointment = multipleAppointments[multipleAppointments.length - 1];
       console.log('🗑️ Removing last auto-added appointment:', lastAppointment.id);
       dispatch(removeAppointmentFromSession(lastAppointment.id));
@@ -280,13 +410,48 @@ const Calendar = () => {
 
   // Handler for adding another service - go back to step 1 but keep session
   const handleAddAnotherService = () => {
-    console.log('➕ Adding another service to session');
-    // Clear current selections but keep session
-    selectService(null);
-    selectProfessional(null);
-    selectTimeSlot(null);
-    // Go back to service selection
-    goToStep(1);
+    console.log('➕ ========== ADD ANOTHER SERVICE CLICKED ==========');
+    console.log('📊 Current session appointments:', multipleAppointments.length);
+    console.log('📊 Appointments:', multipleAppointments);
+    console.log('📊 bookingDefaults:', bookingDefaults);
+    console.log('📊 selectedServiceForBooking:', selectedServiceForBooking);
+    console.log('📊 selectedProfessionalForBooking:', selectedProfessionalForBooking);
+    console.log('📊 selectedTimeSlotForBooking:', selectedTimeSlotForBooking);
+    
+    // Check if we're in grid booking mode or manual mode
+    const isGridBooking = bookingDefaults?.professional && bookingDefaults?.time;
+    
+    if (isGridBooking) {
+      // GRID BOOKING MODE: bookingDefaults contains professional and time
+      // Time will be automatically chained when selecting next service
+      // Professional stays the same from bookingDefaults
+      console.log('🔗 Grid booking mode - bookingDefaults preserved for time chaining');
+      console.log('✅ Keeping', multipleAppointments.length, 'appointments in session');
+      
+      // Clear only service selection
+      selectService(null);
+      
+      // Go back to service selection (step 1)
+      // bookingDefaults is NOT cleared - it keeps professional and updated time
+      // multipleAppointments is NOT cleared - they stay in the session
+      console.log('🔄 Going to step 1 - Service selection');
+      goToStep(1);
+    } else {
+      // MANUAL BOOKING MODE: Full flexibility
+      console.log('🔄 Manual booking mode - full flexibility');
+      console.log('✅ Keeping', multipleAppointments.length, 'appointments in session');
+      
+      // Clear all selections to allow choosing different professional and time
+      selectService(null);
+      selectProfessional(null);
+      selectTimeSlot(null);
+      
+      // Go back to service selection (step 1)
+      console.log('🔄 Going to step 1 - Service selection');
+      goToStep(1);
+    }
+    
+    console.log('➕ ========== ADD ANOTHER SERVICE COMPLETE ==========');
   };
 
   const handleTimeSlotClick = ({ employee, date, time }) => {
@@ -381,6 +546,8 @@ const Calendar = () => {
           const timeStr = apt.time || apt.timeSlot;
           const aptDate = apt.date || selectedDateForBooking;
           
+          console.log('⏰ Processing appointment for API - timeStr:', timeStr, 'apt.time:', apt.time, 'apt.timeSlot:', apt.timeSlot);
+          
           // Get date string in YYYY-MM-DD format
           let dateStr;
           if (typeof aptDate === 'string' && aptDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -455,6 +622,7 @@ const Calendar = () => {
       
       // Close modal and reset selections
       closeBookingModal();
+      setBookingDefaults(null); // Clear grid booking context
       
       // Show success message with booking details
       const appointmentCount = appointmentsToBook.length;
@@ -593,7 +761,10 @@ const Calendar = () => {
       <BookingModal
         show={showBookingModal}
         step={bookingModalStep}
-        onClose={closeBookingModal}
+        onClose={() => {
+          closeBookingModal();
+          setBookingDefaults(null); // Clear grid booking context when modal closes
+        }}
         onNextStep={handleNextStep}
         onPreviousStep={handlePreviousStep}
         onAddAnotherService={handleAddAnotherService}

@@ -66,13 +66,14 @@ const TimeSlotSelection = ({
 
     // Try to generate slots from employee's shift hours first
     if (professional.workSchedule && hasShift) {
+      console.log('🔍 Attempting to generate from workSchedule:', professional.workSchedule);
       slotTimes = generateTimeSlotsFromEmployeeShift(
         professional,
         date,
         serviceDuration,
         interval
       );
-      console.log('✅ Generated slots from shift:', slotTimes);
+      console.log('✅ Generated slots from shift:', slotTimes.length, 'slots', slotTimes.slice(0, 5));
     }
 
     // If no slots generated (empty workSchedule or no shift), use default business hours
@@ -89,11 +90,13 @@ const TimeSlotSelection = ({
         }
       }
       slotTimes = defaultSlots;
-      console.log('✅ Generated default slots:', slotTimes.length);
+      console.log('✅ Generated default slots:', slotTimes.length, 'slots', slotTimes.slice(0, 5));
+    } else {
+      console.log('✅ Using shift-based slots:', slotTimes.length, 'slots', slotTimes.slice(0, 5));
     }
 
     // Check availability for each slot (against both DB and session appointments)
-    return slotTimes.map(time => {
+    const availableSlots = slotTimes.map(time => {
       const available = isSlotAvailable(
         professionalId,
         date,
@@ -108,7 +111,11 @@ const TimeSlotSelection = ({
         available,
         formattedTime: formatTime(time, false) // 12-hour format
       };
-    });
+    }).filter(slot => slot.available); // Only return available slots
+
+    console.log('📊 Total slots generated:', slotTimes.length, '| Available slots:', availableSlots.length);
+    
+    return availableSlots;
   }, [professional, date, hasShift, service, appointments, effectiveSessionAppointments]);
 
   const handleSelect = (slot) => {
@@ -175,13 +182,11 @@ const TimeSlotSelection = ({
               key={idx}
               className={`time-slot-button ${
                 selectedTimeSlot === slot.time ? 'selected' : ''
-              } ${!slot.available ? 'unavailable' : ''}`}
+              }`}
               onClick={() => handleSelect(slot)}
-              disabled={!slot.available}
-              title={!slot.available ? 'Already booked' : 'Available'}
+              title="Available"
             >
               {slot.formattedTime}
-              {!slot.available && <span className="slot-status">Booked</span>}
             </button>
           ))}
         </div>
@@ -190,15 +195,7 @@ const TimeSlotSelection = ({
       <div className="availability-legend">
         <div className="legend-item">
           <span className="legend-dot available"></span>
-          <span>Available</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-dot unavailable"></span>
-          <span>Booked</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-dot shift-info"></span>
-          <span>Within shift hours</span>
+          <span>Available slots only</span>
         </div>
       </div>
       

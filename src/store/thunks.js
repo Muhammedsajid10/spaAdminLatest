@@ -80,6 +80,8 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           id: allBookings[0]._id,
           date: allBookings[0].appointmentDate,
           client: allBookings[0].client,
+          clientType: typeof allBookings[0].client,
+          clientKeys: allBookings[0].client ? Object.keys(allBookings[0].client) : [],
           services: allBookings[0].services?.length
         } : 'No bookings'
       });
@@ -197,17 +199,72 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           // Handle normalized client data (both string and object formats)
           let clientDisplayName = 'Client';
           if (booking.client) {
+            console.log('🔍 Processing client data:', {
+              type: typeof booking.client,
+              keys: typeof booking.client === 'object' ? Object.keys(booking.client) : [],
+              fullData: booking.client
+            });
+            
             if (typeof booking.client === 'string') {
               clientDisplayName = booking.client;
-            } else if (booking.client._id === '000000000000000000000000') {
-              // Legacy data with placeholder - use the preserved name from firstName
-              clientDisplayName = booking.client.firstName || booking.client.fullName || 'Unknown Client';
-            } else if (booking.client.fullName) {
-              clientDisplayName = booking.client.fullName;
-            } else if (booking.client.firstName || booking.client.lastName) {
-              clientDisplayName = `${booking.client.firstName || ''} ${booking.client.lastName || ''}`.trim();
+            } else if (typeof booking.client === 'object') {
+              // PRIORITY ORDER: Try most specific to least specific
+              
+              // 1. Check if client IS the user object directly (client.firstName, client.lastName)
+              if (booking.client.firstName || booking.client.lastName) {
+                const firstName = booking.client.firstName || '';
+                const lastName = booking.client.lastName || '';
+                clientDisplayName = `${firstName} ${lastName}`.trim();
+                if (clientDisplayName) {
+                  console.log('✅ Found client name from direct properties:', clientDisplayName);
+                }
+              }
+              
+              // 2. Check for nested user object (client.user.firstName, client.user.lastName)
+              if (!clientDisplayName || clientDisplayName === 'Client') {
+                if (booking.client.user && (booking.client.user.firstName || booking.client.user.lastName)) {
+                  const firstName = booking.client.user.firstName || '';
+                  const lastName = booking.client.user.lastName || '';
+                  clientDisplayName = `${firstName} ${lastName}`.trim();
+                  if (clientDisplayName) {
+                    console.log('✅ Found client name from nested user:', clientDisplayName);
+                  }
+                }
+              }
+              
+              // 3. Check for fullName property
+              if (!clientDisplayName || clientDisplayName === 'Client') {
+                if (booking.client.fullName) {
+                  clientDisplayName = booking.client.fullName;
+                  console.log('✅ Found client name from fullName:', clientDisplayName);
+                }
+              }
+              
+              // 4. Check for name property
+              if (!clientDisplayName || clientDisplayName === 'Client') {
+                if (booking.client.name) {
+                  clientDisplayName = booking.client.name;
+                  console.log('✅ Found client name from name:', clientDisplayName);
+                }
+              }
+              
+              // 5. Check for email as fallback
+              if (!clientDisplayName || clientDisplayName === 'Client') {
+                if (booking.client.email) {
+                  clientDisplayName = booking.client.email;
+                  console.log('⚠️ Using email as client name:', clientDisplayName);
+                }
+              }
+              
+              // 6. Handle legacy placeholder IDs
+              if (booking.client._id === '000000000000000000000000') {
+                clientDisplayName = 'Walk-in Client';
+                console.log('ℹ️ Legacy placeholder ID detected');
+              }
             }
           }
+          
+          console.log('✅ Final client name:', clientDisplayName);
 
           // Handle normalized service data (both string and object formats)
           let serviceName = 'Service';
@@ -324,13 +381,21 @@ export const fetchClientsThunk = createAsyncThunk('clients/fetch', async (_, { d
   try {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No token');
-    const res = await api.get(`${Base_url}/admin/clients`, { headers: { Authorization: `Bearer ${token}` } });
+    
+    // ✅ FIX: Add high limit to fetch all clients (similar to calendar bookings fix)
+    const res = await api.get(`${Base_url}/admin/clients?limit=10000`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    });
+    
     if (res.data && res.data.success) {
-      dispatch(setClients(res.data.data.clients || []));
-      return res.data.data.clients || [];
+      const clients = res.data.data.clients || [];
+      console.log('✅ Clients fetched from API:', clients.length);
+      dispatch(setClients(clients));
+      return clients;
     }
     throw new Error('Failed to fetch clients');
   } catch (err) {
+    console.error('❌ Error in fetchClientsThunk:', err);
     dispatch(setClientsError(err.message || String(err)));
     return rejectWithValue(err.message || String(err));
   } finally {

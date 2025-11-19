@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
 import PricingSummary from '../Shared/PricingSummary';
 import { usePriceEditing } from '../../../hooks/calendar';
 import { formatTime } from '../../../utils/calendar/timeUtils';
@@ -16,7 +17,8 @@ const BookingSummary = ({
   client,
   multipleAppointments = [],
   onConfirm,
-  onBack
+  onBack,
+  onAddAnotherService
 }) => {
   // Payment and notes state
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -125,6 +127,15 @@ const BookingSummary = ({
             )}
           </div>
         ))}
+        
+        {onAddAnotherService && (
+          <button 
+            className="add-another-service-btn"
+            onClick={onAddAnotherService}
+          >
+            <Plus size={18} /> Add Another Service
+          </button>
+        )}
       </div>
 
       <div className="summary-section">

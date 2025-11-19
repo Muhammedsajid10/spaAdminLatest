@@ -4,13 +4,28 @@
  */
 
 import React from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 
-const ServiceSelection = ({ services, selectedService, onSelectService, onNext }) => {
+const ServiceSelection = ({ 
+  services, 
+  selectedService, 
+  onSelectService, 
+  onNext,
+  multipleAppointments = [],
+  onRemoveAppointment,
+  isGridBooking = false,
+  onProceedToClient
+}) => {
   console.log('🔍 ServiceSelection - services:', services);
   console.log('🔍 ServiceSelection - services count:', services?.length);
+  console.log('🔍 ServiceSelection - multipleAppointments:', multipleAppointments.length);
+  console.log('🔍 ServiceSelection - isGridBooking:', isGridBooking);
   
   const handleSelect = (service) => {
+    console.log('🔍 Service selected:', service.name);
     onSelectService(service);
+    // In grid booking, onNext will add to session and stay on step 1
+    // In manual booking, onNext will advance to professional selection
     onNext();
   };
 
@@ -21,6 +36,11 @@ const ServiceSelection = ({ services, selectedService, onSelectService, onNext }
     acc[category].push(service);
     return acc;
   }, {});
+
+  // Calculate total
+  const getTotalPrice = () => {
+    return multipleAppointments.reduce((sum, apt) => sum + (apt.price || apt.service?.price || 0), 0);
+  };
 
   if (!services || services.length === 0) {
     return (
@@ -44,6 +64,53 @@ const ServiceSelection = ({ services, selectedService, onSelectService, onNext }
           <input type="text" placeholder="Search by service name" />
         </div>
       </div>
+
+      {/* Show stacked service cards for grid booking */}
+      {isGridBooking && multipleAppointments.length > 0 && (
+        <div className="stacked-services-section">
+          <h3 className="stacked-services-title">Selected Services ({multipleAppointments.length})</h3>
+          <div className="stacked-services-list">
+            {multipleAppointments.map((apt, idx) => (
+              <div key={apt.id} className="stacked-service-card">
+                <div className="stacked-service-number">{idx + 1}</div>
+                <div className="stacked-service-info">
+                  <div className="stacked-service-name">{apt.serviceName || apt.service?.name}</div>
+                  <div className="stacked-service-details">
+                    <span className="detail-item">⏰ {apt.timeSlot || apt.time}</span>
+                    <span className="detail-item">⏱ {apt.duration}min</span>
+                    <span className="detail-item">👤 {apt.professionalName || apt.professional?.name}</span>
+                  </div>
+                </div>
+                <div className="stacked-service-price">AED {apt.price || apt.service?.price || 0}</div>
+                {onRemoveAppointment && (
+                  <button 
+                    className="remove-service-btn"
+                    onClick={() => onRemoveAppointment(apt.id)}
+                    title="Remove service"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="stacked-services-footer">
+            <div className="stacked-total">
+              <span>Total:</span>
+              <span className="total-amount">AED {getTotalPrice()}</span>
+            </div>
+            {onProceedToClient && (
+              <button 
+                className="proceed-checkout-btn"
+                onClick={onProceedToClient}
+              >
+                Proceed to Checkout →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="service-categories">
         {Object.entries(groupedServices).map(([category, categoryServices]) => (

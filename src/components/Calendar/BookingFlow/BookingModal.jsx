@@ -50,6 +50,25 @@ const BookingModal = ({
   const sessionTotal = useSelector(selectSessionTotal);
   const appointmentCount = useSelector(selectAppointmentCount);
 
+  // Detect if this is a grid booking (time and employee pre-selected)
+  const isGridBooking = !!(selectedTimeSlot && selectedProfessional);
+
+  // Helper to map actual steps to virtual steps for grid booking
+  // Grid booking: Step 1 (Service) → Step 2 (Client) → Step 3 (Confirm)
+  // Actual steps:  Step 1 (Service) → Step 4 (Client) → Step 5 (Confirm)
+  const getVirtualStep = (actualStep) => {
+    if (!isGridBooking) return actualStep;
+    
+    switch (actualStep) {
+      case 1: return 1; // Service
+      case 4: return 2; // Client
+      case 5: return 3; // Confirm
+      default: return actualStep;
+    }
+  };
+
+  const virtualStep = getVirtualStep(step);
+
   // Calculate subtotal with discounts
   const subtotal = useMemo(() => {
     return sessionAppointments.reduce((sum, apt) => {
@@ -82,6 +101,18 @@ const BookingModal = ({
 
   const getStepTitle = () => {
     const serviceCount = appointmentCount > 0 ? ` (${appointmentCount})` : '';
+    
+    if (isGridBooking) {
+      // Use virtual steps for grid booking
+      switch (virtualStep) {
+        case 1: return `Select Service${serviceCount}`;
+        case 2: return 'Select Client';
+        case 3: return 'Confirm Booking';
+        default: return 'New Booking';
+      }
+    }
+    
+    // For manual bookings: all 5 steps
     switch (step) {
       case 1: return `Select Service${serviceCount}`;
       case 2: return 'Choose Professional';
@@ -93,6 +124,65 @@ const BookingModal = ({
   };
 
   const renderStepContent = () => {
+    // For grid bookings, map actual steps to content
+    if (isGridBooking) {
+      // Step 1: Service Selection
+      if (step === 1) {
+        return (
+          <ServiceSelection
+            services={services}
+            selectedService={selectedService}
+            onSelectService={onSelectService}
+            onNext={onNextStep}
+            multipleAppointments={sessionAppointments}
+            onRemoveAppointment={handleRemoveAppointment}
+            isGridBooking={true}
+            onProceedToClient={() => {
+              console.log('🛒 Proceed to client clicked');
+              // Navigate to step 4 (client selection)
+              // We need to call a handler that will navigate
+              if (sessionAppointments.length > 0) {
+                // Trigger navigation by calling onNextStep in a way that navigates to step 4
+                // Since we're at step 1, we need to jump to step 4
+                // We'll use a custom approach
+                onNextStep(); // This will be intercepted in Calendar.jsx
+              }
+            }}
+          />
+        );
+      }
+      // Step 4: Client Selection (virtual step 2)
+      if (step === 4) {
+        return (
+          <ClientSelection
+            clients={clients}
+            selectedClient={selectedClient}
+            onSelectClient={onSelectClient}
+            onNext={onNextStep}
+            onBack={onPreviousStep}
+          />
+        );
+      }
+      // Step 5: Confirmation (virtual step 3)
+      if (step === 5) {
+        return (
+          <BookingSummary
+            service={selectedService}
+            professional={selectedProfessional}
+            timeSlot={selectedTimeSlot}
+            date={selectedDate}
+            client={selectedClient}
+            multipleAppointments={sessionAppointments}
+            onConfirm={onConfirmBooking}
+            onBack={onPreviousStep}
+            onAddAnotherService={onAddAnotherService}
+          />
+        );
+      }
+      return null;
+    }
+    
+    // For manual bookings, render all steps normally
     switch (step) {
       case 1:
         return (
@@ -150,6 +240,7 @@ const BookingModal = ({
             multipleAppointments={sessionAppointments}
             onConfirm={onConfirmBooking}
             onBack={onPreviousStep}
+            onAddAnotherService={onAddAnotherService}
           />
         );
       default:
@@ -190,6 +281,29 @@ const BookingModal = ({
                 →
               </button>
             </div>
+
+            {/* Pre-selected Time & Professional Info (Grid Booking) */}
+            {isGridBooking && (
+              <div className="booking-sidebar-preselected">
+                <div className="preselected-header">
+                  <span className="preselected-title">Selected Slot</span>
+                </div>
+                <div className="preselected-info">
+                  <div className="preselected-item">
+                    <Clock size={14} />
+                    <span>{formatTime(selectedTimeSlot, false)}</span>
+                  </div>
+                  <div className="preselected-item">
+                    <User size={14} />
+                    <span>
+                      {selectedProfessional?.user?.firstName 
+                        ? `${selectedProfessional.user.firstName} ${selectedProfessional.user.lastName || ''}`.trim()
+                        : selectedProfessional?.name || 'Staff'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Session Appointments Summary */}
             {appointmentCount > 0 && (
@@ -295,7 +409,11 @@ const BookingModal = ({
 
           {/* Right Content Area */}
           <div className="booking-modal-content">
-            <BookingProgress currentStep={step} totalSteps={5} />
+            <BookingProgress 
+              currentStep={isGridBooking ? virtualStep : step}
+              totalSteps={isGridBooking ? 3 : 5}
+              hasPreSelectedTimeAndEmployee={isGridBooking}
+            />
             {renderStepContent()}
           </div>
         </div>

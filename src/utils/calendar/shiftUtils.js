@@ -90,6 +90,12 @@ export const getEmployeeShiftHours = (employee, date) => {
   const dayName = getDayName(date);
   const schedule = employee.workSchedule[dayName];
 
+  console.log('🔍 getEmployeeShiftHours:', {
+    employee: employee?.name || employee?.user?.firstName,
+    dayName,
+    schedule
+  });
+
   if (!schedule) {
     return [];
   }
@@ -98,6 +104,7 @@ export const getEmployeeShiftHours = (employee, date) => {
 
   // Parse shifts string (e.g., "09:00-13:00,14:00-18:00")
   if (schedule.shifts && typeof schedule.shifts === 'string') {
+    console.log('📋 Parsing shifts string:', schedule.shifts);
     schedule.shifts.split(',').forEach(segment => {
       const trimmed = segment.trim();
       if (trimmed) {
@@ -107,6 +114,7 @@ export const getEmployeeShiftHours = (employee, date) => {
           const endTime = parts[1].trim();
           if (startTime && endTime) {
             blocks.push({ start: startTime, end: endTime });
+            console.log('  ✅ Added block:', { start: startTime, end: endTime });
           }
         }
       }
@@ -115,18 +123,22 @@ export const getEmployeeShiftHours = (employee, date) => {
 
   // Fallback to startTime/endTime
   if (blocks.length === 0 && schedule.startTime && schedule.endTime) {
+    console.log('📋 Using startTime/endTime:', schedule.startTime, '-', schedule.endTime);
     blocks.push({ start: schedule.startTime, end: schedule.endTime });
   }
 
   // Fallback to shiftsData array
   if (blocks.length === 0 && Array.isArray(schedule.shiftsData)) {
+    console.log('📋 Using shiftsData array:', schedule.shiftsData);
     schedule.shiftsData.forEach(shift => {
       if (shift.startTime && shift.endTime) {
         blocks.push({ start: shift.startTime, end: shift.endTime });
+        console.log('  ✅ Added block from shiftsData:', { start: shift.startTime, end: shift.endTime });
       }
     });
   }
 
+  console.log('✅ Total shift blocks:', blocks);
   return blocks;
 };
 
@@ -141,13 +153,22 @@ export const getEmployeeShiftHours = (employee, date) => {
 export const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDuration, intervalMinutes = 30) => {
   const shiftBlocks = getEmployeeShiftHours(employee, date);
 
+  console.log('🔍 generateTimeSlotsFromEmployeeShift called:', {
+    employee: employee?.name || employee?.user?.firstName,
+    shiftBlocks,
+    serviceDuration,
+    intervalMinutes
+  });
+
   if (shiftBlocks.length === 0) {
+    console.log('⚠️ No shift blocks returned');
     return [];
   }
 
   const slots = [];
 
   shiftBlocks.forEach(block => {
+    console.log('🔍 Processing shift block:', block);
     let currentTime = block.start;
     const blockEndMinutes = timeToMinutes(block.end);
 
@@ -165,6 +186,7 @@ export const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDurati
     }
   });
 
+  console.log('✅ Generated slots from shift blocks:', slots.length, 'slots', slots.slice(0, 5));
   return slots;
 };
 
