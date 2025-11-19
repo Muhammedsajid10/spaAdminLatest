@@ -170,9 +170,10 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           }
 
           const startDateTime = startISO ? new Date(startISO) : new Date();
-          const localYear = startDateTime.getFullYear();
-          const localMonth = String(startDateTime.getMonth() + 1).padStart(2, '0');
-          const localDay = String(startDateTime.getDate()).padStart(2, '0');
+          // ✅ FIX: Use UTC date extraction to match UTC time
+          const localYear = startDateTime.getUTCFullYear();
+          const localMonth = String(startDateTime.getUTCMonth() + 1).padStart(2, '0');
+          const localDay = String(startDateTime.getUTCDate()).padStart(2, '0');
           const appointmentLocalDate = `${localYear}-${localMonth}-${localDay}`;
 
           const timeSlot = startISO ? (() => {

@@ -3,9 +3,10 @@
  * Step 5: Confirm booking details
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import PricingSummary from '../Shared/PricingSummary';
 import { usePriceEditing } from '../../../hooks/calendar';
+import { formatTime } from '../../../utils/calendar/timeUtils';
 
 const BookingSummary = ({
   service,
@@ -17,6 +18,10 @@ const BookingSummary = ({
   onConfirm,
   onBack
 }) => {
+  // Payment and notes state
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [notes, setNotes] = useState('');
+
   const {
     editingTotalPrice,
     tempTotalPrice,
@@ -51,7 +56,9 @@ const BookingSummary = ({
     console.log('✅ Confirming booking with appointments:', appointments);
     onConfirm({
       customDiscount: customTotalDiscount,
-      appointments
+      appointments,
+      paymentMethod,
+      notes
     });
   };
 
@@ -109,7 +116,7 @@ const BookingSummary = ({
             <div className="item-details">
               <span className="detail-professional">👤 {getProfessionalName(apt)}</span>
               <span className="detail-duration">⏱ {getDuration(apt)} min</span>
-              {apt.time && <span className="detail-time">🕐 {apt.time}</span>}
+              {apt.time && <span className="detail-time">🕐 {formatTime(apt.time, false)}</span>}
             </div>
             {apt.discount > 0 && (
               <div className="item-discount">
@@ -152,7 +159,7 @@ const BookingSummary = ({
           </div>
           {appointments.length === 1 && appointments[0].time && (
             <div className="item-details">
-              Starting at {appointments[0].time}
+              Starting at {formatTime(appointments[0].time, false)}
             </div>
           )}
           {appointments.length > 1 && (
@@ -175,6 +182,53 @@ const BookingSummary = ({
           onSaveEdit={() => saveEditedTotalPrice(originalTotal)}
           onUpdateTemp={updateTempPrice}
           onClearDiscount={clearCustomDiscount}
+        />
+      </div>
+
+      <div className="summary-section">
+        <h4>Payment Method</h4>
+        <div className="payment-methods">
+          <label className={`payment-option ${paymentMethod === 'cash' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="cash"
+              checked={paymentMethod === 'cash'}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            />
+            <span className="payment-label">💵 Cash</span>
+          </label>
+          <label className={`payment-option ${paymentMethod === 'card' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="card"
+              checked={paymentMethod === 'card'}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            />
+            <span className="payment-label">💳 Card</span>
+          </label>
+          <label className={`payment-option ${paymentMethod === 'online' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="online"
+              checked={paymentMethod === 'online'}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            />
+            <span className="payment-label">🌐 UPI/Online</span>
+          </label>
+        </div>
+      </div>
+
+      <div className="summary-section">
+        <h4>Notes (Optional)</h4>
+        <textarea
+          className="booking-notes"
+          placeholder="Add any special requests or notes..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
         />
       </div>
 

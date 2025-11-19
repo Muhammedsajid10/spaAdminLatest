@@ -113,6 +113,11 @@ const TimeSlotSelection = ({
 
   const handleSelect = (slot) => {
     if (slot.available) {
+      console.log('⏰ Time slot selected:', {
+        time24h: slot.time,
+        timeDisplay: slot.formattedTime,
+        available: slot.available
+      });
       onSelectTimeSlot(slot.time);
       onNext();
     }

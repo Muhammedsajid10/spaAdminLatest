@@ -433,6 +433,8 @@ const Calendar = () => {
 
       // Call API to create booking
       console.log('🚀 Sending booking payload:', JSON.stringify(bookingPayload, null, 2));
+      console.log('💳 Payment method:', bookingPayload.paymentMethod);
+      console.log('📝 Notes:', bookingPayload.notes);
       
       const response = await api.post('/bookings', bookingPayload, {
         headers: {
