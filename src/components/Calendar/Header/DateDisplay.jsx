@@ -21,12 +21,11 @@ const DateDisplay = ({ currentDate, currentView }) => {
     }
     
     if (currentView === 'Day') {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long',
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
+      // Format: Thu 13 Nov
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const day = date.getDate();
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      return `${dayName} ${day} ${month}`;
     }
     
     if (currentView === 'Week') {

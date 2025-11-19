@@ -48,12 +48,13 @@
   border-right: 1px solid #e2e8f0;
 }
 .nestedSidebarArea.isOpen + .sidebar-toggle-btn .icon-arrow {
-  /* Animate arrow to point left < */
+
   transform: rotate(135deg);
 }
 .contentArea {
   grid-column: 3 / 4;
   overflow-y: auto;
+  overflow-x: none;
   background-color: white;
   /* padding: 20px; */
 }

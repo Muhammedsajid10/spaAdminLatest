@@ -21,6 +21,13 @@ const StaffColumn = ({
   }
 
   const dateKey = localDateKey(currentDate);
+  
+  console.log(`📅 StaffColumn for ${employee.user?.firstName || 'Unknown'}:`, {
+    employeeId: employee._id || employee.id,
+    dateKey,
+    appointments,
+    appointmentKeys: Object.keys(appointments || {})
+  });
 
   const getAppointmentsForDate = () => {
     return Object.entries(appointments)
@@ -44,15 +51,61 @@ const StaffColumn = ({
     }
   };
 
+  // Get employee display name
+  const getEmployeeName = () => {
+    // Check populated user object first (from Employee.populate('user'))
+    if (employee.user) {
+      const firstName = employee.user.firstName || '';
+      const lastName = employee.user.lastName || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      if (fullName) return fullName;
+    }
+    
+    // Fallback to direct fields
+    if (employee.name) return employee.name;
+    const directFullName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
+    if (directFullName) return directFullName;
+    
+    return 'Staff';
+  };
+
+  // Get initials for avatar
+  const getInitials = () => {
+    const name = getEmployeeName();
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  // Generate avatar color based on name
+  const getAvatarColor = () => {
+    const colors = [
+      '#ec4899', '#8b5cf6', '#6366f1', '#3b82f6', 
+      '#06b6d4', '#10b981', '#f59e0b', '#ef4444'
+    ];
+    const name = getEmployeeName();
+    const charCode = name.charCodeAt(0) || 0;
+    return colors[charCode % colors.length];
+  };
+
   return (
     <div className="staff-column">
-      {/* Header */}
+      {/* Header with Avatar */}
       <div className="staff-header">
-        <div className="staff-header-name">
-          {employee.name || employee.user?.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Staff'}
+        <div 
+          className="staff-avatar" 
+          style={{ backgroundColor: employee.avatarColor || getAvatarColor() }}
+        >
+          {employee.avatar ? (
+            <img src={employee.avatar} alt={getEmployeeName()} />
+          ) : (
+            <span>{getInitials()}</span>
+          )}
         </div>
-        <div className="staff-header-role">
-          {employee.position || employee.role || 'Staff Member'}
+        <div className="staff-name">
+          {getEmployeeName()}
         </div>
       </div>
 

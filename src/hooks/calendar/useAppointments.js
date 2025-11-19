@@ -13,16 +13,17 @@ export const useAppointments = (currentDate) => {
   const dispatch = useDispatch();
   
   // Redux state
-  const appointments = useSelector(state => state.appointments.appointments);
+  const appointments = useSelector(state => state.appointments.byEmployee || {});
   const multipleAppointments = useSelector(state => state.bookingSession.multipleAppointments);
-  const employees = useSelector(state => state.employees.employees);
+  const employees = useSelector(state => state.employees.list || []);
+  const currentView = useSelector(state => state.calendar?.currentView || 'Week');
 
   // Fetch appointments for current date
   useEffect(() => {
     if (currentDate) {
-      dispatch(fetchCalendarThunk(currentDate));
+      dispatch(fetchCalendarThunk({ currentDate, currentView }));
     }
-  }, [currentDate, dispatch]);
+  }, [currentDate, currentView, dispatch]);
 
   // Get appointments for specific employee and date
   const getEmployeeAppointments = useCallback((employeeId, date) => {

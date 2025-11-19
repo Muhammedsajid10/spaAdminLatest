@@ -170,13 +170,14 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
           }
 
           const startDateTime = startISO ? new Date(startISO) : new Date();
-          const localYear = startDateTime.getUTCFullYear();
-          const localMonth = String(startDateTime.getUTCMonth() + 1).padStart(2, '0');
-          const localDay = String(startDateTime.getUTCDate()).padStart(2, '0');
+          const localYear = startDateTime.getFullYear();
+          const localMonth = String(startDateTime.getMonth() + 1).padStart(2, '0');
+          const localDay = String(startDateTime.getDate()).padStart(2, '0');
           const appointmentLocalDate = `${localYear}-${localMonth}-${localDay}`;
 
           const timeSlot = startISO ? (() => {
             const dt = new Date(startISO);
+            // ✅ FIX: Use UTC hours/minutes since backend stores in UTC
             const hours = String(dt.getUTCHours()).padStart(2, '0');
             const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
             return `${hours}:${minutes}`;
@@ -184,6 +185,7 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
 
           const endTimeLabel = endISO ? (() => {
             const dt = new Date(endISO);
+            // ✅ FIX: Use UTC hours/minutes since backend stores in UTC
             const hours = String(dt.getUTCHours()).padStart(2, '0');
             const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
             return `${hours}:${minutes}`;
@@ -268,13 +270,23 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
         appointmentsByEmployee: Object.entries(transformedAppointments).map(([empId, slots]) => ({
           employeeId: empId,
           appointmentCount: Object.keys(slots).length,
-          sampleSlot: Object.keys(slots)[0]
-        }))
+          sampleSlot: Object.keys(slots)[0],
+          sampleAppointment: slots[Object.keys(slots)[0]]
+        })),
+        fullData: transformedAppointments
+      });
+
+      console.log('📦 Dispatching to Redux:', {
+        employees: transformedEmployees.length,
+        appointments: Object.keys(transformedAppointments).length
       });
 
       dispatch(setEmployees(transformedEmployees));
       dispatch(setTimeSlots(generateTimeSlots('00:00', '23:30', 30)));
       dispatch(setAppointments(transformedAppointments));
+      
+      console.log('✅ Redux dispatch complete');
+      
       return { success: true };
     }
 

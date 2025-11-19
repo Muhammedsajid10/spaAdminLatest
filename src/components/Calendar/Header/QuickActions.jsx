@@ -8,15 +8,14 @@ import { Plus } from 'lucide-react';
 
 const QuickActions = ({ onOpenBooking }) => {
   return (
-    <div className="quick-actions">
-      <button
-        className="new-booking-button primary-button"
-        onClick={onOpenBooking}
-      >
-        <Plus size={18} />
-        <span>New Booking</span>
-      </button>
-    </div>
+    <button
+      className="primary-button add-button"
+      onClick={onOpenBooking}
+      aria-label="Add new booking"
+    >
+      <Plus size={16} />
+      <span>Add</span>
+    </button>
   );
 };
 

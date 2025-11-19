@@ -22,20 +22,29 @@ const StaffColumns = ({
 
   // Safety check: ensure appointments is an object
   const safeAppointments = appointments || {};
+  
+  console.log('📊 StaffColumns - appointments structure:', safeAppointments);
+  console.log('📊 StaffColumns - employees:', employees.map(e => ({ id: e._id || e.id, name: e.user?.firstName })));
 
   return (
     <div className="staff-columns">
-      {employees.map(employee => (
-        <StaffColumn
-          key={employee.id || employee._id}
-          employee={employee}
-          currentDate={currentDate}
-          timeSlots={timeSlots}
-          appointments={safeAppointments[employee.id || employee._id] || {}}
-          onTimeSlotClick={onTimeSlotClick}
-          onAppointmentClick={onAppointmentClick}
-        />
-      ))}
+      {employees.map(employee => {
+        const employeeId = employee._id || employee.id;
+        const empAppointments = safeAppointments[employeeId] || {};
+        console.log(`📊 Employee ${employeeId} appointments:`, empAppointments);
+        
+        return (
+          <StaffColumn
+            key={employeeId}
+            employee={employee}
+            currentDate={currentDate}
+            timeSlots={timeSlots}
+            appointments={empAppointments}
+            onTimeSlotClick={onTimeSlotClick}
+            onAppointmentClick={onAppointmentClick}
+          />
+        );
+      })}
     </div>
   );
 };

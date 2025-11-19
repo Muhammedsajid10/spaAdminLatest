@@ -13,6 +13,9 @@ const ClientSelection = ({
   onNext, 
   onBack 
 }) => {
+  console.log('🔍 ClientSelection - clients:', clients);
+  console.log('🔍 ClientSelection - clients count:', clients?.length);
+  
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredClients = clients.filter(client => {

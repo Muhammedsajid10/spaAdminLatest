@@ -19,9 +19,7 @@ export {
   getRandomColor,
   getRandomAppointmentColor,
   getAppointmentColorByStatus,
-  calculateAppointmentHeight,
-  isTimeSlotConflicting,
-  getAccumulatedBookings
+  calculateAppointmentHeight
 } from './appointmentHelpers';
 
 // Shift helpers
@@ -54,11 +52,16 @@ export {
 
 // Conflict detection
 export {
+  // New advanced conflict detection
+  detectProfessionalConflict,
+  isSlotAvailable,
+  formatConflictMessage,
+  getAllSessionConflicts,
+  // Legacy compatibility functions
   detectTimeConflicts,
   detectEmployeeConflicts,
-  detectCapacityConflicts,
-  resolveConflicts,
-  findNextAvailableSlot
+  isTimeSlotConflicting,
+  getAccumulatedBookings
 } from './conflictDetection';
 
 // Usage:

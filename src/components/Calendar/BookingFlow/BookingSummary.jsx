@@ -13,7 +13,7 @@ const BookingSummary = ({
   timeSlot,
   date,
   client,
-  multipleAppointments,
+  multipleAppointments = [],
   onConfirm,
   onBack
 }) => {
@@ -30,32 +30,92 @@ const BookingSummary = ({
     calculateFinalTotal
   } = usePriceEditing();
 
+  // Use session appointments if available, otherwise create single appointment
   const appointments = multipleAppointments.length > 0 
     ? multipleAppointments 
-    : [{ service, professional, timeSlot, date, price: service?.price }];
+    : service ? [{
+        service,
+        professional,
+        time: timeSlot,
+        date,
+        price: service?.price,
+        duration: service?.duration
+      }] : [];
+
+  console.log('📋 BookingSummary appointments:', appointments);
 
   const originalTotal = calculateOriginalTotal(appointments);
   const finalTotal = calculateFinalTotal(appointments);
 
   const handleConfirm = () => {
+    console.log('✅ Confirming booking with appointments:', appointments);
     onConfirm({
-      customDiscount: customTotalDiscount
+      customDiscount: customTotalDiscount,
+      appointments
     });
   };
+
+  // Helper to get professional name
+  const getProfessionalName = (apt) => {
+    if (apt.professionalName) return apt.professionalName;
+    if (apt.professional?.user?.firstName) {
+      return `${apt.professional.user.firstName} ${apt.professional.user.lastName || ''}`.trim();
+    }
+    if (apt.professional?.name) return apt.professional.name;
+    return 'Staff Member';
+  };
+
+  // Helper to get service name
+  const getServiceName = (apt) => {
+    return apt.serviceName || apt.service?.name || 'Service';
+  };
+
+  // Helper to get price
+  const getPrice = (apt) => {
+    return apt.customPrice || apt.price || apt.service?.price || 0;
+  };
+
+  // Helper to get duration
+  const getDuration = (apt) => {
+    return apt.duration || apt.service?.duration || 30;
+  };
+
+  if (appointments.length === 0) {
+    return (
+      <div className="booking-summary">
+        <h3>Booking Summary</h3>
+        <div className="empty-state">
+          <p>No services selected</p>
+        </div>
+        <div className="modal-actions">
+          <button className="secondary-button" onClick={onBack}>Back</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="booking-summary">
       <h3>Booking Summary</h3>
 
       <div className="summary-section">
-        <h4>Services</h4>
+        <h4>Services ({appointments.length})</h4>
         {appointments.map((apt, idx) => (
-          <div key={idx} className="summary-item">
-            <div className="item-name">{apt.service?.name}</div>
-            <div className="item-details">
-              {apt.professional?.firstName} {apt.professional?.lastName} • {apt.service?.duration} min
+          <div key={apt.id || idx} className="summary-item">
+            <div className="item-header">
+              <div className="item-name">{getServiceName(apt)}</div>
+              <div className="item-price">${getPrice(apt).toFixed(2)}</div>
             </div>
-            <div className="item-price">${apt.service?.price}</div>
+            <div className="item-details">
+              <span className="detail-professional">👤 {getProfessionalName(apt)}</span>
+              <span className="detail-duration">⏱ {getDuration(apt)} min</span>
+              {apt.time && <span className="detail-time">🕐 {apt.time}</span>}
+            </div>
+            {apt.discount > 0 && (
+              <div className="item-discount">
+                Discount: -${apt.discount.toFixed(2)}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -63,12 +123,19 @@ const BookingSummary = ({
       <div className="summary-section">
         <h4>Client</h4>
         <div className="summary-item">
-          <div className="item-name">
-            {client?.firstName} {client?.lastName}
-          </div>
-          <div className="item-details">
-            {client?.email} | {client?.phone}
-          </div>
+          {client ? (
+            <>
+              <div className="item-name">
+                {client.firstName || client.name} {client.lastName || ''}
+              </div>
+              <div className="item-details">
+                {client.email && <span>📧 {client.email}</span>}
+                {client.phone && <span>📱 {client.phone}</span>}
+              </div>
+            </>
+          ) : (
+            <div className="item-name">Walk-in Customer</div>
+          )}
         </div>
       </div>
 
@@ -76,14 +143,23 @@ const BookingSummary = ({
         <h4>Date & Time</h4>
         <div className="summary-item">
           <div className="item-name">
-            {new Date(date).toLocaleDateString('en-US', {
+            {date ? new Date(date).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric'
-            })}
+            }) : 'Not set'}
           </div>
-          <div className="item-details">{timeSlot?.time}</div>
+          {appointments.length === 1 && appointments[0].time && (
+            <div className="item-details">
+              Starting at {appointments[0].time}
+            </div>
+          )}
+          {appointments.length > 1 && (
+            <div className="item-details">
+              Multiple time slots (see services above)
+            </div>
+          )}
         </div>
       </div>
 
@@ -105,7 +181,7 @@ const BookingSummary = ({
       <div className="modal-actions">
         <button className="secondary-button" onClick={onBack}>Back</button>
         <button className="primary-button" onClick={handleConfirm}>
-          Confirm Booking
+          Confirm {appointments.length > 1 ? `${appointments.length} Bookings` : 'Booking'}
         </button>
       </div>
     </div>

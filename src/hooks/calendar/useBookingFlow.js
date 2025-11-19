@@ -15,11 +15,11 @@ import {
 export const useBookingFlow = () => {
   const dispatch = useDispatch();
 
-  // Redux state
-  const multipleAppointments = useSelector(state => state.bookingSession.multipleAppointments);
-  const currentAppointmentIndex = useSelector(state => state.bookingSession.currentAppointmentIndex);
-  const showServiceCatalog = useSelector(state => state.bookingSession.showServiceCatalog);
-  const isAddingAdditionalService = useSelector(state => state.bookingSession.isAddingAdditionalService);
+  // Redux state - Updated to match new bookingSessionSlice structure
+  const multipleAppointments = useSelector(state => state.bookingSession.appointments || []);
+  const currentAppointmentIndex = useSelector(state => state.bookingSession.currentAppointmentIndex || 0);
+  const showServiceCatalog = useSelector(state => state.bookingSession.showServiceCatalog || false);
+  const isAddingAdditionalService = useSelector(state => state.bookingSession.isAddingAdditionalService || false);
 
   // Local state for booking modal
   const [showBookingModal, setShowBookingModal] = useState(false);
