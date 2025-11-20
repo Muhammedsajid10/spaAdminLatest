@@ -156,6 +156,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  overflow: hidden;
 }
 
 .week-day-cell:hover {
@@ -172,28 +173,29 @@
 .week-appointments-container {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   height: 100%;
   width: 100%;
-  padding: 4px;
+  padding: 8px;
+  overflow: hidden;
 }
 
 .week-appointment-block {
-  background: #6366f1;
-  color: white;
-  padding: 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  background: rgba(99, 102, 241, 0.18);
+  color: #0b1b48;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  border: 2px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(99, 102, 241, 0.6);
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.2);
 }
 
 .week-appointment-block:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.25);
 }
 
 .appointment-text {
@@ -218,21 +220,72 @@
 }
 
 .week-more-appointments {
-  font-size: 10px;
-  color: #64748b;
-  background-color: #f1f5f9;
-  padding: 4px 6px;
-  border-radius: 4px;
+  font-size: 12px;
+  color: white;
+  background-color: #4f46e5;
+  padding: 10px 0;
+  border-radius: 12px;
   text-align: center;
-  border: 1px solid #e2e8f0;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease;
   user-select: none;
+  margin-top: auto;
+  border: none;
 }
 
 .week-more-appointments:hover {
-  background-color: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.week-more-list {
+  margin-top: 6px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.04);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.week-more-item {
+  background: #ffffff;
+  border-radius: 4px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #0f172a;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.week-more-item:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.week-more-time {
+  font-size: 10px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.week-more-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  gap: 8px;
+}
+
+.week-more-client {
+  font-weight: 600;
+  color: #0b246b;
+}
+
+.week-more-service {
   color: #475569;
 }
 

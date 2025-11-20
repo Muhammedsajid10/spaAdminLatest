@@ -177,11 +177,25 @@ const BookingModal = ({
     }
   };
 
+  const renderEmptyStepNotice = ({
+    message = 'Please select a service to continue.',
+    actionLabel = 'Back to services',
+    action = onAddAnotherService
+  }) => (
+    <div className="empty-step-guide">
+      <p>{message}</p>
+      {action && (
+        <button type="button" className="empty-step-cta" onClick={action}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+
   const renderStepContent = () => {
-    // For grid bookings, map actual steps to content
     if (isGridBooking) {
-      // Step 1: Service Selection
-      if (step === 1) {
+      const gridStep = virtualStep;
+      if (gridStep === 1) {
         return (
           <ServiceSelection
             services={services}
@@ -192,21 +206,14 @@ const BookingModal = ({
             onRemoveAppointment={handleRemoveAppointment}
             isGridBooking={true}
             onProceedToClient={() => {
-              console.log('🛒 Proceed to client clicked');
-              // Navigate to step 4 (client selection)
-              // We need to call a handler that will navigate
               if (sessionAppointments.length > 0) {
-                // Trigger navigation by calling onNextStep in a way that navigates to step 4
-                // Since we're at step 1, we need to jump to step 4
-                // We'll use a custom approach
-                onNextStep(); // This will be intercepted in Calendar.jsx
+                onNextStep();
               }
             }}
           />
         );
       }
-      // Step 4: Client Selection (virtual step 2)
-      if (step === 4) {
+      if (gridStep === 2) {
         return (
           <ClientSelection
             clients={clients}
@@ -217,8 +224,7 @@ const BookingModal = ({
           />
         );
       }
-      // Step 5: Confirmation (virtual step 3)
-      if (step === 5) {
+      if (gridStep === 3) {
         return (
           <BookingSummary
             service={selectedService}
@@ -233,10 +239,13 @@ const BookingModal = ({
           />
         );
       }
-      return null;
+      return renderEmptyStepNotice({
+        message: 'Add at least one service before selecting a client.',
+        actionLabel: 'Back to services',
+        action: onAddAnotherService
+      });
     }
-    
-    // For manual bookings, render all steps normally
+
     switch (step) {
       case 1:
         return (
@@ -320,7 +329,11 @@ const BookingModal = ({
           />
         );
       default:
-        return null;
+        return renderEmptyStepNotice({
+          message: 'Select a service to keep booking.',
+          actionLabel: 'Back to services',
+          action: onAddAnotherService
+        });
     }
   };
 

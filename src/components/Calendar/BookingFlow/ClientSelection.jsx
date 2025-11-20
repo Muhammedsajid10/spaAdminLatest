@@ -3,7 +3,7 @@
  * Step 4: Select or add client
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Plus, UserPlus } from 'lucide-react';
 
 const ClientSelection = ({ 
@@ -33,6 +33,11 @@ const ClientSelection = ({
     email: '',
     phone: ''
   });
+  const [activeClientId, setActiveClientId] = useState(selectedClient?._id || null);
+
+  useEffect(() => {
+    setActiveClientId(selectedClient?._id || null);
+  }, [selectedClient]);
 
   // Ensure clients is always an array
   const clientsList = Array.isArray(clients) ? clients : [];
@@ -61,8 +66,8 @@ const ClientSelection = ({
   console.log('🔍 Sorted clients:', sortedClients.length);
 
   const handleSelect = (client) => {
+    setActiveClientId(client._id || null);
     onSelectClient(client);
-    onNext();
   };
 
   const handleAddNew = () => {
@@ -108,6 +113,11 @@ const ClientSelection = ({
       isWalkIn: true
     };
     onSelectClient(walkInClient);
+    onNext();
+  };
+
+  const handleContinue = () => {
+    if (!activeClientId && !selectedClient) return;
     onNext();
   };
 
@@ -249,8 +259,15 @@ const ClientSelection = ({
 
       <div className="modal-actions">
         <button className="secondary-button" onClick={onBack}>Back</button>
-        <button className="primary-button" onClick={handleWalkInNow}>
+        <button className="secondary-button" onClick={handleWalkInNow}>
           Continue as Walk-in
+        </button>
+        <button
+          className="primary-button"
+          onClick={handleContinue}
+          disabled={!activeClientId && !selectedClient}
+        >
+          Continue
         </button>
       </div>
     </div>

@@ -330,6 +330,7 @@ body.dropdown-open {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  color: black;
 }
 
 .appointment-main {

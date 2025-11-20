@@ -38,11 +38,12 @@ const ServiceSelection = ({
   const handleSelect = (service) => {
     console.log('🔍 Service selected:', service.name);
     onSelectService(service);
-    onNext();
     
-    // In grid booking mode, hide the service list after selection
     if (isGridBooking) {
-      setShowServiceList(false);
+      onNext({ service });
+      setShowServiceList(true);
+    } else {
+      onNext();
     }
   };
   

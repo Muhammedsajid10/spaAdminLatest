@@ -5,7 +5,7 @@ import Loading from '../../states/Loading';
 
 const AdminMembershipChecker = ({ 
   selectedClient, 
-  selectedServices, 
+  selectedServices = [], 
   onMembershipApplied, 
   onMembershipRemoved,
   appliedMembership 

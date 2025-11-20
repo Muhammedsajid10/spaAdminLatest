@@ -79,6 +79,12 @@ const Calendar = () => {
     selectClient,
     addAppointmentToSessionLocal
   } = useBookingFlow();
+
+  const [expandedWeekCell, setExpandedWeekCell] = useState(null);
+
+  const toggleWeekCellExpansion = (cellKey) => {
+    setExpandedWeekCell(prev => (prev === cellKey ? null : cellKey));
+  };
   
   console.log('✅ useBookingFlow completed');
 
@@ -486,12 +492,20 @@ const Calendar = () => {
   ]);
 
   // Enhanced next step handler that adds appointment to session at the right time
-  const handleNextStep = (timeSlotParam = null) => {
+  const handleNextStep = (payload = null) => {
+    const normalizedPayload = payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? payload
+      : { timeSlotParam: payload };
+
+    const { timeSlotParam, service: payloadService } = normalizedPayload;
+    const effectiveService = payloadService || selectedServiceForBooking;
+
     console.log(`🔄 HANDLE NEXT STEP - Current step: ${bookingModalStep}`);
-    console.log('📊 timeSlotParam:', timeSlotParam);
+    console.log('📊 payload:', normalizedPayload);
     console.log('📊 bookingDefaults:', bookingDefaults);
     console.log('📊 multipleAppointments:', multipleAppointments.length);
     console.log('📊 selectedServiceForBooking:', selectedServiceForBooking);
+    console.log('📊 effectiveService:', effectiveService);
     console.log('📊 selectedProfessionalForBooking:', selectedProfessionalForBooking);
     console.log('📊 selectedTimeSlotForBooking:', selectedTimeSlotForBooking);
     
@@ -507,9 +521,15 @@ const Calendar = () => {
     }
     
     // GRID BOOKING: After selecting service at step 1, add to session IMMEDIATELY
-    if (isGridBooking && bookingModalStep === 1 && selectedServiceForBooking) {
+    if (isGridBooking && bookingModalStep === 1 && effectiveService) {
       console.log('🎯 Grid booking mode - adding service to session');
       
+      const serviceToAdd = effectiveService || selectedServiceForBooking;
+      if (!serviceToAdd) {
+        console.warn('⚠️ No service data available to add for grid booking');
+        return;
+      }
+
       const prof = bookingDefaults.professional;
       const bookingDate = bookingDefaults.date || selectedDateForBooking || currentDate;
       
@@ -524,7 +544,8 @@ const Calendar = () => {
         console.log('⏰ Chaining from last appointment - new start time:', startTime);
       }
       
-      const endTime = addMinutesToTime(startTime, selectedServiceForBooking.duration);
+      const durationToUse = serviceToAdd.duration || 30;
+      const endTime = addMinutesToTime(startTime, durationToUse);
       
       // Format date as string (Redux serializable)
       const dateString = bookingDate instanceof Date 
@@ -534,11 +555,11 @@ const Calendar = () => {
       // Create appointment with ONLY serializable data
       const appointmentData = {
         id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        serviceId: selectedServiceForBooking?._id || selectedServiceForBooking?.id,
-        serviceName: selectedServiceForBooking?.name,
-        serviceDuration: selectedServiceForBooking?.duration || 30,
-        servicePrice: selectedServiceForBooking?.price || 0,
-        serviceCategory: selectedServiceForBooking?.category || '',
+        serviceId: serviceToAdd?._id || serviceToAdd?.id,
+        serviceName: serviceToAdd?.name,
+        serviceDuration: durationToUse,
+        servicePrice: serviceToAdd?.price || 0,
+        serviceCategory: serviceToAdd?.category || '',
         professionalId: prof?._id || prof?.id,
         professionalName: prof?.user?.firstName 
           ? `${prof.user.firstName} ${prof.user.lastName || ''}`.trim()
@@ -549,8 +570,9 @@ const Calendar = () => {
         startTime: startTime,
         endTime: endTime,
         date: dateString,
-        duration: selectedServiceForBooking?.duration || 30,
-        price: selectedServiceForBooking?.price || 0,
+        duration: durationToUse,
+        price: serviceToAdd?.price || 0,
+        service: serviceToAdd,
         addedAt: new Date().toISOString()
       };
       
@@ -993,10 +1015,13 @@ const Calendar = () => {
             {calendarDays.map(day => {
               const dayKey = formatDateLocal(day);
               const employeeAppointments = getEmployeeAppointments(employee._id || employee.id, day);
+              const extraAppointments = employeeAppointments.slice(3);
+              const cellKey = `${employee._id || employee.id}-${dayKey}`;
+              const isCellExpanded = expandedWeekCell === cellKey;
 
               return (
                 <div 
-                  key={`${employee._id || employee.id}-${dayKey}`} 
+                  key={cellKey}
                   className="week-day-cell"
                   onClick={() => handleTimeSlotClick(employee, '09:00', day)}
                   title={`Click to add appointment for ${employee.user?.firstName || employee.name} on ${day.toLocaleDateString()}`}
@@ -1018,10 +1043,35 @@ const Calendar = () => {
                         </div>
                       </div>
                     ))}
-                    {employeeAppointments.length > 3 && (
-                      <div className="week-more-appointments">
-                        +{employeeAppointments.length - 3} more
-                      </div>
+                    {extraAppointments.length > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          className="week-more-appointments"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleWeekCellExpansion(cellKey);
+                          }}
+                        >
+                          {isCellExpanded ? 'Hide slots' : `+${extraAppointments.length} more`}
+                        </button>
+                        {isCellExpanded && (
+                          <div className="week-more-list">
+                            {extraAppointments.map((app, index) => (
+                              <div key={index} className="week-more-item" onClick={(e) => {
+                                e.stopPropagation();
+                                handleAppointmentClick(app);
+                              }}>
+                                <div className="week-more-time">{app?.startTime ? new Date(app.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                                <div className="week-more-details">
+                                  <span className="week-more-client">{app.client?.firstName || 'Client'}</span>
+                                  <span className="week-more-service">{app.service?.name || 'Service'}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
