@@ -46,6 +46,8 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
+import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction } from '../store/bookingSessionSlice';
+import { fetchCalendarThunk, fetchServicesThunk } from '../store/thunks';
 
 // --- API ENDPOINTS ---
 const BOOKING_API_URL = `${Base_url}/bookings`;
@@ -3682,7 +3684,7 @@ const SelectCalendar = () => {
             className="add-appointment-btn"
             onClick={handleAddAppointment}
           >
-            <h1>Add Appointment</h1>
+            <h1>Add</h1>
             <Plus size={16} />
           </button>
         </div>
