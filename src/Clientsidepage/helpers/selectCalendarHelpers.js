@@ -1,5 +1,7 @@
 import { getEmployeeShiftHours, hasShiftOnDate, localDateKey, formatDateLocal } from '../../calendar';
 
+const MAX_BOOKING_END_MINUTES = 23 * 60;
+
 export const formatUTCToLocal = (utcString, opts = {}) => {
   if (!utcString) return '';
   const dt = new Date(utcString);
@@ -96,6 +98,9 @@ export const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDurati
 
     for (let slotStart = startMinutes; slotStart + serviceDuration <= endMinutes; slotStart += intervalMinutes) {
       const slotEnd = slotStart + serviceDuration;
+      if (slotEnd > MAX_BOOKING_END_MINUTES) {
+        break;
+      }
       const startLabel = minutesToLabel(slotStart);
       const endLabel = minutesToLabel(slotEnd);
       slots.push({
@@ -132,6 +137,10 @@ export const getValidTimeSlotsForProfessional = (employee, date, serviceDuration
         .toString()
         .padStart(2, '0');
       const minute = (slotStart % 60).toString().padStart(2, '0');
+      const slotEnd = slotStart + serviceDuration;
+      if (slotEnd > MAX_BOOKING_END_MINUTES) {
+        break;
+      }
       const slotLabel = `${hour}:${minute}`;
       const slotDate = new Date(date);
       slotDate.setHours(Number(hour), Number(minute), 0, 0);

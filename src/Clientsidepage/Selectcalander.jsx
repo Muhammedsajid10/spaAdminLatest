@@ -3581,12 +3581,7 @@ const SelectCalendar = () => {
                    
 
                     <div className="footer-actions">
-                      <button
-                        className="apply-selection-btn"
-                        onClick={() => setShowTeamPopup(false)}
-                      >
-                        Apply Selection
-                      </button>
+                      
                     </div>
                   </div>
                 </div>
