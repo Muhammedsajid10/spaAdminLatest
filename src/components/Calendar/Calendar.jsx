@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import './Calendar.css';
+import './WeekMonthViews.css';
 
 // Import hooks
 import { useCalendarState } from '../../hooks/calendar/useCalendarState';
 import { useBookingFlow } from '../../hooks/calendar/useBookingFlow';
 import { useAppointments } from '../../hooks/calendar/useAppointments';
+import { useMembershipIntegration } from '../../hooks/calendar/useMembershipIntegration';
+import { useGiftCardIntegration } from '../../hooks/calendar/useGiftCardIntegration';
 
 // Import components
 import CalendarHeader from './Header/CalendarHeader';
@@ -14,7 +17,8 @@ import BookingModal from './BookingFlow/BookingModal';
 import TeamFilter from './Header/TeamFilter';
 
 // Import utilities
-import { generateTimeSlots, addMinutesToTime } from '../../utils/calendar/timeHelpers';
+import { generateTimeSlots, addMinutesToTime, timeToMinutes } from '../../utils/calendar/timeHelpers';
+import { formatDateLocal, localDateKey } from '../../utils/calendar';
 
 // Import Redux actions and API
 import { setEmployees, setEmployeesLoading, setEmployeesError } from '../../store/employeesSlice';
@@ -42,6 +46,10 @@ const Calendar = () => {
     isToday,
     goToPreviousWeek,
     goToNextWeek,
+    goToPreviousDay,
+    goToNextDay,
+    goToPreviousMonth,
+    goToNextMonth,
     goToToday,
     setCurrentView,
     goToSpecificDate
@@ -73,6 +81,51 @@ const Calendar = () => {
   } = useBookingFlow();
   
   console.log('✅ useBookingFlow completed');
+
+  // Membership integration hook
+  console.log('🔧 About to call useMembershipIntegration...');
+  const {
+    appliedMembership,
+    membershipDiscountAmount,
+    selectedMembership,
+    availableMemberships,
+    membershipRefreshSignal,
+    handleMembershipApplied,
+    handleMembershipRemoved,
+    selectMembership,
+    clearMembership,
+    setMemberships,
+    refreshMemberships,
+    getMembershipDiscount,
+    hasMembershipApplied
+  } = useMembershipIntegration();
+  console.log('✅ useMembershipIntegration completed');
+
+  // Gift card integration hook
+  console.log('🔧 About to call useGiftCardIntegration...');
+  const {
+    selectedGiftCard,
+    redeemGiftCardAmount,
+    giftCardAppliedAmount,
+    availableGiftCards,
+    giftCardCode,
+    giftCardError,
+    giftCardLoading,
+    handleGiftCardSelect,
+    handleGiftCardRemove,
+    removeAppliedGiftCard,
+    validateGiftCardCode,
+    fetchGiftCardsForClient,
+    getGiftCardDetails,
+    setGiftCards,
+    clearGiftCard,
+    setGiftCardCode,
+    calculateGiftCardValue,
+    calculateTotalWithGiftCard,
+    getGiftCardDiscount,
+    hasGiftCardApplied
+  } = useGiftCardIntegration();
+  console.log('✅ useGiftCardIntegration completed');
 
   console.log('🔧 About to call useAppointments...');
   // Only call useAppointments if currentDate is initialized
@@ -139,6 +192,7 @@ const Calendar = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
   const [bookingDefaults, setBookingDefaults] = useState(null); // Track grid booking context (professional, time, date)
+  const [customTotalDiscount, setCustomTotalDiscount] = useState(0); // Custom discount amount
   const timeSlots = useMemo(() => generateTimeSlots('00:00', '23:30', 30), []);
 
   // Fetch employees on component mount
@@ -207,6 +261,23 @@ const Calendar = () => {
     }
   }, [dispatch, clients.length]);
 
+  // Helper function to calculate total session price
+  const getTotalSessionPrice = useCallback(() => {
+    return multipleAppointments.reduce((sum, apt) => {
+      const price = apt.price || apt.servicePrice || apt.service?.price || 0;
+      return sum + price;
+    }, 0);
+  }, [multipleAppointments]);
+
+  // Custom discount handlers
+  const handleSaveCustomDiscount = useCallback((discount) => {
+    setCustomTotalDiscount(discount);
+  }, []);
+
+  const handleClearCustomDiscount = useCallback(() => {
+    setCustomTotalDiscount(0);
+  }, []);
+
   // Handlers
   const handleOpenBooking = (options = {}) => {
     // Only clear session if we're starting a fresh booking (not adding to existing session)
@@ -244,14 +315,62 @@ const Calendar = () => {
     // If booking from button, flow will be: Service → Professional → Time → Client → Confirmation
   };
 
-  // OLD CALENDAR APPROACH: Add appointment to session when time is selected at Step 3
+  // Conflict detection function from old calendar (proven working)
+  const detectProfessionalConflict = useCallback((professionalId, date, startTime, duration, appointments, multipleAppointments) => {
+    if (!professionalId || !startTime || !duration) return null;
+    const dayKey = localDateKey(date);
+    const desiredStart = timeToMinutes(startTime);
+    const desiredEnd = desiredStart + duration;
+
+    // 1. Check existing multipleAppointments in the current session
+    for (const apt of multipleAppointments) {
+      const aptProfId = apt.professional?._id || apt.professional?.id || apt.professionalId;
+      const aptDate = apt.date instanceof Date ? formatDateLocal(apt.date) : apt.date;
+      
+      if (aptProfId === professionalId && aptDate === dayKey) {
+        const s = timeToMinutes(apt.timeSlot || apt.time);
+        const e = s + (apt.duration || apt.serviceDuration || 30);
+        if (desiredStart < e && desiredEnd > s) {
+          return { source: 'session', conflict: apt, start: s, end: e };
+        }
+      }
+    }
+
+    // 2. Check existing persisted appointments structure for that professional
+    const profAppointments = appointments?.[professionalId];
+    if (profAppointments) {
+      for (const key in profAppointments) {
+        if (!Object.prototype.hasOwnProperty.call(profAppointments, key)) continue;
+        if (!key.startsWith(dayKey + '_')) continue; // only same day
+        const existing = profAppointments[key];
+        const existingStartTime = existing.startTime || existing.timeSlot || key.split('_')[1];
+        if (!existingStartTime) continue;
+        const existingStart = timeToMinutes(existingStartTime);
+        let existingEnd;
+        if (existing.endTime) {
+          existingEnd = timeToMinutes(existing.endTime);
+        } else if (existing.duration) {
+          existingEnd = existingStart + existing.duration;
+        } else if (existing.service?.duration) {
+          existingEnd = existingStart + existing.service.duration;
+        } else {
+          existingEnd = existingStart + 30; // fallback 30m
+        }
+        if (desiredStart < existingEnd && desiredEnd > existingStart) {
+          return { source: 'persisted', conflict: existing, start: existingStart, end: existingEnd };
+        }
+      }
+    }
+    return null;
+  }, []);
+
+  // OLD CALENDAR APPROACH: Add appointment to session with proper conflict detection
   // This function is called directly from time selection click handler
-  const handleAddToBookingSession = useCallback((timeSlot = null) => {
+  const handleAddToBookingSession = useCallback((overrideSlot = null) => {
     console.log('📝 ========== ADD TO BOOKING SESSION ==========');
     
-    // Use provided timeSlot or fall back to selectedTimeSlotForBooking
-    const slotToUse = timeSlot || selectedTimeSlotForBooking;
-    
+    const slotToUse = overrideSlot || selectedTimeSlotForBooking;
+
     // Validate required fields
     if (!selectedServiceForBooking || !selectedProfessionalForBooking || !slotToUse) {
       console.error('❌ Missing required fields:');
@@ -261,47 +380,92 @@ const Calendar = () => {
       return false;
     }
 
-    const bookingDate = selectedDateForBooking || currentDate;
-    
-    // Format date as YYYY-MM-DD string (Redux serializable)
-    const dateString = bookingDate instanceof Date 
-      ? bookingDate.toISOString().split('T')[0]
+    // Extract time slot preserving the user's selected local time (not UTC)
+    const timeSlot = (() => {
+      if (typeof slotToUse === 'string') return slotToUse;
+      if (slotToUse?.label) return slotToUse.label; // preferred if provided by slot generator
+      if (slotToUse?.startTime) {
+        const dt = new Date(slotToUse.startTime);
+        // Use local hours/minutes to reflect the user's intended selection
+        return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+      }
+      return slotToUse.time || slotToUse;
+    })();
+
+    // Use the correct booking date - priority: bookingDefaults.date > selectedDateForBooking > currentDate
+    const bookingDate = bookingDefaults?.date || selectedDateForBooking || currentDate;
+
+    // Use unified conflict detection for both session and persisted appointments
+    const professionalId = selectedProfessionalForBooking._id || selectedProfessionalForBooking.id;
+    const dateKey = bookingDate instanceof Date ? formatDateLocal(bookingDate) : bookingDate;
+    const conflictObj = detectProfessionalConflict(
+      professionalId,
+      bookingDate,
+      timeSlot,
+      selectedServiceForBooking.duration,
+      appointments,
+      multipleAppointments
+    );
+    if (conflictObj) {
+      const professionalName = selectedProfessionalForBooking.user?.firstName || selectedProfessionalForBooking.name;
+      console.error(`❌ Time conflict: ${professionalName} already has a booking at this time.`);
+      alert(`Time conflict: ${professionalName} already has a booking at this time. Please select a different slot.`);
+      return false;
+    }
+
+    // Store service name for success message before clearing
+    const serviceName = selectedServiceForBooking.name;
+
+    // Ensure date is stored in a consistent format (YYYY-MM-DD string)
+    const appointmentDate = bookingDate instanceof Date
+      ? formatDateLocal(bookingDate)
       : bookingDate;
-    
-    // Create appointment object with ONLY serializable data (no full objects)
+
+    // Add current appointment to session, using strict duration and time format
     const appointment = {
-      id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      serviceId: selectedServiceForBooking?._id || selectedServiceForBooking?.id,
-      serviceName: selectedServiceForBooking?.name,
-      serviceDuration: selectedServiceForBooking?.duration || 30,
-      servicePrice: selectedServiceForBooking?.price || 0,
-      serviceCategory: selectedServiceForBooking?.category || '',
-      professionalId: selectedProfessionalForBooking?._id || selectedProfessionalForBooking?.id,
-      professionalName: selectedProfessionalForBooking?.user?.firstName 
+      id: `${professionalId}_${appointmentDate}_${timeSlot}_${Date.now()}`, // Generate unique ID
+      service: selectedServiceForBooking,
+      professional: selectedProfessionalForBooking,
+      timeSlot: timeSlot,
+      date: appointmentDate, // Store as consistent YYYY-MM-DD string
+      duration: selectedServiceForBooking.duration, // ensure duration is present for conflict check
+      // Additional Redux-friendly fields
+      serviceId: selectedServiceForBooking._id || selectedServiceForBooking.id,
+      serviceName: selectedServiceForBooking.name,
+      serviceDuration: selectedServiceForBooking.duration || 30,
+      servicePrice: selectedServiceForBooking.price || 0,
+      serviceCategory: selectedServiceForBooking.category || '',
+      professionalId: professionalId,
+      professionalName: selectedProfessionalForBooking.user?.firstName 
         ? `${selectedProfessionalForBooking.user.firstName} ${selectedProfessionalForBooking.user.lastName || ''}`.trim()
-        : selectedProfessionalForBooking?.name || 'Staff',
-      professionalPosition: selectedProfessionalForBooking?.position || '',
-      timeSlot: slotToUse,
-      time: slotToUse,
-      date: dateString, // Store as string, not Date object
-      duration: selectedServiceForBooking?.duration || 30,
-      price: selectedServiceForBooking?.price || 0,
+        : selectedProfessionalForBooking.name || 'Staff',
+      professionalPosition: selectedProfessionalForBooking.position || '',
+      time: timeSlot,
+      price: selectedServiceForBooking.price || 0,
       addedAt: new Date().toISOString()
     };
 
-    console.log('✅ Adding appointment:', appointment);
+    console.log('✅ Adding appointment to session with date:', {
+      originalBookingDate: bookingDate,
+      bookingDateType: typeof bookingDate,
+      isDateObject: bookingDate instanceof Date,
+      finalAppointmentDate: appointmentDate,
+      formatDateLocalResult: bookingDate instanceof Date ? formatDateLocal(bookingDate) : 'N/A'
+    });
+    console.log('✅ Full appointment:', appointment);
     console.log('📊 Current session size BEFORE:', multipleAppointments.length);
     
-    // Add to Redux session
-    addAppointmentToSessionLocal(appointment);
-    
-    console.log('✅ Appointment added to Redux');
-    console.log('📊 Session size should be:', multipleAppointments.length + 1);
-    
-    // Clear selections to prepare for next service
+    const newAppointment = addAppointmentToSessionLocal(appointment);
+    console.log('✅ New appointment added:', newAppointment);
+    console.log('📊 Session size AFTER:', multipleAppointments.length + 1);
+
+    // Clear the current selection to show empty "Ready to Add" section
     selectService(null);
     selectProfessional(null);
     selectTimeSlot(null);
+
+    // Show success message
+    console.log(`✅ "${serviceName}" added to booking session! Total services: ${multipleAppointments.length + 1}`);
     
     console.log('📝 ========== ADD COMPLETE ==========');
     return true;
@@ -311,11 +475,14 @@ const Calendar = () => {
     selectedTimeSlotForBooking,
     selectedDateForBooking,
     currentDate,
-    multipleAppointments.length,
+    bookingDefaults,
+    multipleAppointments,
+    appointments,
     addAppointmentToSessionLocal,
     selectService,
     selectProfessional,
-    selectTimeSlot
+    selectTimeSlot,
+    detectProfessionalConflict
   ]);
 
   // Enhanced next step handler that adds appointment to session at the right time
@@ -716,6 +883,27 @@ const Calendar = () => {
     setShowDatePicker(prev => !prev);
   };
 
+  // Universal navigation handlers that work for all views
+  const handlePreviousNavigation = useCallback(() => {
+    if (currentView === 'Day') {
+      goToPreviousDay();
+    } else if (currentView === 'Week') {
+      goToPreviousWeek();
+    } else if (currentView === 'Month') {
+      goToPreviousMonth();
+    }
+  }, [currentView, goToPreviousDay, goToPreviousWeek, goToPreviousMonth]);
+
+  const handleNextNavigation = useCallback(() => {
+    if (currentView === 'Day') {
+      goToNextDay();
+    } else if (currentView === 'Week') {
+      goToNextWeek();
+    } else if (currentView === 'Month') {
+      goToNextMonth();
+    }
+  }, [currentView, goToNextDay, goToNextWeek, goToNextMonth]);
+
   // Employee filter handlers
   const handleToggleEmployee = (employeeId) => {
     setSelectedEmployeeIds(prev => {
@@ -740,6 +928,197 @@ const Calendar = () => {
   const filteredEmployees = useMemo(() => {
     return employees.filter(emp => selectedEmployeeIds.includes(emp._id || emp.id));
   }, [employees, selectedEmployeeIds]);
+
+  // Helper function to get calendar days based on view
+  const getCalendarDays = useCallback(() => {
+    if (currentView === 'Day') {
+      return [currentDate];
+    } else if (currentView === 'Week') {
+      const startOfWeek = new Date(currentDate);
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1));
+      return Array.from({ length: 7 }, (_, i) => {
+        const day = new Date(startOfWeek);
+        day.setDate(startOfWeek.getDate() + i);
+        return day;
+      });
+    } else if (currentView === 'Month') {
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      const numDays = endOfMonth.getDate();
+      return Array.from({ length: numDays }, (_, i) => {
+        const day = new Date(startOfMonth);
+        day.setDate(startOfMonth.getDate() + i);
+        return day;
+      });
+    }
+    return [currentDate];
+  }, [currentDate, currentView]);
+
+  const calendarDays = useMemo(() => getCalendarDays(), [getCalendarDays]);
+
+  // Week view renderer
+  const renderWeekView = () => {
+    return (
+      <div className="week-view-container">
+        {/* Week Day Headers */}
+        <div className="week-headers-row">
+          <div className="week-staff-header-cell">Staff</div>
+          {calendarDays.map(day => {
+            const isToday = day.toDateString() === new Date().toDateString();
+            return (
+              <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
+                <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                <div className="week-day-number">{day.getDate()}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Employee Rows with Daily Appointments */}
+        {filteredEmployees.map(employee => (
+          <div key={employee._id || employee.id} className="week-employee-row">
+            <div className="week-staff-cell">
+              <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor || '#6366f1' }}>
+                {employee.user?.profileImage ? 
+                  <img src={employee.user.profileImage} alt={employee.user.firstName} className="avatar-image" /> : 
+                  (employee.user?.firstName?.charAt(0) || employee.name?.charAt(0) || 'E')
+                }
+              </div>
+              <div className="staff-info">
+                <div className="staff-name">{employee.user?.firstName || employee.name || 'Employee'}</div>
+              </div>
+            </div>
+
+            {/* Daily appointment cells for this employee */}
+            {calendarDays.map(day => {
+              const dayKey = formatDateLocal(day);
+              const employeeAppointments = getEmployeeAppointments(employee._id || employee.id, day);
+
+              return (
+                <div 
+                  key={`${employee._id || employee.id}-${dayKey}`} 
+                  className="week-day-cell"
+                  onClick={() => handleTimeSlotClick(employee, '09:00', day)}
+                  title={`Click to add appointment for ${employee.user?.firstName || employee.name} on ${day.toLocaleDateString()}`}
+                >
+                  <div className="week-appointments-container">
+                    {employeeAppointments.slice(0, 3).map((app, index) => (
+                      <div 
+                        key={index}
+                        className="week-appointment-block"
+                        style={{ backgroundColor: app.color || '#6366f1' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAppointmentClick(app);
+                        }}
+                      >
+                        <div className="appointment-text">
+                          <div className="appointment-client">{app.client?.firstName || 'Client'}</div>
+                          <div className="appointment-service">{app.service?.name || 'Service'}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {employeeAppointments.length > 3 && (
+                      <div className="week-more-appointments">
+                        +{employeeAppointments.length - 3} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Month view renderer
+  const renderMonthView = () => {
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const firstDayIndex = startOfMonth.getDay();
+    const emptyCellsBefore = Array.from({ length: (firstDayIndex === 0 ? 6 : firstDayIndex - 1) });
+
+    return (
+      <div className="month-view-container">
+        <div className="month-day-names">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => 
+            <div key={day} className="month-day-name">{day}</div>
+          )}
+        </div>
+        <div className="month-view-grid">
+          {emptyCellsBefore.map((_, index) => 
+            <div key={`empty-${index}`} className="month-day-cell empty"></div>
+          )}
+          {calendarDays.map(day => {
+            const dayKey = formatDateLocal(day);
+            const dayAppointments = [];
+
+            // Get appointments for this day from all employees
+            filteredEmployees.forEach(emp => {
+              const empAppointments = getEmployeeAppointments(emp._id || emp.id, day);
+              empAppointments.forEach(app => {
+                dayAppointments.push({
+                  ...app,
+                  employeeName: emp.user?.firstName || emp.name,
+                  employeeId: emp._id || emp.id
+                });
+              });
+            });
+
+            const isToday = day.toDateString() === new Date().toDateString();
+
+            return (
+              <div
+                key={dayKey}
+                className={`month-day-cell ${isToday ? 'is-today' : ''}`}
+                onClick={() => {
+                  goToSpecificDate(day);
+                  setCurrentView('Day');
+                }}
+                style={{ cursor: 'pointer' }}
+                title={`Click to view ${day.toLocaleDateString()}`}
+              >
+                <div className="month-day-header">
+                  <span className="month-day-date">{day.getDate()}</span>
+                  <span className="month-add-appointment-hint">+</span>
+                </div>
+                <div className="month-appointments">
+                  {dayAppointments.length > 0 ? (
+                    <>
+                      {dayAppointments.slice(0, 3).map((app, index) => (
+                        <div 
+                          key={index}
+                          className="month-appointment-entry"
+                          style={{ backgroundColor: app.color || '#6366f1' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAppointmentClick(app);
+                          }}
+                        >
+                          <span className="appointment-client-name">{app.client?.firstName || 'Client'}</span>
+                          <span className="appointment-service-name">{app.service?.name || 'Service'}</span>
+                        </div>
+                      ))}
+                      {dayAppointments.length > 3 && (
+                        <div className="month-more-appointments">
+                          +{dayAppointments.length - 3} more
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="month-empty-day">
+                      <span className="add-appointment-text">No appointments</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   console.log('📊 State check - currentDate:', currentDate, 'loading:', loading, 'employees:', employees.length);
 
@@ -806,8 +1185,8 @@ const Calendar = () => {
       <CalendarHeader
         currentDate={currentDate}
         currentView={currentView}
-        onPreviousWeek={goToPreviousWeek}
-        onNextWeek={goToNextWeek}
+        onPreviousWeek={handlePreviousNavigation}
+        onNextWeek={handleNextNavigation}
         onToday={goToToday}
         onViewChange={setCurrentView}
         onOpenBooking={handleOpenBooking}
@@ -820,15 +1199,20 @@ const Calendar = () => {
         onDeselectAllEmployees={handleDeselectAllEmployees}
       />
 
-      <CalendarGrid
-        employees={filteredEmployees}
-        currentDate={currentDate}
-        timeSlots={timeSlots}
-        appointments={appointments}
-        onTimeSlotClick={handleTimeSlotClick}
-        onAppointmentClick={handleAppointmentClick}
-        selectedStaff={selectedStaffFilter}
-      />
+      {/* Render appropriate view based on currentView */}
+      {currentView === 'Week' && renderWeekView()}
+      {currentView === 'Month' && renderMonthView()}
+      {currentView === 'Day' && (
+        <CalendarGrid
+          employees={filteredEmployees}
+          currentDate={currentDate}
+          timeSlots={timeSlots}
+          appointments={appointments}
+          onTimeSlotClick={handleTimeSlotClick}
+          onAppointmentClick={handleAppointmentClick}
+          selectedStaff={selectedStaffFilter}
+        />
+      )}
 
       <BookingModal
         show={showBookingModal}
@@ -837,6 +1221,9 @@ const Calendar = () => {
         onClose={() => {
           closeBookingModal();
           setBookingDefaults(null); // Clear grid booking context when modal closes
+          clearMembership(); // Clear membership on modal close
+          clearGiftCard(); // Clear gift card on modal close
+          setCustomTotalDiscount(0); // Clear custom discount
         }}
         onNextStep={handleNextStep}
         onPreviousStep={handlePreviousStep}
@@ -856,6 +1243,43 @@ const Calendar = () => {
         clients={clients}
         appointments={flatAppointments}
         multipleAppointments={multipleAppointments}
+        getTotalSessionPrice={getTotalSessionPrice}
+        
+        // Membership props
+        appliedMembership={appliedMembership}
+        membershipDiscountAmount={membershipDiscountAmount}
+        selectedMembership={selectedMembership}
+        availableMemberships={availableMemberships}
+        membershipRefreshSignal={membershipRefreshSignal}
+        onMembershipApplied={handleMembershipApplied}
+        onMembershipRemoved={handleMembershipRemoved}
+        onSelectMembership={selectMembership}
+        onClearMembership={clearMembership}
+        onSetMemberships={setMemberships}
+        onRefreshMemberships={refreshMemberships}
+        
+        // Gift card props
+        selectedGiftCard={selectedGiftCard}
+        redeemGiftCardAmount={redeemGiftCardAmount}
+        giftCardAppliedAmount={giftCardAppliedAmount}
+        availableGiftCards={availableGiftCards}
+        giftCardCode={giftCardCode}
+        giftCardError={giftCardError}
+        giftCardLoading={giftCardLoading}
+        onGiftCardSelect={handleGiftCardSelect}
+        onGiftCardRemove={handleGiftCardRemove}
+        onValidateGiftCard={validateGiftCardCode}
+        onFetchGiftCards={fetchGiftCardsForClient}
+        onSetGiftCards={setGiftCards}
+        onClearGiftCard={clearGiftCard}
+        onSetGiftCardCode={setGiftCardCode}
+        calculateGiftCardValue={calculateGiftCardValue}
+        calculateTotalWithGiftCard={calculateTotalWithGiftCard}
+        
+        // Custom discount props
+        customTotalDiscount={customTotalDiscount}
+        onSaveCustomDiscount={handleSaveCustomDiscount}
+        onClearCustomDiscount={handleClearCustomDiscount}
       />
     </div>
   );

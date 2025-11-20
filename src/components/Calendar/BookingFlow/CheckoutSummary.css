@@ -1,0 +1,378 @@
+/* CheckoutSummary Styles */
+
+.checkout-summary {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Appointments Summary Section */
+.appointments-summary-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.section-title .icon {
+  font-size: 20px;
+}
+
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.appointment-card-mini {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+  transition: all 0.2s ease;
+}
+
+.appointment-card-mini:hover {
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.15);
+  transform: translateX(2px);
+}
+
+.card-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #007bff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-row-1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.service-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #212529;
+}
+
+.service-price {
+  font-weight: 700;
+  font-size: 14px;
+  color: #28a745;
+}
+
+.card-row-2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6c757d;
+  flex-wrap: wrap;
+}
+
+.service-time {
+  font-weight: 600;
+  color: #495057;
+}
+
+.dot {
+  color: #dee2e6;
+}
+
+/* Total Price Section */
+.total-price-section {
+  padding-top: 16px;
+  border-top: 2px solid #e9ecef;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.price-display-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #212529;
+}
+
+.price-edit-btn,
+.clear-discount-btn {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.price-edit-btn:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+
+.clear-discount-btn {
+  color: #dc3545;
+}
+
+.clear-discount-btn:hover {
+  background: #f8d7da;
+  border-color: #dc3545;
+}
+
+.price-edit-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.price-input {
+  width: 120px;
+  padding: 6px 10px;
+  border: 2px solid #007bff;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.price-save-btn,
+.price-cancel-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.price-save-btn {
+  background: #28a745;
+  color: white;
+}
+
+.price-save-btn:hover {
+  background: #218838;
+}
+
+.price-cancel-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.price-cancel-btn:hover {
+  background: #c82333;
+}
+
+/* Client Info Section */
+.client-info-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.client-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.client-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.client-detail-row:last-child {
+  border-bottom: none;
+}
+
+.client-detail-row .label {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 13px;
+}
+
+.client-detail-row .value {
+  font-size: 14px;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vip-badge {
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Payment Summary Section */
+.payment-summary-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.payment-summary-section .section-title {
+  color: white;
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.payment-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.payment-row:last-child {
+  border-bottom: none;
+}
+
+.payment-row.discount {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+}
+
+.payment-row.discount span:last-child {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.payment-row.total {
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.final-amount {
+  font-size: 24px;
+  font-weight: 800;
+  color: #4ade80;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Scrollbar Styling */
+.checkout-summary::-webkit-scrollbar {
+  width: 8px;
+}
+
+.checkout-summary::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.checkout-summary::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.checkout-summary::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .checkout-summary {
+    padding: 16px;
+  }
+
+  .appointments-summary-section,
+  .client-info-section,
+  .payment-summary-section {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 15px;
+  }
+
+  .appointment-card-mini {
+    padding: 10px;
+  }
+
+  .card-row-2 {
+    font-size: 11px;
+  }
+
+  .total-value {
+    font-size: 16px;
+  }
+
+  .payment-row {
+    font-size: 13px;
+  }
+
+  .payment-row.total {
+    font-size: 16px;
+  }
+
+  .final-amount {
+    font-size: 20px;
+  }
+}

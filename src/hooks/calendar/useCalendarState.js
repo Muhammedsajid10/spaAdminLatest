@@ -45,6 +45,22 @@ export const useCalendarState = (initialDate) => {
     });
   }, []);
 
+  const goToPreviousMonth = useCallback(() => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() - 1);
+      return newDate;
+    });
+  }, []);
+
+  const goToNextMonth = useCallback(() => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + 1);
+      return newDate;
+    });
+  }, []);
+
   const goToToday = useCallback(() => {
     setCurrentDate(new Date());
   }, []);
@@ -117,6 +133,8 @@ export const useCalendarState = (initialDate) => {
     goToNextWeek,
     goToPreviousDay,
     goToNextDay,
+    goToPreviousMonth,
+    goToNextMonth,
     goToToday,
     goToSpecificDate,
 

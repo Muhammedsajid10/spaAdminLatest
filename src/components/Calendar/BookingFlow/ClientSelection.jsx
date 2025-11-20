@@ -99,6 +99,18 @@ const ClientSelection = ({
     }
   };
 
+  const handleWalkInNow = () => {
+    const walkInClient = {
+      firstName: 'Walk-in',
+      lastName: 'Customer',
+      email: '',
+      phone: '',
+      isWalkIn: true
+    };
+    onSelectClient(walkInClient);
+    onNext();
+  };
+
   if (showAddNew) {
     return (
       <div className="client-selection add-new-client">
@@ -225,12 +237,21 @@ const ClientSelection = ({
         ) : (
           <div className="empty-state">
             <p>{searchQuery ? 'No clients found matching your search.' : 'No clients available. Add a new client to get started.'}</p>
+            <div className="walk-in-cta">
+              <p>Prefer to continue quickly? Use a walk-in customer.</p>
+              <button className="primary-button" onClick={handleWalkInNow}>
+                Continue as Walk-in
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       <div className="modal-actions">
         <button className="secondary-button" onClick={onBack}>Back</button>
+        <button className="primary-button" onClick={handleWalkInNow}>
+          Continue as Walk-in
+        </button>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import TimeSlotSelection from './TimeSlotSelection';
 import ClientSelection from './ClientSelection';
 import BookingSummary from './BookingSummary';
 import BookingProgress from './BookingProgress';
+import CheckoutSummary from './CheckoutSummary';
 import { 
   selectSessionAppointments, 
   selectSessionTotal,
@@ -42,7 +43,45 @@ const BookingModal = ({
   services = [],
   employees = [],
   clients = [],
-  appointments = []
+  appointments = [],
+  multipleAppointments = [],
+  getTotalSessionPrice,
+  
+  // Membership props
+  appliedMembership,
+  membershipDiscountAmount,
+  selectedMembership,
+  availableMemberships,
+  membershipRefreshSignal,
+  onMembershipApplied,
+  onMembershipRemoved,
+  onSelectMembership,
+  onClearMembership,
+  onSetMemberships,
+  onRefreshMemberships,
+  
+  // Gift card props
+  selectedGiftCard,
+  redeemGiftCardAmount,
+  giftCardAppliedAmount,
+  availableGiftCards,
+  giftCardCode,
+  giftCardError,
+  giftCardLoading,
+  onGiftCardSelect,
+  onGiftCardRemove,
+  onValidateGiftCard,
+  onFetchGiftCards,
+  onSetGiftCards,
+  onClearGiftCard,
+  onSetGiftCardCode,
+  calculateGiftCardValue,
+  calculateTotalWithGiftCard,
+  
+  // Custom discount props
+  customTotalDiscount,
+  onSaveCustomDiscount,
+  onClearCustomDiscount
 }) => {
   const dispatch = useDispatch();
   
@@ -246,16 +285,38 @@ const BookingModal = ({
         );
       case 5:
         return (
-          <BookingSummary
-            service={selectedService}
-            professional={selectedProfessional}
-            timeSlot={selectedTimeSlot}
-            date={selectedDate}
-            client={selectedClient}
-            multipleAppointments={sessionAppointments}
-            onConfirm={onConfirmBooking}
-            onBack={onPreviousStep}
-            onAddAnotherService={onAddAnotherService}
+          <CheckoutSummary
+            sessionAppointments={sessionAppointments}
+            selectedClient={selectedClient}
+            clientInfo={{
+              name: selectedClient ? `${selectedClient.firstName} ${selectedClient.lastName}` : '',
+              email: selectedClient?.email || '',
+              phone: selectedClient?.phone || ''
+            }}
+            getTotalSessionPrice={getTotalSessionPrice}
+            
+            // Membership props
+            appliedMembership={appliedMembership}
+            membershipDiscountAmount={membershipDiscountAmount}
+            membershipRefreshSignal={membershipRefreshSignal}
+            onMembershipApplied={onMembershipApplied}
+            onMembershipRemoved={onMembershipRemoved}
+            
+            // Gift card props
+            selectedGiftCard={selectedGiftCard}
+            giftCardAppliedAmount={giftCardAppliedAmount}
+            giftCardError={giftCardError}
+            giftCardLoading={giftCardLoading}
+            availableGiftCards={availableGiftCards}
+            onGiftCardSelect={onGiftCardSelect}
+            onGiftCardRemove={onGiftCardRemove}
+            onValidateGiftCard={onValidateGiftCard}
+            calculateGiftCardValue={calculateGiftCardValue}
+            
+            // Custom discount props
+            customTotalDiscount={customTotalDiscount}
+            onSaveCustomDiscount={onSaveCustomDiscount}
+            onClearCustomDiscount={onClearCustomDiscount}
           />
         );
       default:
