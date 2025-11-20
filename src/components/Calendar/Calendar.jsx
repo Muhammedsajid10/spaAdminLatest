@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import './Calendar.css';
 
@@ -244,12 +244,89 @@ const Calendar = () => {
     // If booking from button, flow will be: Service → Professional → Time → Client → Confirmation
   };
 
+  // OLD CALENDAR APPROACH: Add appointment to session when time is selected at Step 3
+  // This function is called directly from time selection click handler
+  const handleAddToBookingSession = useCallback((timeSlot = null) => {
+    console.log('📝 ========== ADD TO BOOKING SESSION ==========');
+    
+    // Use provided timeSlot or fall back to selectedTimeSlotForBooking
+    const slotToUse = timeSlot || selectedTimeSlotForBooking;
+    
+    // Validate required fields
+    if (!selectedServiceForBooking || !selectedProfessionalForBooking || !slotToUse) {
+      console.error('❌ Missing required fields:');
+      console.error('  - Service:', selectedServiceForBooking);
+      console.error('  - Professional:', selectedProfessionalForBooking);
+      console.error('  - TimeSlot:', slotToUse);
+      return false;
+    }
+
+    const bookingDate = selectedDateForBooking || currentDate;
+    
+    // Format date as YYYY-MM-DD string (Redux serializable)
+    const dateString = bookingDate instanceof Date 
+      ? bookingDate.toISOString().split('T')[0]
+      : bookingDate;
+    
+    // Create appointment object with ONLY serializable data (no full objects)
+    const appointment = {
+      id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      serviceId: selectedServiceForBooking?._id || selectedServiceForBooking?.id,
+      serviceName: selectedServiceForBooking?.name,
+      serviceDuration: selectedServiceForBooking?.duration || 30,
+      servicePrice: selectedServiceForBooking?.price || 0,
+      serviceCategory: selectedServiceForBooking?.category || '',
+      professionalId: selectedProfessionalForBooking?._id || selectedProfessionalForBooking?.id,
+      professionalName: selectedProfessionalForBooking?.user?.firstName 
+        ? `${selectedProfessionalForBooking.user.firstName} ${selectedProfessionalForBooking.user.lastName || ''}`.trim()
+        : selectedProfessionalForBooking?.name || 'Staff',
+      professionalPosition: selectedProfessionalForBooking?.position || '',
+      timeSlot: slotToUse,
+      time: slotToUse,
+      date: dateString, // Store as string, not Date object
+      duration: selectedServiceForBooking?.duration || 30,
+      price: selectedServiceForBooking?.price || 0,
+      addedAt: new Date().toISOString()
+    };
+
+    console.log('✅ Adding appointment:', appointment);
+    console.log('📊 Current session size BEFORE:', multipleAppointments.length);
+    
+    // Add to Redux session
+    addAppointmentToSessionLocal(appointment);
+    
+    console.log('✅ Appointment added to Redux');
+    console.log('📊 Session size should be:', multipleAppointments.length + 1);
+    
+    // Clear selections to prepare for next service
+    selectService(null);
+    selectProfessional(null);
+    selectTimeSlot(null);
+    
+    console.log('📝 ========== ADD COMPLETE ==========');
+    return true;
+  }, [
+    selectedServiceForBooking,
+    selectedProfessionalForBooking,
+    selectedTimeSlotForBooking,
+    selectedDateForBooking,
+    currentDate,
+    multipleAppointments.length,
+    addAppointmentToSessionLocal,
+    selectService,
+    selectProfessional,
+    selectTimeSlot
+  ]);
+
   // Enhanced next step handler that adds appointment to session at the right time
-  const handleNextStep = () => {
+  const handleNextStep = (timeSlotParam = null) => {
     console.log(`🔄 HANDLE NEXT STEP - Current step: ${bookingModalStep}`);
+    console.log('📊 timeSlotParam:', timeSlotParam);
     console.log('📊 bookingDefaults:', bookingDefaults);
     console.log('📊 multipleAppointments:', multipleAppointments.length);
     console.log('📊 selectedServiceForBooking:', selectedServiceForBooking);
+    console.log('📊 selectedProfessionalForBooking:', selectedProfessionalForBooking);
+    console.log('📊 selectedTimeSlotForBooking:', selectedTimeSlotForBooking);
     
     // Check if we're in GRID BOOKING MODE (bookingDefaults set with professional and time)
     const isGridBooking = bookingDefaults?.professional && bookingDefaults?.time;
@@ -282,22 +359,29 @@ const Calendar = () => {
       
       const endTime = addMinutesToTime(startTime, selectedServiceForBooking.duration);
       
-      // Create appointment and add to session
+      // Format date as string (Redux serializable)
+      const dateString = bookingDate instanceof Date 
+        ? bookingDate.toISOString().split('T')[0]
+        : bookingDate;
+      
+      // Create appointment with ONLY serializable data
       const appointmentData = {
         id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         serviceId: selectedServiceForBooking?._id || selectedServiceForBooking?.id,
         serviceName: selectedServiceForBooking?.name,
-        service: selectedServiceForBooking,
+        serviceDuration: selectedServiceForBooking?.duration || 30,
+        servicePrice: selectedServiceForBooking?.price || 0,
+        serviceCategory: selectedServiceForBooking?.category || '',
         professionalId: prof?._id || prof?.id,
         professionalName: prof?.user?.firstName 
           ? `${prof.user.firstName} ${prof.user.lastName || ''}`.trim()
           : prof?.name || 'Staff',
-        professional: prof,
+        professionalPosition: prof?.position || '',
         time: startTime,
         timeSlot: startTime,
         startTime: startTime,
         endTime: endTime,
-        date: bookingDate,
+        date: dateString,
         duration: selectedServiceForBooking?.duration || 30,
         price: selectedServiceForBooking?.price || 0,
         addedAt: new Date().toISOString()
@@ -321,37 +405,25 @@ const Calendar = () => {
       return; // Don't advance step
     }
     
-    // MANUAL BOOKING: Normal flow through all steps
-    if (!isGridBooking) {
-      // If moving from step 3 (time selection) to step 4 (client)
-      if (bookingModalStep === 3 && selectedTimeSlotForBooking && selectedServiceForBooking) {
-        console.log('📝 Manual booking - adding appointment to session after time selection');
-        
-        const appointmentData = {
-          id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          serviceId: selectedServiceForBooking?._id || selectedServiceForBooking?.id,
-          serviceName: selectedServiceForBooking?.name,
-          service: selectedServiceForBooking,
-          professionalId: selectedProfessionalForBooking?._id || selectedProfessionalForBooking?.id,
-          professionalName: selectedProfessionalForBooking?.user?.firstName 
-            ? `${selectedProfessionalForBooking.user.firstName} ${selectedProfessionalForBooking.user.lastName || ''}`.trim()
-            : selectedProfessionalForBooking?.name || 'Staff',
-          professional: selectedProfessionalForBooking,
-          time: selectedTimeSlotForBooking,
-          timeSlot: selectedTimeSlotForBooking,
-          date: selectedDateForBooking,
-          duration: selectedServiceForBooking?.duration || 30,
-          price: selectedServiceForBooking?.price || 0,
-          addedAt: new Date().toISOString()
-        };
-
-        console.log('✅ Adding appointment to session:', appointmentData);
-        addAppointmentToSessionLocal(appointmentData);
-        
-        // Clear selections
-        selectService(null);
-        selectProfessional(null);
-        selectTimeSlot(null);
+    // MANUAL BOOKING: OLD CALENDAR APPROACH
+    // At step 3 (after time selection), add appointment to session BEFORE advancing to step 4
+    if (!isGridBooking && bookingModalStep === 3) {
+      console.log('📝 MANUAL BOOKING - Step 3 (time selected)');
+      console.log('📝 timeSlotParam:', timeSlotParam);
+      console.log('📝 selectedTimeSlotForBooking:', selectedTimeSlotForBooking);
+      
+      // Use timeSlotParam if provided (from TimeSlotSelection), otherwise use state
+      const slotToAdd = timeSlotParam || selectedTimeSlotForBooking;
+      console.log('📝 Using slot:', slotToAdd);
+      console.log('📝 Calling handleAddToBookingSession...');
+      
+      const added = handleAddToBookingSession(slotToAdd);
+      
+      if (added) {
+        console.log('✅ Appointment added successfully');
+      } else {
+        console.log('❌ Failed to add appointment - not advancing step');
+        return; // Don't advance if add failed
       }
     }
     
@@ -761,6 +833,7 @@ const Calendar = () => {
       <BookingModal
         show={showBookingModal}
         step={bookingModalStep}
+        bookingDefaults={bookingDefaults}
         onClose={() => {
           closeBookingModal();
           setBookingDefaults(null); // Clear grid booking context when modal closes

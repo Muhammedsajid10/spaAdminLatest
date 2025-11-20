@@ -49,7 +49,17 @@ const BookingSummary = ({
         duration: service?.duration
       }] : [];
 
-  console.log('📋 BookingSummary appointments:', appointments);
+  console.log('📋 ========== BOOKING SUMMARY RENDER ==========');
+  console.log('📋 multipleAppointments prop:', multipleAppointments);
+  console.log('📋 multipleAppointments.length:', multipleAppointments.length);
+  console.log('📋 Final appointments to display:', appointments.length);
+  console.log('📋 Appointments:', appointments.map(a => ({
+    id: a.id,
+    service: a.serviceName || a.service?.name,
+    professional: a.professionalName,
+    time: a.time || a.timeSlot
+  })));
+  console.log('📋 ========== END BOOKING SUMMARY ==========');
 
   const originalTotal = calculateOriginalTotal(appointments);
   const finalTotal = calculateFinalTotal(appointments);

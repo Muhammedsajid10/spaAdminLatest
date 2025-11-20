@@ -125,8 +125,12 @@ const TimeSlotSelection = ({
         timeDisplay: slot.formattedTime,
         available: slot.available
       });
+      
+      // Set the time slot synchronously
       onSelectTimeSlot(slot.time);
-      onNext();
+      
+      // Pass the slot time directly to onNext so parent can use it immediately
+      onNext(slot.time);
     }
   };
 

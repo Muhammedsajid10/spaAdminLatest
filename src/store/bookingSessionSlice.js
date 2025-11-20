@@ -42,6 +42,13 @@ const bookingSessionSlice = createSlice({
     addAppointmentToSession(state, action) {
       const appointment = action.payload;
       
+      console.log('📝 addAppointmentToSession called');
+      console.log('📊 Current appointments count BEFORE:', state.appointments.length);
+      console.log('📊 Current appointments:', state.appointments.map(a => ({
+        id: a.id,
+        service: a.serviceName || a.service?.name
+      })));
+      
       // Ensure appointment has an ID
       if (!appointment.id) {
         appointment.id = `apt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -60,6 +67,12 @@ const bookingSessionSlice = createSlice({
 
       state.appointments.push(appointment);
       state.isAddingAdditionalService = false;
+      
+      console.log('✅ Appointments count AFTER:', state.appointments.length);
+      console.log('✅ All appointments now:', state.appointments.map(a => ({
+        id: a.id,
+        service: a.serviceName || a.service?.name
+      })));
     },
 
     // Remove an appointment from the session
@@ -127,6 +140,8 @@ const bookingSessionSlice = createSlice({
 
     // Clear entire session
     clearSession(state) {
+      console.log('🧹 clearSession called - clearing', state.appointments.length, 'appointments');
+      console.log('🧹 Stack trace:', new Error().stack);
       state.appointments = [];
       state.conflicts = [];
       state.currentAppointmentIndex = 0;
