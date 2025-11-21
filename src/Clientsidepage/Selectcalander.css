@@ -2725,6 +2725,7 @@
 .booking-modal {
   min-width: 500px;
   max-width: 600px;
+  padding: 20px;
 }
 
 /* Final payment step (light styling moved from App.css) */

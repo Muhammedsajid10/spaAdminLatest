@@ -383,6 +383,15 @@ const SelectCalendar = () => {
     const existingAppointment = appointments[employeeId]?.[slotKey];
     console.log('Time slot clicked - Employee:', employeeId, 'Time:', slotTime, 'Day:', day);
 
+    // CUTOFF CHECK: Block any booking starting at or after 23:00
+    const [hours] = slotTime.split(':').map(Number);
+    if (hours >= 23) {
+      console.log('🚫 Booking blocked - Time slot at', slotTime, 'is past cutoff (23:00)');
+      setUnavailableMessage('Bookings cannot start at or after 23:00. Please select an earlier time slot.');
+      setShowUnavailablePopup(true);
+      return;
+    }
+
     if (existingAppointment) {
       // Show booking status modal for existing appointment
       const employee = employees.find(emp => emp.id === employeeId);
@@ -2621,6 +2630,30 @@ const SelectCalendar = () => {
     }
   }, [bookingStep, bookingDefaults, availableTimeSlots]);
 
+  // NEW: Auto-populate professionals when on step 2
+  useEffect(() => {
+    if (bookingStep === 2 && selectedService && availableProfessionals.length === 0) {
+      console.log('🔄 Step 2 detected with no professionals - auto-populating');
+      const bookingDate = selectedBookingDate || currentDate;
+      let professionals = getAvailableProfessionalsForService(
+        selectedService._id,
+        bookingDate,
+        employees,
+        appointments,
+        availableServices
+      );
+      
+      // Fallback: use selectedProfessional if available
+      if (professionals.length === 0 && selectedProfessional) {
+        console.log('⚠️ Using selectedProfessional as fallback');
+        professionals = [selectedProfessional];
+      }
+      
+      console.log('✅ Auto-populated professionals on step 2:', professionals.length);
+      setAvailableProfessionals(professionals);
+    }
+  }, [bookingStep, selectedService, availableProfessionals.length, selectedProfessional, selectedBookingDate, currentDate, employees, appointments, availableServices]);
+
   // --- CURRENT TIME LINE LOGIC ---
   const [currentTimeLineTop, setCurrentTimeLineTop] = useState(0);
   const [currentTimeText, setCurrentTimeText] = useState('');
@@ -4116,7 +4149,22 @@ const SelectCalendar = () => {
                 <>
                   <h3> Pick Your Perfect Time</h3>
                   <div className="booking-modal-list">
-                    {availableTimeSlots.filter(slot => slot.available).map(slot => (
+                    {availableTimeSlots
+                      .filter(slot => {
+                        // Filter out slots that are not available
+                        if (!slot.available) return false;
+                        
+                        // CUTOFF: Block any booking starting at or after 23:00
+                        const startTime = slot.startTime;
+                        const [hours] = startTime.split(':').map(Number);
+                        if (hours >= 23) {
+                          console.log('🚫 Blocking slot at', startTime, '- cutoff is 23:00');
+                          return false;
+                        }
+                        
+                        return true;
+                      })
+                      .map(slot => (
                       <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => {
                         console.log('🕐 TIME SLOT SELECTED:', slot);
                         // Set then immediately add to session (auto-add first service)
@@ -4136,7 +4184,13 @@ const SelectCalendar = () => {
                     ))}
                   </div>
                   <div className="booking-modal-actions">
-                    <button className="booking-modal-back" onClick={() => setBookingStep(2)}>← Back</button>
+                    <button className="booking-modal-back" onClick={() => {
+                      console.log('⬅️ Going back from step 3 to step 2');
+                      // Clear time slot selection
+                      setSelectedTimeSlot(null);
+                      // Just change the step - useEffect will handle populating professionals
+                      setBookingStep(2);
+                    }}>← Back</button>
                   </div>
                 </>
               )}
