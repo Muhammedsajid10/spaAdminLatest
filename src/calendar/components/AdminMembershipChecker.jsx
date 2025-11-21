@@ -274,29 +274,9 @@ const AdminMembershipChecker = ({
     return (
       <div className="admin-membership-checker">
         <div className="no-eligible-memberships">
-          <div className="membership-header">
-        
-            <span>Client Memberships ({clientMemberships.length})</span>
-          </div>
           <div className="ineligible-message">
             <span className="info-icon"></span>
-            <span>No memberships available for selected services</span>
-          </div>
-          <div className="memberships-list">
-            {clientMemberships.map(membership => (
-              <div key={membership._id} className="membership-item ineligible">
-                <div className="membership-details">
-                  <div className="membership-name">{membership.name}</div>
-                  <div className="membership-service">{membership.serviceName}</div>
-                  <div className="membership-sessions">
-                    {membership.remainingSessions} sessions remaining
-                  </div>
-                </div>
-                <div className="ineligible-reason">
-                  Different service
-                </div>
-              </div>
-            ))}
+            <span>No memberships available for the selected service</span>
           </div>
         </div>
       </div>
