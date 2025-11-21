@@ -547,6 +547,32 @@ const Calendar = () => {
       const durationToUse = serviceToAdd.duration || 30;
       const endTime = addMinutesToTime(startTime, durationToUse);
       
+      // BOOKING CUTOFF VALIDATION: Prevent bookings that would extend past 23:00
+      const startTimeMinutes = timeToMinutes(startTime);
+      const endTimeMinutes = startTimeMinutes + durationToUse;
+      const MAX_END_TIME_MINUTES = 23 * 60; // 23:00 = 1380 minutes
+      
+      if (endTimeMinutes > MAX_END_TIME_MINUTES) {
+        const maxBookingTimeMinutes = MAX_END_TIME_MINUTES - durationToUse;
+        const maxBookingHours = Math.floor(maxBookingTimeMinutes / 60);
+        const maxBookingMinutes = maxBookingTimeMinutes % 60;
+        const maxBookingTime = `${String(maxBookingHours).padStart(2, '0')}:${String(maxBookingMinutes).padStart(2, '0')}`;
+        
+        console.error('❌ Booking cutoff exceeded:', {
+          startTime,
+          duration: durationToUse,
+          endTime,
+          endTimeMinutes,
+          maxEndTime: '23:00'
+        });
+        
+        alert(`This ${durationToUse}-minute service cannot be booked at ${startTime} as it would end at ${endTime}, past our 23:00 closing time.\n\nFor this service, the last available booking time is ${maxBookingTime}.`);
+        
+        // Clear service selection to allow choosing a different service
+        selectService(null);
+        return; // Don't add to session
+      }
+      
       // Format date as string (Redux serializable)
       const dateString = bookingDate instanceof Date 
         ? bookingDate.toISOString().split('T')[0]

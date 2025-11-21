@@ -57,3 +57,38 @@ export const formatTooltipTime = (timeString) => {
   if (!timeString) return '';
   return timeString;
 };
+
+/**
+ * Calculate the maximum booking time to prevent overnight appointments
+ * @param {number} serviceDuration - Service duration in minutes
+ * @param {number} maxEndTimeHour - Maximum end time hour (default: 23 for 11 PM)
+ * @returns {Object} Object with maxBookingTime string and maxBookingTimeMinutes
+ */
+export const calculateMaxBookingTime = (serviceDuration, maxEndTimeHour = 23) => {
+  const MAX_END_TIME_MINUTES = maxEndTimeHour * 60;
+  const maxBookingTimeMinutes = MAX_END_TIME_MINUTES - serviceDuration;
+  
+  const hours = Math.floor(maxBookingTimeMinutes / 60);
+  const minutes = maxBookingTimeMinutes % 60;
+  const maxBookingTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  
+  return {
+    maxBookingTime,
+    maxBookingTimeMinutes,
+    maxEndTime: `${String(maxEndTimeHour).padStart(2, '0')}:00`
+  };
+};
+
+/**
+ * Check if a time slot would extend past the maximum end time
+ * @param {string} timeSlot - Time slot in HH:mm format
+ * @param {number} serviceDuration - Service duration in minutes
+ * @param {number} maxEndTimeHour - Maximum end time hour (default: 23 for 11 PM)
+ * @returns {boolean} True if slot would extend past max time, false otherwise
+ */
+export const wouldExtendPastMaxTime = (timeSlot, serviceDuration, maxEndTimeHour = 23) => {
+  const slotMinutes = timeToMinutes(timeSlot);
+  const endMinutes = slotMinutes + serviceDuration;
+  const maxMinutes = maxEndTimeHour * 60;
+  return endMinutes > maxMinutes;
+};

@@ -165,6 +165,19 @@ export const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDurati
     return [];
   }
 
+  // BOOKING TIME CUTOFF: Calculate maximum booking time to prevent overnight appointments
+  // Services must end by 23:00 (1380 minutes from midnight)
+  const MAX_END_TIME_MINUTES = 23 * 60; // 23:00 = 1380 minutes
+  const maxBookingTimeMinutes = MAX_END_TIME_MINUTES - serviceDuration;
+  
+  console.log('🕐 Booking cutoff calculation:', {
+    serviceDuration,
+    maxEndTime: '23:00',
+    maxEndTimeMinutes: MAX_END_TIME_MINUTES,
+    maxBookingTimeMinutes,
+    maxBookingTime: `${Math.floor(maxBookingTimeMinutes / 60).toString().padStart(2, '0')}:${(maxBookingTimeMinutes % 60).toString().padStart(2, '0')}`
+  });
+
   const slots = [];
 
   shiftBlocks.forEach(block => {
@@ -175,12 +188,18 @@ export const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDurati
     // Generate slots within this shift block
     while (true) {
       const currentMinutes = timeToMinutes(currentTime);
+      const slotEndMinutes = currentMinutes + serviceDuration;
       
       // Check if there's enough time for the service before block ends
-      if (currentMinutes + serviceDuration <= blockEndMinutes) {
+      // AND ensure service doesn't extend past 23:00 (prevents overnight bookings)
+      if (currentMinutes + serviceDuration <= blockEndMinutes && slotEndMinutes <= MAX_END_TIME_MINUTES) {
         slots.push(currentTime);
         currentTime = addMinutesToTime(currentTime, intervalMinutes);
       } else {
+        // Log why slot was rejected
+        if (slotEndMinutes > MAX_END_TIME_MINUTES) {
+          console.log(`⏰ Slot ${currentTime} rejected: would extend to ${Math.floor(slotEndMinutes / 60).toString().padStart(2, '0')}:${(slotEndMinutes % 60).toString().padStart(2, '0')}, past 23:00 cutoff`);
+        }
         break;
       }
     }

@@ -83,10 +83,27 @@ const TimeSlotSelection = ({
       const startHour = 9;
       const endHour = 18;
       
+      // BOOKING TIME CUTOFF: Calculate maximum booking time to prevent overnight appointments
+      const MAX_END_TIME_MINUTES = 23 * 60; // 23:00 = 1380 minutes
+      const maxBookingTimeMinutes = MAX_END_TIME_MINUTES - serviceDuration;
+      
+      console.log('🕐 Default slots - booking cutoff:', {
+        serviceDuration,
+        maxBookingTime: `${Math.floor(maxBookingTimeMinutes / 60).toString().padStart(2, '0')}:${(maxBookingTimeMinutes % 60).toString().padStart(2, '0')}`
+      });
+      
       for (let hour = startHour; hour < endHour; hour++) {
         for (let min = 0; min < 60; min += interval) {
           const time = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-          defaultSlots.push(time);
+          const timeMinutes = hour * 60 + min;
+          const slotEndMinutes = timeMinutes + serviceDuration;
+          
+          // Only add slot if service would end by 23:00
+          if (slotEndMinutes <= MAX_END_TIME_MINUTES) {
+            defaultSlots.push(time);
+          } else {
+            console.log(`⏰ Default slot ${time} rejected: would extend to ${Math.floor(slotEndMinutes / 60).toString().padStart(2, '0')}:${(slotEndMinutes % 60).toString().padStart(2, '0')}, past 23:00 cutoff`);
+          }
         }
       }
       slotTimes = defaultSlots;
@@ -141,6 +158,14 @@ const TimeSlotSelection = ({
 
   // Show message if no time slots available
   if (timeSlots.length === 0) {
+    // Calculate what the cutoff time would be for this service
+    const serviceDuration = service?.duration || 30;
+    const maxEndHour = 23; // 11 PM
+    const maxBookingTimeMinutes = (maxEndHour * 60) - serviceDuration;
+    const cutoffHours = Math.floor(maxBookingTimeMinutes / 60);
+    const cutoffMinutes = maxBookingTimeMinutes % 60;
+    const cutoffTime = `${String(cutoffHours).padStart(2, '0')}:${String(cutoffMinutes).padStart(2, '0')}`;
+    
     return (
       <div className="time-slot-selection">
         <div className="selection-header">
@@ -154,6 +179,7 @@ const TimeSlotSelection = ({
         <div className="no-availability-message">
           <i className="icon-clock-x"></i>
           <p>No time slots available.</p>
+          <p className="hint">For this {serviceDuration}-minute service, bookings must start by {cutoffTime} to end by 23:00.</p>
           <p className="hint">Please try a different date or professional.</p>
         </div>
         
