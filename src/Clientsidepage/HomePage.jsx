@@ -830,6 +830,17 @@ const TopStats = () => {
               const employeeServices = booking.services.filter(s => 
                 s.employee?._id?.toString() === empId || s.employee?.toString() === empId
               );
+              
+              // Use finalAmount if available (includes custom discounts), otherwise sum service prices
+              if (booking.finalAmount !== undefined && employeeServices.length > 0) {
+                // If booking has finalAmount (custom price), distribute it proportionally among employee's services
+                const totalServicesInBooking = booking.services.length;
+                const employeeServicesCount = employeeServices.length;
+                const employeeShare = (booking.finalAmount / totalServicesInBooking) * employeeServicesCount;
+                return sum + employeeShare;
+              }
+              
+              // Fallback to original price calculation
               return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
             }, 0);
           
@@ -846,6 +857,17 @@ const TopStats = () => {
               const employeeServices = booking.services.filter(s => 
                 s.employee?._id?.toString() === empId || s.employee?.toString() === empId
               );
+              
+              // Use finalAmount if available (includes custom discounts), otherwise sum service prices
+              if (booking.finalAmount !== undefined && employeeServices.length > 0) {
+                // If booking has finalAmount (custom price), distribute it proportionally among employee's services
+                const totalServicesInBooking = booking.services.length;
+                const employeeServicesCount = employeeServices.length;
+                const employeeShare = (booking.finalAmount / totalServicesInBooking) * employeeServicesCount;
+                return sum + employeeShare;
+              }
+              
+              // Fallback to original price calculation
               return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
             }, 0);
           

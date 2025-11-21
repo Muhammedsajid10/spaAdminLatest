@@ -1485,7 +1485,12 @@ const SelectCalendar = () => {
     if (x < minX) x = minX;
     if (x > maxX) x = maxX;
     setTooltipPosition({ x, y });
-    setTooltipData(appointment);
+    // Ensure we pass price and finalAmount for proper display
+    setTooltipData({
+      ...appointment,
+      price: appointment.price || appointment.totalAmount,
+      finalAmount: appointment.finalAmount || appointment.finalPrice
+    });
     setShowBookingTooltip(true);
   };
 
@@ -3815,6 +3820,23 @@ const SelectCalendar = () => {
                       <span className="detail-value">{selectedBookingForStatus.bookingId || 'N/A'}</span>
                     </div>
                   </div>
+                  {(selectedBookingForStatus.finalAmount !== undefined || selectedBookingForStatus.price !== undefined || selectedBookingForStatus.totalAmount !== undefined) && (
+                    <div className="status-detail">
+                      <div className="detail-content">
+                        <span className="detail-label">Amount</span>
+                        <span className="detail-value" style={{ fontWeight: selectedBookingForStatus.finalAmount !== undefined && selectedBookingForStatus.finalAmount !== selectedBookingForStatus.price ? 'bold' : 'normal' }}>
+                          {selectedBookingForStatus.finalAmount !== undefined && selectedBookingForStatus.finalAmount !== selectedBookingForStatus.price && (
+                            <span style={{ textDecoration: 'line-through', marginRight: 8, opacity: 0.6 }}>
+                              AED {Number(selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
+                            </span>
+                          )}
+                          <span style={{ color: selectedBookingForStatus.finalAmount !== undefined && selectedBookingForStatus.finalAmount !== selectedBookingForStatus.price ? '#4ade80' : 'inherit' }}>
+                            AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="booking-status-actions">
