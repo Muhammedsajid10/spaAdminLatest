@@ -817,9 +817,7 @@ const BookingModal = ({
                       ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
                       : clientInfo.name
                     }
-                    {selectedExistingClient && (
-                      <span className="existing-client-indicator">✨ VIP Member</span>
-                    )}
+                  
                   </span>
                 </div>
                 <div className="summary-item">
