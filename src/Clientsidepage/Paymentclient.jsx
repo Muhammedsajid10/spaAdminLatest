@@ -20,6 +20,7 @@ const FilterIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" vie
 const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 const OptionsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>;
 const SortIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" /></svg>;
+const RefreshIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
 
 const Spinner = () => (<div className="spinner-container"><div className="spinner"></div></div>);
 
@@ -27,6 +28,7 @@ const PaymentClient = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // State for new UI controls
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
@@ -48,42 +50,49 @@ const PaymentClient = () => {
   }, [isOptionsOpen]);
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Hitting admin payments endpoint (requires admin token)
-        const page = 1;
-        const limit = 500; // generous upper bound; adjust if pagination added later
-        const res = await api.get(`/payments/admin/all?page=${page}&limit=${limit}`);
-        console.log("Payments (admin/all) API result:", res.data);
-
-        const paymentsData = res.data?.data?.payments || [];
-        const mapped = paymentsData.map((p) => ({
-          id: p._id,
-          date: p.createdAt ? new Date(p.createdAt) : new Date(),
-            // bookingNumber populated as 'bookingNumber' in booking select
-          reference: p.booking?.bookingNumber || p._id || "-",
-          amount: typeof p.amount === 'number' ? p.amount : 0,
-          status: p.status || "-",
-          paymentMethod: p.paymentMethod || "-",
-          user: `${p.user?.firstName || ''} ${p.user?.lastName || ''}`.trim() || "-",
-          gateway: p.paymentGateway || "-",
-          bookingStatus: p.booking?.status || "-",
-          refundAmount: p.refundAmount ? p.refundAmount : 0,
-        }));
-
-        setPayments(mapped);
-      } catch (err) {
-        console.error("Failed to fetch payments:", err);
-        setError(err.response?.data?.message || err.message || "Failed to load payments");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchPayments();
   }, []);
+
+  const fetchPayments = async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    
+    try {
+      // Fetch ALL payments by using a very high limit - backend sorts by createdAt desc (newest first)
+      const page = 1;
+      const limit = 10000; // High limit to get all records
+      const res = await api.get(`/payments/admin/all?page=${page}&limit=${limit}`);
+      console.log("Payments (admin/all) API result:", res.data);
+
+      const paymentsData = res.data?.data?.payments || [];
+      const mapped = paymentsData.map((p) => ({
+        id: p._id,
+        date: p.createdAt ? new Date(p.createdAt) : new Date(),
+          // bookingNumber populated as 'bookingNumber' in booking select
+        reference: p.booking?.bookingNumber || p._id || "-",
+        amount: typeof p.amount === 'number' ? p.amount : 0,
+        status: p.status || "-",
+        paymentMethod: p.paymentMethod || "-",
+        user: `${p.user?.firstName || ''} ${p.user?.lastName || ''}`.trim() || "-",
+        gateway: p.paymentGateway || "-",
+        bookingStatus: p.booking?.status || "-",
+        refundAmount: p.refundAmount ? p.refundAmount : 0,
+      }));
+
+      setPayments(mapped);
+      console.log(`✅ Loaded ${mapped.length} payments, latest: ${mapped[0]?.date.toLocaleString()}`);
+    } catch (err) {
+      console.error("Failed to fetch payments:", err);
+      setError(err.response?.data?.message || err.message || "Failed to load payments");
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
   
   // Logic for sorting and filtering
   const sortedAndFilteredPayments = payments
@@ -451,6 +460,15 @@ const PaymentClient = () => {
           </div>
           <div className="pay-options">
            
+            <button 
+              className="pay-refresh-btn mem-export-bbtn" 
+              onClick={() => fetchPayments(true)}
+              disabled={isRefreshing || loading}
+              style={{ marginRight: '8px' }}
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+
             <button 
               className="pay-options-btn  mem-export-bbtn" 
               onClick={(e) => { e.stopPropagation(); setIsOptionsOpen(!isOptionsOpen); }}

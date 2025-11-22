@@ -80,17 +80,20 @@ const DailySales = () => {
           'card': 'Card',
           'cash': 'Cash',
           'upi': 'Upi',
-          'giftcard': 'GiftCard Redemption',
-          'membership': 'Membership Card'
+          'giftcard': 'Gift Card Redeemed',
+          'membership': 'Membership Redeemed'
         };
         
         const processedCashMovement = paymentTypes.map(type => {
           const typeData = cashMovementData[type] || {};
           const paymentsCollected = typeData.paymentsCollected || 0;
           const refundsPaid = typeData.refundsPaid || 0;
+          const paymentsCount = typeData.paymentsCount || 0;
+          const refundsCount = typeData.refundsCount || 0;
           
           return {
             paymentType: paymentTypeLabels[type],
+            transactionCount: paymentsCount,
             paymentsCollected: paymentsCollected > 0 
               ? `AED ${(paymentsCollected).toFixed(2)}` 
               : "AED 0.00",
@@ -116,13 +119,17 @@ const DailySales = () => {
             itemType: 'Membership card',
             salesQty: transactionSummaryData['Membership card']?.salesQty || 0,
             refundQty: transactionSummaryData['Membership card']?.refundQty || 0,
-            grossTotal: "AED 0.00"
+            grossTotal: transactionSummaryData['Membership card']?.grossTotal
+              ? `AED ${(transactionSummaryData['Membership card'].grossTotal).toFixed(2)}`
+              : "AED 0.00"
           },
           {
             itemType: 'Gift cards',
             salesQty: transactionSummaryData['Gift cards']?.salesQty || 0,
             refundQty: transactionSummaryData['Gift cards']?.refundQty || 0,
-            grossTotal: "AED 0.00"
+            grossTotal: transactionSummaryData['Gift cards']?.grossTotal
+              ? `AED ${(transactionSummaryData['Gift cards'].grossTotal).toFixed(2)}`
+              : "AED 0.00"
           }
         ];
 
@@ -152,7 +159,7 @@ const DailySales = () => {
   );
 
   const hasCashMovementData = cashMovementSummary.some(
-    (item) => item.paymentsCollected !== "AED 0.00" || item.refundsPaid !== "AED 0.00"
+    (item) => item.paymentsCollected !== "AED 0.00" || item.refundsPaid !== "AED 0.00" || item.transactionCount > 0
   );
 
   // Debug logs for data state (only log once when data changes)
@@ -207,8 +214,8 @@ const DailySales = () => {
       doc.text("Cash Movement Summary", 14, startY);
       autoTable(doc, {
         startY: startY + 5,
-        head: [["Payment type", "Payments collected", "Refunds paid"]],
-        body: cashMovementSummary.map((item) => [item.paymentType, item.paymentsCollected, item.refundsPaid]),
+        head: [["Payment type", "Transaction count", "Payments collected", "Refunds paid"]],
+        body: cashMovementSummary.map((item) => [item.paymentType, item.transactionCount, item.paymentsCollected, item.refundsPaid]),
       });
     }
 
@@ -240,8 +247,8 @@ const DailySales = () => {
     if (hasCashMovementData) {
       csvData.push(
         ["Cash Movement Summary"],
-        ["Payment type", "Payments collected", "Refunds paid"],
-        ...cashMovementSummary.map((item) => [item.paymentType, item.paymentsCollected, item.refundsPaid])
+        ["Payment type", "Transaction count", "Payments collected", "Refunds paid"],
+        ...cashMovementSummary.map((item) => [item.paymentType, item.transactionCount, item.paymentsCollected, item.refundsPaid])
       );
     }
 
@@ -281,8 +288,8 @@ const DailySales = () => {
       const wsData2 = [
         [`Cash Movement Summary - ${formatDate(currentDate)}`],
         [],
-        ["Payment type", "Payments collected", "Refunds paid"],
-        ...cashMovementSummary.map((item) => [item.paymentType, item.paymentsCollected, item.refundsPaid]),
+        ["Payment type", "Transaction count", "Payments collected", "Refunds paid"],
+        ...cashMovementSummary.map((item) => [item.paymentType, item.transactionCount, item.paymentsCollected, item.refundsPaid]),
       ];
       const ws2 = XLSX.utils.aoa_to_sheet(wsData2);
       XLSX.utils.book_append_sheet(wb, ws2, "Cash Movement Summary");
@@ -438,6 +445,7 @@ const DailySales = () => {
                 <thead>
                   <tr>
                     <th>Payment type</th>
+                    <th>Transaction count</th>
                     <th>Payments collected</th>
                     <th>Refunds paid</th>
                   </tr>
@@ -446,6 +454,7 @@ const DailySales = () => {
                   {cashMovementSummary.map((item, index) => (
                     <tr key={index}>
                       <td>{item.paymentType}</td>
+                      <td>{item.transactionCount}</td>
                       <td>{item.paymentsCollected}</td>
                       <td>{item.refundsPaid}</td>
                     </tr>
