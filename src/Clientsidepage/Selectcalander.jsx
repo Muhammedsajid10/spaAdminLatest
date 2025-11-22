@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import Swal from 'sweetalert2';
 import Loading from '../states/Loading.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { useDatePickerState, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
@@ -1873,7 +1874,12 @@ const SelectCalendar = () => {
     setMembershipDiscountAmount(matchingService.price || 0);
 
     // Show success feedback
-    alert(` Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`);
+    Swal.fire({
+      icon: 'success',
+      title: 'Membership Applied',
+      text: `Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`,
+      confirmButtonColor: '#1f2937'
+    });
   };
 
   const handleMembershipRemoved = () => {
@@ -1883,7 +1889,12 @@ const SelectCalendar = () => {
     setMembershipDiscountAmount(0);
 
     // Show feedback
-    alert('Membership removed. Regular pricing restored.');
+    Swal.fire({
+      icon: 'info',
+      title: 'Membership Removed',
+      text: 'Regular pricing restored.',
+      confirmButtonColor: '#1f2937'
+    });
   };
 
   // Gift Card Functions - Updated to use new API
@@ -4581,8 +4592,8 @@ const SelectCalendar = () => {
                       if (bookingDefaults?.professional && bookingDefaults?.time) {
                         console.log('⬅️ Going back from step 5 to step 1 (grid booking mode)');
                         setBookingStep(1);
-                        // Clear booking defaults to allow new selection
-                        setBookingDefaults(null);
+                        // DON'T clear booking defaults - keep professional & time info for grid booking flow
+                        // setBookingDefaults(null); ❌ Removed - this was causing the flow to forget grid selection
                         // Show service catalog so user can select services
                         setShowServiceCatalog(true);
                       } else {

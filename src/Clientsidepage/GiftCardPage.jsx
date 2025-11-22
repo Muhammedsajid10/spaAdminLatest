@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import { IoClose } from "react-icons/io5";
 import { FaGift } from "react-icons/fa";
 import api from "../Service/Api";
@@ -59,7 +60,12 @@ const CreateGiftCardModal = ({ isOpen, onClose, onSuccess }) => {
       console.error("Failed to create gift card:", err);
       const serverMsg = err.response?.data?.message;
       const serverDetail = err.response?.data?.error;
-      alert(serverMsg || serverDetail || err.message || "Failed to create gift card.");
+      Swal.fire({
+        icon: 'error',
+        title: 'Creation Failed',
+        text: serverMsg || serverDetail || err.message || "Failed to create gift card.",
+        confirmButtonColor: '#1f2937'
+      });
     } finally {
       setLoading(false);
     }

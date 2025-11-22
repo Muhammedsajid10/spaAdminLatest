@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import Swal from "sweetalert2";
 import { Download, ArrowLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import MonthPicker from "../../components/ui/MonthPicker";
@@ -240,7 +241,12 @@ const GenericReportPage = ({
     );
     
     if (!result.success) {
-      alert(`Export failed: ${result.message}`);
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Failed',
+        text: result.message,
+        confirmButtonColor: '#1f2937'
+      });
     }
   };
 

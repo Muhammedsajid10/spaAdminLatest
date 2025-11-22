@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import Swal from 'sweetalert2';
 import './Calendar.css';
 import './WeekMonthViews.css';
 
@@ -416,7 +417,12 @@ const Calendar = () => {
     if (conflictObj) {
       const professionalName = selectedProfessionalForBooking.user?.firstName || selectedProfessionalForBooking.name;
       console.error(`❌ Time conflict: ${professionalName} already has a booking at this time.`);
-      alert(`Time conflict: ${professionalName} already has a booking at this time. Please select a different slot.`);
+      Swal.fire({
+        icon: 'error',
+        title: 'Time Conflict',
+        text: `${professionalName} already has a booking at this time. Please select a different slot.`,
+        confirmButtonColor: '#1f2937'
+      });
       return false;
     }
 
@@ -560,7 +566,12 @@ const Calendar = () => {
         
         if (hasConflictWithExisting) {
           console.error('❌ Conflict detected with existing bookings');
-          alert(`⚠️ Time slot ${startTime} conflicts with an existing booking. This service cannot be added. Please try a different time slot or remove some services.`);
+          Swal.fire({
+            icon: 'warning',
+            title: 'Time Slot Conflict',
+            text: `Time slot ${startTime} conflicts with an existing booking. This service cannot be added. Please try a different time slot or remove some services.`,
+            confirmButtonColor: '#1f2937'
+          });
           selectService(null); // Clear selection
           return; // Don't add to session
         }
@@ -577,7 +588,12 @@ const Calendar = () => {
           const maxBookingTime = `${String(maxBookingHours).padStart(2, '0')}:${String(maxBookingMinutes).padStart(2, '0')}`;
           
           console.error('❌ Booking cutoff exceeded');
-          alert(`This ${durationToUse}-minute service would end at ${endTime}, past our 23:00 closing time.\n\nFor this service, the last available time is ${maxBookingTime}.`);
+          Swal.fire({
+            icon: 'warning',
+            title: 'Past Closing Time',
+            html: `This ${durationToUse}-minute service would end at ${endTime}, past our 23:00 closing time.<br><br>For this service, the last available time is ${maxBookingTime}.`,
+            confirmButtonColor: '#1f2937'
+          });
           selectService(null);
           return;
         }
@@ -765,7 +781,12 @@ const Calendar = () => {
     console.log('📊 Total appointments:', multipleAppointments.length);
     
     if (multipleAppointments.length === 0) {
-      alert('Please add at least one service before proceeding.');
+      Swal.fire({
+        icon: 'info',
+        title: 'No Services Added',
+        text: 'Please add at least one service before proceeding.',
+        confirmButtonColor: '#1f2937'
+      });
       return;
     }
     
@@ -840,7 +861,12 @@ const Calendar = () => {
 
         if (hasTimeConflict) {
           const profName = apt.professionalName || apt.professional?.user?.firstName || 'Professional';
-          alert(`⚠️ Time slot ${aptTime} is already booked for ${profName}. Please go back and select a different time.`);
+          Swal.fire({
+            icon: 'error',
+            title: 'Time Slot Conflict',
+            text: `Time slot ${aptTime} is already booked for ${profName}. Please go back and select a different time.`,
+            confirmButtonColor: '#1f2937'
+          });
           return;
         }
       }
@@ -980,7 +1006,12 @@ const Calendar = () => {
         ? `Successfully booked ${appointmentCount} appointments!` 
         : 'Booking created successfully!';
       
-      alert(successMsg);
+      Swal.fire({
+        icon: 'success',
+        title: 'Booking Confirmed',
+        text: successMsg,
+        confirmButtonColor: '#1f2937'
+      });
       
     } catch (err) {
       console.error('❌ Booking failed:', err);
@@ -1007,7 +1038,12 @@ const Calendar = () => {
       }
       
       console.error('📢 Showing error to user:', errorMessage);
-      alert(`Booking failed: ${errorMessage}`);
+      Swal.fire({
+        icon: 'error',
+        title: 'Booking Failed',
+        text: errorMessage,
+        confirmButtonColor: '#1f2937'
+      });
     }
   };
 

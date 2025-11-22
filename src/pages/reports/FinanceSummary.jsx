@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import Swal from "sweetalert2";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
@@ -104,7 +105,12 @@ const FinanceSummary = () => {
     );
     
     if (!result.success) {
-      alert(`Export failed: ${result.message}`);
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Failed',
+        text: result.message,
+        confirmButtonColor: '#1f2937'
+      });
     }
   };
 

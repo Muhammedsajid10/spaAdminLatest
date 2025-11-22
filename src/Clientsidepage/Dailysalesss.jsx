@@ -8,6 +8,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import Swal from "sweetalert2";
 import api from "../Service/Api";
 import Loading from "../states/Loading";
 import Error500Page from "../states/ErrorPage";
@@ -180,7 +181,12 @@ const DailySales = () => {
 
   const handleExportPDF = () => {
     if (!hasTransactionData && !hasCashMovementData) {
-      alert("No data available to export");
+      Swal.fire({
+        icon: 'warning',
+        title: 'No Data',
+        text: 'No data available to export',
+        confirmButtonColor: '#1f2937'
+      });
       return;
     }
 
@@ -211,7 +217,12 @@ const DailySales = () => {
 
   const handleExportCSV = () => {
     if (!hasTransactionData && !hasCashMovementData) {
-      alert("No data available to export");
+      Swal.fire({
+        icon: 'warning',
+        title: 'No Data',
+        text: 'No data available to export',
+        confirmButtonColor: '#1f2937'
+      });
       return;
     }
 
@@ -244,7 +255,12 @@ const DailySales = () => {
 
   const handleExportExcel = () => {
     if (!hasTransactionData && !hasCashMovementData) {
-      alert("No data available to export");
+      Swal.fire({
+        icon: 'warning',
+        title: 'No Data',
+        text: 'No data available to export',
+        confirmButtonColor: '#1f2937'
+      });
       return;
     }
 

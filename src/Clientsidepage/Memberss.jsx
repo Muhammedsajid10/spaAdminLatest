@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { IoClose } from "react-icons/io5";
 import { FaCalendarAlt } from "react-icons/fa";
 import api from '../Service/Api';
@@ -140,31 +141,56 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
 
       // Validation
       if (!formData.name.trim()) {
-        alert('Membership name is required');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Name Required',
+          text: 'Membership name is required',
+          confirmButtonColor: '#1f2937'
+        });
         setLoading(false);
         return;
       }
 
       if (!formData.description.trim()) {
-        alert('Membership description is required');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Description Required',
+          text: 'Membership description is required',
+          confirmButtonColor: '#1f2937'
+        });
         setLoading(false);
         return;
       }
 
       if (!formData.selectedServices || formData.selectedServices.length === 0) {
-        alert('Please select at least one service');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Service Required',
+          text: 'Please select at least one service',
+          confirmButtonColor: '#1f2937'
+        });
         setLoading(false);
         return;
       }
 
       if (formData.sessionType === 'limited' && (!formData.sessionCount || formData.sessionCount < 1)) {
-        alert('Please enter valid number of sessions');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Invalid Sessions',
+          text: 'Please enter valid number of sessions',
+          confirmButtonColor: '#1f2937'
+        });
         setLoading(false);
         return;
       }
 
       if (!formData.price || formData.price <= 0) {
-        alert('Please enter valid price');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Invalid Price',
+          text: 'Please enter valid price',
+          confirmButtonColor: '#1f2937'
+        });
         setLoading(false);
         return;
       }
@@ -209,7 +235,12 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
         errorMessage = err.message;
       }
       
-      alert(errorMessage);
+      Swal.fire({
+        icon: 'error',
+        title: 'Creation Failed',
+        text: errorMessage,
+        confirmButtonColor: '#1f2937'
+      });
     } finally {
       setLoading(false);
     }
@@ -724,14 +755,31 @@ const MembershipDetailModal = ({ isOpen, onClose, membership, onUpdateSuccess })
       onClose();
     } catch (err) {
       console.error('Failed to update membership:', err);
-      alert(err?.response?.data?.message || 'Update failed');
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: err?.response?.data?.message || 'Update failed',
+        confirmButtonColor: '#1f2937'
+      });
     } finally {
       setUpdating(false);
     }
   };
 
   const doDelete = async () => {
-    if (!window.confirm('Delete this membership template? This action cannot be undone.')) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete Membership?',
+      text: 'This action cannot be undone.',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel'
+    });
+    
+    if (!result.isConfirmed) return;
+    
     setDeleting(true);
     try {
       const id = editable._id || editable.id;
@@ -740,7 +788,12 @@ const MembershipDetailModal = ({ isOpen, onClose, membership, onUpdateSuccess })
       onClose();
     } catch (err) {
       console.error('Failed to delete membership:', err);
-      alert(err?.response?.data?.message || 'Delete failed');
+      Swal.fire({
+        icon: 'error',
+        title: 'Delete Failed',
+        text: err?.response?.data?.message || 'Delete failed',
+        confirmButtonColor: '#1f2937'
+      });
     } finally {
       setDeleting(false);
     }

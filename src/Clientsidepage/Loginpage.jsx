@@ -1,5 +1,6 @@
 // LoginPage.jsx
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import './Loginpage.css';
 import { Base_url } from '../Service/Base_url';
@@ -49,11 +50,21 @@ const LoginPage = () => {
                 navigate('/'); // Navigate to root (which is now calendar)
             } else {
                 console.log('❌ Login failed:', data.message);
-                alert(data.message || 'Login failed');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Login Failed',
+                    text: data.message || 'Login failed',
+                    confirmButtonColor: '#1f2937'
+                });
             }
         } catch (error) {
             console.log('❌ Login error:', error);
-            alert('Unable to login. Please try again.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Login Error',
+                text: 'Unable to login. Please try again.',
+                confirmButtonColor: '#1f2937'
+            });
         } finally {
             setIsLoading(false);
         }
