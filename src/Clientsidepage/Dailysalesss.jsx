@@ -75,11 +75,11 @@ const DailySales = () => {
         // Process cash movement summary
         const cashMovementData = cashMovementRes.data?.data || {};
         
-        const paymentTypes = ['card', 'cash', 'upi', 'giftcard', 'membership'];
+        const paymentTypes = ['card', 'cash', 'digital_wallet', 'giftcard', 'membership'];
         const paymentTypeLabels = {
           'card': 'Card',
           'cash': 'Cash',
-          'upi': 'Upi',
+          'digital_wallet': 'UPI',
           'giftcard': 'Gift Card Redeemed',
           'membership': 'Membership Redeemed'
         };

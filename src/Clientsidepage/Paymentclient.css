@@ -21,20 +21,40 @@
 }
 
 .mem-export-bbtn{
-height: 50px;
-    min-width: 100px;
-    border-radius: 10px;
-    color: #000000;
-    background-color: black;
-    font-size: 10px;
-    box-sizing: border-box;
-    display: flex
-;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    font-size: 15px;
-    border-color: black;
+  height: 38px;
+  min-width: 90px;
+  padding: 0 16px;
+  border-radius: 6px;
+  color: #111827;
+  background-color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mem-export-bbtn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.mem-export-bbtn:active {
+  background-color: #f3f4f6;
+  transform: translateY(1px);
+}
+
+.mem-export-bbtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pay-refresh-btn {
+  gap: 6px;
 }
 
 .pay-header-top {
@@ -63,43 +83,68 @@ height: 50px;
 }
 
 .pay-options-btn {
-     display: flex
-;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    background-color: #000000;
-    color: rgb(0, 0, 0);
-    border-color: rgb(192, 192, 192);
-    border-radius: 8px;
-    font-weight: 500;
-    cursor: pointer;
-    color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 38px;
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.pay-options-btn svg { width: 1.25rem; height: 1.25rem; color: #6b7280; }
+
+.pay-options-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.pay-options-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f3f4f6;
+}
+
+.pay-options-btn svg { 
+  width: 16px; 
+  height: 16px; 
+  color: #6b7280; 
+}
 
 .pay-options-dropdown {
   position: absolute;
   right: 0;
   top: 110%;
-  background-color: #fff;
+  background-color: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 6px;
   z-index: 10;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  width: 160px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 140px;
   overflow: hidden;
 }
+
 .pay-dropdown-item {
-  padding: 0.75rem 1rem;
+  padding: 10px 16px;
   width: 100%;
   text-align: left;
   background: none;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 400;
 }
-.pay-dropdown-item:hover { background-color: #f9fafb; }
+
+.pay-dropdown-item:hover { 
+  background-color: #f3f4f6;
+  color: #111827;
+}
 
 .payControls {
   display: flex;
