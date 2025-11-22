@@ -4531,7 +4531,8 @@ const SelectCalendar = () => {
                               onClick={() => {
                                 setIsAddingNewClient(false);
                                 setShowClientSearch(true);
-                                setClientInfo({ name: '', email: '', phone: '' });
+                                setClientInfo({ name: '', 
+                                  email: '', phone: '' });
                                 setIsWalkIn(false);
                               }}
                             >
@@ -4591,7 +4592,7 @@ const SelectCalendar = () => {
                       onClick={() => setBookingStep(6)}
                       disabled={
                         !selectedExistingClient && !(
-                          isWalkIn || (clientInfo.name.trim() && clientInfo.email.trim() && clientInfo.phone.trim())
+                          isWalkIn || clientInfo.name.trim()
                         )
                       }
                     >
