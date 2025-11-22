@@ -435,7 +435,18 @@ const ServiceMenu = () => {
 
   // Delete category
   const deleteCategory = async (categoryId, categoryName) => {
-    if (!window.confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
+    const result = await Swal.fire({
+      title: 'Delete Category?',
+      text: `Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 

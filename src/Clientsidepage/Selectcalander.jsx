@@ -747,7 +747,18 @@ const SelectCalendar = () => {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete this booking for ${selectedBookingForStatus.client}?`)) {
+    const result = await Swal.fire({
+      title: 'Delete Booking?',
+      text: `Are you sure you want to delete this booking for ${selectedBookingForStatus.client}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 
