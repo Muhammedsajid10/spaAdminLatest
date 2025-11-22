@@ -25,6 +25,7 @@
     flex-direction: column;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     overflow: hidden;
+    height: 500px;
   }
   .team-popup-enhanced .team-popup-close-btn {
     position: absolute;
@@ -649,9 +650,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #ffffff;
   font-size: 10px;
   font-weight: 600;
+  /* Background color set dynamically via inline style */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .employee-avatar-small .avatar-img {
@@ -867,40 +870,64 @@
   display: flex;
   align-items: center;
   background: #ffffff;
-  border: 1px solid #000000;
-  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .refresh-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: transparent;
   border: none;
   border-right: 1px solid #e5e7eb;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.15s ease;
+  color: #6b7280;
 }
 
 .refresh-btn:hover {
-  background: #f3f4f6;
+  background: #f9fafb;
+  color: #111827;
 }
 
 .view-selector {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background: transparent;
   border: none;
-  padding: 8px 12px;
+  padding: 8px 32px 8px 12px;
   font-size: 14px;
   font-weight: 500;
+  color: #111827;
   cursor: pointer;
   outline: none;
+  min-width: 100px;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.view-selector:hover {
+  background-color: #f9fafb;
 }
 
 .view-selector:focus {
-  background: #f9fafb;
+  background-color: #f3f4f6;
+}
+
+.view-selector option {
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
 }
 
 /* Add Button */
@@ -1108,7 +1135,7 @@
 
 .date-picker-container {
   position: absolute;
-  top: 168px;
+  top: 50px;
   left: 50%;
   transform: translateX(-50%);
   background: #ffffff;
@@ -1684,7 +1711,7 @@
   border-right: 1px solid #e5e7eb;
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 3000;
   box-shadow: 4px 0 10px -6px rgba(15, 23, 42, 0.2);
 }
 
@@ -2041,11 +2068,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.875rem;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   transition: transform 0.15s ease;
 }
@@ -2122,18 +2149,45 @@
   transition: all 0.2s ease;
   border-right: 1px solid #f3f4f6;
   /* background: rgb(220, 222, 225) !important;   */
-  min-height: var(--time-slot-height);
+  /* min-height: var(--time-slot-height); */
 }
+
+/* .time-slot::after {
+  content: attr(data-time);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.time-slot:hover::after {
+  opacity: 1;
+}
+
+.time-slot:hover {
+  border: 2px solid #6366f1;
+  background: #f8fafc;
+  z-index: 2;
+} */
 
 .time-slot.empty {
   background: #ffffff;
   color: transparent;
 }
 
-.time-slot.empty:hover {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
-}
+/* Removed hover effect - only half-slots should show hover */
+/* .time-slot.empty:hover {
+  background: #f8fafc;
+  border: 2px solid #6366f1;
+} */
 
 .time-slot.appointment {
   color: #000000;
@@ -2167,6 +2221,48 @@
 
 .mid-slot-click:hover {
   background: linear-gradient(90deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));
+}
+
+/* Half-slot hover effects */
+.half-slot-click {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.half-slot-click::after {
+  content: attr(data-time);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.half-slot-click:hover {
+  background: rgba(99, 102, 241, 0.05) !important;
+  border: 2px solid #6366f1 !important;
+  border-radius: 4px;
+  z-index: 5;
+}
+
+.half-slot-click:hover::after {
+  opacity: 1;
+}
+
+.half-slot-click.first:hover {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.half-slot-click.second:hover {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .appointment-text {
@@ -7061,6 +7157,226 @@
   color: #374151;
 }
 
+/* === NEW TEAM POPUP DESIGN (Image Match) === */
+
+/* Team Popup Main Header */
+.team-popup-main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.multiple-team-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.multiple-team-header:hover {
+  color: #6366f1;
+}
+
+.multiple-team-header .header-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.multiple-team-header .header-icon {
+  color: #6b7280;
+}
+
+.filter-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.15s ease;
+}
+
+.filter-icon-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Team Filter Options */
+.team-filter-options {
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.team-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.team-filter-option:hover {
+  background: #f9fafb;
+}
+
+.team-filter-option.active {
+  background: #f3f4f6;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Team Members Section */
+.team-members-header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+
+.team-members-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.clear-all-link {
+  background: transparent;
+  border: none;
+  color: #6366f1;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 500;
+}
+
+.clear-all-link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+/* Team Members List - Simple */
+.team-members-list-simple {
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px 16px;
+  gap: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.team-member-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.team-member-item:last-child {
+  border-bottom: none;
+}
+
+.team-member-item:hover {
+  background: #fafbfc;
+  margin: 0 -12px;
+  padding: 12px 12px;
+  border-radius: 8px;
+  border-bottom-color: transparent;
+}
+
+/* Checkbox Left */
+.member-checkbox-left {
+  flex-shrink: 0;
+}
+
+.checkbox-square {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.checkbox-square.checked {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff;
+}
+
+/* Avatar Circle */
+.member-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.member-avatar-circle .avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Member Name */
+.member-name-text {
+  font-size: 15px;
+  color: #111827;
+  font-weight: 400;
+  flex: 1;
+}
+
+/* Empty State */
+.empty-state-simple {
+  padding: 32px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Update popup width and position */
+.team-popup-enhanced {
+  /* width: 420px !important; */
+  /* right: 0 !important; */
+  left: auto !important;
+}
+
 .team-filter-pill:hover {
   /* border-color: #000000; */
   transform: translateY(-1px);
@@ -7325,8 +7641,8 @@
   font-weight: 600;
   font-size: 15px;
   position: relative;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+  /* Background color set dynamically via inline style */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .member-avatar .avatar-image {
@@ -7927,16 +8243,16 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  border-left: 4px solid #ff8c42;
+  border-left: 2px solid #030303;
 }
 
 .service-session-item:hover {
-  border-color: #ff8c42;
+  border-color: black;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .service-number {
-  background: #ff8c42;
+  background: black;
   color: white;
   width: 32px;
   height: 32px;
@@ -7971,7 +8287,7 @@
 }
 
 .remove-service-btn {
-  background: #dc3545;
+  background: black;
   color: white;
   border: none;
   border-radius: 4px;
@@ -8018,14 +8334,14 @@
   font-size: 16px;
   font-weight: 600;
   padding-top: 12px;
-  border-top: 2px solid #ff8c42;
+  border-top: 2px solid ;
   margin-top: 8px;
 }
 
 .total-count,
 .total-duration,
 .total-amount {
-  color: #ff8c42;
+  color: black;
   font-weight: 600;
 }
 
@@ -8034,7 +8350,9 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin: 20px 0;
+  /* margin: 20px 0; */
+      padding: 29px;
+    margin: 33px;
 }
 
 .add-another-service-btn {
@@ -9849,14 +10167,14 @@
 
 .date-picker-month {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 14px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px 14px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  min-height: 70px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9875,20 +10193,20 @@
 }
 
 .date-picker-month:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.08);
+  background: linear-gradient(135deg, #f9fafb, #ffffff);
+  border-color: #6366f1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(99, 102, 241, 0.15);
 }
 
 .date-picker-month:hover::before {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .date-picker-month.current-month {
-  background: linear-gradient(135deg, #f8fafc, #ffffff);
-  border-color: #94a3b8;
-  box-shadow: 0 3px 8px -2px rgba(15, 23, 42, 0.06);
+  background: linear-gradient(135deg, #f0fdf4, #ffffff);
+  border-color: #86efac;
+  box-shadow: 0 2px 8px -2px rgba(34, 197, 94, 0.12);
 }
 
 .date-picker-month.current-month::before {
@@ -9897,11 +10215,11 @@
 }
 
 .date-picker-month.selected-month {
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  border-color: #0f172a;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-color: #1e293b;
   color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px -6px rgba(15, 23, 42, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.3), 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .date-picker-month.selected-month::before {
@@ -9913,30 +10231,41 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
 }
 
 .month-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.025em;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: -0.01em;
   text-align: center;
+  line-height: 1.3;
+  display: block;
+  width: 100%;
 }
 
 .date-picker-month.selected-month .month-name {
   color: #ffffff;
+  font-weight: 700;
 }
 
 .month-year {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  color: #64748b;
-  letter-spacing: 0.025em;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+  margin-top: 4px;
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 
 .date-picker-month.selected-month .month-year {
-  color: #cbd5e1;
+  color: #e2e8f0;
+  font-weight: 600;
 }
 
 /* ===============================

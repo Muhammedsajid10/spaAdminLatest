@@ -149,6 +149,7 @@ export const StaffColumn = ({
           return (
             <div key={slot} className="time-slot-wrapper" style={{ height:`${timeSlotHeightPx}px`, position:'relative'}}>
               <div className={`time-slot ${(!hasShift || !hasValidShifts ? 'no-shift' : (isPartialShift ? 'partial-shift' : (!isWithinShift ? 'outside-shift' : (unavailableReason ? 'unavailable' : 'empty'))))}`}
+                data-time={slot}
                 onClick={baseClickHandler}
                 onMouseEnter={(e)=> !isCoveredByAppointment && showTimeHoverHandler(e, slot)}
                 onMouseLeave={hideTimeHover}

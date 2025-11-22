@@ -831,17 +831,42 @@ const TopStats = () => {
                 s.employee?._id?.toString() === empId || s.employee?.toString() === empId
               );
               
-              // Use finalAmount if available (includes custom discounts), otherwise sum service prices
-              if (booking.finalAmount !== undefined && employeeServices.length > 0) {
-                // If booking has finalAmount (custom price), distribute it proportionally among employee's services
+              console.log('💰 Revenue Calculation Debug:', {
+                bookingId: booking._id || booking.bookingNumber,
+                totalAmount: booking.totalAmount,
+                finalAmount: booking.finalAmount,
+                discountAmount: booking.discountAmount,
+                discountedTotal: booking.discountedTotal,
+                customDiscount: booking.customDiscount,
+                calculatedDiscount: booking.totalAmount - booking.finalAmount,
+                employeeServicesCount: employeeServices.length,
+                totalServicesInBooking: booking.services.length
+              });
+              
+              // Calculate the actual revenue for this booking
+              if (employeeServices.length > 0) {
+                let finalBookingAmount;
+                
+                // Use finalAmount directly as it should contain the actual amount paid
+                // If finalAmount is less than totalAmount, it means there was a discount
+                if (booking.finalAmount !== undefined) {
+                  finalBookingAmount = booking.finalAmount;
+                  console.log('✅ Using finalAmount (actual amount paid):', finalBookingAmount);
+                } else {
+                  // Fallback to original prices
+                  console.log('ℹ️ No finalAmount, using original service prices');
+                  return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
+                }
+                
+                // Distribute the final amount proportionally among employee's services
                 const totalServicesInBooking = booking.services.length;
                 const employeeServicesCount = employeeServices.length;
-                const employeeShare = (booking.finalAmount / totalServicesInBooking) * employeeServicesCount;
+                const employeeShare = (finalBookingAmount / totalServicesInBooking) * employeeServicesCount;
+                console.log('💵 Employee share:', employeeShare);
                 return sum + employeeShare;
               }
               
-              // Fallback to original price calculation
-              return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
+              return sum;
             }, 0);
           
           // Calculate last month's revenue
@@ -858,16 +883,16 @@ const TopStats = () => {
                 s.employee?._id?.toString() === empId || s.employee?.toString() === empId
               );
               
-              // Use finalAmount if available (includes custom discounts), otherwise sum service prices
-              if (booking.finalAmount !== undefined && employeeServices.length > 0) {
-                // If booking has finalAmount (custom price), distribute it proportionally among employee's services
+              // Same logic as this month - use finalAmount directly
+              if (employeeServices.length > 0 && booking.finalAmount !== undefined) {
+                const finalBookingAmount = booking.finalAmount;
                 const totalServicesInBooking = booking.services.length;
                 const employeeServicesCount = employeeServices.length;
-                const employeeShare = (booking.finalAmount / totalServicesInBooking) * employeeServicesCount;
+                const employeeShare = (finalBookingAmount / totalServicesInBooking) * employeeServicesCount;
                 return sum + employeeShare;
               }
               
-              // Fallback to original price calculation
+              // Fallback to original prices
               return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
             }, 0);
           

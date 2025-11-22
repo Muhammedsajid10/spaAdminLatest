@@ -142,6 +142,11 @@ const AdminMembershipChecker = ({
   };
 
   const filterEligibleMemberships = () => {
+    console.log('🔍 Filtering eligible memberships:', {
+      totalMemberships: clientMemberships.length,
+      selectedServices: selectedServices.map(s => ({ id: s?._id, name: s?.name }))
+    });
+
     // Find memberships that match any of the selected services
     const eligible = clientMemberships.filter(membership => {
       // Support multiple services per membership
@@ -169,7 +174,9 @@ const AdminMembershipChecker = ({
       // Check if any selected service matches by _id or name
       const matchesService = selectedServices.some(service => {
         if (!service) return false;
-        return membershipServiceIds.includes(service._id) || membershipServiceNames.includes(service.name);
+        const idMatch = membershipServiceIds.includes(service._id);
+        const nameMatch = membershipServiceNames.includes(service.name);
+        return idMatch || nameMatch;
       });
 
       // Compute remaining sessions defensively
@@ -184,9 +191,21 @@ const AdminMembershipChecker = ({
       const status = (membership?.status || '').toString();
       const isNotExpired = !(membership?.isExpired) && (['Active','active','Partially Used','partially used'].includes(status));
 
+      console.log(`   Membership "${membership.name}":`, {
+        membershipServiceIds,
+        membershipServiceNames,
+        matchesService,
+        hasRemainingSessions,
+        remainingSessions,
+        isNotExpired,
+        status,
+        isEligible: matchesService && hasRemainingSessions && isNotExpired
+      });
+
       return matchesService && hasRemainingSessions && isNotExpired;
     });
 
+    console.log('✅ Eligible memberships filtered:', eligible.length, 'out of', clientMemberships.length);
     setEligibleMemberships(eligible);
   };
 

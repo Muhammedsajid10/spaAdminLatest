@@ -26,8 +26,21 @@ const months = [
 // --- THESE FUNCTIONS ARE CRUCIAL AND WERE LIKELY MISSING ---
 
 const getAvatarColor = (employeeId) => {
-  const colors = ['#E8D5FF', '#E8F4FD', '#FFF4E6', '#F0F0F0', '#E8F5E8', '#F5E8FF', '#E8F0FF', '#FFF0E8', '#D6EAF8', '#FADBD8']; // More colors
-  if (!employeeId) return colors[0]; // Default color
+  const colors = [
+    '#818cf8', // Indigo
+    '#f472b6', // Pink
+    '#a78bfa', // Purple
+    '#fb923c', // Orange
+    '#34d399', // Emerald
+    '#60a5fa', // Blue
+    '#fbbf24', // Amber
+    '#f87171', // Red
+    '#2dd4bf', // Teal
+    '#c084fc', // Purple light
+    '#fb7185', // Rose
+    '#4ade80', // Green
+  ];
+  if (!employeeId) return colors[0];
   const hash = Array.from(employeeId.toString()).reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
 };

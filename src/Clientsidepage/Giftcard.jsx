@@ -45,9 +45,15 @@ const Giftcards = () => {
     const expTs = gc.expiryDate ? new Date(gc.expiryDate).getTime() : null;
     if (expTs && expTs < now) return 'Expired';
     const remaining = (gc.remainingValue !== undefined && gc.remainingValue !== null) ? gc.remainingValue : value;
-    // Treat any fully used, partially used, cancelled or negative remaining as Redeemed for simplified UI
     const rawStatus = (gc.status || '').toLowerCase();
-    if (remaining <= 0 || ['used','partially used','cancelled'].includes(rawStatus)) return 'Redeemed';
+    
+    // Only show as Redeemed if fully used or cancelled
+    // Use 0.01 tolerance to handle floating point precision issues (same as backend)
+    if (remaining < 0.01 || ['used', 'cancelled'].includes(rawStatus)) return 'Redeemed';
+    
+    // Show as Active for both 'active' and 'partially used' cards with remaining balance
+    if (remaining > 0.01 && ['active', 'partially used'].includes(rawStatus)) return 'Active';
+    
     return 'Active';
   };
 

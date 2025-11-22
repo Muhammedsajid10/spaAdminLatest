@@ -86,6 +86,13 @@ const SelectCalendar = () => {
     console.log('🗑️ Removing appointment with ID:', id);
     console.log('Current multipleAppointments:', multipleAppointments.map(a => ({ id: a.id, service: a.service?.name })));
     dispatch(removeAppointmentFromSession(id));
+    
+    // If this is the last appointment being removed, show the service catalog
+    const remainingAppointments = multipleAppointments.filter(apt => apt.id !== id);
+    if (remainingAppointments.length === 0) {
+      console.log('📋 Last appointment removed, showing service catalog');
+      setShowServiceCatalog(true);
+    }
   };
   const clearSessionLocal = () => dispatch(clearSessionAction());
 
@@ -206,6 +213,11 @@ const SelectCalendar = () => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [bookingDefaults, setBookingDefaults] = useState(null);
+
+  // Store last selected values for navigation back
+  const [lastSelectedService, setLastSelectedService] = useState(null);
+  const [lastSelectedProfessional, setLastSelectedProfessional] = useState(null);
+  const [lastAddedAppointmentId, setLastAddedAppointmentId] = useState(null);
 
   // Form States
   const [clientInfo, setClientInfo] = useState({ name: '', email: '', phone: '' });
@@ -1598,29 +1610,16 @@ const SelectCalendar = () => {
   const handleTeamFilterChange = (filter) => {
     setTeamFilter(filter);
     if (filter === 'scheduled') {
-      // When switching to scheduled team, update selected employees to only include those with shifts
+      // When switching to scheduled team, select all employees with shifts
       const employeesWithShifts = employees.filter(emp => hasShiftOnDate(emp, currentDate));
-      const newSelected = new Set();
-      employeesWithShifts.forEach(emp => {
-        if (selectedEmployees.has(emp.id)) {
-          newSelected.add(emp.id);
-        }
-      });
-      // Ensure at least one employee is selected
-      if (newSelected.size === 0 && employeesWithShifts.length > 0) {
-        newSelected.add(employeesWithShifts[0].id);
-      }
-      setSelectedEmployees(newSelected);
+      setSelectedEmployees(new Set(employeesWithShifts.map(emp => emp.id)));
+    } else if (filter === 'all') {
+      // When switching to all team, select all employees
+      setSelectedEmployees(new Set(employees.map(emp => emp.id)));
     } else if (filter === 'active' || filter === 'inactive') {
-      // Narrow selectedEmployees to only those matching the active/inactive filter
+      // Select all matching active/inactive employees
       const matched = employees.filter(emp => filter === 'active' ? emp.isActive !== false : emp.isActive === false);
-      const newSet = new Set();
-      matched.forEach(emp => {
-        if (selectedEmployees.has(emp.id)) newSet.add(emp.id);
-      });
-      // If none selected, pick first matching employee to keep UI sane
-      if (newSet.size === 0 && matched.length > 0) newSet.add(matched[0].id);
-      setSelectedEmployees(newSet);
+      setSelectedEmployees(new Set(matched.map(emp => emp.id)));
     }
   };
   // NEW: Get appointments for calendar popup
@@ -1846,6 +1845,11 @@ const SelectCalendar = () => {
     console.log('Full appointment:', appointment);
     const newAppointment = addAppointmentToSessionLocal(appointment);
     console.log('New appointment added:', newAppointment);
+
+    // Store current selections and appointment ID before clearing (for back navigation)
+    setLastSelectedService(selectedService);
+    setLastSelectedProfessional(selectedProfessional);
+    setLastAddedAppointmentId(appointment.id);
 
     // Clear the current selection to show empty "Ready to Add" section
     setSelectedService(null);
@@ -2169,12 +2173,18 @@ const SelectCalendar = () => {
 
       // Calculate totals & apply payment adjustments using the new gift card flow
       const totalDuration = multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0);
-      const totalAmount = getTotalSessionPrice();
+      const totalAmount = getTotalSessionPrice(); // This already includes customTotalDiscount
+      const originalTotalAmount = multipleAppointments.reduce((sum, a) => {
+        const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
+        return sum + Number(price || 0);
+      }, 0); // Original total without custom discount
       const paymentCalculation = calculateTotalWithGiftCard();
       let finalAmount = paymentCalculation.remainingAmount;
       const paymentDetails = {};
 
       console.log('💳 Payment Calculation:', {
+        originalTotalAmount,
+        customTotalDiscount,
         totalAmount,
         membershipDiscount: paymentCalculation.membershipDiscount,
         giftCardDiscount: paymentCalculation.giftCardDiscount,
@@ -2284,15 +2294,16 @@ const SelectCalendar = () => {
         services,
         appointmentDate: services[0].startTime,
         totalDuration,
-        totalAmount,
-        finalAmount,
+        totalAmount: originalTotalAmount, // Send original total
+        finalAmount, // This includes all discounts (custom, membership, gift card)
         paymentMethod: effectivePaymentMethod,
         paymentDetails,
         client: clientData,
         notes: bookingForm.notes || '',
         giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
         bookingSource: 'admin',
-        customDiscount: customTotalDiscount > 0 ? customTotalDiscount : undefined
+        customDiscount: customTotalDiscount > 0 ? customTotalDiscount : undefined,
+        discountedTotal: customTotalDiscount > 0 ? totalAmount : undefined // Total after custom discount, before other discounts
       };
 
       console.log('📦 Multiple appointments booking payload:', JSON.stringify(bookingPayload, null, 2));
@@ -2586,7 +2597,7 @@ const SelectCalendar = () => {
       setAvailableGiftCards(ownedGiftCards);
 
       // Clear selected gift card if it's no longer valid
-      if (selectedGiftCard && !ownedGiftCards.some(gc => gc._id === selectedGiftCard._id)) {
+      if (selectedGiftCard?._id && !ownedGiftCards.some(gc => gc._id === selectedGiftCard._id)) {
         setSelectedGiftCard(null);
         setGiftCardAppliedAmount(0);
       }
@@ -2637,27 +2648,73 @@ const SelectCalendar = () => {
 
   // NEW: Auto-populate professionals when on step 2
   useEffect(() => {
-    if (bookingStep === 2 && selectedService && availableProfessionals.length === 0) {
-      console.log('🔄 Step 2 detected with no professionals - auto-populating');
-      const bookingDate = selectedBookingDate || currentDate;
-      let professionals = getAvailableProfessionalsForService(
-        selectedService._id,
-        bookingDate,
-        employees,
-        appointments,
-        availableServices
-      );
-      
-      // Fallback: use selectedProfessional if available
-      if (professionals.length === 0 && selectedProfessional) {
-        console.log('⚠️ Using selectedProfessional as fallback');
-        professionals = [selectedProfessional];
+    console.log('🔍 Step 2 useEffect triggered:', {
+      bookingStep,
+      hasService: !!selectedService,
+      professionalsLength: availableProfessionals.length
+    });
+    
+    if (bookingStep === 2 && selectedService) {
+      if (availableProfessionals.length === 0) {
+        console.log('🔄 Step 2 - Fetching professionals for service:', selectedService.name);
+        const bookingDate = selectedBookingDate || currentDate;
+        let professionals = getAvailableProfessionalsForService(
+          selectedService._id,
+          bookingDate,
+          employees,
+          appointments,
+          availableServices
+        );
+        
+        // Fallback: use selectedProfessional if available
+        if (professionals.length === 0 && selectedProfessional) {
+          console.log('⚠️ Using selectedProfessional as fallback');
+          professionals = [selectedProfessional];
+        }
+        
+        console.log('✅ Auto-populated professionals on step 2:', professionals.length, professionals);
+        setAvailableProfessionals(professionals);
+      } else {
+        console.log('ℹ️ Professionals already populated:', availableProfessionals.length);
       }
-      
-      console.log('✅ Auto-populated professionals on step 2:', professionals.length);
-      setAvailableProfessionals(professionals);
+    } else {
+      console.log('⚠️ Step 2 requirements not met');
     }
   }, [bookingStep, selectedService, availableProfessionals.length, selectedProfessional, selectedBookingDate, currentDate, employees, appointments, availableServices]);
+
+  // NEW: Auto-populate time slots when on step 3
+  useEffect(() => {
+    console.log('🔍 Step 3 useEffect triggered:', {
+      bookingStep,
+      hasService: !!selectedService,
+      hasProfessional: !!selectedProfessional,
+      professionalId: selectedProfessional?.id || selectedProfessional?._id,
+      timeSlotsLength: availableTimeSlots.length
+    });
+    
+    if (bookingStep === 3 && selectedService && selectedProfessional) {
+      if (availableTimeSlots.length === 0) {
+        console.log('🔄 Step 3 - Fetching time slots for professional:', selectedProfessional.name || selectedProfessional.user?.firstName);
+        const bookingDate = selectedBookingDate || currentDate;
+        const professionalId = selectedProfessional.id || selectedProfessional._id;
+        const timeSlots = getAvailableTimeSlotsForProfessional(
+          professionalId,
+          selectedService._id,
+          bookingDate,
+          employees,
+          appointments,
+          availableServices
+        );
+        
+        console.log('✅ Auto-populated time slots on step 3:', timeSlots.length, timeSlots);
+        setAvailableTimeSlots(timeSlots);
+      } else {
+        console.log('ℹ️ Time slots already populated:', availableTimeSlots.length);
+      }
+    } else {
+      console.log('⚠️ Step 3 requirements not met');
+    }
+  }, [bookingStep, selectedService, selectedProfessional, availableTimeSlots.length, selectedBookingDate, currentDate, employees, appointments, availableServices]);
 
   // --- CURRENT TIME LINE LOGIC ---
   const [currentTimeLineTop, setCurrentTimeLineTop] = useState(0);
@@ -3436,18 +3493,18 @@ const SelectCalendar = () => {
 
                       <div className="date-picker-months">
                         {getMonthsInYear(datePickerCurrentMonth.getFullYear()).map((monthObj) => {
-                          const isCurrentMonth = monthObj.isCurrentMonth;
+                          const isCurrentMonth = monthObj.current;
                           const isSelectedMonth = currentDate.getFullYear() === monthObj.year &&
-                            currentDate.getMonth() === monthObj.month;
+                            currentDate.getMonth() + 1 === monthObj.month;
 
                           return (
                             <button
                               key={monthObj.month}
                               className={`date-picker-month ${isCurrentMonth ? 'current-month' : ''} ${isSelectedMonth ? 'selected-month' : ''}`}
-                              onClick={() => handleMonthSelect(monthObj.month, monthObj.year)}
+                              onClick={() => handleMonthSelect(monthObj.month - 1, monthObj.year)}
                             >
                               <div className="month-info">
-                                <span className="month-name">{monthObj.name}</span>
+                                <span className="month-name">{monthObj.label}</span>
                                 <span className="month-year">{monthObj.year}</span>
                               </div>
                             </button>
@@ -3490,80 +3547,38 @@ const SelectCalendar = () => {
               <>
                 <div className="popup-backdrop" onClick={() => setShowTeamPopup(false)} />
                 <div className="team-popup-enhanced">
-                  {/* Close button */}
-                  <button
-                    type="button"
-                    className="team-popup-close-btn"
-                    aria-label="Close team selector"
-                    title="Close"
-                    onClick={() => setShowTeamPopup(false)}
-                  >
-                    ×
-                  </button>
-                  {/* Header with filters */}
-                  <div className="team-popup-header-enhanced">
-                    <div className="team-filters">
-                      <button
-                        className={`team-filter-pill ${teamFilter === 'all' ? 'active' : ''}`}
-                        onClick={() => handleTeamFilterChange('all')}
-                      >
-                        All Team
-                        <span className="filter-count">{employees.length}</span>
-                      </button>
-                      <button
-                        className={`team-filter-pill ${teamFilter === 'scheduled' ? 'active' : ''}`}
-                        onClick={() => handleTeamFilterChange('scheduled')}
-                      >
-                        Scheduled Today
-                        <span className="filter-count">
-                          {employees.filter(emp => hasShiftOnDate(emp, currentDate)).length}
-                        </span>
-                      </button>
+                  {/* Header with Multiple team members title */}
+                  
 
-                    </div>
-                    <div className="team-actions">
-                      <button
-                        className="select-all-btn"
-                        onClick={() => setSelectedEmployees(new Set(employees.map(emp => emp.id)))}
-                      >
-                        Select All
-                      </button>
-                      <button
-                        className="clear-all-btn"
-                        onClick={handleClearSelection}
-                      >
-                        Clear
-                      </button>
-                    </div>
+                  {/* Team filter options */}
+                  <div className="team-filter-options">
+                    <button
+                      className={`team-filter-option ${teamFilter === 'scheduled' ? 'active' : ''}`}
+                      onClick={() => handleTeamFilterChange('scheduled')}
+                    >
+                      <Users size={18} />
+                      <span>Scheduled team</span>
+                    </button>
+                    <button
+                      className={`team-filter-option ${teamFilter === 'all' ? 'active' : ''}`}
+                      onClick={() => handleTeamFilterChange('all')}
+                    >
+                      <Users size={18} />
+                      <span>All team</span>
+                    </button>
                   </div>
 
-                  {/* Search bar */}
-                  <div className="team-search-container">
-                    <div className="search-input-wrapper">
-                      {/* <span className="search-icon">🔍</span> */}
-                      <input
-                        type="text"
-                        placeholder="Search team members..."
-                        className="team-search-input"
-                        value={teamSearchQuery || ''}
-                        onChange={(e) => setTeamSearchQuery(e.target.value)}
-                      />
-                      {teamSearchQuery && (
-                        <button
-                          className="clear-search-btn"
-                          onClick={() => setTeamSearchQuery('')}
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Team members list */}
+                  {/* Team members section */}
                   <div className="team-members-container">
+                    <div className="team-members-header-section">
+                      <h3 className="team-members-title">Team members</h3>
+                      <button className="clear-all-link" onClick={handleClearSelection}>
+                        Clear all
+                      </button>
+                    </div>
 
 
-                    <div className={`team-members-list ${teamViewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
+                    <div className="team-members-list-simple">
                       {getFilteredAndSearchedEmployees().map(employee => {
                         const isSelected = selectedEmployees.has(employee.id);
                         const hasShift = hasShiftOnDate(employee, currentDate);
@@ -3571,56 +3586,38 @@ const SelectCalendar = () => {
                         return (
                           <div
                             key={employee.id}
-                            className={`team-member-card ${isSelected ? 'selected' : ''} ${!hasShift ? 'no-shift' : ''}`}
+                            className={`team-member-item ${isSelected ? 'selected' : ''}`}
                             onClick={() => handleEmployeeToggle(employee.id)}
                           >
-                            <div className="member-avatar-section">
-                              <div
-                                className="member-avatar"
-                                style={{ backgroundColor: employee.avatarColor }}
-                              >
-                                {employee.avatar ?
-                                  <img src={employee.avatar} alt={employee.name} className="avatar-image" /> :
-                                  employee.name.charAt(0)
-                                }
-                                {!hasShift && <div className="no-shift-indicator">!</div>}
+                            <div className="member-checkbox-left">
+                              <div className={`checkbox-square ${isSelected ? 'checked' : ''}`}>
+                                {isSelected && (
+                                  <Check size={14} strokeWidth={3} />
+                                )}
                               </div>
                             </div>
 
-                            <div className="member-info-section">
-                              <div className="member-primary-info">
-                                <h5 className="member-name">{employee.name}</h5>
-
-                              </div>
-
+                            <div
+                              className="member-avatar-circle"
+                              style={{ backgroundColor: employee.avatarColor }}
+                            >
+                              {employee.avatar ?
+                                <img src={employee.avatar} alt={employee.name} className="avatar-image" /> :
+                                employee.name.substring(0, 2).toUpperCase()
+                              }
                             </div>
 
-                            <div className="member-checkbox-section">
-                              <div className={`checkbox-custom ${isSelected ? 'checked' : ''}`}>
-                                {isSelected && <span className="checkmark">✓</span>}
-                              </div>
-                            </div>
+                            <span className="member-name-text">{employee.name}</span>
                           </div>
                         );
                       })}
                     </div>
 
                     {getFilteredAndSearchedEmployees().length === 0 && (
-                      <div className="empty-state">
-                        <div className="empty-icon">👥</div>
-                        <h4>No team members found</h4>
-                        <p>Try adjusting your search or filter criteria</p>
+                      <div className="empty-state-simple">
+                        <p>No team members found</p>
                       </div>
                     )}
-                  </div>
-
-                  {/* Footer with summary */}
-                  <div className="team-popup-footer-enhanced">
-                   
-
-                    <div className="footer-actions">
-                      
-                    </div>
                   </div>
                 </div>
               </>
@@ -4208,9 +4205,13 @@ const SelectCalendar = () => {
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => {
                       console.log('⬅️ Going back from step 3 to step 2');
-                      // Clear time slot selection
+                      // Restore the last selected service
+                      if (lastSelectedService) setSelectedService(lastSelectedService);
+                      // Clear time slot selection and professionals to force refresh
                       setSelectedTimeSlot(null);
-                      // Just change the step - useEffect will handle populating professionals
+                      setSelectedProfessional(null);
+                      setAvailableProfessionals([]);
+                      setAvailableTimeSlots([]);
                       setBookingStep(2);
                     }}>← Back</button>
                   </div>
@@ -4305,7 +4306,21 @@ const SelectCalendar = () => {
                   </div>
 
                   <div className="booking-modal-actions">
-                    <button className="booking-modal-back" onClick={() => setBookingStep(3)}>← Back to Time</button>
+                    <button className="booking-modal-back" onClick={() => {
+                      console.log('⬅️ Going back from step 4 to step 3');
+                      // Remove the last added appointment from session
+                      if (lastAddedAppointmentId) {
+                        console.log('🗑️ Removing last appointment:', lastAddedAppointmentId);
+                        removeAppointmentFromSessionLocal(lastAddedAppointmentId);
+                        setLastAddedAppointmentId(null);
+                      }
+                      // Restore the last selected service and professional
+                      if (lastSelectedService) setSelectedService(lastSelectedService);
+                      if (lastSelectedProfessional) setSelectedProfessional(lastSelectedProfessional);
+                      // Clear and force refresh of time slots
+                      setAvailableTimeSlots([]);
+                      setBookingStep(3);
+                    }}>← Back to Time</button>
                   </div>
                 </>
               )}
@@ -4560,7 +4575,21 @@ const SelectCalendar = () => {
                     >
                       Continue to Payment
                     </button>
-                    <button className="booking-modal-back" onClick={() => setBookingStep(4)}>← Back to Services</button>
+                    <button className="booking-modal-back" onClick={() => {
+                      // If booking came from grid/calendar time slot (bookingDefaults exists),
+                      // skip professional/time selection and go directly back to service selection (step 1)
+                      if (bookingDefaults?.professional && bookingDefaults?.time) {
+                        console.log('⬅️ Going back from step 5 to step 1 (grid booking mode)');
+                        setBookingStep(1);
+                        // Clear booking defaults to allow new selection
+                        setBookingDefaults(null);
+                        // Show service catalog so user can select services
+                        setShowServiceCatalog(true);
+                      } else {
+                        console.log('⬅️ Going back from step 5 to step 4 (normal booking mode)');
+                        setBookingStep(4);
+                      }
+                    }}>← Back to Services</button>
                   </div>
                 </>
               )}

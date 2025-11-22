@@ -9,6 +9,27 @@ import { setServices, setServicesLoading, setServicesError } from './servicesSli
 import { setClients, setClientsLoading, setClientsError } from './clientsSlice';
 import { addAppointmentToSession } from './bookingSessionSlice';
 
+// Generate unique avatar color for each staff member
+const getAvatarColor = (employeeId) => {
+  const colors = [
+    '#818cf8', // Indigo
+    '#f472b6', // Pink
+    '#a78bfa', // Purple
+    '#fb923c', // Orange
+    '#34d399', // Emerald
+    '#60a5fa', // Blue
+    '#fbbf24', // Amber
+    '#f87171', // Red
+    '#2dd4bf', // Teal
+    '#c084fc', // Purple light
+    '#fb7185', // Rose
+    '#4ade80', // Green
+  ];
+  if (!employeeId) return colors[0];
+  const hash = Array.from(employeeId.toString()).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
 const generateTimeSlots = (startTime, endTime, intervalMinutes = 30) => {
   const slots = [];
   let currentHour = parseInt(startTime.split(':')[0]);
@@ -94,7 +115,7 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
         name: `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim(),
         position: emp.position || emp.department || 'Staff',
         avatar: emp.user?.avatar || emp.avatar,
-        avatarColor: '#ccc',
+        avatarColor: getAvatarColor(emp._id),
         unavailablePeriods: emp.unavailablePeriods || [],
         isActive: emp.isActive !== false,
         workSchedule: emp.workSchedule || {}
