@@ -348,6 +348,7 @@ const Appoint = () => {
             .filter(Boolean)
             .join(", ");
 
+          // Parse dates as UTC to avoid timezone conversion issues
           const createdAt = booking?.createdAt ? new Date(booking.createdAt) : null;
           const apptAt = booking?.appointmentDate ? new Date(booking.appointmentDate) : null;
 
@@ -367,6 +368,7 @@ const Appoint = () => {
                   year: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
+                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
                 })
               : "-",
             scheduledDate: apptAt
@@ -376,6 +378,7 @@ const Appoint = () => {
                   year: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
+                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
                 })
               : "-",
             createdDateObj: createdAt,
@@ -467,7 +470,7 @@ const Appoint = () => {
             .filter(Boolean)
             .join(", ");
 
-          // Dates
+          // Dates - parse as UTC to avoid timezone conversion
           const createdAt = booking?.createdAt ? new Date(booking.createdAt) : null;
           const apptAt = booking?.appointmentDate ? new Date(booking.appointmentDate) : null;
 
@@ -489,6 +492,7 @@ const Appoint = () => {
                   year: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
+                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
                 })
               : "-",
 
@@ -499,6 +503,7 @@ const Appoint = () => {
                   year: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
+                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
                 })
               : "-",
 
