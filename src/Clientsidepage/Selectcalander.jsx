@@ -4910,7 +4910,7 @@ const SelectCalendar = () => {
                           <label>Select how you'd like to pay the remaining AED {calculateTotalWithGiftCard().remainingAmount}:</label>
                           <div className="payment-method-grid">
                             {['cash', 'card', 'upi'].map(method => {
-                              const labels = { cash: 'Cash', card: 'Card', upi: 'UPI' };
+                              const labels = { cash: 'Cash', card: 'Card', upi: 'Bank Transfer' };
                               return (
                                 <button
                                   type="button"

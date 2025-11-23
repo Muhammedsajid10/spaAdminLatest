@@ -79,7 +79,7 @@ const DailySales = () => {
         const paymentTypeLabels = {
           'card': 'Card',
           'cash': 'Cash',
-          'digital_wallet': 'UPI',
+          'digital_wallet': 'Bank Transfer',
           'giftcard': 'Gift Card Redeemed',
           'membership': 'Membership Redeemed'
         };
