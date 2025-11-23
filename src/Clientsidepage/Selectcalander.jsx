@@ -4592,7 +4592,7 @@ const SelectCalendar = () => {
                       onClick={() => setBookingStep(6)}
                       disabled={
                         !selectedExistingClient && !(
-                          isWalkIn || clientInfo.name.trim()
+                          isWalkIn || (clientInfo.name && clientInfo.name.trim())
                         )
                       }
                     >
