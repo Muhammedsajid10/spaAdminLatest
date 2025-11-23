@@ -1055,7 +1055,7 @@ const ServiceMenu = () => {
               aria-haspopup="true"
               aria-expanded={openAddMenu ? 'true' : undefined}
               onClick={handleAddMenuClick}
-              style={{width:"80px"}}
+              style={{width:"80px",color:"black",background:"white"}}
             
             >
               Add
