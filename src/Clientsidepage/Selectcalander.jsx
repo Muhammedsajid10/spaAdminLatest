@@ -594,7 +594,7 @@ const SelectCalendar = () => {
     setShowAddBookingModal(false);
     setShowUnavailablePopup(false);
 
-    // Only reset form, but preserve multiple appointments session
+    // Reset all form state and clear multiple appointments session
     setSelectedService(null);
     setSelectedProfessional(null);
     setSelectedTimeSlot(null);
@@ -613,7 +613,9 @@ const SelectCalendar = () => {
     setSelectedBookingDate(null);
     setShowBookingDatePicker(false);
 
-    // Don't clear multiple appointments session here - only clear on successful booking
+    // Clear multiple appointments session when closing modal
+    dispatch(clearSessionAction());
+    
     setBookingForm({
       clientName: '',
       clientEmail: '',
