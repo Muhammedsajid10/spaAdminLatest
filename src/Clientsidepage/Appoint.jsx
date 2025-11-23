@@ -368,24 +368,19 @@ const Appoint = () => {
                   year: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
-                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
+                  hour12: false,
                 })
               : "-",
             scheduledDate: apptAt
-              ? apptAt.toLocaleString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
-                })
+              ? `${String(apptAt.getUTCDate()).padStart(2, '0')} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][apptAt.getUTCMonth()]} ${apptAt.getUTCFullYear()}, ${String(apptAt.getUTCHours()).padStart(2, '0')}:${String(apptAt.getUTCMinutes()).padStart(2, '0')}`
               : "-",
             createdDateObj: createdAt,
             scheduledDateObj: apptAt,
             dateOnly: apptAt ? toDateOnly(apptAt) : null,
             duration: booking?.totalDuration
-              ? `${Math.round(booking.totalDuration / 60)}h`
+              ? booking.totalDuration >= 60
+                ? `${Math.floor(booking.totalDuration / 60)}h ${booking.totalDuration % 60 > 0 ? `${booking.totalDuration % 60}m` : ''}`
+                : `${booking.totalDuration}m`
               : "-",
             teamMember: teamMembers || "-",
             price: finalAmtNum != null ? `AED ${finalAmtNum.toFixed(2)}` : "-",
@@ -492,19 +487,12 @@ const Appoint = () => {
                   year: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
-                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
+                  hour12: false,
                 })
               : "-",
 
             scheduledDate: apptAt
-              ? apptAt.toLocaleString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: "Asia/Dubai", // UAE timezone (GMT+4)
-                })
+              ? `${String(apptAt.getUTCDate()).padStart(2, '0')} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][apptAt.getUTCMonth()]} ${apptAt.getUTCFullYear()}, ${String(apptAt.getUTCHours()).padStart(2, '0')}:${String(apptAt.getUTCMinutes()).padStart(2, '0')}`
               : "-",
 
             // NEW: extra fields for accurate filtering/sorting (UI-only)
@@ -513,7 +501,9 @@ const Appoint = () => {
             dateOnly: apptAt ? toDateOnly(apptAt) : null,
 
             duration: booking?.totalDuration
-              ? `${Math.round(booking.totalDuration / 60)}h`
+              ? booking.totalDuration >= 60
+                ? `${Math.floor(booking.totalDuration / 60)}h ${booking.totalDuration % 60 > 0 ? `${booking.totalDuration % 60}m` : ''}`
+                : `${booking.totalDuration}m`
               : "-",
 
             teamMember: teamMembers || "-",

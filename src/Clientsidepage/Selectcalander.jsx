@@ -4936,15 +4936,7 @@ const SelectCalendar = () => {
                       </div>
                     )}
 
-                    <div className="form-group">
-                      <label> Notes (Optional):</label>
-                      <textarea
-                        placeholder="Any special requests or notes..."
-                        value={bookingForm.notes}
-                        onChange={e => setBookingForm(prev => ({ ...prev, notes: e.target.value }))}
-                        rows={3}
-                      />
-                    </div>
+                    {/*  */}
                   </div>
 
                   <div className="booking-modal-actions">
