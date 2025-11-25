@@ -8,20 +8,48 @@ const toISO = (value) => {
 };
 
 export const normalizeBooking = (booking) => {
-  const services = (booking?.services ?? []).map(s => ({
-    name: s?.service?.name ?? 'Unknown Service',
-    employeeName: s?.employee?.user?.fullName ?? 'Unassigned',
-    employeeId: s?.employee?._id ?? s?.employee?.id ?? null,
-    price: Number(s?.price ?? 0),
-    duration: Number(s?.duration ?? 0)
-  }));
+  let servicesList = booking?.services ?? [];
+  
+  // If no services array, but there is a root service object, create a synthetic service entry
+  if (servicesList.length === 0 && booking?.service) {
+      servicesList = [{
+          service: booking.service,
+          employee: booking.employee || booking.assignedEmployee,
+          price: booking.totalAmount || booking.amount,
+          duration: booking.duration
+      }];
+  }
+
+  // Fallback employee from booking level
+  const bookingEmployee = booking?.employee || booking?.assignedEmployee;
+  const bookingEmployeeName = bookingEmployee?.name ?? bookingEmployee?.fullName ?? 
+                              (bookingEmployee?.firstName ? `${bookingEmployee.firstName} ${bookingEmployee.lastName || ''}`.trim() : null);
+
+  const services = servicesList.map(s => {
+    const emp = s?.employee;
+    let empName = emp?.name ?? emp?.fullName ?? emp?.user?.fullName ?? emp?.user?.name ?? 
+                  (emp?.firstName ? `${emp.firstName} ${emp.lastName || ''}`.trim() : null);
+    
+    // Fallback to booking level employee if not found on service
+    if (!empName && bookingEmployeeName) {
+        empName = bookingEmployeeName;
+    }
+
+    return {
+      name: s?.service?.name ?? 'Unknown Service',
+      employeeName: empName ?? 'Unassigned',
+      employeeId: emp?._id ?? emp?.id ?? bookingEmployee?._id ?? bookingEmployee?.id ?? null,
+      price: Number(s?.price ?? 0),
+      duration: Number(s?.duration ?? 0)
+    };
+  });
 
   return {
     id: booking?._id ?? booking?.id ?? null,
     appointmentDate: toISO(booking?.appointmentDate ?? booking?.createdAt),
     client: {
       id: booking?.client?._id ?? null,
-      fullName: booking?.client?.fullName ?? 'Unknown Client'
+      fullName: booking?.client?.fullName ?? booking?.client?.name ?? 'Unknown Client'
     },
     services,
     totalAmount: Number(booking?.finalAmount ?? booking?.totalAmount ?? 0),
@@ -252,7 +280,16 @@ export const fetchAppointmentSummary = createAsyncThunk(
       const response = await ReportsAPI.getAllBookings();
       const bookings = response?.data?.bookings ?? response?.bookings ?? [];
       console.log('Fetched bookings:', bookings.length);
+      if (bookings.length > 0) {
+        console.log('🔍 First Raw Booking:', JSON.stringify(bookings[0], null, 2));
+        if (bookings[0].services && bookings[0].services.length > 0) {
+             console.log('🔍 First Booking Service:', JSON.stringify(bookings[0].services[0], null, 2));
+        }
+      }
       const normalized = bookings.map(normalizeBooking);
+      if (normalized.length > 0) {
+        console.log('🔍 First Normalized Booking:', JSON.stringify(normalized[0], null, 2));
+      }
       console.log('Normalized bookings:', normalized.length);
       return normalized;
     } catch (error) {
