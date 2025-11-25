@@ -19,7 +19,7 @@ import {
 
 export const useSalesSummary = ({ 
   dateRange = null, 
-  filterBy = 'service',
+  filterBy = null,
   autoFetch = true 
 } = {}) => {
   const dispatch = useDispatch();
@@ -56,7 +56,7 @@ export const useSalesSummary = ({
   const fetchData = useCallback(async (options = {}) => {
     const fetchOptions = {
       dateRange: options.dateRange || dateRange,
-      filterBy: options.filterBy || filterBy,
+      filterBy: options.filterBy || filterBy || currentFilterBy || 'service',
       ...options
     };
     
@@ -68,7 +68,7 @@ export const useSalesSummary = ({
       console.error('❌ Sales Summary Hook: Fetch error:', error);
       throw error;
     }
-  }, [dispatch, dateRange, filterBy]);
+  }, [dispatch, dateRange, filterBy, currentFilterBy]);
 
   // Change filter function
   const changeFilter = useCallback((newFilterBy) => {
@@ -100,7 +100,7 @@ export const useSalesSummary = ({
 
   // Filter change effect
   useEffect(() => {
-    if (currentFilterBy !== filterBy && lastFetched) {
+    if (filterBy && currentFilterBy !== filterBy && lastFetched) {
       console.log('🔄 Sales Summary Hook: Filter changed, updating display');
       changeFilter(filterBy);
     }
