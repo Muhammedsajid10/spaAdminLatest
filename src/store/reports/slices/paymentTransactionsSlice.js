@@ -3,28 +3,36 @@ import { ReportsAPI } from '../../../Service/api/reportsApi';
 
 const normalizePaymentTransaction = (payment) => {
   const metadata = payment?.metadata ?? {};
+  const booking = payment?.booking ?? {};
+  const user = payment?.user ?? {};
+
   const toISO = (value) => {
     if (!value) return null;
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? null : date.toISOString();
   };
 
+  // Helper to get client name
+  const getClientName = () => {
+    if (user.fullName) return user.fullName;
+    if (user.firstName || user.lastName) return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return metadata.client ?? payment?.client ?? '';
+  };
+
   return {
     id: payment?._id ?? payment?.id ?? null,
-    paymentDate: toISO(metadata.paymentDate ?? payment?.paymentDate),
-    paymentNumber: metadata.paymentNo ?? payment?.paymentNumber ?? '',
-    saleDate: toISO(metadata.saleDate ?? payment?.saleDate),
-    saleNumber: metadata.saleNo ?? payment?.saleNumber ?? '',
-    appointmentRef: metadata.apptRef ?? payment?.appointmentRef ?? '',
-    client: metadata.client ?? payment?.client ?? '',
-    location: metadata.location ?? payment?.location ?? '',
-    teamMember: metadata.teamMember ?? payment?.teamMember ?? '',
-    transactionType:
-      metadata.transactionType ?? payment?.transactionType ?? '',
-    paymentMethod:
-      (metadata.paymentMethodCSV ?? payment?.paymentMethod ?? '').toString(),
+    paymentDate: toISO(payment?.processedAt ?? payment?.createdAt ?? metadata.paymentDate ?? payment?.paymentDate),
+    paymentNumber: payment?.gatewayTransactionId ?? metadata.paymentNo ?? payment?.paymentNumber ?? '',
+    saleDate: toISO(booking.appointmentDate ?? metadata.saleDate ?? payment?.saleDate ?? payment?.createdAt),
+    saleNumber: booking.bookingNumber ?? metadata.saleNo ?? payment?.saleNumber ?? '',
+    appointmentRef: booking.bookingNumber ?? metadata.apptRef ?? payment?.appointmentRef ?? '',
+    client: getClientName(),
+    location: booking.location?.name ?? metadata.location ?? payment?.location ?? '',
+    teamMember: booking.employee?.name ?? metadata.teamMember ?? payment?.teamMember ?? '',
+    transactionType: payment?.type ?? metadata.transactionType ?? payment?.transactionType ?? 'Sale',
+    paymentMethod: (payment?.paymentMethod ?? metadata.paymentMethodCSV ?? '').toString(),
     paymentAmount: Number(
-      metadata.paymentAmountCSV ?? payment?.paymentAmount ?? payment?.amount ?? 0
+      payment?.amount ?? payment?.paymentAmount ?? metadata.paymentAmountCSV ?? 0
     ),
     currency: payment?.currency ?? 'AED',
     status: payment?.status ?? '',
@@ -40,6 +48,10 @@ export const fetchPaymentTransactions = createAsyncThunk(
         limit: 15000
       });
       const payments = response?.data?.payments ?? [];
+      console.log('💰 Raw Payment Transactions Response:', response);
+      if (payments.length > 0) {
+        console.log('💰 First Payment Object:', payments[0]);
+      }
       return payments.map(normalizePaymentTransaction);
     } catch (error) {
       const message =
