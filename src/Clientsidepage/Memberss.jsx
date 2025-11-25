@@ -75,9 +75,14 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
   const [services, setServices] = useState([]);
   const [serviceSearch, setServiceSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tempSelectedServices, setTempSelectedServices] = useState([]); // Local state for modal
 
   useEffect(() => {
-    if (showServiceModal) fetchServices();
+    if (showServiceModal) {
+      fetchServices();
+      // Initialize temp selection with current form data
+      setTempSelectedServices([...formData.selectedServices]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showServiceModal]);
 
@@ -107,15 +112,25 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
   }, {});
 
   const handleServiceToggle = (service) => {
-    setFormData(prev => {
-      const exists = prev.selectedServices.some(s => s._id === service._id);
-      return {
-        ...prev,
-        selectedServices: exists
-          ? prev.selectedServices.filter(s => s._id !== service._id)
-          : [...prev.selectedServices, service]
-      };
+    setTempSelectedServices(prev => {
+      const exists = prev.some(s => s._id === service._id);
+      return exists
+        ? prev.filter(s => s._id !== service._id)
+        : [...prev, service];
     });
+  };
+
+  const handleApplyServices = () => {
+    setFormData(prev => ({
+      ...prev,
+      selectedServices: [...tempSelectedServices]
+    }));
+    setShowServiceModal(false);
+  };
+
+  const handleCancelServices = () => {
+    setTempSelectedServices([...formData.selectedServices]); // Reset to original
+    setShowServiceModal(false);
   };
 
   const parseValidFor = (str) => {
@@ -435,14 +450,14 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
       </div>
 
       {showServiceModal && (
-        <div className="service-modal-overlay-modern" onClick={() => setShowServiceModal(false)}>
+        <div className="service-modal-overlay-modern" onClick={handleCancelServices}>
           <div className="service-modal-modern" onClick={(e) => e.stopPropagation()}>
             <div className="service-modal-header-modern">
               <h2 className="service-modal-title-modern">
                 <span className="service-modal-title-dot"></span>
                 Select Services
               </h2>
-              <button className="service-modal-close-modern" onClick={() => setShowServiceModal(false)} aria-label="Close">
+              <button className="service-modal-close-modern" onClick={handleCancelServices} aria-label="Close">
                 <IoClose />
               </button>
             </div>
@@ -476,7 +491,7 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
 
                     <div className="category-services-modern">
                       {filteredServices[category].map(s => {
-                        const checked = formData.selectedServices.some(sel => sel._id === s._id);
+                        const checked = tempSelectedServices.some(sel => sel._id === s._id);
                         return (
                           <div key={s._id || s.id} className={`service-item-modern${checked ? ' selected' : ''}`}>
                             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', width: '100%' }}>
@@ -506,12 +521,21 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
               )}
             </div>
 
-            <div className="service-modal-actions-modern">
+            <div className="service-modal-actions-modern" style={{ display: 'flex', padding: '20px 28px', borderTop: '1px solid #e5e7eb', gap: '12px', justifyContent: 'flex-end', backgroundColor: '#fafbfc' }}>
               <button 
-                className="service-modal-close-btn" 
-                onClick={() => setShowServiceModal(false)}
+                className="service-modal-cancel-btn" 
+                onClick={handleCancelServices}
+                style={{ padding: '12px 24px', border: '2px solid #d1d5db', borderRadius: '10px', backgroundColor: 'white', color: '#374151', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
               >
-                Close
+                Cancel
+              </button>
+              <button 
+                className="service-modal-apply-btn" 
+                onClick={handleApplyServices}
+                disabled={tempSelectedServices.length === 0}
+                style={{ padding: '12px 28px', border: 'none', borderRadius: '10px', background: tempSelectedServices.length === 0 ? '#d1d5db' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', fontSize: '14px', fontWeight: '600', cursor: tempSelectedServices.length === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                Apply Selection ({tempSelectedServices.length})
               </button>
             </div>
           </div>
@@ -700,7 +724,9 @@ const ProfessionalMembershipModal = ({ isOpen, onClose, membership, onEdit }) =>
           <button className="secondary-btn" onClick={onClose}>
             Close
           </button>
-        
+          <button className="primary-btn" onClick={() => onEdit(membership)}>
+            Edit Membership
+          </button>
         </div>
       </div>
     </div>
@@ -714,21 +740,86 @@ const MembershipDetailModal = ({ isOpen, onClose, membership, onUpdateSuccess })
   const [editable, setEditable] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [services, setServices] = useState([]);
+  const [serviceSearch, setServiceSearch] = useState('');
+  const [tempSelectedServices, setTempSelectedServices] = useState([]);
 
   useEffect(() => {
     if (isOpen && membership) {
+      // Fetch services and initialize editable state
+      const initializeEditModal = async () => {
+        try {
+          const res = await api.get('/services');
+          const servicesData = res.data?.data?.services || [];
+          setServices(servicesData.filter(s => s.isActive !== false));
+        } catch (err) {
+          console.error('Failed to fetch services:', err);
+        }
+      };
+
+      initializeEditModal();
+
       setEditable({
         ...membership,
-        selectedServices: Array.isArray(membership.selectedServices) ? membership.selectedServices : [],
+        selectedServices: Array.isArray(membership.services) 
+          ? membership.services 
+          : Array.isArray(membership.selectedServices) 
+          ? membership.selectedServices 
+          : [],
         validityPeriod: membership.validityPeriod ?? membership.numberOfSessions ?? null,
         validityUnit: membership.validityUnit ?? (membership.validFor?.includes('month') ? 'months' : '')
       });
-    } else setEditable(null);
+    } else {
+      setEditable(null);
+    }
   }, [isOpen, membership]);
 
   if (!isOpen || !editable) return null;
 
   const handleChange = (k, v) => setEditable(prev => ({ ...prev, [k]: v }));
+
+  const handleServiceToggle = (service) => {
+    setTempSelectedServices(prev => {
+      const exists = prev.some(s => (s._id || s.id) === (service._id || service.id));
+      return exists
+        ? prev.filter(s => (s._id || s.id) !== (service._id || service.id))
+        : [...prev, service];
+    });
+  };
+
+  const handleApplyServices = () => {
+    setEditable(prev => ({
+      ...prev,
+      selectedServices: [...tempSelectedServices]
+    }));
+    setShowServiceModal(false);
+  };
+
+  const handleCancelServices = () => {
+    setTempSelectedServices([...editable.selectedServices]);
+    setShowServiceModal(false);
+  };
+
+  const openServiceModal = () => {
+    setTempSelectedServices([...editable.selectedServices]);
+    setShowServiceModal(true);
+  };
+
+  const groupedServices = services.reduce((acc, service) => {
+    const category = service.category?.displayName || service.category?.name || 'Other';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(service);
+    return acc;
+  }, {});
+
+  const filteredServices = Object.keys(groupedServices).reduce((acc, category) => {
+    const categoryServices = groupedServices[category].filter(service =>
+      service.name.toLowerCase().includes(serviceSearch.toLowerCase())
+    );
+    if (categoryServices.length > 0) acc[category] = categoryServices;
+    return acc;
+  }, {});
 
   // Replace MembershipDetailModal.doUpdate to use helper
   const doUpdate = async () => {
@@ -850,19 +941,59 @@ const MembershipDetailModal = ({ isOpen, onClose, membership, onUpdateSuccess })
           </div>
 
           <div className="detail-section">
-            <strong>Included Service</strong>
+            <strong>Included Services</strong>
             <div className="service-info">
-              {editable.service || editable.serviceName ? (
-                <div className="service-item">
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{editable.serviceName || 'Service'}</div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>
-                      {editable.numberOfSessions ? `${editable.numberOfSessions} sessions` : 'Unlimited sessions'}
+              {editable.selectedServices && editable.selectedServices.length > 0 ? (
+                <div>
+                  {editable.selectedServices.map((service, idx) => (
+                    <div key={idx} className="service-item" style={{ marginBottom: '8px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{service.name || service.serviceName || 'Service'}</div>
+                        <div style={{ fontSize: 12, color: '#64748b' }}>
+                          {service.duration ? `${service.duration} minutes` : ''} {service.price ? `• AED ${service.price}` : ''}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>{editable.service}</div>
+                  ))}
+                  <button 
+                    type="button"
+                    onClick={openServiceModal}
+                    style={{ 
+                      marginTop: '12px', 
+                      padding: '8px 16px', 
+                      border: '2px solid #d1d5db', 
+                      borderRadius: '8px', 
+                      backgroundColor: 'white', 
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Change Services
+                  </button>
                 </div>
-              ) : (<div className="no-services">No service assigned</div>)}
+              ) : (
+                <div>
+                  <div className="no-services">No services assigned</div>
+                  <button 
+                    type="button"
+                    onClick={openServiceModal}
+                    style={{ 
+                      marginTop: '12px', 
+                      padding: '8px 16px', 
+                      border: '2px solid #3b82f6', 
+                      borderRadius: '8px', 
+                      backgroundColor: 'white', 
+                      color: '#3b82f6',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Select Services
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -891,6 +1022,100 @@ const MembershipDetailModal = ({ isOpen, onClose, membership, onUpdateSuccess })
           </div>
         </div>
       </div>
+
+      {/* Service Selection Modal for Edit */}
+      {showServiceModal && (
+        <div className="service-modal-overlay-modern" onClick={handleCancelServices} style={{ zIndex: 10000 }}>
+          <div className="service-modal-modern" onClick={(e) => e.stopPropagation()}>
+            <div className="service-modal-header-modern">
+              <h2 className="service-modal-title-modern">
+                <span className="service-modal-title-dot"></span>
+                Select Services
+              </h2>
+              <button className="service-modal-close-modern" onClick={handleCancelServices} aria-label="Close">
+                <IoClose />
+              </button>
+            </div>
+
+            <div className="service-search-modern">
+              <input 
+                type="text" 
+                placeholder="🔍 Search services by name..." 
+                value={serviceSearch} 
+                onChange={(e) => setServiceSearch(e.target.value)}
+                className="service-search-input-modern"
+              />
+            </div>
+
+            <div className="service-list-modern">
+              {Object.keys(filteredServices).length === 0 ? (
+                <div className="empty-services-modern">
+                  <div className="empty-services-icon">🔍</div>
+                  <div className="empty-services-title">No services found</div>
+                  <div className="empty-services-text">Try adjusting your search terms</div>
+                </div>
+              ) : (
+                Object.keys(filteredServices).map(category => (
+                  <div key={category} className="service-category-modern">
+                    <div className="category-header-modern">
+                      <span className="category-name-modern">
+                        <span className="category-line-modern"></span>
+                        {category}
+                      </span>
+                    </div>
+
+                    <div className="category-services-modern">
+                      {filteredServices[category].map(s => {
+                        const checked = tempSelectedServices.some(sel => (sel._id || sel.id) === (s._id || s.id));
+                        return (
+                          <div key={s._id || s.id} className={`service-item-modern${checked ? ' selected' : ''}`}>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', width: '100%' }}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => handleServiceToggle(s)}
+                                style={{ marginRight: 8 }}
+                              />
+                              <div className="service-details-modern" style={{ flex: 1 }}>
+                                <span className={`service-name-modern${checked ? ' selected' : ''}`}>{s.name}</span>
+                                <span className={`service-duration-modern${checked ? ' selected' : ''}`}>
+                                  <span className="service-duration-dot"></span>
+                                  {s.duration} minutes
+                                </span>
+                              </div>
+                              <div className="service-price-container">
+                                <span className={`service-price-modern${checked ? ' selected' : ''}`}>AED {s.effectivePrice || s.price}</span>
+                              </div>
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="service-modal-actions-modern" style={{ display: 'flex', padding: '20px 28px', borderTop: '1px solid #e5e7eb', gap: '12px', justifyContent: 'flex-end', backgroundColor: '#fafbfc' }}>
+              <button 
+                className="service-modal-cancel-btn" 
+                onClick={handleCancelServices}
+                style={{ padding: '12px 24px', border: '2px solid #d1d5db', borderRadius: '10px', backgroundColor: 'white', color: '#374151', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="service-modal-apply-btn" 
+                onClick={handleApplyServices}
+                disabled={tempSelectedServices.length === 0}
+                style={{ padding: '12px 28px', border: 'none', borderRadius: '10px', background: tempSelectedServices.length === 0 ? '#d1d5db' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', fontSize: '14px', fontWeight: '600', cursor: tempSelectedServices.length === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                Apply Selection ({tempSelectedServices.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -945,6 +1170,7 @@ const MembershipTable = () => {
   };
 
   const handleEditMembership = (membership) => {
+    setSelectedMembership(membership);
     setShowProfessionalModal(false);
     setShowDetailModal(true);
   };

@@ -113,12 +113,6 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
             setFormData({ ...formData, email: e.target.value })
           }
           required
-          readOnly={!!client}
-          style={
-            client
-              ? { backgroundColor: "#f5f5f5", cursor: "not-allowed" }
-              : {}
-          }
         />
       </div>
 

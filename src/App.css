@@ -157,6 +157,14 @@
   overflow-y: auto;
 }
 
+/* Wider modal for final payment step */
+.booking-modal.final-step {
+  max-width: 1200px;
+  width: 98%;
+  max-height: 92vh;
+  padding: 32px;
+}
+
 /* Final payment step (lighter look) */
 
 .booking-modal h2 {

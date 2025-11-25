@@ -567,12 +567,63 @@ const SelectCalendar = () => {
 
     // NEW LOGIC: If user selected employee but no specific time (from week view cell click), skip professional selection
     if (bookingDefaults?.professional && bookingDefaults?.isDirectEmployeeSelection) {
-      setSelectedService(service);
-      setSelectedProfessional(bookingDefaults.professional);
-      setBookingStep(3); // Skip professional selection, go directly to time selection
+      const professionalToSet = bookingDefaults.professional;
       const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
-      // use thunk to fetch timeslots (fallback will still use local generator if API not available)
-      dispatch(fetchBookingTimeSlotsThunk({ employeeId: bookingDefaults.professional._id || bookingDefaults.professional.id, serviceId: service._id, date: bookingDate }));
+      const professionalId = professionalToSet.id || professionalToSet._id;
+      
+      console.log('🎯 Week view flow: Service selected, professional pre-set:', {
+        professional: professionalToSet.name || professionalToSet.user?.firstName,
+        professionalId: professionalId,
+        service: service.name,
+        serviceId: service._id,
+        date: bookingDate,
+        employeesCount: employees.length
+      });
+      
+      // Find the actual employee object from employees array (important for helper functions)
+      const actualEmployee = employees.find(emp => 
+        emp.id === professionalId || 
+        emp._id === professionalId ||
+        emp.id === professionalToSet.id ||
+        emp._id === professionalToSet._id
+      );
+      
+      console.log('🔍 Found actual employee:', {
+        found: !!actualEmployee,
+        employeeName: actualEmployee?.name,
+        hasWorkSchedule: !!actualEmployee?.workSchedule,
+        workSchedule: actualEmployee?.workSchedule
+      });
+      
+      if (!actualEmployee) {
+        console.error('❌ Could not find employee in employees array!', {
+          searchingFor: professionalId,
+          availableIds: employees.map(e => ({ id: e.id, _id: e._id, name: e.name }))
+        });
+      }
+      
+      // Set all required state before moving to step 3
+      setSelectedService(service);
+      setSelectedProfessional(actualEmployee || professionalToSet); // Use actual employee if found
+      setSelectedBookingDate(bookingDate); // Important: set the booking date
+      
+      // Generate time slots immediately using the local function with CORRECT parameters
+      const timeSlots = getAvailableTimeSlotsForProfessional(
+        actualEmployee || professionalToSet,  // employee object (not ID)
+        bookingDate,                          // date
+        service.duration,                     // service duration in minutes
+        appointments                          // appointments object
+      );
+      
+      console.log('✅ Generated time slots for week view booking:', {
+        count: timeSlots.length,
+        samples: timeSlots.slice(0, 3),
+        allSlots: timeSlots
+      });
+      setAvailableTimeSlots(timeSlots);
+      
+      // Now move to step 3 with time slots already populated
+      setBookingStep(3);
       return;
     }
 
@@ -2720,14 +2771,11 @@ const SelectCalendar = () => {
       if (availableTimeSlots.length === 0) {
         console.log('🔄 Step 3 - Fetching time slots for professional:', selectedProfessional.name || selectedProfessional.user?.firstName);
         const bookingDate = selectedBookingDate || currentDate;
-        const professionalId = selectedProfessional.id || selectedProfessional._id;
         const timeSlots = getAvailableTimeSlotsForProfessional(
-          professionalId,
-          selectedService._id,
-          bookingDate,
-          employees,
-          appointments,
-          availableServices
+          selectedProfessional,     // employee object (not ID)
+          bookingDate,             // date
+          selectedService.duration, // service duration in minutes
+          appointments             // appointments object
         );
         
         console.log('✅ Auto-populated time slots on step 3:', timeSlots.length, timeSlots);
@@ -3181,45 +3229,44 @@ const SelectCalendar = () => {
                               {/* Add appointment button for days with existing appointments */}
                               <div
                                 className="week-add-appointment-btn"
-                                // onClick={hasShift ? (e) => {
-                                //   e.stopPropagation(); // Prevent event bubbling
-                                //   console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+                                onClick={hasShift ? (e) => {
+                                  e.stopPropagation(); // Prevent event bubbling
+                                  console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
 
-                                //   // Show service selection for this employee and day
-                                //   const staff = employees.find(emp => emp.id === employee.id);
-                                //   if (staff) {
-                                //     setBookingDefaults({
-                                //       professional: {
-                                //         _id: staff._id || staff.id,
-                                //         id: staff.id,
-                                //         user: {
-                                //           firstName: staff.name.split(' ')[0],
-                                //           lastName: staff.name.split(' ')[1] || ''
-                                //         },
-                                //         name: staff.name,
-                                //         position: staff.position,
-                                //         ...staff
-                                //       },
-                                //       date: day,
-                                //       isDirectEmployeeSelection: true // Flag for skipping professional selection
-                                //     });
-                                //     setSelectedBookingDate(day);
-                                //     setIsNewAppointment(true);
-                                //     setShowAddBookingModal(true);
-                                //     setShowServiceCatalog(true); // Show service selection first
-                                //     console.log('Opening booking modal with defaults:', {
-                                //       professional: staff.name,
-                                //       date: day.toLocaleDateString(),
-                                //       isDirectEmployeeSelection: true
-                                //     });
-                                //   }
-                                // }
-                                //   : undefined}
+                                  // Show service selection for this employee and day
+                                  const staff = employees.find(emp => emp.id === employee.id);
+                                  if (staff) {
+                                    setBookingDefaults({
+                                      professional: {
+                                        _id: staff._id || staff.id,
+                                        id: staff.id,
+                                        user: {
+                                          firstName: staff.name.split(' ')[0],
+                                          lastName: staff.name.split(' ')[1] || ''
+                                        },
+                                        name: staff.name,
+                                        position: staff.position,
+                                        ...staff
+                                      },
+                                      date: day,
+                                      isDirectEmployeeSelection: true // Flag for skipping professional selection
+                                    });
+                                    setSelectedBookingDate(day);
+                                    setIsNewAppointment(true);
+                                    setShowAddBookingModal(true);
+                                    setShowServiceCatalog(true); // Show service selection first
+                                    console.log('Opening booking modal with defaults:', {
+                                      professional: staff.name,
+                                      date: day.toLocaleDateString(),
+                                      isDirectEmployeeSelection: true
+                                    });
+                                  }
+                                }
+                                  : undefined}
                                 style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
                                 title={hasShift ? `Add another appointment with ${employee.name}` : 'No shift scheduled'}
                               >
-                                {/* <span className="add-appointment-icon">+</span>
-                              <span className="add-appointment-text">Add Appointment</span> */}
+                                <span className="add-appointment-icon">+</span>
                               </div>
 
                               {dayAppointments.length > 3 && (
@@ -3234,40 +3281,40 @@ const SelectCalendar = () => {
                           ) : (
                             <div
                               className="week-empty-cell clickable-slot"
-                              // onClick={hasShift ? (e) => {
-                              //   e.stopPropagation(); // Prevent event bubbling
-                              //   console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+                              onClick={hasShift ? (e) => {
+                                e.stopPropagation(); // Prevent event bubbling
+                                console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
 
-                              //   // Show service selection for this employee and day
-                              //   const staff = employees.find(emp => emp.id === employee.id);
-                              //   if (staff) {
-                              //     setBookingDefaults({
-                              //       professional: {
-                              //         _id: staff._id || staff.id,
-                              //         id: staff.id,
-                              //         user: {
-                              //           firstName: staff.name.split(' ')[0],
-                              //           lastName: staff.name.split(' ')[1] || ''
-                              //         },
-                              //         name: staff.name,
-                              //         position: staff.position,
-                              //         ...staff
-                              //       },
-                              //       date: day,
-                              //       isDirectEmployeeSelection: true // Flag for skipping professional selection
-                              //     });
-                              //     setSelectedBookingDate(day);
-                              //     setIsNewAppointment(true);
-                              //     setShowAddBookingModal(true);
-                              //     setShowServiceCatalog(true); // Show service selection first
-                              //     console.log('Opening booking modal with defaults:', {
-                              //       professional: staff.name,
-                              //       date: day.toLocaleDateString(),
-                              //       isDirectEmployeeSelection: true
-                              //     });
-                              //   }
-                              // } : undefined}
-                              // style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                                // Show service selection for this employee and day
+                                const staff = employees.find(emp => emp.id === employee.id);
+                                if (staff) {
+                                  setBookingDefaults({
+                                    professional: {
+                                      _id: staff._id || staff.id,
+                                      id: staff.id,
+                                      user: {
+                                        firstName: staff.name.split(' ')[0],
+                                        lastName: staff.name.split(' ')[1] || ''
+                                      },
+                                      name: staff.name,
+                                      position: staff.position,
+                                      ...staff
+                                    },
+                                    date: day,
+                                    isDirectEmployeeSelection: true // Flag for skipping professional selection
+                                  });
+                                  setSelectedBookingDate(day);
+                                  setIsNewAppointment(true);
+                                  setShowAddBookingModal(true);
+                                  setShowServiceCatalog(true); // Show service selection first
+                                  console.log('Opening booking modal with defaults:', {
+                                    professional: staff.name,
+                                    date: day.toLocaleDateString(),
+                                    isDirectEmployeeSelection: true
+                                  });
+                                }
+                              } : undefined}
+                              style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
                               title={hasShift ? `Book appointment with ${employee.name} on ${day.toLocaleDateString()}` : 'No shift scheduled'}
                             >
                               {/* <span className="book-appointment-text">
@@ -4101,8 +4148,8 @@ const SelectCalendar = () => {
                 </>
               )}
 
-              {/* Professional Selection Step */}
-              {bookingStep === 2 && (
+              {/* Professional Selection Step - Skip if employee already selected from week view */}
+              {bookingStep === 2 && !bookingDefaults?.isDirectEmployeeSelection && (
                 <>
                   <h3> Choose Your Professional</h3>
                   {availableProfessionals.length === 0 ? (
@@ -4624,321 +4671,330 @@ const SelectCalendar = () => {
                 <>
                   <h3> Payment & Final Confirmation</h3>
 
-                  {/* Multiple Appointments Summary */}
-                  <div className="multiple-appointments-summary">
-                    <h4> Appointment Session Summary</h4>
-                    <div className="appointments-list">
-                      {multipleAppointments.map((apt, index) => (
-                        <div key={apt.id} className="appointment-summary-item">
-                          <div className="appointment-number">{index + 1}</div>
-                          <div className="appointment-details">
-                            <div className="service-name">{apt.service.name}</div>
-                            <div className="appointment-meta">
-                              {apt.professional.user?.firstName || apt.professional.name} •
-                              {apt.timeSlot} • {apt.service.duration}min • AED {apt.service.price}
+                  {/* Two Column Layout */}
+                  <div className="payment-step-grid">
+                    {/* Left Column */}
+                    <div className="payment-left-column">
+                      {/* Multiple Appointments Summary */}
+                      <div className="multiple-appointments-summary">
+                        <h4> Appointment Session Summary</h4>
+                        <div className="appointments-list">
+                          {multipleAppointments.map((apt, index) => (
+                            <div key={apt.id} className="appointment-summary-item">
+                              <div className="appointment-number">{index + 1}</div>
+                              <div className="appointment-details">
+                                <div className="service-name">{apt.service.name}</div>
+                                <div className="appointment-meta">
+                                  {apt.professional.user?.firstName || apt.professional.name} •
+                                  {apt.timeSlot} • {apt.service.duration}min • AED {apt.service.price}
+                                </div>
+                              </div>
+                              <button
+                                className="remove-appointment-btn"
+                                onClick={() => removeAppointmentFromSessionLocal(apt.id)}
+                                title="Remove this appointment"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="session-totals">
+                          <div className="total-item">
+                            <span>Total Services:</span>
+                            <span>{multipleAppointments.length}</span>
+                          </div>
+                          <div className="total-item">
+                            <span>Total Duration:</span>
+                            <span>{multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0)} minutes</span>
+                          </div>
+                          
+                          {customTotalDiscount > 0 && (
+                            <div className="total-item original-total">
+                              <span>Original Total:</span>
+                              <span className="strike-through">
+                                AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {customTotalDiscount > 0 && (
+                            <div className="total-item discount-applied">
+                              <span>Discount Applied:</span>
+                              <span className="discount-value">- AED {customTotalDiscount.toFixed(2)}</span>
+                            </div>
+                          )}
+                          
+                          <div className="total-item total-price">
+                            <div className="total-price-content">
+                              <span>Total Amount:</span>
+                              {editingTotalPrice ? (
+                                <div className="price-edit-controls-inline">
+                                  <span className="currency-label">AED</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={tempTotalPrice}
+                                    onChange={(e) => setTempTotalPrice(e.target.value)}
+                                    className="price-edit-input"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEditedTotalPrice();
+                                      if (e.key === 'Escape') cancelEditingTotalPrice();
+                                    }}
+                                  />
+                                  <button
+                                    className="price-save-btn"
+                                    onClick={saveEditedTotalPrice}
+                                    title="Save total"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    className="price-cancel-btn"
+                                    onClick={cancelEditingTotalPrice}
+                                    title="Cancel"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="total-display-controls">
+                                  <span className="total-value">AED {getTotalSessionPrice().toFixed(2)}</span>
+                                  <button
+                                    className="price-edit-btn"
+                                    onClick={startEditingTotalPrice}
+                                    title="Edit total amount"
+                                  >
+                                    ✏️
+                                  </button>
+                                  {customTotalDiscount > 0 && (
+                                    <button
+                                      className="clear-discount-btn"
+                                      onClick={clearCustomDiscount}
+                                      title="Remove discount"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <button
-                            className="remove-appointment-btn"
-                            onClick={() => removeAppointmentFromSessionLocal(apt.id)}
-                            title="Remove this appointment"
-                          >
-                            ×
-                          </button>
                         </div>
-                      ))}
-                    </div>
+                      </div>
 
-                    <div className="session-totals">
-                      <div className="total-item">
-                        <span>Total Services:</span>
-                        <span>{multipleAppointments.length}</span>
-                      </div>
-                      <div className="total-item">
-                        <span>Total Duration:</span>
-                        <span>{multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0)} minutes</span>
-                      </div>
-                      
-                      {customTotalDiscount > 0 && (
-                        <div className="total-item original-total">
-                          <span>Original Total:</span>
-                          <span className="strike-through">
-                            AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}
+                      {/* Client Information Display */}
+                      <div className="client-summary">
+                        <h4>  Client Information</h4>
+                        <div className="summary-item">
+                          <span>Client:</span>
+                          <span>
+                            {selectedExistingClient
+                              ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
+                              : clientInfo.name
+                            }
+                            
                           </span>
                         </div>
-                      )}
-                      
-                      {customTotalDiscount > 0 && (
-                        <div className="total-item discount-applied">
-                          <span>Discount Applied:</span>
-                          <span className="discount-value">- AED {customTotalDiscount.toFixed(2)}</span>
+                        <div className="summary-item">
+                          <span> Email:</span>
+                          <span>
+                            {selectedExistingClient
+                              ? selectedExistingClient.email
+                              : clientInfo.email
+                            }
+                          </span>
                         </div>
-                      )}
-                      
-                      <div className="total-item total-price">
-                        <div className="total-price-content">
-                          <span>Total Amount:</span>
-                          {editingTotalPrice ? (
-                            <div className="price-edit-controls-inline">
-                              <span className="currency-label">AED</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={tempTotalPrice}
-                                onChange={(e) => setTempTotalPrice(e.target.value)}
-                                className="price-edit-input"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') saveEditedTotalPrice();
-                                  if (e.key === 'Escape') cancelEditingTotalPrice();
-                                }}
-                              />
+                        <div className="summary-item">
+                          <span> Phone:</span>
+                          <span>
+                            {selectedExistingClient
+                              ? selectedExistingClient.phone
+                              : clientInfo.phone
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="payment-right-column">
+                      {/* Admin Membership Checker */}
+                      <AdminMembershipChecker
+                        selectedClient={selectedExistingClient || {
+                          firstName: clientInfo.name?.split(' ')[0] || '',
+                          lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
+                          email: clientInfo.email,
+                          phone: clientInfo.phone
+                        }}
+                        selectedServices={multipleAppointments.map(apt => apt.service)}
+                        appliedMembership={appliedMembership}
+                        onMembershipApplied={handleMembershipApplied}
+                        onMembershipRemoved={handleMembershipRemoved}
+                        refreshSignal={membershipRefreshSignal}
+                      />
+
+                      {/* Gift Card Redemption Section - FIRST */}
+                      <div className="booking-modal-form">
+                        <h4> Gift Card Redemption</h4>
+
+                        {!selectedGiftCard ? (
+                          <div className="available-gift-cards-section">
+                            {benefitsLoading && (
+                              <div className="gift-cards-loading">
+                                <Loading/>
+                                Loading available gift cards...
+                              </div>
+                            )}
+
+                            {!benefitsLoading && availableGiftCards.length === 0 && (
+                              <div className="no-gift-cards">
+                                <div className="no-cards-icon"></div>
+                                <p>No gift cards available for this client.</p>
+                              </div>
+                            )}
+
+                            {!benefitsLoading && availableGiftCards.length > 0 && (
+                              <div className="form-group">
+                                <label>Select a gift card to redeem:</label>
+                                <div className="available-gift-cards-list">
+                                  {availableGiftCards.map(giftCard => {
+                                    const giftCardId = giftCard._id || giftCard.id;
+                                    const giftCardCode = giftCard.code || giftCard.giftCardCode || giftCard.cardNumber;
+                                    const availableValue = calculateGiftCardValue(giftCard);
+                                    const expiryDate = giftCard.expiresAt || giftCard.expiryDate || giftCard.expiry;
+
+                                    return (
+                                      <div
+                                        key={giftCardId}
+                                        className={`gift-card-item ${selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId ? 'selected' : ''}`}
+                                        onClick={() => {
+                                          console.log('🎁 Selected gift card:', giftCard);
+                                          console.log('🎁 Gift card details:', {
+                                            availableValue,
+                                            totalAmount: getTotalSessionPrice(),
+                                            membershipDiscount: membershipDiscountAmount
+                                          });
+                                          setSelectedGiftCard(giftCard);
+                                          const totalAmount = getTotalSessionPrice();
+                                          const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
+                                          const maxRedeemable = Math.min(availableValue, amountAfterMembership);
+                                          console.log('🎁 Setting giftCardAppliedAmount to:', maxRedeemable);
+                                          setGiftCardAppliedAmount(maxRedeemable);
+                                          setGiftCardError('');
+                                        }}
+                                      >
+                                        <div className="gift-card-icon"></div>
+                                        <div className="gift-card-info">
+                                          <div className="gift-card-code">Code: {giftCardCode}</div>
+                                          <div className="gift-card-balance">Available: AED {availableValue.toFixed(2)}</div>
+                                          {expiryDate && (
+                                            <div className="gift-card-expiry">
+                                              Expires: {new Date(expiryDate).toLocaleDateString()}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="gift-card-select-btn">
+                                          {(selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId) ? 'Selected' : 'Select'}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {giftCardError && (
+                              <div className="gift-card-error">{giftCardError}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="applied-gift-card-section">
+                            <div className="applied-gift-card-info">
+                              <div className="gift-card-icon"></div>
+                              <div className="gift-card-details">
+                                <div className="gift-card-code">Code: {selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber}</div>
+                                <div className="gift-card-value">Applied: AED {giftCardAppliedAmount}</div>
+                                <div className="gift-card-remaining">Remaining on card: AED {(calculateGiftCardValue(selectedGiftCard) - giftCardAppliedAmount).toFixed(2)}</div>
+                              </div>
                               <button
-                                className="price-save-btn"
-                                onClick={saveEditedTotalPrice}
-                                title="Save total"
-                              >
-                                ✓
-                              </button>
-                              <button
-                                className="price-cancel-btn"
-                                onClick={cancelEditingTotalPrice}
-                                title="Cancel"
+                                type="button"
+                                className="remove-gift-card-btn"
+                                onClick={removeAppliedGiftCard}
+                                title="Remove gift card"
                               >
                                 ✕
                               </button>
                             </div>
-                          ) : (
-                            <div className="total-display-controls">
-                              <span className="total-value">AED {getTotalSessionPrice().toFixed(2)}</span>
-                              <button
-                                className="price-edit-btn"
-                                onClick={startEditingTotalPrice}
-                                title="Edit total amount"
-                              >
-                                ✏️
-                              </button>
-                              {customTotalDiscount > 0 && (
-                                <button
-                                  className="clear-discount-btn"
-                                  onClick={clearCustomDiscount}
-                                  title="Remove discount"
-                                >
-                                  ✕
-                                </button>
-                              )}
+                          </div>
+                        )}
+
+                        {/* Payment Summary */}
+                        <div className="payment-summary-box">
+                          <div className="summary-row">
+                            <span>Service Total:</span>
+                            <span>AED {getTotalSessionPrice()}</span>
+                          </div>
+                          {appliedMembership && membershipDiscountAmount > 0 && (
+                            <div className="summary-row discount">
+                              <span>Membership Discount ({appliedMembership.name}):</span>
+                              <span>- AED {membershipDiscountAmount}</span>
                             </div>
                           )}
+                          {selectedGiftCard && giftCardAppliedAmount > 0 && (
+                            <div className="summary-row discount">
+                              <span>Gift Card Applied:</span>
+                              <span>- AED {giftCardAppliedAmount}</span>
+                            </div>
+                          )}
+                          <div className="summary-row total">
+                            <span>Remaining to Pay:</span>
+                            <span>AED {calculateTotalWithGiftCard().remainingAmount}</span>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Client Information Display */}
-                  <div className="client-summary">
-                    <h4>  Client Information</h4>
-                    <div className="summary-item">
-                      <span>Client:</span>
-                      <span>
-                        {selectedExistingClient
-                          ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-                          : clientInfo.name
-                        }
-                        
-                      </span>
-                    </div>
-                    <div className="summary-item">
-                      <span> Email:</span>
-                      <span>
-                        {selectedExistingClient
-                          ? selectedExistingClient.email
-                          : clientInfo.email
-                        }
-                      </span>
-                    </div>
-                    <div className="summary-item">
-                      <span> Phone:</span>
-                      <span>
-                        {selectedExistingClient
-                          ? selectedExistingClient.phone
-                          : clientInfo.phone
-                        }
-                      </span>
-                    </div>
-                  </div>
+                        {/* Payment Method Selection - AFTER gift card */}
+                        {calculateTotalWithGiftCard().remainingAmount > 0 && (
+                          <div className="payment-method-section">
+                            <h4> Payment Method for Remaining Amount</h4>
+                            <div className="form-group">
+                              <label>Select how you'd like to pay the remaining AED {calculateTotalWithGiftCard().remainingAmount}:</label>
+                              <div className="payment-method-grid">
+                                {['cash', 'card', 'upi'].map(method => {
+                                  const labels = { cash: 'Cash', card: 'Card', upi: 'Bank Transfer' };
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={method}
+                                      className={`payment-method-tile ${paymentMethod === method ? 'selected' : ''}`}
+                                      onClick={() => setPaymentMethod(method)}
+                                    >
+                                      <span className="pm-label">{labels[method]}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
 
-                  {/* Admin Membership Checker */}
-                  <AdminMembershipChecker
-                    selectedClient={selectedExistingClient || {
-                      firstName: clientInfo.name?.split(' ')[0] || '',
-                      lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
-                      email: clientInfo.email,
-                      phone: clientInfo.phone
-                    }}
-                    selectedServices={multipleAppointments.map(apt => apt.service)}
-                    appliedMembership={appliedMembership}
-                    onMembershipApplied={handleMembershipApplied}
-                    onMembershipRemoved={handleMembershipRemoved}
-                    refreshSignal={membershipRefreshSignal}
-                  />
-
-                  {/* Gift Card Redemption Section - FIRST */}
-                  <div className="booking-modal-form">
-                    <h4> Gift Card Redemption</h4>
-
-                    {!selectedGiftCard ? (
-                      <div className="available-gift-cards-section">
-                        {benefitsLoading && (
-                          <div className="gift-cards-loading">
-                            <Loading/>
-                            Loading available gift cards...
+                            {/* Card and UPI payment methods don't require additional input */}
+                            {/* Payment method selection is sufficient */}
                           </div>
                         )}
 
-                        {!benefitsLoading && availableGiftCards.length === 0 && (
-                          <div className="no-gift-cards">
-                            <div className="no-cards-icon"></div>
-                            <p>No gift cards available for this client.</p>
-                          </div>
-                        )}
-
-                        {!benefitsLoading && availableGiftCards.length > 0 && (
-                          <div className="form-group">
-                            <label>Select a gift card to redeem:</label>
-                            <div className="available-gift-cards-list">
-                              {availableGiftCards.map(giftCard => {
-                                const giftCardId = giftCard._id || giftCard.id;
-                                const giftCardCode = giftCard.code || giftCard.giftCardCode || giftCard.cardNumber;
-                                const availableValue = calculateGiftCardValue(giftCard);
-                                const expiryDate = giftCard.expiresAt || giftCard.expiryDate || giftCard.expiry;
-
-                                return (
-                                  <div
-                                    key={giftCardId}
-                                    className={`gift-card-item ${selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId ? 'selected' : ''}`}
-                                    onClick={() => {
-                                      console.log('🎁 Selected gift card:', giftCard);
-                                      console.log('🎁 Gift card details:', {
-                                        availableValue,
-                                        totalAmount: getTotalSessionPrice(),
-                                        membershipDiscount: membershipDiscountAmount
-                                      });
-                                      setSelectedGiftCard(giftCard);
-                                      const totalAmount = getTotalSessionPrice();
-                                      const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
-                                      const maxRedeemable = Math.min(availableValue, amountAfterMembership);
-                                      console.log('🎁 Setting giftCardAppliedAmount to:', maxRedeemable);
-                                      setGiftCardAppliedAmount(maxRedeemable);
-                                      setGiftCardError('');
-                                    }}
-                                  >
-                                    <div className="gift-card-icon"></div>
-                                    <div className="gift-card-info">
-                                      <div className="gift-card-code">Code: {giftCardCode}</div>
-                                      <div className="gift-card-balance">Available: AED {availableValue.toFixed(2)}</div>
-                                      {expiryDate && (
-                                        <div className="gift-card-expiry">
-                                          Expires: {new Date(expiryDate).toLocaleDateString()}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="gift-card-select-btn">
-                                      {(selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId) ? 'Selected' : 'Select'}
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                        {calculateTotalWithGiftCard().remainingAmount === 0 && selectedGiftCard && (
+                          <div className="full-payment-message">
+                            <div className="success-message">
+                              Your gift card covers the full amount! No additional payment required.
                             </div>
                           </div>
                         )}
 
-                        {giftCardError && (
-                          <div className="gift-card-error">{giftCardError}</div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="applied-gift-card-section">
-                        <div className="applied-gift-card-info">
-                          <div className="gift-card-icon"></div>
-                          <div className="gift-card-details">
-                            <div className="gift-card-code">Code: {selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber}</div>
-                            <div className="gift-card-value">Applied: AED {giftCardAppliedAmount}</div>
-                            <div className="gift-card-remaining">Remaining on card: AED {(calculateGiftCardValue(selectedGiftCard) - giftCardAppliedAmount).toFixed(2)}</div>
-                          </div>
-                          <button
-                            type="button"
-                            className="remove-gift-card-btn"
-                            onClick={removeAppliedGiftCard}
-                            title="Remove gift card"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Payment Summary */}
-                    <div className="payment-summary-box">
-                      <div className="summary-row">
-                        <span>Service Total:</span>
-                        <span>AED {getTotalSessionPrice()}</span>
-                      </div>
-                      {appliedMembership && membershipDiscountAmount > 0 && (
-                        <div className="summary-row discount">
-                          <span>Membership Discount ({appliedMembership.name}):</span>
-                          <span>- AED {membershipDiscountAmount}</span>
-                        </div>
-                      )}
-                      {selectedGiftCard && giftCardAppliedAmount > 0 && (
-                        <div className="summary-row discount">
-                          <span>Gift Card Applied:</span>
-                          <span>- AED {giftCardAppliedAmount}</span>
-                        </div>
-                      )}
-                      <div className="summary-row total">
-                        <span>Remaining to Pay:</span>
-                        <span>AED {calculateTotalWithGiftCard().remainingAmount}</span>
+                        {/*  */}
                       </div>
                     </div>
-
-                    {/* Payment Method Selection - AFTER gift card */}
-                    {calculateTotalWithGiftCard().remainingAmount > 0 && (
-                      <div className="payment-method-section">
-                        <h4> Payment Method for Remaining Amount</h4>
-                        <div className="form-group">
-                          <label>Select how you'd like to pay the remaining AED {calculateTotalWithGiftCard().remainingAmount}:</label>
-                          <div className="payment-method-grid">
-                            {['cash', 'card', 'upi'].map(method => {
-                              const labels = { cash: 'Cash', card: 'Card', upi: 'Bank Transfer' };
-                              return (
-                                <button
-                                  type="button"
-                                  key={method}
-                                  className={`payment-method-tile ${paymentMethod === method ? 'selected' : ''}`}
-                                  onClick={() => setPaymentMethod(method)}
-                                >
-                                  <span className="pm-label">{labels[method]}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Card and UPI payment methods don't require additional input */}
-                        {/* Payment method selection is sufficient */}
-                      </div>
-                    )}
-
-                    {calculateTotalWithGiftCard().remainingAmount === 0 && selectedGiftCard && (
-                      <div className="full-payment-message">
-                        <div className="success-message">
-                          Your gift card covers the full amount! No additional payment required.
-                        </div>
-                      </div>
-                    )}
-
-                    {/*  */}
                   </div>
 
                   <div className="booking-modal-actions">

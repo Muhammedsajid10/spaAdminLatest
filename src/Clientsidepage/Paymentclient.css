@@ -80,6 +80,7 @@
 
 .pay-options {
   position: relative;
+  display: flex;
 }
 
 .pay-options-btn {

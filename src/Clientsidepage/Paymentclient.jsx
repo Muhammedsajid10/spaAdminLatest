@@ -84,7 +84,11 @@ const PaymentClient = () => {
       }));
 
       setPayments(mapped);
-      console.log(`✅ Loaded ${mapped.length} payments, latest: ${mapped[0]?.date.toLocaleString()}`);
+      console.log(`✅ Loaded ${mapped.length} payments from completed bookings`);
+      if (mapped.length === 0) {
+        console.log('💡 No payments shown because no bookings have status "completed"');
+        console.log('💡 To see payments: Create booking → Mark status as "completed"');
+      }
     } catch (err) {
       console.error("Failed to fetch payments:", err);
       setError(err.response?.data?.message || err.message || "Failed to load payments");
@@ -516,8 +520,8 @@ const PaymentClient = () => {
           <Error500Page />
         ) : hasNoData ? (
           <NoDataState
-            message="No payments found"
-            description="There are no payment transactions yet. When clients make payments, they will appear here."
+            message="No completed payments found"
+            description="Payment transactions will appear here only after bookings are marked as 'completed'. Currently, there are no completed bookings with payments."
             icon="💳"
           />
         ) : hasNoResults ? (

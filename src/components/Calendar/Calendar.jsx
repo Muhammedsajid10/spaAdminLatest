@@ -1169,7 +1169,7 @@ const Calendar = () => {
                 <div 
                   key={cellKey}
                   className="week-day-cell"
-                  onClick={() => handleTimeSlotClick(employee, '09:00', day)}
+                  onClick={() => handleTimeSlotClick({ employee, date: day, time: '09:00' })}
                   title={`Click to add appointment for ${employee.user?.firstName || employee.name} on ${day.toLocaleDateString()}`}
                 >
                   <div className="week-appointments-container">
