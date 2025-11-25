@@ -319,7 +319,7 @@
 
   /* Close button refinements */
   .booking-modal.pro-theme .booking-modal-close {
-    top: 14px;
+    top: -2px;  
     right: 14px;
     background: #ffffff;
     border: 1px solid #e2e8f0;

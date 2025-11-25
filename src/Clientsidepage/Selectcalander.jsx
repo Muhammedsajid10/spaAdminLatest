@@ -4669,7 +4669,7 @@ const SelectCalendar = () => {
               {/* Payment & Confirmation Step */}
               {bookingStep === 6 && (
                 <>
-                  <h3> Payment & Final Confirmation</h3>
+                  {/* <h3> Payment & Final Confirmation</h3> */}
 
                   {/* Two Column Layout */}
                   <div className="payment-step-grid">
@@ -4822,42 +4822,38 @@ const SelectCalendar = () => {
 
                     {/* Right Column */}
                     <div className="payment-right-column">
-                      {/* Admin Membership Checker */}
-                      <AdminMembershipChecker
-                        selectedClient={selectedExistingClient || {
-                          firstName: clientInfo.name?.split(' ')[0] || '',
-                          lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
-                          email: clientInfo.email,
-                          phone: clientInfo.phone
-                        }}
-                        selectedServices={multipleAppointments.map(apt => apt.service)}
-                        appliedMembership={appliedMembership}
-                        onMembershipApplied={handleMembershipApplied}
-                        onMembershipRemoved={handleMembershipRemoved}
-                        refreshSignal={membershipRefreshSignal}
-                      />
+                      {/* Admin Membership Checker - Only show if client has memberships */}
+                      {(availableMemberships && availableMemberships.length > 0) && (
+                        <AdminMembershipChecker
+                          selectedClient={selectedExistingClient || {
+                            firstName: clientInfo.name?.split(' ')[0] || '',
+                            lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
+                            email: clientInfo.email,
+                            phone: clientInfo.phone
+                          }}
+                          selectedServices={multipleAppointments.map(apt => apt.service)}
+                          appliedMembership={appliedMembership}
+                          onMembershipApplied={handleMembershipApplied}
+                          onMembershipRemoved={handleMembershipRemoved}
+                          refreshSignal={membershipRefreshSignal}
+                        />
+                      )}
 
-                      {/* Gift Card Redemption Section - FIRST */}
-                      <div className="booking-modal-form">
-                        <h4> Gift Card Redemption</h4>
+                      {/* Gift Card Redemption Section - Only show if client has gift cards */}
+                      {(availableGiftCards && availableGiftCards.length > 0) && (
+                        <div className="booking-modal-form">
+                          <h4> Gift Card Redemption</h4>
 
-                        {!selectedGiftCard ? (
-                          <div className="available-gift-cards-section">
-                            {benefitsLoading && (
-                              <div className="gift-cards-loading">
-                                <Loading/>
-                                Loading available gift cards...
-                              </div>
-                            )}
+                          {!selectedGiftCard ? (
+                            <div className="available-gift-cards-section">
+                              {benefitsLoading && (
+                                <div className="gift-cards-loading">
+                                  <Loading/>
+                                  Loading available gift cards...
+                                </div>
+                              )}
 
-                            {!benefitsLoading && availableGiftCards.length === 0 && (
-                              <div className="no-gift-cards">
-                                <div className="no-cards-icon"></div>
-                                <p>No gift cards available for this client.</p>
-                              </div>
-                            )}
-
-                            {!benefitsLoading && availableGiftCards.length > 0 && (
+                              {!benefitsLoading && availableGiftCards.length > 0 && (
                               <div className="form-group">
                                 <label>Select a gift card to redeem:</label>
                                 <div className="available-gift-cards-list">
@@ -4907,32 +4903,35 @@ const SelectCalendar = () => {
                               </div>
                             )}
 
-                            {giftCardError && (
-                              <div className="gift-card-error">{giftCardError}</div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="applied-gift-card-section">
-                            <div className="applied-gift-card-info">
-                              <div className="gift-card-icon"></div>
-                              <div className="gift-card-details">
-                                <div className="gift-card-code">Code: {selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber}</div>
-                                <div className="gift-card-value">Applied: AED {giftCardAppliedAmount}</div>
-                                <div className="gift-card-remaining">Remaining on card: AED {(calculateGiftCardValue(selectedGiftCard) - giftCardAppliedAmount).toFixed(2)}</div>
-                              </div>
-                              <button
-                                type="button"
-                                className="remove-gift-card-btn"
-                                onClick={removeAppliedGiftCard}
-                                title="Remove gift card"
-                              >
-                                ✕
-                              </button>
+                              {giftCardError && (
+                                <div className="gift-card-error">{giftCardError}</div>
+                              )}
                             </div>
-                          </div>
-                        )}
+                          ) : (
+                            <div className="applied-gift-card-section">
+                              <div className="applied-gift-card-info">
+                                <div className="gift-card-icon"></div>
+                                <div className="gift-card-details">
+                                  <div className="gift-card-code">Code: {selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber}</div>
+                                  <div className="gift-card-value">Applied: AED {giftCardAppliedAmount}</div>
+                                  <div className="gift-card-remaining">Remaining on card: AED {(calculateGiftCardValue(selectedGiftCard) - giftCardAppliedAmount).toFixed(2)}</div>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="remove-gift-card-btn"
+                                  onClick={removeAppliedGiftCard}
+                                  title="Remove gift card"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                        {/* Payment Summary */}
+                      {/* Payment Summary */}
+                      <div className="booking-modal-form">
                         <div className="payment-summary-box">
                           <div className="summary-row">
                             <span>Service Total:</span>
@@ -4991,8 +4990,6 @@ const SelectCalendar = () => {
                             </div>
                           </div>
                         )}
-
-                        {/*  */}
                       </div>
                     </div>
                   </div>
