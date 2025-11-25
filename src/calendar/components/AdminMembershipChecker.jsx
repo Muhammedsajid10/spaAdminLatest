@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './AdminMembershipChecker.css';
 import api from '../../Service/Api';
 import Loading from '../../states/Loading';
+import { Check } from 'lucide-react';
 
 const AdminMembershipChecker = ({ 
   selectedClient, 
@@ -304,36 +305,36 @@ const AdminMembershipChecker = ({
 
   return (
     <div className="admin-membership-checker">
-      <div className="membership-header">
-        <span className="membership-icon"></span>
-        <span>Available Memberships ({eligibleMemberships.length})</span>
-      </div>
-
       {appliedMembership ? (
         <div className="applied-membership">
           <div className="applied-header">
-            <span className="success-icon"></span>
-            <span>Membership Applied</span>
-          </div>
-          <div className="applied-membership-card">
-            <div className="applied-details">
+            <div className="applied-info">
               <div className="applied-name">{appliedMembership.name}</div>
               <div className="applied-service">{appliedMembership.serviceName}</div>
-              <div className="applied-sessions">
-                Sessions: {appliedMembership.usedSessions + 1}/{appliedMembership.numberOfSessions}
-                <span className="remaining">({appliedMembership.remainingSessions - 1} remaining after booking)</span>
+              <div className="applied-sessions-info">
+                 <Check size={14} />
+                 <span>Session {appliedMembership.usedSessions + 1} of {appliedMembership.numberOfSessions} used</span>
+              </div>
+              <div className="membership-sessions-indicator">
+                <div className="session-progress-bar">
+                  <div 
+                    className="session-progress-fill" 
+                    style={{ width: `${((appliedMembership.usedSessions + 1) / appliedMembership.numberOfSessions) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="sessions-text">{appliedMembership.remainingSessions - 1} left</span>
               </div>
             </div>
             <button 
               className="remove-membership-btn"
               onClick={handleRemoveMembership}
-              title="Remove membership and restore regular pricing"
+              title="Remove membership"
             >
               Remove
             </button>
           </div>
           <div className="membership-benefit">
-             This service will be FREE for the client
+             <Check size={12} /> Service is free with membership
           </div>
         </div>
       ) : (
@@ -345,28 +346,30 @@ const AdminMembershipChecker = ({
                   <div className="membership-details">
                     <div className="membership-name">{membership.name}</div>
                     <div className="membership-service">{membership.serviceName}</div>
-                    <div className="membership-sessions">
-                      <span className="sessions-count">{membership.remainingSessions}</span>
-                      <span className="sessions-label">sessions remaining</span>
+                    
+                    <div className="membership-sessions-indicator">
+                      <div className="session-progress-bar">
+                        <div 
+                          className="session-progress-fill" 
+                          style={{ width: `${(membership.usedSessions / membership.numberOfSessions) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="sessions-text">{membership.remainingSessions} sessions left</span>
                     </div>
+
                     <div className="membership-validity">
-                      Valid until: {new Date(membership.endDate).toLocaleDateString()}
+                      Expires: {new Date(membership.endDate).toLocaleDateString()}
                     </div>
                   </div>
                   <button 
                     className="apply-membership-btn"
                     onClick={() => handleApplyMembership(membership)}
-                    title="Apply this membership to make the service free"
                   >
-                    Apply (FREE)
+                    Apply
                   </button>
                 </div>
               </div>
             ))}
-          </div>
-          <div className="membership-info">
-            <span className="info-icon"></span>
-            <span>Applying a membership will make the matching service free for this booking</span>
           </div>
         </div>
       )}

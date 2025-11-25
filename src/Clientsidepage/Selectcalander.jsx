@@ -42,7 +42,19 @@ import {
   RotateCcw,
   User,
   Check,
-  X
+  X,
+  Edit2,
+  Clock,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  Gift,
+  Crown,
+  Trash2,
+  Mail,
+  Phone,
+  Tag,
+  Landmark
 } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
@@ -4667,355 +4679,294 @@ const SelectCalendar = () => {
               )}
 
               {/* Payment & Confirmation Step */}
+              {/* Payment & Confirmation Step */}
               {bookingStep === 6 && (
                 <>
-                  {/* <h3> Payment & Final Confirmation</h3> */}
-
-                  {/* Two Column Layout */}
                   <div className="payment-step-grid">
                     {/* Left Column */}
                     <div className="payment-left-column">
-                      {/* Multiple Appointments Summary */}
-                      <div className="multiple-appointments-summary">
-                        <h4> Appointment Session Summary</h4>
+                      
+                      {/* 1. Appointment Summary */}
+                      <div className="appointment-summary-card">
+                        <h4><Calendar size={18} /> Appointment Summary</h4>
                         <div className="appointments-list">
                           {multipleAppointments.map((apt, index) => (
                             <div key={apt.id} className="appointment-summary-item">
-                              <div className="appointment-number">{index + 1}</div>
-                              <div className="appointment-details">
+                              <div className="appointment-main-info">
                                 <div className="service-name">{apt.service.name}</div>
-                                <div className="appointment-meta">
-                                  {apt.professional.user?.firstName || apt.professional.name} •
-                                  {apt.timeSlot} • {apt.service.duration}min • AED {apt.service.price}
+                                <div className="appointment-meta-row">
+                                  <span className="meta-icon"><User size={14} /></span> {apt.professional.user?.firstName || apt.professional.name}
+                                  <span className="meta-divider">|</span>
+                                  <span className="meta-icon"><Clock size={14} /></span> {apt.timeSlot}
+                                  <span className="meta-divider">|</span>
+                                  <span className="meta-icon"><RotateCcw size={14} /></span> {apt.service.duration} min
                                 </div>
                               </div>
-                              <button
-                                className="remove-appointment-btn"
-                                onClick={() => removeAppointmentFromSessionLocal(apt.id)}
-                                title="Remove this appointment"
-                              >
-                                ×
-                              </button>
+                              <div className="appointment-price-action">
+                                <div className="service-price">AED {apt.service.price}</div>
+                                <button
+                                  className="remove-appointment-btn-simple"
+                                  onClick={() => removeAppointmentFromSessionLocal(apt.id)}
+                                  title="Remove"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
-
-                        <div className="session-totals">
-                          <div className="total-item">
-                            <span>Total Services:</span>
-                            <span>{multipleAppointments.length}</span>
+                        <div className="appointment-summary-footer">
+                          <div className="summary-stat">
+                            <span className="stat-label">Total Services</span>
+                            <span className="stat-value">{multipleAppointments.length}</span>
                           </div>
-                          <div className="total-item">
-                            <span>Total Duration:</span>
-                            <span>{multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0)} minutes</span>
+                          <div className="summary-stat">
+                            <span className="stat-label">Total Duration</span>
+                            <span className="stat-value">{multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0)} minutes</span>
                           </div>
-                          
-                          {customTotalDiscount > 0 && (
-                            <div className="total-item original-total">
-                              <span>Original Total:</span>
-                              <span className="strike-through">
-                                AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}
-                              </span>
-                            </div>
-                          )}
-                          
-                          {customTotalDiscount > 0 && (
-                            <div className="total-item discount-applied">
-                              <span>Discount Applied:</span>
-                              <span className="discount-value">- AED {customTotalDiscount.toFixed(2)}</span>
-                            </div>
-                          )}
-                          
-                          <div className="total-item total-price">
-                            <div className="total-price-content">
-                              <span>Total Amount:</span>
-                              {editingTotalPrice ? (
-                                <div className="price-edit-controls-inline">
-                                  <span className="currency-label">AED</span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={tempTotalPrice}
-                                    onChange={(e) => setTempTotalPrice(e.target.value)}
-                                    className="price-edit-input"
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') saveEditedTotalPrice();
-                                      if (e.key === 'Escape') cancelEditingTotalPrice();
-                                    }}
-                                  />
-                                  <button
-                                    className="price-save-btn"
-                                    onClick={saveEditedTotalPrice}
-                                    title="Save total"
-                                  >
-                                    ✓
+                          <div className="summary-stat highlight total-price-container">
+                            <span className="stat-label">Total Price</span>
+                            {editingTotalPrice ? (
+                              <div className="price-edit-wrapper">
+                                <span className="currency-prefix">AED</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={tempTotalPrice}
+                                  onChange={(e) => setTempTotalPrice(e.target.value)}
+                                  className="price-edit-input-modern"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveEditedTotalPrice();
+                                    if (e.key === 'Escape') cancelEditingTotalPrice();
+                                  }}
+                                />
+                                <div className="edit-actions">
+                                  <button className="edit-action-btn save" onClick={saveEditedTotalPrice} title="Save">
+                                    <Check size={14} />
                                   </button>
-                                  <button
-                                    className="price-cancel-btn"
-                                    onClick={cancelEditingTotalPrice}
-                                    title="Cancel"
-                                  >
-                                    ✕
+                                  <button className="edit-action-btn cancel" onClick={cancelEditingTotalPrice} title="Cancel">
+                                    <X size={14} />
                                   </button>
                                 </div>
-                              ) : (
-                                <div className="total-display-controls">
-                                  <span className="total-value">AED {getTotalSessionPrice().toFixed(2)}</span>
-                                  <button
-                                    className="price-edit-btn"
-                                    onClick={startEditingTotalPrice}
-                                    title="Edit total amount"
-                                  >
-                                    ✏️
-                                  </button>
-                                  {customTotalDiscount > 0 && (
-                                    <button
-                                      className="clear-discount-btn"
-                                      onClick={clearCustomDiscount}
-                                      title="Remove discount"
-                                    >
-                                      ✕
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            ) : (
+                              <div className="price-display-wrapper">
+                                <span className="stat-value">AED {getTotalSessionPrice().toFixed(2)}</span>
+                                <button className="edit-price-btn-modern" onClick={startEditingTotalPrice} title="Edit Total Price">
+                                  <Edit2 size={14} />
+                                </button>
+                                {customTotalDiscount > 0 && (
+                                   <button className="clear-discount-btn-modern" onClick={clearCustomDiscount} title="Remove Discount">
+                                     <X size={12} />
+                                   </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {customTotalDiscount > 0 && !editingTotalPrice && (
+                               <div className="original-price-subtext">
+                                  <span className="original">AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}</span>
+                                  <span className="discount-tag">-{customTotalDiscount.toFixed(2)} off</span>
+                               </div>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Client Information Display */}
-                      <div className="client-summary">
-                        <h4>  Client Information</h4>
-                        <div className="summary-item">
-                          <span>Client:</span>
-                          <span>
-                            {selectedExistingClient
-                              ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-                              : clientInfo.name
-                            }
-                            
-                          </span>
+                      {/* 2. Client Details */}
+                      <div className="client-details-card">
+                        <h4><User size={18} /> Client Details</h4>
+                        {selectedExistingClient ? (
+                          <div className="client-profile-header">
+                            <div className="client-avatar-large">
+                              {(selectedExistingClient.firstName?.[0] || '') + (selectedExistingClient.lastName?.[0] || '')}
+                            </div>
+                            <div className="client-profile-info">
+                              <div className="client-name-large">{selectedExistingClient.firstName} {selectedExistingClient.lastName}</div>
+                              <div className="client-type-badge">Returning Client</div>
+                            </div>
+                          </div>
+                        ) : (
+                           <div className="client-profile-header">
+                            <div className="client-avatar-large placeholder">
+                              {clientInfo.name ? clientInfo.name[0] : 'G'}
+                            </div>
+                            <div className="client-profile-info">
+                              <div className="client-name-large">{clientInfo.name || 'Guest Client'}</div>
+                              <div className="client-type-badge new">New Client</div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="client-fields-grid">
+                          <div className="client-field-group">
+                            <label>Name</label>
+                            <div className="readonly-field"><User size={14} className="text-gray-400" /> {selectedExistingClient ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}` : clientInfo.name}</div>
+                          </div>
+                          <div className="client-field-group">
+                            <label>Email</label>
+                            <div className="readonly-field"><Mail size={14} className="text-gray-400" /> {selectedExistingClient ? selectedExistingClient.email : (clientInfo.email || '-')}</div>
+                          </div>
+                          <div className="client-field-group full-width">
+                            <label>Phone</label>
+                            <div className="readonly-field"><Phone size={14} className="text-gray-400" /> {selectedExistingClient ? selectedExistingClient.phone : (clientInfo.phone || '-')}</div>
+                          </div>
                         </div>
-                        <div className="summary-item">
-                          <span> Email:</span>
-                          <span>
-                            {selectedExistingClient
-                              ? selectedExistingClient.email
-                              : clientInfo.email
-                            }
-                          </span>
+                      </div>
+
+                      {/* 3. Billing & Redeem */}
+                      <div className="billing-redeem-card">
+                        <h4><Tag size={18} /> Billing & Redeem</h4>
+                        
+                        {/* Gift Card Section */}
+                        <div className="redeem-section">
+                          <div className="redeem-header">
+                            <Gift size={16} className="redeem-icon" />
+                            <span className="redeem-title">Gift Card</span>
+                          </div>
+                          
+                          {selectedGiftCard && (
+                             <div className="applied-redeem-item">
+                                <div className="redeem-info">
+                                  <span className="redeem-code">{selectedGiftCard.code}</span>
+                                  <span className="redeem-amount">- AED {giftCardAppliedAmount}</span>
+                                </div>
+                                <button onClick={() => setSelectedGiftCard(null)} className="remove-redeem-btn">Remove</button>
+                             </div>
+                          )}
+                          
+                          {/* Available Gift Cards List (Simplified) */}
+                          {availableGiftCards.length > 0 && !selectedGiftCard && (
+                             <div className="available-redeem-list">
+                                {availableGiftCards.map(gc => (
+                                   <button key={gc._id} className="redeem-option-chip" onClick={() => {
+                                      setSelectedGiftCard(gc);
+                                      const total = getTotalSessionPrice();
+                                      const val = calculateGiftCardValue(gc);
+                                      setGiftCardAppliedAmount(Math.min(val, total));
+                                   }}>
+                                     <Gift size={12} /> {gc.code} (AED {calculateGiftCardValue(gc)})
+                                   </button>
+                                ))}
+                             </div>
+                          )}
                         </div>
-                        <div className="summary-item">
-                          <span> Phone:</span>
-                          <span>
-                            {selectedExistingClient
-                              ? selectedExistingClient.phone
-                              : clientInfo.phone
-                            }
-                          </span>
+
+                        {/* Membership Section */}
+                        <div className="redeem-section">
+                          <div className="redeem-header">
+                            <Crown size={16} className="redeem-icon" />
+                            <span className="redeem-title">Membership</span>
+                          </div>
+                          
+                          <AdminMembershipChecker
+                              selectedClient={selectedExistingClient || {
+                                firstName: clientInfo.name?.split(' ')[0] || '',
+                                lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
+                                email: clientInfo.email,
+                                phone: clientInfo.phone
+                              }}
+                              selectedServices={multipleAppointments.map(apt => apt.service)}
+                              appliedMembership={appliedMembership}
+                              onMembershipApplied={handleMembershipApplied}
+                              onMembershipRemoved={handleMembershipRemoved}
+                              refreshSignal={membershipRefreshSignal}
+                            />
                         </div>
                       </div>
                     </div>
 
                     {/* Right Column */}
                     <div className="payment-right-column">
-                      {/* Admin Membership Checker - Only show if client has memberships */}
-                      {(availableMemberships && availableMemberships.length > 0) && (
-                        <AdminMembershipChecker
-                          selectedClient={selectedExistingClient || {
-                            firstName: clientInfo.name?.split(' ')[0] || '',
-                            lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
-                            email: clientInfo.email,
-                            phone: clientInfo.phone
-                          }}
-                          selectedServices={multipleAppointments.map(apt => apt.service)}
-                          appliedMembership={appliedMembership}
-                          onMembershipApplied={handleMembershipApplied}
-                          onMembershipRemoved={handleMembershipRemoved}
-                          refreshSignal={membershipRefreshSignal}
-                        />
-                      )}
-
-                      {/* Gift Card Redemption Section - Only show if client has gift cards */}
-                      {(availableGiftCards && availableGiftCards.length > 0) && (
-                        <div className="booking-modal-form">
-                          <h4> Gift Card Redemption</h4>
-
-                          {!selectedGiftCard ? (
-                            <div className="available-gift-cards-section">
-                              {benefitsLoading && (
-                                <div className="gift-cards-loading">
-                                  <Loading/>
-                                  Loading available gift cards...
-                                </div>
-                              )}
-
-                              {!benefitsLoading && availableGiftCards.length > 0 && (
-                              <div className="form-group">
-                                <label>Select a gift card to redeem:</label>
-                                <div className="available-gift-cards-list">
-                                  {availableGiftCards.map(giftCard => {
-                                    const giftCardId = giftCard._id || giftCard.id;
-                                    const giftCardCode = giftCard.code || giftCard.giftCardCode || giftCard.cardNumber;
-                                    const availableValue = calculateGiftCardValue(giftCard);
-                                    const expiryDate = giftCard.expiresAt || giftCard.expiryDate || giftCard.expiry;
-
-                                    return (
-                                      <div
-                                        key={giftCardId}
-                                        className={`gift-card-item ${selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId ? 'selected' : ''}`}
-                                        onClick={() => {
-                                          console.log('🎁 Selected gift card:', giftCard);
-                                          console.log('🎁 Gift card details:', {
-                                            availableValue,
-                                            totalAmount: getTotalSessionPrice(),
-                                            membershipDiscount: membershipDiscountAmount
-                                          });
-                                          setSelectedGiftCard(giftCard);
-                                          const totalAmount = getTotalSessionPrice();
-                                          const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
-                                          const maxRedeemable = Math.min(availableValue, amountAfterMembership);
-                                          console.log('🎁 Setting giftCardAppliedAmount to:', maxRedeemable);
-                                          setGiftCardAppliedAmount(maxRedeemable);
-                                          setGiftCardError('');
-                                        }}
-                                      >
-                                        <div className="gift-card-icon"></div>
-                                        <div className="gift-card-info">
-                                          <div className="gift-card-code">Code: {giftCardCode}</div>
-                                          <div className="gift-card-balance">Available: AED {availableValue.toFixed(2)}</div>
-                                          {expiryDate && (
-                                            <div className="gift-card-expiry">
-                                              Expires: {new Date(expiryDate).toLocaleDateString()}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="gift-card-select-btn">
-                                          {(selectedGiftCard?._id === giftCardId || selectedGiftCard?.id === giftCardId) ? 'Selected' : 'Select'}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-
-                              {giftCardError && (
-                                <div className="gift-card-error">{giftCardError}</div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="applied-gift-card-section">
-                              <div className="applied-gift-card-info">
-                                <div className="gift-card-icon"></div>
-                                <div className="gift-card-details">
-                                  <div className="gift-card-code">Code: {selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber}</div>
-                                  <div className="gift-card-value">Applied: AED {giftCardAppliedAmount}</div>
-                                  <div className="gift-card-remaining">Remaining on card: AED {(calculateGiftCardValue(selectedGiftCard) - giftCardAppliedAmount).toFixed(2)}</div>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="remove-gift-card-btn"
-                                  onClick={removeAppliedGiftCard}
-                                  title="Remove gift card"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                      
+                      {/* 1. Payment Breakdown */}
+                      <div className="payment-breakdown-card">
+                        <h4><Banknote size={18} /> Payment Breakdown</h4>
+                        <div className="breakdown-row">
+                          <span className="breakdown-label">Service Total</span>
+                          <span className="breakdown-value">AED {getTotalSessionPrice().toFixed(2)}</span>
                         </div>
-                      )}
-
-                      {/* Payment Summary */}
-                      <div className="booking-modal-form">
-                        <div className="payment-summary-box">
-                          <div className="summary-row">
-                            <span>Service Total:</span>
-                            <span>AED {getTotalSessionPrice()}</span>
+                        
+                        {appliedMembership && membershipDiscountAmount > 0 && (
+                          <div className="breakdown-row discount">
+                            <span className="breakdown-label">Membership Discount</span>
+                            <span className="breakdown-value">-AED {membershipDiscountAmount.toFixed(2)}</span>
                           </div>
-                          {appliedMembership && membershipDiscountAmount > 0 && (
-                            <div className="summary-row discount">
-                              <span>Membership Discount ({appliedMembership.name}):</span>
-                              <span>- AED {membershipDiscountAmount}</span>
-                            </div>
-                          )}
-                          {selectedGiftCard && giftCardAppliedAmount > 0 && (
-                            <div className="summary-row discount">
-                              <span>Gift Card Applied:</span>
-                              <span>- AED {giftCardAppliedAmount}</span>
-                            </div>
-                          )}
-                          <div className="summary-row total">
-                            <span>Remaining to Pay:</span>
-                            <span>AED {calculateTotalWithGiftCard().remainingAmount}</span>
+                        )}
+                        
+                        {selectedGiftCard && giftCardAppliedAmount > 0 && (
+                          <div className="breakdown-row discount">
+                            <span className="breakdown-label">Gift Card</span>
+                            <span className="breakdown-value">-AED {giftCardAppliedAmount.toFixed(2)}</span>
                           </div>
-                        </div>
-
-                        {/* Payment Method Selection - AFTER gift card */}
-                        {calculateTotalWithGiftCard().remainingAmount > 0 && (
-                          <div className="payment-method-section">
-                            <h4> Payment Method for Remaining Amount</h4>
-                            <div className="form-group">
-                              <label>Select how you'd like to pay the remaining AED {calculateTotalWithGiftCard().remainingAmount}:</label>
-                              <div className="payment-method-grid">
-                                {['cash', 'card', 'upi'].map(method => {
-                                  const labels = { cash: 'Cash', card: 'Card', upi: 'Bank Transfer' };
-                                  return (
-                                    <button
-                                      type="button"
-                                      key={method}
-                                      className={`payment-method-tile ${paymentMethod === method ? 'selected' : ''}`}
-                                      onClick={() => setPaymentMethod(method)}
-                                    >
-                                      <span className="pm-label">{labels[method]}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* Card and UPI payment methods don't require additional input */}
-                            {/* Payment method selection is sufficient */}
+                        )}
+                        
+                        {customTotalDiscount > 0 && (
+                           <div className="breakdown-row discount">
+                            <span className="breakdown-label">Manual Discount</span>
+                            <span className="breakdown-value">-AED {customTotalDiscount.toFixed(2)}</span>
                           </div>
                         )}
 
-                        {calculateTotalWithGiftCard().remainingAmount === 0 && selectedGiftCard && (
-                          <div className="full-payment-message">
-                            <div className="success-message">
-                              Your gift card covers the full amount! No additional payment required.
-                            </div>
-                          </div>
-                        )}
+                        <div className="breakdown-divider"></div>
+                        
+                        <div className="breakdown-row total">
+                          <span className="breakdown-label">Remaining Amount</span>
+                          <span className="breakdown-value">AED {calculateTotalWithGiftCard().remainingAmount.toFixed(2)}</span>
+                        </div>
                       </div>
+
+                      {/* 2. Payment Method */}
+                      <div className="payment-method-card">
+                        <h4><CreditCard size={18} /> Payment Method</h4>
+                        <div className="payment-methods-grid-large">
+                          <button 
+                            className={`pm-card ${paymentMethod === 'cash' ? 'active' : ''}`}
+                            onClick={() => setPaymentMethod('cash')}
+                          >
+                            <div className="pm-icon"><Banknote size={24} /></div>
+                            <div className="pm-name">Cash</div>
+                          </button>
+                          <button 
+                            className={`pm-card ${paymentMethod === 'card' ? 'active' : ''}`}
+                            onClick={() => setPaymentMethod('card')}
+                          >
+                            <div className="pm-icon"><CreditCard size={24} /></div>
+                            <div className="pm-name">Card</div>
+                          </button>
+                         
+                          <button 
+                            className={`pm-card ${paymentMethod === 'upi' ? 'active' : ''}`}
+                            onClick={() => setPaymentMethod('upi')}
+                          >
+                            <div className="pm-icon"><Landmark size={24} /></div>
+                            <div className="pm-name">Bank Transfer</div>
+                          </button>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
-                  <div className="booking-modal-actions">
-                    <button
-                      className="booking-modal-confirm"
-                      onClick={handleCreateBooking}
-                      disabled={
-                        bookingLoading ||
-                        multipleAppointments.length === 0 ||
-                        (calculateTotalWithGiftCard().remainingAmount > 0 && !paymentMethod)
-                      }
-                    >
-                      {bookingLoading ? ' Processing Payment...' : (() => {
-                        const remainingAmount = calculateTotalWithGiftCard().remainingAmount;
-                        const serviceCount = multipleAppointments.length;
-
-                        if (remainingAmount === 0) {
-                          return ` Confirm ${serviceCount} Service${serviceCount > 1 ? 's' : ''} - Fully Paid with Gift Card!`;
-                        } else {
-                          return ` Confirm ${serviceCount} Service${serviceCount > 1 ? 's' : ''} - Pay AED ${remainingAmount}`;
-                        }
-                      })()}
-                    </button>
-                    <button className="booking-modal-back" onClick={() => setBookingStep(5)}>← Back</button>
+                  {/* Bottom Floating Action Bar */}
+                  <div className="confirm-appointment-bar">
+                     <button className="back-btn-simple" onClick={() => setBookingStep(5)}>
+                        <ChevronLeft size={16} /> Back
+                     </button>
+                     <button 
+                        className="confirm-booking-btn-large"
+                        onClick={handleCreateBooking}
+                        disabled={bookingLoading}
+                     >
+                        {bookingLoading ? 'Processing...' : (
+                          <>
+                            <Check size={18} />
+                            {`Confirm Appointment — Pay AED ${calculateTotalWithGiftCard().remainingAmount.toFixed(2)}`}
+                          </>
+                        )}
+                     </button>
                   </div>
                 </>
               )}

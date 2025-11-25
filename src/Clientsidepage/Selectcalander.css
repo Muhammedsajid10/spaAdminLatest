@@ -319,7 +319,7 @@
 
   /* Close button refinements */
   .booking-modal.pro-theme .booking-modal-close {
-    top: -2px;  
+    top: 23px;  
     right: 14px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -11519,4 +11519,536 @@
   .team-filter-dropdown {
     width: 100%;
   }
+}
+/* Final Step Redesign */
+.booking-modal.final-step {
+  max-width: 1000px; /* Wider modal for the 2-column layout */
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh; /* Ensure modal fits in viewport */
+  overflow: hidden; /* Prevent double scrollbars */
+  padding: 0; /* Remove default padding to allow full-width footer */
+  position: relative;
+}
+
+/* Header needs padding since we removed it from modal */
+.booking-modal.final-step > h2,
+.booking-modal.final-step > .booking-modal-close {
+  margin: 20px 24px 0;
+}
+.booking-modal.final-step > .booking-modal-close {
+  top: 20px;
+  right: 24px;
+  margin: 0;
+}
+
+/* Scrollable Content Area */
+.booking-modal.final-step .payment-step-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  padding: 20px 24px 100px; /* Add bottom padding for the fixed bar */
+  overflow-y: auto;
+  flex: 1; /* Take remaining height */
+  margin-bottom: 0; /* Reset margin */
+}
+
+.payment-left-column, .payment-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Cards */
+.appointment-summary-card,
+.client-details-card,
+.billing-redeem-card,
+.payment-breakdown-card,
+.payment-method-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  border: 1px solid #f1f5f9;
+}
+
+.appointment-summary-card h4,
+.client-details-card h4,
+.billing-redeem-card h4,
+.payment-breakdown-card h4,
+.payment-method-card h4 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Appointment Summary Items */
+.appointments-list {
+  max-height: 128px; /* Adjust based on item height, roughly 2-3 items */
+  overflow-y: auto;
+  padding-right: 4px; /* Space for scrollbar */
+}
+
+/* Custom Scrollbar for appointments list */
+.appointments-list::-webkit-scrollbar {
+  width: 4px;
+}
+.appointments-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.appointments-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.appointments-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.appointment-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.appointment-summary-item:last-child {
+  border-bottom: none;
+}
+.service-name {
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+.appointment-meta-row {
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.meta-divider { color: #cbd5e1; }
+.service-price {
+  font-weight: 700;
+  color: #059669;
+}
+.remove-appointment-btn-simple {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.remove-appointment-btn-simple:hover { color: #ef4444; background: #fee2e2; }
+
+.appointment-summary-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-weight: 600; color: #0f172a; }
+.summary-stat.highlight .stat-value { color: #059669; font-size: 16px; }
+
+/* Client Details */
+.client-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.client-avatar-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+.client-avatar-large.placeholder { background: #f1f5f9; color: #64748b; }
+.client-name-large {
+  font-weight: 700;
+  font-size: 16px;
+  color: #0f172a;
+}
+.client-type-badge {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-top: 2px;
+}
+.client-type-badge.new { background: #dcfce7; color: #166534; }
+
+.client-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.client-field-group label {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.readonly-field {
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.client-field-group.full-width { grid-column: span 2; }
+
+/* Billing & Redeem */
+.redeem-section {
+  margin-bottom: 20px;
+}
+.redeem-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+.redeem-input-row {
+  display: flex;
+  gap: 8px;
+}
+.redeem-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.redeem-apply-btn {
+  background: #d97706;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.available-redeem-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.redeem-option-chip {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Applied Redeem Item */
+.applied-redeem-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.redeem-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.redeem-code {
+  font-weight: 600;
+  color: #15803d;
+  font-size: 13px;
+}
+
+.redeem-amount {
+  font-size: 12px;
+  color: #166534;
+}
+
+.remove-redeem-btn {
+  background: white;
+  border: 1px solid #fca5a5;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.remove-redeem-btn:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+/* Payment Breakdown */
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #334155;
+}
+.breakdown-row.discount { color: #059669; }
+.breakdown-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 16px 0;
+}
+.breakdown-row.total {
+  font-weight: 700;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+/* Payment Method */
+.payment-methods-grid-large {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.pm-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pm-card:hover { border-color: #cbd5e1; background: #f8fafc; }
+.pm-card.active {
+  border-color: #059669;
+  background: #ecfdf5;
+  color: #059669;
+}
+.pm-icon { 
+  margin-bottom: 8px; 
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Price Editing Controls */
+.total-price-container {
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.price-display-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-price-btn-modern,
+.clear-discount-btn-modern {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.edit-price-btn-modern:hover {
+  background: #f1f5f9;
+  color: #3b82f6;
+}
+
+.clear-discount-btn-modern:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.price-edit-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 2px 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.currency-prefix {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.price-edit-input-modern {
+  width: 70px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  padding: 4px 0;
+  text-align: right;
+}
+
+/* Remove arrows from number input */
+.price-edit-input-modern::-webkit-outer-spin-button,
+.price-edit-input-modern::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 2px;
+  border-left: 1px solid #e2e8f0;
+  padding-left: 4px;
+  margin-left: 2px;
+}
+
+.edit-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-action-btn.save { color: #10b981; }
+.edit-action-btn.save:hover { background: #d1fae5; }
+
+.edit-action-btn.cancel { color: #ef4444; }
+.edit-action-btn.cancel:hover { background: #fee2e2; }
+
+.original-price-subtext {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.original-price-subtext .original {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.original-price-subtext .discount-tag {
+  color: #ef4444;
+  font-weight: 600;
+  background: #fef2f2;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.pm-card.active .pm-icon { color: #059669; }
+.pm-name { font-size: 13px; font-weight: 600; }
+
+/* Bottom Bar - Fixed at bottom of modal */
+.confirm-appointment-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 20;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+}
+.back-btn-simple {
+  background: none;
+  border: 1px solid #e2e8f0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.confirm-booking-btn-large {
+  background: #0f172a; /* Dark theme color */
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  flex: 1;
+  max-width: 400px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.confirm-booking-btn-large:hover { background: #1e293b; }
+.confirm-booking-btn-large:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .payment-step-grid { grid-template-columns: 1fr; }
+  .confirm-appointment-bar { position: fixed; bottom: 0; border-radius: 0; width: 100%; left: 0; }
+  .booking-modal.final-step { height: 100vh; max-height: 100vh; border-radius: 0; }
 }
