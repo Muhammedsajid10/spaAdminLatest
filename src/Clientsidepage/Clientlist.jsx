@@ -81,25 +81,23 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
     <form onSubmit={handleSubmit} className="client-modal-form">
       <div className="client-modal-row">
         <div className="client-modal-group">
-          <label>First Name *</label>
+          <label>First Name</label>
           <input
             type="text"
             value={formData.firstName}
             onChange={(e) =>
               setFormData({ ...formData, firstName: e.target.value })
             }
-            required
           />
         </div>
         <div className="client-modal-group">
-          <label>Last Name *</label>
+          <label>Last Name</label>
           <input
             type="text"
             value={formData.lastName}
             onChange={(e) =>
               setFormData({ ...formData, lastName: e.target.value })
             }
-            required
           />
         </div>
       </div>
@@ -117,14 +115,14 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
       </div>
 
       <div className="client-modal-group">
-        <label>Phone *</label>
+        <label>Phone</label>
         <PhoneInput
           country={"ae"}
           value={formData.phone}
           onChange={(phone) => setFormData({ ...formData, phone })}
           inputProps={{
             name: "phone",
-            required: true,
+            required: false,
             autoFocus: false,
           }}
         />
@@ -477,19 +475,53 @@ const ClientDirectory = () => {
   const handleUpdateClient = async (formData) => {
     setFormLoading(true); // Set form loading true here
     try {
+      // Build update payload - only include non-empty fields
+      const updatePayload = {};
+      if (formData.firstName?.trim()) updatePayload.firstName = formData.firstName.trim();
+      if (formData.lastName?.trim()) updatePayload.lastName = formData.lastName.trim();
+      if (formData.email?.trim()) updatePayload.email = formData.email.trim();
+      if (formData.phone?.trim()) updatePayload.phone = formData.phone.trim();
+      if (formData.gender) updatePayload.gender = formData.gender;
+
       // API call to update client
-      await api.patch(`/admin/clients/${editingClient.id}`, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        gender: formData.gender,
-      });
+      await api.patch(`/admin/clients/${editingClient.id}`, updatePayload);
+
+      // Optimistically update the client in local state immediately
+      const updatedClientData = {
+        ...editingClient,
+        firstName: formData.firstName?.trim() || editingClient.firstName,
+        lastName: formData.lastName?.trim() || editingClient.lastName,
+        name: `${formData.firstName?.trim() || editingClient.firstName || ''} ${formData.lastName?.trim() || editingClient.lastName || ''}`.trim(),
+        email: formData.email?.trim() || editingClient.email,
+        mobile: formData.phone?.trim() || editingClient.mobile,
+        gender: formData.gender || editingClient.gender,
+        initial: (formData.firstName?.trim() || editingClient.firstName)
+          ? (formData.firstName?.trim() || editingClient.firstName)[0].toUpperCase()
+          : (formData.lastName?.trim() || editingClient.lastName)
+          ? (formData.lastName?.trim() || editingClient.lastName)[0].toUpperCase()
+          : "?",
+      };
+
+      // Update in paginated clients list
+      setClients((prev) =>
+        prev.map((client) =>
+          client.id === editingClient.id ? updatedClientData : client
+        )
+      );
+
+      // Update in all clients list (for search)
+      setAllClients((prev) =>
+        prev.map((client) =>
+          client.id === editingClient.id ? updatedClientData : client
+        )
+      );
 
       setShowModal(false);
       setEditingClient(null); // Clear editing state
       showNotification('Client updated successfully!', 'success');
-      fetchClients(); // Refresh the list
+      
+      // Still fetch from backend to ensure data consistency (but UI updates immediately)
+      fetchClients(currentPage, itemsPerPage);
     } catch (err) {
       showNotification(err.response?.data?.message || 'Failed to update client', 'error');
     } finally {

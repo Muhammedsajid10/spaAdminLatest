@@ -1069,7 +1069,7 @@
 .pagination-btn {
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
-  background-color: white;
+  background-color: rgb(231, 234, 237);
   color: #374151;
   font-size: 0.875rem;
   font-weight: 500;
@@ -1090,14 +1090,14 @@
 
 .pagination-btn.active {
   background-color: #6366f1;
-  color: white;
+  color: black;
   border-color: #6366f1;
 }
 
 .pagination-btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background-color: #f9fafb;
+  background-color: #fbfaf9;
 }
 
 /* --- LOADING STATE --- */

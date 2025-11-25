@@ -67,7 +67,7 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
     paymentType: 'one-time',
     validFor: '1 month',
     price: '',
-    currency: 'USD',
+    currency: 'AED',
     notes: ''
   });
 
