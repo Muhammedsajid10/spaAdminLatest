@@ -91,7 +91,7 @@ const Giftcards = () => {
         };
       });
 
-      setGiftCards(purchased);
+      setGiftCards(purchased); 
       const rawTemplates = templatesRes.data?.data?.giftCards || [];
       const normalizedTemplates = rawTemplates.map(t => {
         const numericValue = Number(t.value);
@@ -318,12 +318,12 @@ const Giftcards = () => {
 
         // Set success message with email status
         const recipientName = form.recipientName || 'recipient';
-        const baseMessage = `🎁 Gift card assigned successfully to ${recipientName}!`;
+        const baseMessage = ` Gift card assigned successfully to ${recipientName}!`;
         
         if (emailSent && recipientEmail) {
-          setAssignSuccess(`${baseMessage} 📧 Email notification sent to ${recipientEmail}`);
+          setAssignSuccess(`${baseMessage} Email notification sent to ${recipientEmail}`);
         } else if (form.recipientEmail) {
-          setAssignSuccess(`${baseMessage} ⚠️ Note: Email notification could not be sent`);
+          setAssignSuccess(`${baseMessage}  Note: Email notification could not be sent`);
         } else {
           setAssignSuccess(baseMessage);
         }
@@ -454,7 +454,7 @@ const Giftcards = () => {
         <div className="header-section">
           <h1>Gift cards sold</h1>
           <div className="header-actions">
-            <button className="primary-btn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+            <button className="mem-export-bbtn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
           </div>
         </div>
         <p className="desc">View, filter and export gift cards purchased by your clients.</p>
@@ -478,7 +478,7 @@ const Giftcards = () => {
         <div className="header-section">
           <h1>Gift cards sold</h1>
           <div className="header-actions">
-            <button className="primary-btn" onClick={openAssign} disabled>Assign gift card</button>
+            <button className="mem-export-bbtn" onClick={openAssign} disabled>Assign gift card</button>
           </div>
         </div>
         <p className="desc">View, filter and export gift cards purchased by your clients.</p>
@@ -647,16 +647,16 @@ const Giftcards = () => {
       <div className="header-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Gift cards sold</h1>
         <div className="header-actions">
-          <button className="primary-btn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+          <button className="mem-export-bbtn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
         </div>
         <div className="export-wrapper" ref={exportMenuRef}>
-          {/* <button 
-            className="options-btn"
+          <button 
+            className="mem-export-bbtn"
             onClick={handleExportClick}
             disabled={filteredCards.length === 0}
           >
             Export
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
               <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
@@ -672,7 +672,7 @@ const Giftcards = () => {
                 Export as Excel
               </button>
             </div>
-          )} */}
+          )}
         </div>
       </div>
       <p className="desc">
@@ -692,7 +692,7 @@ const Giftcards = () => {
           color: '#155724',
           fontSize: '14px',
           fontWeight: '500',
-          zIndex: 1000,
+          zIndex: 99999,
           maxWidth: '400px',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
           animation: 'slideIn 0.3s ease-out'
