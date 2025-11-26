@@ -103,14 +103,13 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
       </div>
 
       <div className="client-modal-group">
-        <label>Email *</label>
+        <label>Email</label>
         <input
           type="email"
           value={formData.email}
           onChange={(e) =>
             setFormData({ ...formData, email: e.target.value })
           }
-          required
         />
       </div>
 
@@ -155,7 +154,7 @@ const ClientFormModal = ({ isOpen, onClose, client, onSubmit, loading }) => {
           className="client-modal-btn-primary"
           disabled={loading}
         >
-          {loading ? <Loading /> : client ? "Update Client" : "Add Client"}
+          {loading ? <div className="btn-loader" /> : client ? "Update Client" : "Add Client"}
         </button>
       </div>
     </form>
