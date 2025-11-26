@@ -672,6 +672,8 @@ const SelectCalendar = () => {
     setClientSearchResults([]);
     setShowClientSearch(false);
     setIsAddingNewClient(false);
+    setIsWalkIn(false);
+    setClientInfo({ name: '', email: '', phone: '' });
     setBookingDefaults(null);
     setSelectedBookingDate(null);
     setShowBookingDatePicker(false);
@@ -4441,12 +4443,12 @@ const SelectCalendar = () => {
                             onChange={e => {
                               const checked = e.target.checked;
                               setIsWalkIn(checked);
-                              if (checked) {
-                                // If user marks as walk-in, clear any selected existing client
-                                setSelectedExistingClient(null);
-                                // Clear optional contact fields (they are not required)
-                                setClientInfo(f => ({ ...f, email: '', phone: '' }));
-                              }
+                                if (checked) {
+                                  // If user marks as walk-in, clear any selected existing client
+                                  setSelectedExistingClient(null);
+                                  // Clear all client info including name to prevent previous selection from showing
+                                  setClientInfo({ name: '', email: '', phone: '' });
+                                }
                             }}
                           />
                           <span className="walkin-slider" />
@@ -4794,7 +4796,7 @@ const SelectCalendar = () => {
                               {clientInfo.name ? clientInfo.name[0] : 'G'}
                             </div>
                             <div className="client-profile-info">
-                              <div className="client-name-large">{clientInfo.name || 'Guest Client'}</div>
+                              <div className="client-name-large">{clientInfo.name || 'Walk In Client'}</div>
                               <div className="client-type-badge new">New Client</div>
                             </div>
                           </div>
