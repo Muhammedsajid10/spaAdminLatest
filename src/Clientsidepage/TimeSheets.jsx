@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Calendar, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FiSearch, FiCalendar, FiFilter, FiChevronDown, FiPlus, FiMoreHorizontal, FiRefreshCw, FiDownload, FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import './TimeSheets.css';
 import api from '../Service/Api';
 import Swal from 'sweetalert2';
 import Loading from '../states/Loading.jsx';
 import Error500Page from '../states/ErrorPage';
-import NoData from '../states/NoData.jsx';
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
-//updated time sheet
+import * as XLSX from 'xlsx';
+
 // --- Helper Functions ---
 const getInitials = (name) => {
   if (!name) return 'NA';
@@ -40,10 +40,8 @@ const formatDate = (dateString) => {
 };
 
 const calculateHoursWorked = (clockIn, clockOut) => {
-  // If either time is missing or has the placeholder value '-', return placeholder
   if (!clockIn || !clockOut || clockOut === '-' || clockIn === '-') return '-';
   
-  // Parse time string in HH:MM format to total minutes
   const parseTime = (timeStr) => {
     if (!timeStr || typeof timeStr !== 'string') return null;
     const [hours, minutes] = timeStr.split(':').map(Number);
@@ -55,19 +53,16 @@ const calculateHoursWorked = (clockIn, clockOut) => {
     const clockInMinutes = parseTime(clockIn);
     let clockOutMinutes = parseTime(clockOut);
     
-    // If parsing failed for either time, return placeholder
     if (clockInMinutes === null || clockOutMinutes === null) return '-';
     
-    // Handle overnight shifts (when clock out is earlier than clock in)
     if (clockOutMinutes < clockInMinutes) {
-      clockOutMinutes += 24 * 60; // Add 24 hours in minutes
+      clockOutMinutes += 24 * 60;
     }
     
     const totalMinutes = clockOutMinutes - clockInMinutes;
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     
-    // Format the output based on whether there are minutes to show
     if (minutes === 0) {
       return `${hours}h`;
     } else {
@@ -79,7 +74,6 @@ const calculateHoursWorked = (clockIn, clockOut) => {
   }
 };
 
-// Ensure "no data" entries show clearly and use global NoData behavior
 const generateTimesheetFromEmployees = (employees, date) => {
   const timesheetEntries = [];
   employees.forEach((employee) => {
@@ -87,31 +81,25 @@ const generateTimesheetFromEmployees = (employees, date) => {
     const lastName = employee.user?.lastName || employee.lastName || '';
     const fullName = `${firstName} ${lastName}`.trim() || 'Unknown Employee';
 
-    // If check-in/check-out data isn't available, mark as No data
     const clockIn = employee.clockIn || '-';
     const clockOut = employee.clockOut || '-';
     
-    // Use pre-calculated hoursWorked from the backend if available
-    // Otherwise, calculate it from clock-in and clock-out times
     let hoursWorked = employee.hoursWorked;
     if (!hoursWorked || hoursWorked === '-') {
       hoursWorked = calculateHoursWorked(clockIn, clockOut);
     }
     
-    // Determine status based on check-in/check-out state
     let status = 'Absent';
-    let statusColor = 'red';
+    let statusClass = 'absent';
     
     if (clockIn !== '-' && clockOut !== '-') {
-      status = 'Checked Out';
-      statusColor = 'green';
+      status = 'Clocked out';
+      statusClass = 'clocked-out';
     } else if (clockIn !== '-' && clockOut === '-') {
-      status = 'Checked In';
-      statusColor = 'blue';
+      status = 'Clocked in';
+      statusClass = 'clocked-in';
     }
     
-    const hasData = clockIn !== '-' && clockOut !== '-';
-
     timesheetEntries.push({
       id: employee._id || employee.id,
       initials: getInitials(fullName),
@@ -124,7 +112,7 @@ const generateTimesheetFromEmployees = (employees, date) => {
       breaks: employee.breaks || '-',
       hoursWorked: hoursWorked === '-' ? '-' : hoursWorked,
       status,
-      statusColor,
+      statusClass,
       employeeId: employee._id || employee.id
     });
   });
@@ -146,28 +134,28 @@ const DatePickerModal = ({ isOpen, onClose, onDateSelect, selectedDate }) => {
   const firstDay = getFirstDayOfMonth(year, month);
 
   const handleDayClick = (day) => {
-    const newDate = new Date(year, month, day+1);
-    onDateSelect(newDate.toISOString().split('T')[0]);
+    const newDate = new Date(year, month, day);
+    // Adjust for timezone offset to ensure correct date string
+    const offset = newDate.getTimezoneOffset();
+    const adjustedDate = new Date(newDate.getTime() - (offset*60*1000));
+    onDateSelect(adjustedDate.toISOString().split('T')[0]);
   };
 
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1));
-  };
-  
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1));
-  };
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1));
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1));
 
   const days = [];
   for (let i = 0; i < firstDay; i++) {
-    days.push(<div key={`empty-${i}`} className="timesheet-day-empty"></div>);
+    days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
   }
   for (let i = 1; i <= daysInMonth; i++) {
-    const isSelected = new Date(selectedDate).getDate() === i && new Date(selectedDate).getMonth() === month && new Date(selectedDate).getFullYear() === year;
+    const isSelected = new Date(selectedDate).getDate() === i && 
+                       new Date(selectedDate).getMonth() === month && 
+                       new Date(selectedDate).getFullYear() === year;
     days.push(
       <button 
         key={i} 
-        className={`timesheet-day ${isSelected ? 'selected' : ''}`} 
+        className={`calendar-day ${isSelected ? 'selected' : ''}`} 
         onClick={() => handleDayClick(i)}
       >
         {i}
@@ -176,106 +164,25 @@ const DatePickerModal = ({ isOpen, onClose, onDateSelect, selectedDate }) => {
   }
 
   return (
-    <div className="timesheet-date-picker-overlay" onClick={onClose}>
-      <div className="timesheet-date-picker-container" onClick={(e) => e.stopPropagation()}>
-        <div className="timesheet-date-picker-header">
-          <button onClick={handlePrevMonth}>&lt;</button>
-          <h2>{getMonthName(month)} {year}</h2>
-          <button onClick={handleNextMonth}>&gt;</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" style={{ maxWidth: '320px' }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Select Date</h3>
+          <button className="modal-close" onClick={onClose}><FiX /></button>
         </div>
-        <div className="timesheet-day-names">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day}>{day}</div>
-          ))}
-        </div>
-        <div className="timesheet-days-grid">
-          {days}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Export Loading Overlay Component ---
-const ExportLoadingOverlay = ({ isVisible, progress }) => {
-  if (!isVisible) return null;
-
-  const progressPercentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
-
-  return (
-    <div 
-      className="timesheet-export-loading-overlay" 
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999
-      }}
-    >
-      <div 
-        style={{
-          backgroundColor: 'white',
-          padding: '32px',
-          borderRadius: '12px',
-          minWidth: '400px',
-          textAlign: 'center',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-        }}
-      >
-        <div style={{ marginBottom: '16px' }}>
-          <RefreshCw 
-            size={48} 
-            style={{ 
-              color: '#111', 
-              animation: 'spin 1s linear infinite'
-            }} 
-          />
-        </div>
-        
-        <h3 style={{ margin: '0 0 8px 0', color: '#111', fontSize: '18px', fontWeight: '600' }}>
-          Exporting Timesheet
-        </h3>
-        
-        <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '14px' }}>
-          {progress.message}
-        </p>
-        
-        {progress.total > 0 && (
-          <div style={{ marginBottom: '12px' }}>
-            <div 
-              style={{
-                width: '100%',
-                height: '8px',
-                backgroundColor: '#f0f0f0',
-                borderRadius: '4px',
-                overflow: 'hidden'
-              }}
-            >
-              <div 
-                style={{
-                  width: `${progressPercentage}%`,
-                  height: '100%',
-                  backgroundColor: '#111',
-                  borderRadius: '4px',
-                  transition: 'width 0.3s ease'
-                }}
-              />
-            </div>
-            <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-              {progress.current} of {progress.total} completed ({progressPercentage}%)
-            </div>
+        <div className="modal-body">
+          <div className="calendar-header">
+            <button onClick={handlePrevMonth} className="calendar-nav-btn"><FiChevronLeft /></button>
+            <span className="calendar-month-title">{getMonthName(month)} {year}</span>
+            <button onClick={handleNextMonth} className="calendar-nav-btn"><FiChevronRight /></button>
           </div>
-        )}
-        
-        <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>
-          Please wait while we prepare your timesheet export...
-        </p>
+          <div className="calendar-grid-header">
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <span key={d}>{d}</span>)}
+          </div>
+          <div className="calendar-grid">
+            {days}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -289,11 +196,6 @@ const ExportModal = ({ isOpen, onClose, onExport, isExporting }) => {
 
   if (!isOpen) return null;
 
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
   const handleExportClick = () => {
     onExport({
       month: selectedMonth,
@@ -303,90 +205,65 @@ const ExportModal = ({ isOpen, onClose, onExport, isExporting }) => {
     onClose();
   };
 
-  const formatOptions = [
-    { id: 'excel', label: 'Excel' },
-    { id: 'pdf', label: 'PDF' },
-    { id: 'csv', label: 'CSV' }
-  ];
-
   return (
-    <div className="timesheet-export-modal-overlay" onClick={onClose}>
-      <div className="timesheet-export-modal-container" onClick={(e) => e.stopPropagation()}>
-        <div className="timesheet-export-modal-header">
-          <h3>Export Monthly Timesheet</h3>
-          <button onClick={onClose} aria-label="Close">×</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Export Timesheet</h3>
+          <button className="modal-close" onClick={onClose}><FiX /></button>
         </div>
-        <div className="timesheet-export-modal-content">
-          <div className="timesheet-modal-group">
+        <div className="modal-body">
+          <div className="form-group">
             <label>Select Month</label>
-            <div className="timesheet-month-select">
-              <select 
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="timesheet-export-select"
-              >
-                {months.map((month, index) => (
-                  <option key={month} value={index}>{month}</option>
-                ))}
-              </select>
-            </div>
+            <select 
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+              className="form-select"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i} value={i}>{getMonthName(i)}</option>
+              ))}
+            </select>
           </div>
           
-          <div className="timesheet-modal-group">
+          <div className="form-group">
             <label>Select Year</label>
-            <div className="timesheet-month-select">
-              <select 
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="timesheet-export-select"
-              >
-                {[2023, 2024, 2025].map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
+            <select 
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="form-select"
+            >
+              {[2023, 2024, 2025].map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
           </div>
 
-
-
-          <div className="timesheet-modal-group">
-            <label>Export Format</label>
-            <div className="timesheet-format-options">
-              {formatOptions.map((format) => (
+          <div className="form-group">
+            <label>Format</label>
+            <div className="format-options">
+              {['excel', 'pdf', 'csv'].map(format => (
                 <div
-                  key={format.id}
-                  className={`timesheet-format-option ${selectedFormat === format.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedFormat(format.id)}
+                  key={format}
+                  className={`format-option ${selectedFormat === format ? 'selected' : ''}`}
+                  onClick={() => setSelectedFormat(format)}
                 >
-                  <div>{format.label}</div>
+                  {format.toUpperCase()}
                 </div>
               ))}
             </div>
           </div>
         </div>
-        <div className="timesheet-export-modal-footer">
-          <button 
-            onClick={onClose} 
-            className="timesheet-btn-secondary"
-            disabled={isExporting}
-            style={{ opacity: isExporting ? 0.6 : 1, cursor: isExporting ? 'not-allowed' : 'pointer' }}
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleExportClick} 
-            className="timesheet-btn-primary"
-            disabled={isExporting}
-            style={{ opacity: isExporting ? 0.6 : 1, cursor: isExporting ? 'not-allowed' : 'pointer' }}
-          >
-            {isExporting ? 'Processing...' : 'Export'}
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose} disabled={isExporting}>Cancel</button>
+          <button className="btn-primary" onClick={handleExportClick} disabled={isExporting}>
+            {isExporting ? 'Exporting...' : 'Export'}
           </button>
         </div>
       </div>
     </div>
   );
 };
-
 
 // --- Main Timesheet App Component ---
 const TimesheetApp = () => {
@@ -399,9 +276,8 @@ const TimesheetApp = () => {
   const [error, setError] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState({ current: 0, total: 0, message: '' });
 
-  // Export helpers (unchanged)
+  // Export functions
   const downloadCSV = (data) => {
     const headers = ['Name', 'Role', 'Team', 'Date', 'Clock In', 'Clock Out', 'Hours Worked'];
     const csvContent = [
@@ -413,150 +289,69 @@ const TimesheetApp = () => {
     ].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.setAttribute('href', URL.createObjectURL(blob));
-    link.setAttribute('download', 'timesheet-report.csv');
-    document.body.appendChild(link);
+    link.href = URL.createObjectURL(blob);
+    link.download = 'timesheet-report.csv';
     link.click();
-    document.body.removeChild(link);
     Swal.fire({ icon: 'success', title: 'Exported as CSV!' });
   };
 
   const downloadExcel = (data) => {
-    const headers = ['Name', 'Role', 'Team', 'Date', 'Clock In', 'Clock Out', 'Hours Worked'];
-    const excelContent = [
-      headers.join('\t'),
-      ...data.map(item => [
-        item.name, item.role, item.team, item.date, item.clockIn, item.clockOut, item.hoursWorked
-      ].join('\t'))
-    ].join('\n');
-    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.setAttribute('href', URL.createObjectURL(blob));
-    link.setAttribute('download', 'timesheet-report.xls');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const excelData = data.map(item => ({
+      Name: item.name,
+      Role: item.role,
+      Team: item.team,
+      Date: item.date,
+      'Clock In': item.clockIn,
+      'Clock Out': item.clockOut,
+      'Hours Worked': item.hoursWorked
+    }));
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Timesheet');
+    XLSX.writeFile(wb, 'timesheet-report.xlsx');
     Swal.fire({ icon: 'success', title: 'Exported as Excel!' });
   };
 
   const downloadPDF = (data) => {
-    try {
-      // Validate data
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error('No data available for PDF generation');
-      }
-
-      // Create new document with landscape orientation
-      const doc = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      // Add title and company header
-      doc.setFontSize(20);
-      doc.text('Timesheet Report', 15, 20);
-      
-      // Add report period
-      let reportPeriod = '';
-      try {
-        const firstDate = new Date(data[0].date);
-        if (!isNaN(firstDate.getTime())) {
-          reportPeriod = `${getMonthName(firstDate.getMonth())} ${firstDate.getFullYear()}`;
-        } else {
-          reportPeriod = 'Date not available';
-        }
-      } catch {
-        reportPeriod = 'Date not available';
-      }
-
-      doc.setFontSize(12);
-      doc.text(`Report Period: ${reportPeriod}`, 15, 30);
-      
-      // Generate table data with validation
-      const headers = [['Name', 'Role', 'Date', 'Clock In', 'Clock Out', 'Hours']];
-      const tableData = data.map(item => [
-        item?.name || 'N/A',
-        item?.role || 'N/A',
-        item?.date || 'N/A',
-        item?.clockIn || '-',
-        item?.clockOut || '-',
-        item?.hoursWorked || '-'
-      ]);
-      
-      // Add table to PDF with improved styling
-      autoTable(doc, {
-        head: headers,
-        body: tableData,
-        startY: 35,
-        theme: 'grid',
-        headStyles: { 
-          fillColor: [17, 17, 17],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold'
-        },
-        alternateRowStyles: { 
-          fillColor: [245, 245, 245]
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        margin: { top: 35, left: 15, right: 15 }
-      });
-      
-      // Add footer with date
-      const pageCount = doc.internal.getNumberOfPages();
-      doc.setFontSize(8);
-      for(let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        const footer = `Generated on ${new Date().toLocaleDateString()} - Page ${i} of ${pageCount}`;
-        doc.text(footer, doc.internal.pageSize.width - 15, doc.internal.pageSize.height - 10, { align: 'right' });
-      }
-      
-      // Save the PDF with formatted name
-      const fileName = `timesheet-report-${reportPeriod.toLowerCase().replace(' ', '-')}.pdf`;
-      doc.save(fileName);
-      
-      Swal.fire({ 
-        icon: 'success', 
-        title: 'PDF Generated Successfully!',
-        text: `Your report has been saved as ${fileName}`
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'PDF Export Failed',
-        text: error.message || 'There was an error generating the PDF report. Please try again.',
-      });
-    }
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(18);
+    doc.text('Timesheet Report', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+    
+    const tableData = data.map(item => [
+      item.name, item.role, item.date, item.clockIn, item.clockOut, item.hoursWorked
+    ]);
+    
+    autoTable(doc, {
+      head: [['Name', 'Role', 'Date', 'Clock In', 'Clock Out', 'Hours']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [15, 23, 42] }
+    });
+    
+    doc.save('timesheet-report.pdf');
+    Swal.fire({ icon: 'success', title: 'Exported as PDF!' });
   };
 
-  // Fetch timesheets from API; when no check-in/out data present we still return employees
   const fetchTimesheetData = useCallback(async (dateFilter) => {
     try {
       setLoading(true);
       setError(null);
-
-  // Request employees with attendance merged for the selected date
-  const response = await api.get(`/employees?includeAttendance=true&date=${dateFilter}`);
+      const response = await api.get(`/employees?includeAttendance=true&date=${dateFilter}`);
 
       if (response.data && response.data.success) {
-  const employees = response.data.data.employees || [];
+        const employees = response.data.data.employees || [];
         setAllEmployees(employees);
-
-        // Generate timesheet rows (may contain "No data" placeholders)
-        // Ensure clockIn/clockOut fields are strings in HH:MM or '-' format
+        
         const normalizedEmployees = employees.map(emp => {
-          // Format hours worked properly if it came as a number from the backend
           let formattedHoursWorked = emp.hoursWorked;
           if (typeof emp.actualHours === 'number' && emp.actualHours > 0) {
             const hours = Math.floor(emp.actualHours);
             const minutes = Math.round((emp.actualHours - hours) * 60);
             formattedHoursWorked = minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
           }
-          
           return {
             ...emp,
             clockIn: emp.clockIn || '-',
@@ -567,26 +362,16 @@ const TimesheetApp = () => {
         });
 
         const generatedTimesheets = generateTimesheetFromEmployees(normalizedEmployees, dateFilter);
-
-        // If none of the generated rows have real clock-in AND clock-out, treat as "no data"
-        const hasAnyRecorded = generatedTimesheets.some(entry =>
-          entry.clockIn && entry.clockOut && entry.clockIn !== '-' && entry.clockOut !== '-'
-        );
-
-  // Always show timesheet rows (use '-' placeholders when attendance missing)
-  setTimesheetData(generatedTimesheets);
+        setTimesheetData(generatedTimesheets);
       } else {
-        // Server responded but with failure flag -> show error component
         setAllEmployees([]);
         setTimesheetData([]);
         setError(response.data?.message || 'No data available');
       }
     } catch (err) {
-      console.error('❌ Error fetching timesheet data:', err);
-      // network/server error -> show global error component
+      console.error('Error fetching timesheet data:', err);
       setError(err.message || 'Failed to load timesheet data');
-      setTimesheetData([]); // ensure UI shows error/no-data instead of stale data
-      setAllEmployees([]);
+      setTimesheetData([]);
     } finally {
       setLoading(false);
     }
@@ -596,22 +381,15 @@ const TimesheetApp = () => {
     fetchTimesheetData(selectedDate);
   }, [fetchTimesheetData, selectedDate]);
 
-  const handleRefresh = () => {
-    fetchTimesheetData(selectedDate);
-  };
-
   const handleExport = async (options) => {
     const { month, year, format } = options;
     
     try {
       setIsExporting(true);
-      setExportProgress({ current: 0, total: 0, message: 'Initializing export...' });
       
       // Get all days in the selected month
       const daysInMonth = getDaysInMonth(year, month);
       const monthlyTimesheetData = [];
-      
-      setExportProgress({ current: 0, total: daysInMonth + 2, message: 'Fetching employee list...' });
       
       // Fetch all employees first to ensure we include everyone
       const allEmployeesResponse = await api.get('/employees');
@@ -627,18 +405,9 @@ const TimesheetApp = () => {
         return;
       }
       
-      setExportProgress({ current: 1, total: daysInMonth + 2, message: `Found ${allEmployees.length} employees. Processing attendance data...` });
-      
       // Generate timesheet data for each day of the month
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const monthName = getMonthName(month);
-        
-        setExportProgress({ 
-          current: day + 1, 
-          total: daysInMonth + 2, 
-          message: `Processing ${monthName} ${day}, ${year}...` 
-        });
         
         try {
           // Fetch attendance data for this specific date
@@ -674,20 +443,6 @@ const TimesheetApp = () => {
               hoursWorked = calculateHoursWorked(clockIn, clockOut);
             }
             
-            const hasData = clockIn !== '-' && clockOut !== '-';
-            
-            // Determine status based on check-in/check-out state
-            let status = 'Absent';
-            let statusColor = 'red';
-            
-            if (clockIn !== '-' && clockOut !== '-') {
-              status = 'Checked Out';
-              statusColor = 'green';
-            } else if (clockIn !== '-' && clockOut === '-') {
-              status = 'Checked In';
-              statusColor = 'blue';
-            }
-            
             monthlyTimesheetData.push({
               id: employeeId,
               initials: getInitials(fullName),
@@ -699,35 +454,12 @@ const TimesheetApp = () => {
               clockOut: clockOut,
               breaks: attendanceData?.breaks || '-',
               hoursWorked: hoursWorked,
-              status: status,
-              statusColor: statusColor,
+              status: (clockIn !== '-' && clockOut !== '-') ? 'Clocked Out' : (clockIn !== '-' ? 'Clocked In' : 'Absent'),
               employeeId: employeeId
             });
           });
         } catch (dayError) {
           console.error(`Error fetching data for ${dateStr}:`, dayError);
-          // Still add all employees with "No data" for this day
-          allEmployees.forEach(employee => {
-            const firstName = employee.user?.firstName || employee.firstName || '';
-            const lastName = employee.user?.lastName || employee.lastName || '';
-            const fullName = `${firstName} ${lastName}`.trim() || 'Unknown Employee';
-            
-            monthlyTimesheetData.push({
-              id: employee._id || employee.id,
-              initials: getInitials(fullName),
-              name: fullName,
-              role: employee.position || employee.department || 'Staff Member',
-              team: employee.department || employee.team || 'Centre Dubai',
-              date: formatDate(dateStr),
-              clockIn: '-',
-              clockOut: '-',
-              breaks: '-',
-              hoursWorked: '-',
-              status: 'Absent',
-              statusColor: 'red',
-              employeeId: employee._id || employee.id
-            });
-          });
         }
         
         // Small delay to prevent overwhelming the server
@@ -735,12 +467,6 @@ const TimesheetApp = () => {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
-      
-      setExportProgress({ 
-        current: daysInMonth + 2, 
-        total: daysInMonth + 2, 
-        message: `Generating ${format.toUpperCase()} file...` 
-      });
       
       if (monthlyTimesheetData.length === 0) {
         setIsExporting(false);
@@ -774,218 +500,136 @@ const TimesheetApp = () => {
     }
   };
 
-  const handleDateSelect = (date) => {
-    setSelectedDate(date);
-    setShowDatePickerModal(false);
-  };
-
   const filteredData = timesheetData.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.team.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const displayedDate = new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  const getAvatarColor = (index) => {
+    const colors = ['blue', 'green', 'purple', 'orange'];
+    return colors[index % colors.length];
+  };
 
-  // Use global loading / error / no-data components for consistent UI
-  if (loading) {
-    return <Loading />;
-  }
-
-  if (error) {
-    return <Error500Page message={error} />;
-  }
-
-  if (!loading && timesheetData.length === 0) {
-    // show friendly NoData with quick actions
-    return (
-      <div style={{ padding: 24 }}>
-        <NoData />
-        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-          {/* <button
-            onClick={() => { setShowDatePickerModal(true); }}
-            style={{ background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, cursor: 'pointer' }}
-          >
-            Pick date
-          </button> */}
-          {/* <button
-            onClick={() => handleRefresh()}
-            style={{ background: '#fff', color: '#111', border: '1px solid #111', padding: '8px 12px', borderRadius: 6, cursor: 'pointer' }}
-          >
-            Refresh
-          </button> */}
-        </div>
-        <DatePickerModal
-          isOpen={showDatePickerModal}
-          onClose={() => setShowDatePickerModal(false)}
-          onDateSelect={handleDateSelect}
-          selectedDate={selectedDate}
-        />
-      </div>
-    );
-  }
+  if (loading && timesheetData.length === 0) return <Loading />;
+  if (error && timesheetData.length === 0) return <Error500Page message={error} />;
 
   return (
-    <div className="timesheet-main-wrapper" style={{ color: '#111', background: '#fff' }}>
-      <div className="timesheet-header-section">
-        <div className="timesheet-title-group">
-          <h1>Timesheets</h1>
-          <p>Manage your team members' timesheets ({timesheetData.length} entries)</p>
+    <div className="timesheet-container">
+      <div className="timesheet-wrapper">
+        {/* Header */}
+        <div className="timesheet-header">
+          <div className="timesheet-title-group">
+            <h1 className="timesheet-title">Timesheets</h1>
+            <p className="timesheet-subtitle">Manage your team members' timesheets</p>
+          </div>
+          <div className="timesheet-actions">
+            <button className="btn-action btn-secondary" onClick={() => setShowExportModal(true)}>
+              Export <FiChevronDown />
+            </button>
+         
+          </div>
         </div>
-        <div className="timesheet-action-buttons" style={{ display: 'flex', gap: 8 }}>
-          <button
-            className="timesheet-export-button"
-            onClick={() => setShowExportModal(true)}
-            disabled={isExporting}
-            style={{ 
-              background: isExporting ? '#ccc' : '#111', 
-              color: '#fff', 
-              border: 'none', 
-              padding: '8px 12px', 
-              borderRadius: 6, 
-              cursor: isExporting ? 'not-allowed' : 'pointer',
-              opacity: isExporting ? 0.6 : 1
-            }}
-          >
-            <span>{isExporting ? 'Exporting...' : 'Export'}</span>
-          </button>
 
+        {/* Controls */}
+        <div className="timesheet-controls">
+          <div className="search-wrapper">
+            <FiSearch className="search-icon" />
+            <input 
+              type="text" 
+              className="search-input" 
+              placeholder="Search" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <div className="control-separator"></div>
+          
+          <button className="control-btn" onClick={() => setShowDatePickerModal(true)}>
+            {new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            <FiCalendar />
+          </button>
+          
+          <div className="control-separator"></div>
+          
+       
+          
+          <div className="control-separator"></div>
+          
           
         </div>
-      </div>
 
-      <div className="timesheet-controls-panel">
-        <div className="timesheet-controls-left">
-          <div className="timesheet-search-area">
-  <Search className="timesheet-search-area-icon" size={16} />
-  <input
-    type="text"
-    placeholder="Search by name, role, or team"
-    className="timesheet-search-area-input"
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-</div>
-
-
-          <button
-            className="timesheet-week-picker-btn"
-            onClick={() => setShowDatePickerModal(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 6, border: '1px solid #111', background: '#fff', color: '#111', cursor: 'pointer', marginLeft: 12 }}
-            title="Pick date"
-          >
-            <Calendar size={16} />
-            <span>{displayedDate}</span>
-          </button>
-        </div>
-
-        <div className="timesheet-data-toggle" style={{ display: 'flex', alignItems: 'center' }}>
-          <span>
-            Showing {filteredData.length} of {timesheetData.length} entries
-          </span>
-        </div>
-      </div>
-
-      <div className="timesheet-table-wrapper">
-        {filteredData.length === 0 ? (
-          <div className="timesheet-empty-state">
-            {searchTerm ? (
-              <>
-                <div>No timesheets found matching "{searchTerm}"</div>
-                <button className="timesheet-clear-search" onClick={() => setSearchTerm('')}>
-                  Clear Search
-                </button>
-              </>
-            ) : (
-              <NoData />
-            )}
-          </div>
-        ) : (
-          <table className="timesheet-data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead className="timesheet-table-head" style={{ borderBottom: '1px solid #e6e6e6' }}>
+        {/* Table */}
+        <div className="timesheet-table-container">
+          <table className="timesheet-table">
+            <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '10px' }}>Team member</th>
-                <th style={{ textAlign: 'left', padding: '10px' }}>Date</th>
-                <th style={{ textAlign: 'left', padding: '10px' }}>Clock in/out</th>
-                <th style={{ textAlign: 'left', padding: '10px' }}>Breaks</th>
-                <th style={{ textAlign: 'left', padding: '10px' }}>Hours worked</th>
-                <th style={{ textAlign: 'left', padding: '10px' }}>Status</th>
-                <th style={{ textAlign: 'left', padding: '10px' }}></th>
+                <th>Team member</th>
+                <th>Date</th>
+                <th>Clock in/out</th>
+                <th>Breaks</th>
+                <th>Hours worked</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((item) => (
-                <tr key={`${item.id}-${item.date}`} className="timesheet-table-row" style={{ borderBottom: '1px solid #f4f4f4' }}>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }}>
-                    <div className="timesheet-member-info" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                      <div className="timesheet-member-avatar" style={{ width: 44, height: 44, borderRadius: 6, background: '#111', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                        {item.initials}
+              {filteredData.length > 0 ? (
+                filteredData.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="member-cell">
+                        <div className={`member-avatar ${getAvatarColor(index)}`}>
+                          {item.initials}
+                        </div>
+                        <div className="member-info">
+                          <div className="member-name">{item.name}</div>
+                          <div className="member-role">{item.role}</div>
+                        </div>
                       </div>
-                      <div className="timesheet-member-details">
-                        <h4 style={{ margin: 0 }}>{item.name}</h4>
-                        <p style={{ margin: 0, color: '#666', fontSize: 13 }}>{item.role} • {item.team}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }}>{item.date}</td>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }}>
-                    {item.clockOut === '-' ? item.clockIn : `${item.clockIn} - ${item.clockOut}`}
-                  </td>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }}>{item.breaks}</td>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }} title={item.hasData ? "Hours calculated from check-in/out times" : "No hours recorded"}>
-                    {item.hoursWorked || '-'}
-                  </td>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }}>
-                    <span style={{
-                      padding: '6px 8px',
-                      borderRadius: 6,
-                      background: item.statusColor === 'green' ? '#e8f5ea' : 
-                                 item.statusColor === 'blue' ? '#e3f2fd' : 
-                                 item.statusColor === 'red' ? '#ffebee' : '#f0f0f0',
-                      color: '#111',
-                      fontWeight: 600,
-                      fontSize: 13
-                    }}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="timesheet-table-cell" style={{ padding: '10px' }}>
-                    {/* actions placeholder */}
+                    </td>
+                    <td>{item.date}</td>
+                    <td>
+                      {item.clockIn !== '-' ? `${item.clockIn} - ${item.clockOut}` : '-'}
+                    </td>
+                    <td>{item.breaks}</td>
+                    <td>{item.hoursWorked}</td>
+                    <td>
+                      <span className={`status-badge ${item.statusClass}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                    No timesheet data found for this date.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
 
-      {/* modals */}
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
+      {/* Modals */}
+      <DatePickerModal 
+        isOpen={showDatePickerModal} 
+        onClose={() => setShowDatePickerModal(false)} 
+        onDateSelect={(date) => {
+          setSelectedDate(date);
+          setShowDatePickerModal(false);
+        }}
+        selectedDate={selectedDate}
+      />
+
+      <ExportModal 
+        isOpen={showExportModal} 
+        onClose={() => setShowExportModal(false)} 
         onExport={handleExport}
         isExporting={isExporting}
       />
-      <DatePickerModal
-        isOpen={showDatePickerModal}
-        onClose={() => setShowDatePickerModal(false)}
-        onDateSelect={handleDateSelect}
-        selectedDate={selectedDate}
-      />
-      
-      {/* Export Loading Overlay */}
-      <ExportLoadingOverlay 
-        isVisible={isExporting} 
-        progress={exportProgress} 
-      />
-      
-      {/* Add CSS animation for spinning icon */}
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
