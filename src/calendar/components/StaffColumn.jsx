@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { localDateKey, computeAppointmentLayout } from '../../calendar/dateUtils';
 import { hasShiftOnDate, getEmployeeShiftHours } from '../../calendar/shiftUtils';
 import { getAppointmentColorByStatus } from '../../calendar/uiUtils';
+import './StaffColumn.css';
 
 export const StaffColumn = ({
   employee,

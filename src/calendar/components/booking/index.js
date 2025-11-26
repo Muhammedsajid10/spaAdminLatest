@@ -5,3 +5,4 @@
 
 export { default as ServiceSelectionStep } from './ServiceSelectionStep';
 export { default as ClientInformationStep } from './ClientInformationStep';
+export { default as AppointmentSummaryStep } from './AppointmentSummaryStep';

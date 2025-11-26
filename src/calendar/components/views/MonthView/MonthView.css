@@ -1,0 +1,173 @@
+/* MonthView.css */
+
+/* Parent container for the month grid */
+.month-view-container {
+  padding: 16px;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Day names header for month view */
+.month-day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.month-day-name {
+  font-size: 12px;
+}
+
+/* Grid for the calendar days */
+.month-view-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background-color: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.month-day-cell {
+  background-color: var(--bg-primary);
+  min-height: 120px;
+  padding: 8px;
+  position: relative;
+  overflow-y: auto;
+  /* Enable scrolling if too many appointments */
+  display: flex;
+  flex-direction: column;
+}
+
+.month-day-cell.empty {
+  background-color: var(--bg-secondary);
+}
+
+.month-day-cell.is-today {
+  background-color: var(--bg-hover);
+  border: 2px solid var(--primary-color);
+}
+
+.month-day-cell.is-today .month-day-date {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.month-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.month-day-date {
+  font-size: 14px;
+  color: var(--text-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.month-appointments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.month-appointment-entry {
+  font-size: 10px;
+  color: white;
+  padding: 4px 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.month-appointment-entry:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+.appointment-client-name {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.appointment-service-name {
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.month-add-appointment-hint {
+  font-size: 16px;
+  color: #60a5fa;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  font-weight: bold;
+}
+
+.month-day-cell:hover .month-add-appointment-hint {
+  opacity: 1;
+}
+
+.month-empty-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.month-day-cell:hover .month-empty-day {
+  opacity: 1;
+}
+
+.add-appointment-text {
+  font-size: 11px;
+  color: #60a5fa;
+  text-align: center;
+  font-weight: 500;
+}
+
+.month-more-appointments {
+  font-size: 10px;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  padding: 2px 4px;
+  border-radius: 4px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  position: relative;
+}
+
+.month-more-appointments:hover {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

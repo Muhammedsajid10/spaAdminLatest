@@ -1,0 +1,288 @@
+/* WeekView.css */
+
+/* === WEEK VIEW FULL WIDTH FIXES === */
+.week-view-container {
+  width: 100%;
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.week-headers-row {
+  display: flex;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  width: 100%;
+  min-width: 100%;
+}
+
+.week-staff-header-cell {
+  flex: 0 0 180px;
+  /* Fixed width for staff column */
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.week-day-header-cell {
+  flex: 1;
+  /* Take equal space for each day */
+  min-width: 0;
+  /* Allow shrinking */
+  padding: 16px 8px;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.week-day-header-cell:last-child {
+  border-right: none;
+}
+
+.week-day-header-cell.is-today {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.week-day-header-cell.is-today .week-day-number {
+  background: #2563eb;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.week-employee-row {
+  display: flex;
+  border-bottom: 1px solid #bdbdbd;
+  min-height: 120px;
+  background: var(--bg-primary);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.week-employee-row:hover {
+  background: #f9fafb;
+}
+
+.week-staff-cell {
+  flex: 0 0 180px;
+  /* Fixed width matching header */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.week-staff-cell .staff-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.week-staff-cell .staff-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+  text-align: center;
+}
+
+.week-staff-cell .staff-position {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.week-day-cell {
+  flex: 1;
+  /* Take equal space for each day */
+  min-width: 0;
+  /* Allow shrinking */
+  border-right: 1px solid #e0e0e0;
+  border: 2px solid transparent;
+  padding: 12px 8px;
+  min-height: 120px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.week-day-cell:hover {
+  background-color: #f8faff;
+  border-color: #60a5fa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
+}
+
+.week-day-cell:last-child {
+  border-right: none;
+}
+
+.week-day-cell.no-shift {
+  background: #f3f4f6;
+  cursor: default;
+}
+
+.week-day-cell.no-shift:hover {
+  background: #f3f4f6;
+  border-color: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.week-no-shift {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+}
+
+.no-shift-text {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.week-appointments-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.week-appointment-block {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.week-appointment-block:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+.week-app-time {
+  font-weight: 700;
+}
+
+.week-app-client {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.week-more-appointments {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+  padding: 2px;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.week-empty-slot {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.week-day-cell:hover .week-empty-slot {
+  opacity: 1;
+}
+
+.add-icon {
+  width: 24px;
+  height: 24px;
+  background: #e0e7ff;
+  color: #4f46e5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+@media (max-width: 1024px) {
+  .week-view-container {
+    overflow-x: auto;
+  }
+  
+  .week-headers-row,
+  .week-employee-row {
+    min-width: 800px; /* Force scroll on smaller screens */
+  }
+}
+
+/* Add to WeekView.css */
+
+.week-add-appointment-btn {
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  border: 1px dashed #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 2px;
+}
+
+.week-add-appointment-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.add-appointment-icon {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1;
+  font-weight: bold;
+}
+
+.week-add-appointment-btn:hover .add-appointment-icon {
+  color: #374151;
+}

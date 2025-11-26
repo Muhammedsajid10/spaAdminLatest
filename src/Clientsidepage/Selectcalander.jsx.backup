@@ -2,16 +2,14 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Swal from 'sweetalert2';
 import Loading from '../states/Loading.jsx';
 import { useSelector, useDispatch } from 'react-redux';
-import { useDatePickerState, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
+import { useDatePickerState, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
+import { StaffColumn } from '../calendar/components/StaffColumn';
 import ClientSummary from '../calendar/components/ClientInformation.jsx';
 import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
 import { UnavailablePopup, LoadingOverlay, ErrorMessage, AppointmentCard, ServiceCatalogItem, ProfessionalCard, TimeSlotCard, EmptyState } from '../calendar/components/shared';
 import ServiceSelectionStep from '../calendar/components/booking/ServiceSelectionStep';
 import ClientInformationStep from '../calendar/components/booking/ClientInformationStep';
 import AppointmentSummaryStep from '../calendar/components/booking/AppointmentSummaryStep';
-import DayView from '../calendar/components/views/DayView';
-import WeekView from '../calendar/components/views/WeekView';
-import MonthView from '../calendar/components/views/MonthView';
 import {
   // Date utilities
   formatUTCToLocal,
@@ -114,11 +112,14 @@ const SelectCalendar = () => {
   const setIsAddingAdditionalService = (val) => dispatch({ type: 'bookingSession/setIsAddingAdditionalService', payload: val });
   const addAppointmentToSessionLocal = (apt) => dispatch(addAppointmentToSession(apt));
   const removeAppointmentFromSessionLocal = (id) => {
+    console.log('🗑️ Removing appointment with ID:', id);
+    console.log('Current multipleAppointments:', multipleAppointments.map(a => ({ id: a.id, service: a.service?.name })));
     dispatch(removeAppointmentFromSession(id));
     
     // If this is the last appointment being removed, show the service catalog
     const remainingAppointments = multipleAppointments.filter(apt => apt.id !== id);
     if (remainingAppointments.length === 0) {
+      console.log('📋 Last appointment removed, showing service catalog');
       setShowServiceCatalog(true);
     }
   };
@@ -421,10 +422,12 @@ const SelectCalendar = () => {
     const dayKey = localDateKey(day || currentDate);
     const slotKey = `${dayKey}_${slotTime}`;
     const existingAppointment = appointments[employeeId]?.[slotKey];
+    console.log('Time slot clicked - Employee:', employeeId, 'Time:', slotTime, 'Day:', day);
 
     // CUTOFF CHECK: Block any booking starting at or after 23:00
     const [hours] = slotTime.split(':').map(Number);
     if (hours >= 23) {
+      console.log('🚫 Booking blocked - Time slot at', slotTime, 'is past cutoff (23:00)');
       setUnavailableMessage('Bookings cannot start at or after 23:00. Please select an earlier time slot.');
       setShowUnavailablePopup(true);
       return;
@@ -499,6 +502,9 @@ const SelectCalendar = () => {
   // ... (inside SelectCalendar component)
 
   const handleServiceSelect = (service) => {
+    console.log('🎯 SERVICE SELECTED:', service.name);
+    console.log('isAddingAdditionalService:', isAddingAdditionalService);
+    console.log('Current multipleAppointments count:', multipleAppointments.length);
     setBookingError(null);
 
     // NEW LOGIC: If user clicked a time slot (bookingDefaults set with time), auto-assign professional & chained time without further steps
@@ -760,6 +766,7 @@ const SelectCalendar = () => {
       });
 
       const data = await res.json();
+      console.log('📄 Response Data:', data);
 
       if (!res.ok || data.success === false) {
         throw new Error(data.message || `Failed to update booking status (HTTP ${res.status})`);
@@ -781,6 +788,7 @@ const SelectCalendar = () => {
       };
 
       const actualBackendStatus = backendStatusMapping[newStatus] || newStatus;
+      console.log('📝 Status mapping:', newStatus, '→', actualBackendStatus);
 
       // Update only this slot locally with the backend status (Redux)
       try {
@@ -801,6 +809,7 @@ const SelectCalendar = () => {
         status: actualBackendStatus
       }));
 
+      console.log('✅ Status update successful');
 
       // Close modal and refresh calendar after a brief delay to show the update
       setTimeout(() => {
@@ -926,6 +935,7 @@ const SelectCalendar = () => {
 
   // Month view day click handler for booking
   const handleMonthDayClick = (selectedDay) => {
+    console.log('🗓️ Month day clicked:', selectedDay.toLocaleDateString());
 
     // Store the selected day for booking
     setSelectedBookingDate(selectedDay);
@@ -941,6 +951,7 @@ const SelectCalendar = () => {
     setShowAddBookingModal(true);
     setShowServiceCatalog(true);
 
+    console.log('📅 Booking modal opened for date:', selectedDay.toLocaleDateString());
   };
 
   const goToToday = () => {
@@ -1063,6 +1074,7 @@ const SelectCalendar = () => {
     setBookingLoading(true);
     setBookingError(null);
     try {
+      // console.log('Fetching services from:', `${Base_url}/bookings/services`);
       // Try to load services via thunk-backed API first
       try {
         const services = await dispatch(fetchServicesThunk()).unwrap();
@@ -1075,6 +1087,7 @@ const SelectCalendar = () => {
       const res = await fetch(`${Base_url}/bookings/services`);
       const data = await res.json();
 
+      // console.log('Services API response:', data);
 
       if (res.ok && data.success) {
         setAvailableServices(data.data?.services || []);
@@ -1093,26 +1106,39 @@ const SelectCalendar = () => {
 
   // TEMPORARY DEBUG FUNCTION - Add this to help diagnose the issue
   const debugProfessionalData = (prof, date) => {
+    // console.log('=== DEBUGGING PROFESSIONAL ===');
+    // console.log('Professional:', {
     //   id: prof._id,
     //   name: `${prof.user?.firstName} ${prof.user?.lastName}`,
     //   isActive: prof.user?.isActive,
     //   position: prof.position
     // });
+    // console.log('WorkSchedule:', prof.workSchedule);
 
     const dayName = getDayName(date);
+    // console.log('Day being checked:', dayName);
+    // console.log('Schedule for this day:', prof.workSchedule?.[dayName]);
 
     // Check what the hasShiftOnDate function actually returns
     const employeeForShiftCheck = { workSchedule: prof.workSchedule || {} };
+    // console.log('Employee object for shift check:', employeeForShiftCheck);
 
     const hasShift = hasShiftOnDate(employeeForShiftCheck, date);
+    // console.log('Has shift result:', hasShift);
 
     // Let's also check if the workSchedule has any data at all
+    // console.log('WorkSchedule keys:', Object.keys(prof.workSchedule || {}));
+    // console.log('WorkSchedule values:', Object.values(prof.workSchedule || {}));
 
+    // console.log('================================');
 
     return hasShift;
   };
 
   const fetchBookingProfessionals = useCallback(async (serviceId, date) => {
+    // console.log('=== FETCHING PROFESSIONALS ===');
+    // console.log('Service ID:', serviceId);
+    // console.log('Date:', date?.toDateString());
 
     setBookingLoading(true);
     setBookingError(null);
@@ -1120,6 +1146,7 @@ const SelectCalendar = () => {
     try {
       const dateStr = date.toISOString().slice(0, 10);
       const url = `${EMPLOYEES_API_URL}`;
+      // console.log('API URL:', url);
 
       // Try to fetch professionals via thunk (but fallback to local fetch)
       try {
@@ -1137,9 +1164,11 @@ const SelectCalendar = () => {
       const res = await fetch(url);
       const data = await res.json();
 
+      // console.log('API Response:', data);
 
       if (res.ok && data.success) {
         const allProfessionals = data.data?.employees || [];
+        // console.log('Total professionals from API:', allProfessionals.length);
 
         // Filter professionals with shifts on this date and available time slots
         const professionalsWithShifts = allProfessionals.filter(prof => {
@@ -1165,10 +1194,12 @@ const SelectCalendar = () => {
             return availableSlots.length > 0;
           }
 
+          // console.log(`Professional ${prof.user?.firstName}: Active=${isActive}, HasShift=${hasShift}`);
 
           return isActive && hasShift;
         });
 
+        // console.log('Professionals with shifts:', professionalsWithShifts.length);
 
         if (professionalsWithShifts.length === 0) {
           setBookingError(`No professionals have shifts scheduled for ${date.toLocaleDateString('en-US', {
@@ -1201,15 +1232,18 @@ const SelectCalendar = () => {
           workSchedule: emp.workSchedule || {}
         }));
 
+      // console.log('Fallback professionals with shifts:', localProfessionalsWithShifts.length);
       setAvailableProfessionals(localProfessionalsWithShifts);
     } finally {
       setBookingLoading(false);
+      // console.log('=== FETCH PROFESSIONALS COMPLETE ===');
     }
   }, [employees, selectedService, appointments, multipleAppointments]);
 
 
 
   const filterOutBookedTimeSlots = (timeSlots, employeeId, date) => {
+    console.log('[DEBUG] filterOutBookedTimeSlots: employeeId', employeeId, 'appointments keys', Object.keys(appointments[employeeId] || {}));
     const dayKey = localDateKey(date);
     const employeeAppointments = appointments[employeeId] || {};
 
@@ -1261,6 +1295,7 @@ const SelectCalendar = () => {
     });
 
     // Now filter slots by overlap with any appointment ranges
+    console.log('[DEBUG] appointmentRanges', appointmentRanges);
     return timeSlots.filter(slot => {
       const slotStartTime = new Date(slot.startTime);
       const slotEndTime = new Date(slot.endTime);
@@ -1275,6 +1310,12 @@ const SelectCalendar = () => {
   };
 
   const fetchBookingTimeSlots = useCallback(async (employeeId, serviceId, date) => {
+    console.log('[DEBUG] fetchBookingTimeSlots: employeeId', employeeId);
+    console.log('[DEBUG] appointments keys', Object.keys(appointments[employeeId] || {}));
+    console.log('=== ENHANCED TIME SLOT FETCHING ===');
+    console.log('Employee ID:', employeeId);
+    console.log('Service ID:', serviceId);
+    console.log('Date:', date?.toDateString());
 
     setBookingLoading(true);
     setBookingError(null);
@@ -1307,6 +1348,8 @@ const SelectCalendar = () => {
       const service = availableServices.find(s => s._id === serviceId);
       const serviceDuration = service?.duration || 30;
 
+      console.log('📋 Employee shift hours:', shiftHours);
+      console.log('⏱️ Service duration:', serviceDuration);
 
       // Generate slots ONLY from employee's actual shift hours
       const shiftBasedSlots = generateTimeSlotsFromEmployeeShift(employee, date, serviceDuration, 30);
@@ -1318,6 +1361,7 @@ const SelectCalendar = () => {
         return;
       }
 
+      console.log('🔧 Generated shift-based slots:', shiftBasedSlots.length);
 
       // Filter out already booked time slots AND accumulated bookings from current session
       let availableSlots = filterOutBookedTimeSlots(shiftBasedSlots, employeeId, date);
@@ -1332,8 +1376,10 @@ const SelectCalendar = () => {
           const slotTime = `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
           return !isTimeSlotConflicting(slotTime, serviceDuration, employeeAccumulatedBookings);
         });
+        console.log('🚫 Filtered out accumulated bookings, remaining slots:', availableSlots.length);
       }
 
+      console.log('✅ Available slots after filtering:', availableSlots.length);
       console.log('📅 Sample available times:', availableSlots.slice(0, 5).map(slot => {
         const dt = new Date(slot.startTime);
         return `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
@@ -1353,6 +1399,7 @@ const SelectCalendar = () => {
       setAvailableTimeSlots([]);
     } finally {
       setBookingLoading(false);
+      console.log('=== TIME SLOT FETCHING COMPLETE ===');
     }
   }, [employees, availableServices, appointments, multipleAppointments]);
 
@@ -1373,9 +1420,13 @@ const SelectCalendar = () => {
       });
       const data = await res.json();
 
+      console.log('📋 Clients API response:', data);
+      console.log('📋 Number of clients fetched:', data.data?.clients?.length || 0);
+      console.log('📋 Total clients in database:', data.totalCount || 0);
 
       if (res.ok && data.success) {
         const clients = data.data?.clients || [];
+        console.log('✅ Setting existing clients:', clients.length);
         setExistingClients(clients);
       } else {
         console.error('Failed to fetch clients:', data.message);
@@ -1388,9 +1439,12 @@ const SelectCalendar = () => {
   }, []);
 
   const searchClients = useCallback((query) => {
+    console.log('🔍 Search triggered with query:', query);
+    console.log('🔍 Total existing clients:', existingClients.length);
     
     if (!query.trim()) {
       // Show all clients when search is empty
+      console.log('🔍 Empty query - showing all clients:', existingClients.length);
       setClientSearchResults(existingClients);
       return;
     }
@@ -1406,6 +1460,8 @@ const SelectCalendar = () => {
         phone.includes(searchTerm);
     });
     
+    console.log('🔍 Filtered results:', filtered.length);
+    console.log('🔍 Sample filtered clients:', filtered.slice(0, 3).map(c => `${c.firstName} ${c.lastName}`));
     setClientSearchResults(filtered);
   }, [existingClients]);
 
@@ -1715,6 +1771,7 @@ const SelectCalendar = () => {
       return true; // Default: show all
     });
 
+    console.log(`📋 Filtered ${filtered.length} appointments for "${calendarPopupTab}" tab`);
     return filtered;
   };
 
@@ -1880,7 +1937,9 @@ const SelectCalendar = () => {
       finalAppointmentDate: appointmentDate,
       formatDateLocalResult: bookingDate instanceof Date ? formatDateLocal(bookingDate) : 'N/A'
     });
+    console.log('Full appointment:', appointment);
     const newAppointment = addAppointmentToSessionLocal(appointment);
+    console.log('New appointment added:', newAppointment);
 
     // Store current selections and appointment ID before clearing (for back navigation)
     setLastSelectedService(selectedService);
@@ -1903,6 +1962,7 @@ const SelectCalendar = () => {
 
   // Membership integration handlers
   const handleMembershipApplied = (membership, matchingService) => {
+    console.log('🎯 Admin applying membership:', membership, 'for service:', matchingService);
 
     setAppliedMembership(membership);
     setMembershipDiscountAmount(matchingService.price || 0);
@@ -1917,6 +1977,7 @@ const SelectCalendar = () => {
   };
 
   const handleMembershipRemoved = () => {
+    console.log('❌ Admin removing applied membership');
 
     setAppliedMembership(null);
     setMembershipDiscountAmount(0);
@@ -2018,6 +2079,7 @@ const SelectCalendar = () => {
 
       // Update the applied amount for display if it changed
       if (giftCardAppliedAmount !== giftCardDiscount) {
+        console.log('🔄 Updating giftCardAppliedAmount from', giftCardAppliedAmount, 'to', giftCardDiscount);
         setGiftCardAppliedAmount(giftCardDiscount);
       }
     }
@@ -2032,6 +2094,7 @@ const SelectCalendar = () => {
 
   // Gift Card Selection Handlers
   const handleGiftCardSelect = (giftCard) => {
+    console.log('🎁 Selected gift card:', giftCard);
     setSelectedGiftCard(giftCard);
 
     // Auto-calculate the maximum redeemable amount
@@ -2042,9 +2105,11 @@ const SelectCalendar = () => {
     setRedeemGiftCardAmount(maxRedeemable);
     setGiftCardAppliedAmount(maxRedeemable);
 
+    console.log('Auto-applied gift card amount:', maxRedeemable);
   };
 
   const handleGiftCardRemove = () => {
+    console.log('❌ Removing applied gift card');
     setSelectedGiftCard(null);
     setRedeemGiftCardAmount(0);
     setGiftCardAppliedAmount(0);
@@ -2197,6 +2262,9 @@ const SelectCalendar = () => {
           throw new Error('Failed to create valid dates');
         }
 
+        console.log(`📅 Booking: ${apt.service.name} on ${dateStr} at ${timeStr}`);
+        console.log(`🕐 Created UTC datetime: ${appointmentDateTime.toISOString()}`);
+        console.log(`✅ Time will display correctly as: ${timeStr}`);
 
         return {
           service: apt.service._id,
@@ -2288,6 +2356,7 @@ const SelectCalendar = () => {
           // Update finalAmount to reflect gift card redemption
           finalAmount = Math.max(0, amountAfterMembership - actualRedeemAmount);
           
+          console.log('💰 Updated finalAmount after gift card:', finalAmount);
         } else {
           console.log('⚠️ Gift card selected but no amount to redeem:', {
             availableValue,
@@ -2296,6 +2365,7 @@ const SelectCalendar = () => {
           });
         }
       } else {
+        console.log('⚠️ No gift card selected');
       }
 
       // Normalize payment methods to backend-accepted enums and attach details
@@ -2341,6 +2411,7 @@ const SelectCalendar = () => {
         discountedTotal: customTotalDiscount > 0 ? totalAmount : undefined // Total after custom discount, before other discounts
       };
 
+      console.log('📦 Multiple appointments booking payload:', JSON.stringify(bookingPayload, null, 2));
       console.log('🎁 Gift card in payload:', {
         giftCardCode: bookingPayload.giftCardCode,
         paymentMethod: bookingPayload.paymentMethod,
@@ -2373,6 +2444,7 @@ const SelectCalendar = () => {
 
       setBookingSuccess(` ${multipleAppointments.length} service(s) booked successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
 
+      console.log('✅ Booking created successfully. Preparing to refresh gift cards...');
 
       // Clear the appointments session after successful booking
       setTimeout(() => {
@@ -2386,10 +2458,12 @@ const SelectCalendar = () => {
         setSelectedGiftCard(null);
         setRedeemGiftCardAmount(0);
         
+        console.log('🔄 Triggering gift card refresh after booking...');
         
         // Add additional delay to ensure backend DB has been fully updated
         setTimeout(() => {
           if (selectedExistingClient?._id) {
+            console.log('🎁 Fetching updated gift cards for client:', selectedExistingClient._id);
             loadBenefitsIfNeeded(true);
           }
         }, 500);
@@ -2399,6 +2473,7 @@ const SelectCalendar = () => {
       try {
         const adminMembershipInfo = paymentDetails?.adminMembership;
         if (appliedMembership && adminMembershipInfo && adminMembershipInfo.sessionDeduction) {
+          console.log('Updating local membership usage after booking:', appliedMembership._id);
           // Mutate local appliedMembership safely
           setAppliedMembership(prev => {
             if (!prev) return prev;
@@ -2420,6 +2495,7 @@ const SelectCalendar = () => {
       }
 
       // Refresh calendar data immediately to see the new booking
+      console.log('🔄 Refreshing calendar to show new booking...');
       fetchCalendarData();
 
       // Close modal after a short delay
@@ -2436,6 +2512,7 @@ const SelectCalendar = () => {
   };
 
   const resetBookingForm = (clearSession = true) => {
+    console.log('🔄 RESETTING BOOKING FORM - clearSession:', clearSession);
     setBookingStep(1);
     setSelectedExistingClient(null);
     setSelectedService(null);
@@ -2458,8 +2535,10 @@ const SelectCalendar = () => {
 
     // Only clear appointments session if explicitly requested
     if (clearSession) {
+      console.log('🗑️ CLEARING APPOINTMENTS SESSION');
       clearAppointmentSession();
     } else {
+      console.log('💾 PRESERVING APPOINTMENTS SESSION - Current appointments:', multipleAppointments.length);
     }
 
     // Reset gift card and membership states
@@ -2549,7 +2628,9 @@ const SelectCalendar = () => {
 
   // Debug: Track when existing clients state changes
   useEffect(() => {
+    console.log('📊 Existing clients state updated:', existingClients.length, 'clients');
     if (existingClients.length > 0) {
+      console.log('📊 Sample clients:', existingClients.slice(0, 3).map(c => `${c.firstName} ${c.lastName}`));
     }
   }, [existingClients]);
 
@@ -2559,6 +2640,7 @@ const SelectCalendar = () => {
   const loadBenefitsIfNeeded = useCallback(async (force = false) => {
     // Only proceed if we have a selected client
     if (!selectedExistingClient?._id && !force) {
+      console.log('No client selected, skipping benefits load');
       return;
     }
 
@@ -2679,6 +2761,7 @@ const SelectCalendar = () => {
     
     if (bookingStep === 2 && selectedService) {
       if (availableProfessionals.length === 0) {
+        console.log('🔄 Step 2 - Fetching professionals for service:', selectedService.name);
         const bookingDate = selectedBookingDate || currentDate;
         let professionals = getAvailableProfessionalsForService(
           selectedService._id,
@@ -2690,13 +2773,17 @@ const SelectCalendar = () => {
         
         // Fallback: use selectedProfessional if available
         if (professionals.length === 0 && selectedProfessional) {
+          console.log('⚠️ Using selectedProfessional as fallback');
           professionals = [selectedProfessional];
         }
         
+        console.log('✅ Auto-populated professionals on step 2:', professionals.length, professionals);
         setAvailableProfessionals(professionals);
       } else {
+        console.log('ℹ️ Professionals already populated:', availableProfessionals.length);
       }
     } else {
+      console.log('⚠️ Step 2 requirements not met');
     }
   }, [bookingStep, selectedService, availableProfessionals.length, selectedProfessional, selectedBookingDate, currentDate, employees, appointments, availableServices]);
 
@@ -2712,6 +2799,7 @@ const SelectCalendar = () => {
     
     if (bookingStep === 3 && selectedService && selectedProfessional) {
       if (availableTimeSlots.length === 0) {
+        console.log('🔄 Step 3 - Fetching time slots for professional:', selectedProfessional.name || selectedProfessional.user?.firstName);
         const bookingDate = selectedBookingDate || currentDate;
         const timeSlots = getAvailableTimeSlotsForProfessional(
           selectedProfessional,     // employee object (not ID)
@@ -2720,10 +2808,13 @@ const SelectCalendar = () => {
           appointments             // appointments object
         );
         
+        console.log('✅ Auto-populated time slots on step 3:', timeSlots.length, timeSlots);
         setAvailableTimeSlots(timeSlots);
       } else {
+        console.log('ℹ️ Time slots already populated:', availableTimeSlots.length);
       }
     } else {
+      console.log('⚠️ Step 3 requirements not met');
     }
   }, [bookingStep, selectedService, selectedProfessional, availableTimeSlots.length, selectedBookingDate, currentDate, employees, appointments, availableServices]);
 
@@ -2823,7 +2914,116 @@ const SelectCalendar = () => {
 
   const calendarDays = getCalendarDays();
 
+  const renderMonthView = () => {
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const firstDayIndex = startOfMonth.getDay();
+    const emptyCellsBefore = Array.from({ length: (firstDayIndex === 0 ? 6 : firstDayIndex - 1) });
 
+    return (
+      <div className="month-view-container">
+        <div className="month-day-names">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <div key={day} className="month-day-name">{day}</div>)}
+        </div>
+        <div className="month-view-grid">
+          {emptyCellsBefore.map((_, index) => <div key={`empty-${index}`} className="month-day-cell empty"></div>)}
+          {calendarDays.map(day => {
+            const dayKey = localDateKey(day);
+            const dayAppointments = [];
+
+            // Get appointments for this day from all employees
+            displayEmployees.forEach(emp => {
+              if (mergedAppointments[emp.id]) {
+                Object.entries(mergedAppointments[emp.id]).forEach(([slotKey, appointment]) => {
+                  // Check if the appointment is for this day
+                  if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
+                    // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
+                    const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
+                    dayAppointments.push({
+                      ...appointment,
+                      employeeName: emp.name,
+                      employeeAvatar: emp.avatar,
+                      employeeId: emp.id,
+                      time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD'
+                    });
+                  }
+                });
+              }
+            });
+
+            return (
+              <div
+                key={dayKey}
+                className="month-day-cell"
+                onClick={() => handleMonthDayClick(day)}
+                style={{ cursor: 'pointer' }}
+                title={`Click to add appointment on ${day.toLocaleDateString()}`}
+              >
+                <div className="month-day-header">
+                  <span className="month-day-date">{day.getDate()}</span>
+                  <span className="month-add-appointment-hint">+</span>
+                </div>
+                <div className="month-appointments">
+                  {dayAppointments.length > 0 ? (
+                    <>
+                      {dayAppointments.slice(0, 3).map((app, index) => (
+                        <div key={index}
+                          className="month-appointment-entry"
+                          style={{ backgroundColor: app.color }}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent day click when clicking on appointment
+                            if (app.bookingId) {
+                              // Show booking status for existing appointment
+                              const appointmentDetails = {
+                                ...app,
+                                employeeId: app.employeeId,
+                                employeeName: app.employeeName,
+                                slotTime: app.time,
+                                date: dayKey,
+                                slotKey: `${dayKey}_${app.time}`,
+                                serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
+                              };
+                              setSelectedBookingForStatus(appointmentDetails);
+                              setShowBookingStatusModal(true);
+                            }
+                          }}
+                          onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                            client: app.client,
+                            service: app.service,
+                            time: app.time,
+                            professional: app.employeeName,
+                            status: app.status || 'Confirmed',
+                            notes: app.notes
+                          })}
+                          onMouseLeave={hideBookingTooltip}>
+                          <span className="appointment-client-name">{app.client}</span>
+                          <span className="appointment-service-name">{app.service}</span>
+                        </div>
+                      ))}
+                      {dayAppointments.length > 3 && (
+                        <div
+                          className="month-more-appointments"
+                          onClick={(event) => {
+                            event.stopPropagation(); // Prevent day click when clicking on "more"
+                            handleShowMoreAppointments(dayAppointments, day, event);
+                          }}
+                        >
+                          +{dayAppointments.length - 3} more
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="month-empty-day">
+                      <span className="add-appointment-text">Click to add appointment</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   const renderCalendarContent = () => {
     if (loading) {
@@ -2851,77 +3051,322 @@ const SelectCalendar = () => {
       );
     }
 
-
+    if (currentView === 'Month') {
+      return renderMonthView();
+    }
 
     return (
-      <>
+      <div className="calendar-grid-container">
         {currentView === 'Day' && (
-          <DayView
-            currentDate={currentDate}
-            timeSlots={timeSlots}
-            displayEmployees={displayEmployees}
-            mergedAppointments={mergedAppointments}
-            isTimeSlotUnavailable={isTimeSlotUnavailable}
-            onTimeSlotClick={handleTimeSlotClick}
-            onShowBookingTooltip={showBookingTooltipHandler}
-            onHideBookingTooltip={hideBookingTooltip}
-            onShowTimeHover={showTimeHoverHandler}
-            onHideTimeHover={hideTimeHover}
-            onSetSelectedBookingForStatus={setSelectedBookingForStatus}
-            onShowBookingStatusModal={setShowBookingStatusModal}
-          />
+          <div className="time-column">
+            <div className="time-header">Time</div>
+            <div className="time-slots">
+              {timeSlots.map(slot => (
+                <div key={slot} className={`time-slot-label ${slot.endsWith(':00') ? 'hour-start' : 'half-hour'}`}>
+                  <span className="time-text">{formatTime(slot)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
-        {currentView === 'Week' && (
-          <WeekView
-            calendarDays={calendarDays}
-            displayEmployees={displayEmployees}
-            mergedAppointments={mergedAppointments}
-            employees={employees}
-            onTimeSlotClick={handleTimeSlotClick}
-            onShowBookingTooltip={showBookingTooltipHandler}
-            onHideBookingTooltip={hideBookingTooltip}
-            onSetSelectedBookingForStatus={setSelectedBookingForStatus}
-            onShowBookingStatusModal={setShowBookingStatusModal}
-            onInitiateBooking={(staff, day) => {
-              setBookingDefaults({
-                professional: {
-                  _id: staff._id || staff.id,
-                  id: staff.id,
-                  user: {
-                    firstName: staff.name.split(' ')[0],
-                    lastName: staff.name.split(' ')[1] || ''
-                  },
-                  name: staff.name,
-                  position: staff.position,
-                  ...staff
-                },
-                date: day,
-                isDirectEmployeeSelection: true
-              });
-              setSelectedBookingDate(day);
-              setIsNewAppointment(true);
-              setShowAddBookingModal(true);
-              setShowServiceCatalog(true);
+        <div className="staff-grid-wrapper">
+          {/* Sticky Headers Row - All staff headers in one fixed row */}
+          {currentView === 'Day' && (
+            <div className="staff-headers-row">
+              {displayEmployees.map(employee => {
+                const hasShift = hasShiftOnDate(employee, currentDate);
+                const shiftHours = getEmployeeShiftHours(employee, currentDate);
+                const hasValidShifts = shiftHours.length > 0;
+
+                return (
+                  <div key={`header-${employee.id}`} className="staff-header-cell">
+                    <div className="staff-avatar" style={{
+                      backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
+                      opacity: hasShift && hasValidShifts ? 1 : 0.5
+                    }}>
+                      {employee.avatar ?
+                        <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{ opacity: hasShift && hasValidShifts ? 1 : 0.5 }} /> :
+                        employee.name.charAt(0)
+                      }
+                    </div>
+                    <div className="staff-info">
+                      <div className="staff-name" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.name}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Scrollable Content - Time slots for each employee */}
+          <div
+            className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 20)}`}
+            style={{
+              '--dynamic-employee-count': displayEmployees.length || 1,
+              '--dynamic-column-width': displayEmployees.length <= 6
+                ? `${100 / (displayEmployees.length || 1)}%`
+                : 'var(--staff-column-width)'
             }}
-          />
-        )}
-        
-        {currentView === 'Month' && (
-          <MonthView
-            currentDate={currentDate}
-            calendarDays={calendarDays}
-            displayEmployees={displayEmployees}
-            mergedAppointments={mergedAppointments}
-            onMonthDayClick={handleMonthDayClick}
-            onSetSelectedBookingForStatus={setSelectedBookingForStatus}
-            onShowBookingStatusModal={setShowBookingStatusModal}
-            onShowBookingTooltip={showBookingTooltipHandler}
-            onHideBookingTooltip={hideBookingTooltip}
-            onShowMoreAppointments={handleShowMoreAppointments}
-          />
-        )}
-      </>
+          // Dynamic width allocation: 1-6 employees get equal width, 7+ get fixed width with scroll
+          >
+            {currentView === 'Day' && displayEmployees.map(employee => (
+              <StaffColumn
+                key={employee.id}
+                employee={employee}
+                timeSlots={timeSlots}
+                appointments={mergedAppointments}
+                currentDate={currentDate}
+                isTimeSlotUnavailable={isTimeSlotUnavailable}
+                handleTimeSlotClick={handleTimeSlotClick}
+                showBookingTooltipHandler={showBookingTooltipHandler}
+                hideBookingTooltip={hideBookingTooltip}
+                showTimeHoverHandler={showTimeHoverHandler}
+                hideTimeHover={hideTimeHover}
+                setSelectedBookingForStatus={setSelectedBookingForStatus}
+                setShowBookingStatusModal={setShowBookingStatusModal}
+                hideHeader={true}
+              />
+            ))}
+            {currentView === 'Week' && (
+              <div className="week-view-container">
+                {/* Week Day Headers */}
+                <div className="week-headers-row">
+                  <div className="week-staff-header-cell">Staff</div>
+                  {calendarDays.map(day => {
+                    const isToday = day.toDateString() === new Date().toDateString();
+                    return (
+                      <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
+                        <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                        <div className="week-day-number">{day.getDate()}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Employee Rows with Daily Appointments */}
+                {displayEmployees.map(employee => (
+                  <div key={employee.id} className="week-employee-row">
+                    <div className="week-staff-cell">
+                      <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
+                        {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
+                      </div>
+                      <div className="staff-info">
+                        <div className="staff-name">{employee.name}</div>
+                        <div className="staff-position">{employee.position}</div>
+                      </div>
+                    </div>
+
+                    {/* Daily appointment cells for this employee */}
+                    {calendarDays.map(day => {
+                      const dayKey = formatDateLocal(day); // Use same format as session appointments
+                      const hasShift = hasShiftOnDate(employee, day);
+
+                      // Get appointments for this employee on this day
+                      const dayAppointments = [];
+                      if (mergedAppointments[employee.id]) {
+                        Object.entries(mergedAppointments[employee.id]).forEach(([slotKey, appointment]) => {
+                          if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
+                            const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
+                            dayAppointments.push({
+                              ...appointment,
+                              time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
+                              slotKey,
+                              timeSlot: timeFromKey,
+
+                            });
+                          }
+                        });
+                      }
+
+                      return (
+                        <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
+                          {!hasShift ? (
+                            <div className="week-no-shift">
+                              <span className="no-shift-text">No shift today</span>
+                            </div>
+                          ) : dayAppointments.length > 0 ? (
+                            <div className="week-appointments-container">
+                              {dayAppointments.slice(0, 3).map((app, index) => (
+                                <div
+                                  key={index}
+                                  className="week-appointment-block"
+                                  style={{ backgroundColor: app.color }}
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent event bubbling
+                                    console.log('Week appointment clicked:', app);
+
+                                    if (app.timeSlot && app.bookingId) {
+                                      // Show booking status for existing appointment
+                                      const appointmentDetails = {
+                                        ...app,
+                                        employeeId: employee.id,
+                                        employeeName: employee.name,
+                                        slotTime: app.timeSlot,
+                                        date: dayKey,
+                                        slotKey: app.slotKey,
+                                        serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
+                                      };
+                                      console.log('Opening booking status modal:', appointmentDetails);
+                                      setSelectedBookingForStatus(appointmentDetails);
+                                      setShowBookingStatusModal(true);
+                                    } else if (app.timeSlot) {
+                                      // Fallback to regular time slot click
+                                      console.log('Fallback to time slot click');
+                                      handleTimeSlotClick(employee.id, app.timeSlot, day);
+                                    } else {
+                                      // No time slot info, show general appointment booking
+                                      console.log('No time slot, showing add appointment modal');
+                                      const staff = employees.find(emp => emp.id === employee.id);
+                                      if (staff) {
+                                        setBookingDefaults({
+                                          professional: {
+                                            _id: staff._id || staff.id,
+                                            id: staff.id,
+                                            user: {
+                                              firstName: staff.name.split(' ')[0],
+                                              lastName: staff.name.split(' ')[1] || ''
+                                            },
+                                            name: staff.name,
+                                            position: staff.position,
+                                            ...staff
+                                          },
+                                          date: day,
+                                          isDirectEmployeeSelection: true
+                                        });
+                                        setSelectedBookingDate(day);
+                                        setIsNewAppointment(true);
+                                        setShowAddBookingModal(true);
+                                        setShowServiceCatalog(true);
+                                      }
+                                    }
+                                  }}
+                                  onMouseEnter={(e) => showBookingTooltipHandler(e, {
+                                    client: app.client,
+                                    service: app.service,
+                                    time: app.time,
+                                    professional: employee.name,
+                                    status: app.status || 'Confirmed',
+                                    notes: app.notes
+                                  })}
+                                  onMouseLeave={hideBookingTooltip}
+                                >
+                                  <div className="appointment-client">{app.client}</div>
+                                  <div className="appointment-service">{app.service}</div>
+                                </div>
+                              ))}
+
+                              {/* Add appointment button for days with existing appointments */}
+                              <div
+                                className="week-add-appointment-btn"
+                                onClick={hasShift ? (e) => {
+                                  e.stopPropagation(); // Prevent event bubbling
+                                  console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+
+                                  // Show service selection for this employee and day
+                                  const staff = employees.find(emp => emp.id === employee.id);
+                                  if (staff) {
+                                    setBookingDefaults({
+                                      professional: {
+                                        _id: staff._id || staff.id,
+                                        id: staff.id,
+                                        user: {
+                                          firstName: staff.name.split(' ')[0],
+                                          lastName: staff.name.split(' ')[1] || ''
+                                        },
+                                        name: staff.name,
+                                        position: staff.position,
+                                        ...staff
+                                      },
+                                      date: day,
+                                      isDirectEmployeeSelection: true // Flag for skipping professional selection
+                                    });
+                                    setSelectedBookingDate(day);
+                                    setIsNewAppointment(true);
+                                    setShowAddBookingModal(true);
+                                    setShowServiceCatalog(true); // Show service selection first
+                                    console.log('Opening booking modal with defaults:', {
+                                      professional: staff.name,
+                                      date: day.toLocaleDateString(),
+                                      isDirectEmployeeSelection: true
+                                    });
+                                  }
+                                }
+                                  : undefined}
+                                style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                                title={hasShift ? `Add another appointment with ${employee.name}` : 'No shift scheduled'}
+                              >
+                                <span className="add-appointment-icon">+</span>
+                              </div>
+
+                              {dayAppointments.length > 3 && (
+                                <div
+                                  className="week-more-appointments"
+                                  onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
+                                >
+                                  +{dayAppointments.length - 3} more
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div
+                              className="week-empty-cell clickable-slot"
+                              onClick={hasShift ? (e) => {
+                                e.stopPropagation(); // Prevent event bubbling
+                                console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
+
+                                // Show service selection for this employee and day
+                                const staff = employees.find(emp => emp.id === employee.id);
+                                if (staff) {
+                                  setBookingDefaults({
+                                    professional: {
+                                      _id: staff._id || staff.id,
+                                      id: staff.id,
+                                      user: {
+                                        firstName: staff.name.split(' ')[0],
+                                        lastName: staff.name.split(' ')[1] || ''
+                                      },
+                                      name: staff.name,
+                                      position: staff.position,
+                                      ...staff
+                                    },
+                                    date: day,
+                                    isDirectEmployeeSelection: true // Flag for skipping professional selection
+                                  });
+                                  setSelectedBookingDate(day);
+                                  setIsNewAppointment(true);
+                                  setShowAddBookingModal(true);
+                                  setShowServiceCatalog(true); // Show service selection first
+                                  console.log('Opening booking modal with defaults:', {
+                                    professional: staff.name,
+                                    date: day.toLocaleDateString(),
+                                    isDirectEmployeeSelection: true
+                                  });
+                                }
+                              } : undefined}
+                              style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
+                              title={hasShift ? `Book appointment with ${employee.name} on ${day.toLocaleDateString()}` : 'No shift scheduled'}
+                            >
+                              {/* <span className="book-appointment-text">
+                              {hasShift ? 'Click to Book' : 'No Shift'}
+                            </span>
+                            {hasShift && (
+                              <div className="week-time-slots-hint">
+                                <span className="plus-icon">+</span>
+                              </div>
+                            )} */}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -3712,6 +4157,7 @@ const SelectCalendar = () => {
                         const startTime = slot.startTime;
                         const [hours] = startTime.split(':').map(Number);
                         if (hours >= 23) {
+                          console.log('🚫 Blocking slot at', startTime, '- cutoff is 23:00');
                           return false;
                         }
                         
@@ -3728,9 +4174,11 @@ const SelectCalendar = () => {
                             serviceDuration={selectedService?.duration}
                             professionalName={selectedProfessional?.name}
                             onSelect={(selectedSlot) => {
+                              console.log('🕐 TIME SLOT SELECTED:', selectedSlot);
                               setSelectedTimeSlot(selectedSlot);
                               const added = handleAddToBookingSession(selectedSlot);
                               setBookingStep(4);
+                              console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
                             }}
                           />
                         );
@@ -3739,6 +4187,7 @@ const SelectCalendar = () => {
                   </div>
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => {
+                      console.log('⬅️ Going back from step 3 to step 2');
                       // Restore the last selected service
                       if (lastSelectedService) setSelectedService(lastSelectedService);
                       // Clear time slot selection and professionals to force refresh
@@ -3765,7 +4214,9 @@ const SelectCalendar = () => {
                   onAddAnother={startAdditionalService}
                   onProceedToClient={() => setBookingStep(5)}
                   onBack={() => {
+                    console.log('⬅️ Going back from step 4 to step 3');
                     if (lastAddedAppointmentId) {
+                      console.log('🗑️ Removing last appointment:', lastAddedAppointmentId);
                       removeAppointmentFromSessionLocal(lastAddedAppointmentId);
                       setLastAddedAppointmentId(null);
                     }
@@ -3813,9 +4264,11 @@ const SelectCalendar = () => {
                   onContinueToPayment={() => setBookingStep(6)}
                   onBack={() => {
                     if (bookingDefaults?.professional && bookingDefaults?.time) {
+                      console.log('⬅️ Going back from step 5 to step 1 (grid booking mode)');
                       setBookingStep(1);
                       setShowServiceCatalog(true);
                     } else {
+                      console.log('⬅️ Going back from step 5 to step 4 (normal booking mode)');
                       setBookingStep(4);
                     }
                   }}

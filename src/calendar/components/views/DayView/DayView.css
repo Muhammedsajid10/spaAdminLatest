@@ -1,0 +1,254 @@
+/* DayView.css */
+
+/* === CALENDAR GRID LAYOUT (Time Column + Staff Grid) === */
+.calendar-grid-container {
+  display: flex;
+  flex-grow: 1;
+  overflow: visible;
+  background: #f3f5f7;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+/* === TIME COLUMN === */
+.time-column {
+  width: var(--time-column-width);
+  background: #ffffff;
+  border-right: 2px solid var(--border-color);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  position: sticky;
+  left: 0;
+  z-index: 100;
+  box-shadow: 4px 0 10px -6px rgba(15, 23, 42, 0.2);
+}
+
+.time-header {
+  height: 106px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: #ffffff;
+  border-bottom: 2px solid #e5e7eb;
+  font-size: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 5001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.time-slots {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-slot-label {
+  height: var(--time-slot-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+  font-family: 'Courier New', monospace;
+  background: #ffffff;
+}
+
+.time-slot-label.hour-start {
+  border-bottom: 2px solid #d1d5db;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: #ffffff;
+  font-size: 14px;
+}
+
+.time-slot-label.hour-start span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+
+.time-slot-label.half-hour {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.time-slot-label::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* === STAFF GRID WRAPPER === */
+.staff-grid-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: visible;
+}
+
+/* === STICKY STAFF HEADERS ROW === */
+.staff-headers-row {
+  display: flex;
+  position: sticky;
+  top: 0px;
+  z-index: 90;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px -10px rgba(15, 23, 42, 0.4);
+  padding: 12px 16px;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.staff-header-cell {
+  min-height: 80px;
+  height: auto;
+  padding: 1rem 0.5rem;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  border: none;
+  min-width: 120px;
+  scroll-snap-align: center;
+}
+
+.staff-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 1px 4px rgba(15, 23, 42, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.staff-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.staff-name {
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #111827;
+}
+
+/* === STAFF GRID === */
+.staff-grid {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.5);
+}
+
+/* Dynamic Column Width Logic */
+.staff-grid[style*="--dynamic-column-width"] .staff-column {
+  width: var(--dynamic-column-width);
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Match column widths between grid and headers */
+.staff-grid.cols-1 ~ .staff-headers-row .staff-header-cell,
+.staff-headers-row .staff-header-cell:only-child { width: 100%; min-width: 300px; flex: 1; }
+
+.staff-grid.cols-2 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-2) .staff-headers-row .staff-header-cell { width: 50%; min-width: 280px; flex: 1; }
+
+.staff-grid.cols-3 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-3) .staff-headers-row .staff-header-cell { width: 33.33%; min-width: 250px; flex: 1; }
+
+.staff-grid.cols-4 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-4) .staff-headers-row .staff-header-cell { width: 25%; min-width: 220px; flex: 1; }
+
+.staff-grid.cols-5 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-5) .staff-headers-row .staff-header-cell { width: 20%; min-width: 200px; flex: 1; }
+
+.staff-grid.cols-6 ~ .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid.cols-6) .staff-headers-row .staff-header-cell { width: 16.66%; min-width: 180px; flex: 1; }
+
+/* 7+ employees - fixed width */
+.staff-grid-wrapper:has(.staff-grid[class*="cols-7"]) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid[class*="cols-8"]) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid[class*="cols-9"]) .staff-headers-row .staff-header-cell,
+.staff-grid-wrapper:has(.staff-grid[class*="cols-1"]) .staff-headers-row .staff-header-cell:not(:has(.cols-1)) {
+  width: var(--staff-column-width);
+  min-width: var(--staff-column-width);
+}
+
+/* Grid columns specific widths */
+.staff-grid.cols-1 .staff-column { width: 100%; min-width: 300px; flex: 1; }
+.staff-grid.cols-2 .staff-column { width: 50%; min-width: 280px; flex: 1; }
+.staff-grid.cols-3 .staff-column { width: 33.33%; min-width: 250px; flex: 1; }
+.staff-grid.cols-4 .staff-column { width: 25%; min-width: 220px; flex: 1; }
+.staff-grid.cols-5 .staff-column { width: 20%; min-width: 200px; flex: 1; }
+.staff-grid.cols-6 .staff-column { width: 16.66%; min-width: 180px; flex: 1; }
+
+.staff-grid[class*="cols-7"],
+.staff-grid[class*="cols-8"],
+.staff-grid[class*="cols-9"],
+.staff-grid[class*="cols-1"] {
+  overflow-x: auto;
+}
+
+.staff-grid[class*="cols-7"] .staff-column,
+.staff-grid[class*="cols-8"] .staff-column,
+.staff-grid[class*="cols-9"] .staff-column,
+.staff-grid[class*="cols-1"] .staff-column:not(.cols-1) {
+  width: var(--staff-column-width);
+  min-width: var(--staff-column-width);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .staff-grid[class*="cols-4"],
+  .staff-grid[class*="cols-5"],
+  .staff-grid[class*="cols-6"] {
+    overflow-x: auto;
+  }
+  
+  .staff-grid[class*="cols-4"] .staff-column,
+  .staff-grid[class*="cols-5"] .staff-column,
+  .staff-grid[class*="cols-6"] .staff-column {
+    width: var(--staff-column-width);
+    min-width: var(--staff-column-width);
+    flex-shrink: 0;
+  }
+}
