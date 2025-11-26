@@ -6,6 +6,7 @@ import { useDatePickerState, hasShiftOnDate, getEmployeeShiftHours, getAppointme
 import { StaffColumn } from '../calendar/components/StaffColumn';
 import ClientSummary from '../calendar/components/ClientInformation.jsx';
 import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
+import { MdDelete } from "react-icons/md";
 import {
   formatUTCToLocal,
   generateTimeSlots,
@@ -48,6 +49,9 @@ import {
   CreditCard,
   Banknote,
   Smartphone,
+  Hash,
+  FileText,
+  Timer,
   Gift,
   Crown,
   Trash2,
@@ -3852,9 +3856,7 @@ const SelectCalendar = () => {
 
               <div className="booking-status-details">
                 <div className="booking-status-header">
-                  <div className="booking-status-avatar" >
-                    {/* {selectedBookingForStatus.client} */}
-                  </div>
+             
                   <div className="booking-status-info">
                     <h3>{selectedBookingForStatus.client}</h3>
                     <p>{selectedBookingForStatus.service}</p>
@@ -3866,12 +3868,18 @@ const SelectCalendar = () => {
 
                 <div className="booking-status-grid">
                   <div className="status-detail">
+                    <div className="detail-icon">
+                      <User size={20} />
+                    </div>
                     <div className="detail-content">
                       <span className="detail-label">Professional</span>
                       <span className="detail-value">{selectedBookingForStatus.employeeName}</span>
                     </div>
                   </div>
                   <div className="status-detail">
+                    <div className="detail-icon">
+                      <Calendar size={20} />
+                    </div>
                     <div className="detail-content">
                       <span className="detail-label">Date</span>
                       <span className="detail-value">
@@ -3885,18 +3893,27 @@ const SelectCalendar = () => {
                     </div>
                   </div>
                   <div className="status-detail">
+                    <div className="detail-icon">
+                      <Clock size={20} />
+                    </div>
                     <div className="detail-content">
                       <span className="detail-label">Time</span>
                       <span className="detail-value">{selectedBookingForStatus.slotTime}</span>
                     </div>
                   </div>
                   <div className="status-detail">
+                    <div className="detail-icon">
+                      <Timer size={20} />
+                    </div>
                     <div className="detail-content">
                       <span className="detail-label">Duration</span>
                       <span className="detail-value">{selectedBookingForStatus.duration} minutes</span>
                     </div>
                   </div>
                   <div className="status-detail">
+                    <div className="detail-icon">
+                      <Hash size={20} />
+                    </div>
                     <div className="detail-content">
                       <span className="detail-label">Booking ID</span>
                       <span className="detail-value">{selectedBookingForStatus.bookingId || 'N/A'}</span>
@@ -3904,6 +3921,9 @@ const SelectCalendar = () => {
                   </div>
                   {(selectedBookingForStatus.finalAmount !== undefined || selectedBookingForStatus.price !== undefined || selectedBookingForStatus.totalAmount !== undefined) && (
                     <div className="status-detail">
+                      <div className="detail-icon">
+                        <Banknote size={20} />
+                      </div>
                       <div className="detail-content">
                         <span className="detail-label">Amount</span>
                         <span className="detail-value" style={{ fontWeight: selectedBookingForStatus.finalAmount !== undefined && selectedBookingForStatus.finalAmount !== selectedBookingForStatus.price ? 'bold' : 'normal' }}>
@@ -3971,17 +3991,14 @@ const SelectCalendar = () => {
                       onClick={handleDeleteBooking}
                       disabled={bookingStatusLoading}
                     >
-                      <span className="btn-icon">🗑️</span>
+                      <span className="btn-icon"><MdDelete /></span>
+                      <span className="btn-label">Delete</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="booking-modal-actions">
-                <button className="booking-modal-back" onClick={closeBookingStatusModal}>
-                  Close
-                </button>
-              </div>
+              
             </div>
           </div>
         </div>
@@ -3993,43 +4010,6 @@ const SelectCalendar = () => {
             <div className={`booking-modal booking-modal-animate-in pro-theme ${bookingStep === 6 ? 'final-step' : ''}`} onClick={e => e.stopPropagation()}>
               <button className="booking-modal-close" onClick={closeBookingModal}>×</button>
               <h2>New Appointment</h2>
-
-              {/* Step Indicator */}
-              {/* <div className="step-indicator">
-                <div className="step-item">
-                  <div className={`step-number ${bookingStep >= 1 ? 'active' : ''} ${bookingStep > 1 ? 'completed' : ''}`}>
-                    {bookingStep > 1 ? '' : '1'}
-                  </div>
-                  <div className={`step-connector ${bookingStep > 1 ? 'active' : ''}`}></div>
-                </div>
-                <div className="step-item">
-                  <div className={`step-number ${bookingStep >= 2 ? 'active' : ''} ${bookingStep > 2 ? 'completed' : ''}`}>
-                    {bookingStep > 2 ? '' : '2'}
-                  </div>
-                  <div className={`step-connector ${bookingStep > 2 ? 'active' : ''}`}></div>
-                </div>
-                <div className="step-item">
-                  <div className={`step-number ${bookingStep >= 3 ? 'active' : ''} ${bookingStep > 3 ? 'completed' : ''}`}>
-                    {bookingStep > 3 ? '' : '3'}
-                  </div>
-                  <div className={`step-connector ${bookingStep > 3 ? 'active' : ''}`}></div>
-                </div>
-                <div className="step-item">
-                  <div className={`step-number ${bookingStep >= 4 ? 'active' : ''} ${bookingStep > 4 ? 'completed' : ''}`}>
-                    {bookingStep > 4 ? '' : '4'}
-                  </div>
-                  <div className={`step-connector ${bookingStep > 4 ? 'active' : ''}`}></div>
-                </div>
-                <div className="step-item">
-                  <div className={`step-number ${bookingStep >= 5 ? 'active' : ''} ${bookingStep > 5 ? 'completed' : ''}`}>
-                    {bookingStep > 5 ? '' : '5'}
-                  </div>
-                  <div className={`step-connector ${bookingStep > 5 ? 'active' : ''}`}></div>
-                </div>
-                <div className="step-item">
-                  <div className={`step-number ${bookingStep >= 6 ? 'active' : ''}`}>6</div>
-                </div>
-              </div> */}
 
               {bookingError && <div className="booking-modal-error">{bookingError}</div>}
               {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
