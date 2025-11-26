@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, Filter, ArrowDown, Plus, Edit, Trash2, MoreVertical, AlertTriangle, Info } from "lucide-react";
+import { Search, Filter, ArrowDown, Plus, Edit, Trash2, MoreVertical, AlertTriangle, Info, ChevronDown, ArrowUpDown } from "lucide-react";
+import { FiSearch, FiFilter, FiChevronDown, FiPlus, FiMoreVertical, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import { Button, TextField, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, Menu, /* Add Menu from MUI */ TextareaAutosize } from "@mui/material"; // Import Menu
 import api from "../Service/Api";
 import Swal from 'sweetalert2';
@@ -1038,476 +1039,274 @@ const ServiceMenu = () => {
   
   return (
     <div className="service-menu-container">
-      {/* Header */}
-      <div className="service-menu__header">
-        <div className="service-menu__header-content">
-          <div className="service-menu__title-section">
-            <h1 className="service-menu__title">Service Menu</h1>
-            <p className="service-menu__subtitle">
-              View and manage the services offered by your business.{" "}
+      <div className="service-menu-wrapper">
+        {/* Header */}
+        <div className="service-menu-header">
+          <div className="service-menu-title-group">
+            <h1>Service menu</h1>
+            <p className="service-menu-subtitle">
+              View and manage the services offered by your business. <a href="#">Learn more</a>
             </p>
           </div>
-          <div className="service-menu__header-actions">
-            {/* Add button (existing) */}
-            <Button
-              className="  mem-export-bbtn service-menu__btn service-menu__btn--primary service-menu__btn--dropdown"
-              aria-controls={openAddMenu ? 'add-menu' : undefined}
-              aria-haspopup="true"
-              aria-expanded={openAddMenu ? 'true' : undefined}
-              onClick={handleAddMenuClick}
-              style={{width:"80px",color:"black",background:"white"}}
-            
+          <div className="service-menu-actions">
+            {/* Export Button */}
+            <button 
+              className="btn btn-secondary"
+              onClick={handleExportClick}
             >
-              Add
-            </Button>
+              Options <FiChevronDown />
+            </button>
             <Menu
-              id="add-menu"
+              anchorEl={exportAnchorEl}
+              open={Boolean(exportAnchorEl)}
+              onClose={handleExportClose}
+              PaperProps={{
+                style: {
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  marginTop: '8px'
+                }
+              }}
+            >
+              <MenuItem onClick={downloadCSV}>Export as CSV</MenuItem>
+              <MenuItem onClick={downloadExcel}>Export as Excel</MenuItem>
+              <MenuItem onClick={downloadPDF}>Export as PDF</MenuItem>
+            </Menu>
+
+            {/* Add Button */}
+            <button 
+              className="btn btn-secondary"
+              onClick={handleAddMenuClick}
+            >
+              Add <FiChevronDown />
+            </button>
+            <Menu
               anchorEl={addMenuAnchorEl}
-              open={openAddMenu}
+              open={Boolean(addMenuAnchorEl)}
               onClose={handleAddMenuClose}
-              MenuListProps={{ 'aria-labelledby': 'add-button' }}
-              className="service-menu__add-menu"
+              PaperProps={{
+                style: {
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  marginTop: '8px'
+                }
+              }}
             >
               <MenuItem onClick={handleAddServiceFromMenu}>
-                <Plus size={16} style={{marginRight: '8px'}} /> Add Service
+                <FiPlus style={{ marginRight: '8px' }} /> Add Service
               </MenuItem>
               <MenuItem onClick={handleAddCategoryFromMenu}>
-                <Plus size={16} style={{marginRight: '8px'}} /> Add Category
+                <FiPlus style={{ marginRight: '8px' }} /> Add Category
               </MenuItem>
             </Menu>
-
-            {/* --- NEW: Export button with dropdown --- */}
-            <Button
-            style={{background:"black",color:"white"}}
-              className="mem-export-bbtn service-menu__btn service-menu__btn--secondary service-menu__export-btn"
-              aria-controls={openExportMenu ? 'export-menu' : undefined}
-              aria-haspopup="true"
-              aria-expanded={openExportMenu ? 'true' : undefined}
-              onClick={handleExportClick}
-              // endIcon={<ArrowDown size={14} />}
-            >
-              Export
-            </Button>
-            <Menu
-              id="export-menu"
-              anchorEl={exportAnchorEl}
-              open={openExportMenu}
-              onClose={handleExportClose}
-              MenuListProps={{ 'aria-labelledby': 'export-button' }}
-              className="service-menu__export-menu"
-            >
-              <MenuItem onClick={downloadCSV}>CSV</MenuItem>
-              <MenuItem onClick={downloadExcel}>Excel</MenuItem>
-              <MenuItem onClick={downloadPDF}>PDF</MenuItem>
-            </Menu>
-            {/* --- END Export --- */}
-
           </div>
         </div>
-      </div>
 
-      {/* Only show inline alerts for non-fatal success messages */}
-      {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} className="service-menu__alert service-menu__alert--success">
-          {success}
-        </Alert>
-      )}
+        {/* Alerts */}
+        {success && (
+          <Alert severity="success" onClose={() => setSuccess(null)} style={{ marginBottom: '24px', borderRadius: '8px' }}>
+            {success}
+          </Alert>
+        )}
+        {operationError && (
+          <Alert severity="error" onClose={() => setOperationError(null)} style={{ marginBottom: '24px', borderRadius: '8px' }}>
+            {operationError}
+          </Alert>
+        )}
 
-      {/* Operation error alerts for update/delete/create operations */}
-      {operationError && (
-        <Alert severity="error" onClose={() => setOperationError(null)} className="service-menu__alert service-menu__alert--error">
-          {operationError}
-        </Alert>
-      )}
-
-      {/* Search and Filters */}
-      <div className="service-menu__controls">
-        <div className="service-menu__search-section">
-          <div className="service-menu__search-wrapper">
-            <Search className="service-menu__search-icon" size={20} />
-            <input
-              type="text"
-              className="service-menu__search-input"
-              placeholder="Search service name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchLoading && <CircularProgress size={16} className="service-menu__search-loading" />}
+        {/* Controls */}
+        <div className="service-menu-controls">
+          <div className="controls-left">
+            <div className="search-wrapper">
+              <FiSearch className="search-icon" />
+              <input 
+                type="text" 
+                className="search-input" 
+                placeholder="Search service name" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+           
           </div>
         </div>
-        <div className="service-menu__filter-actions">
-          {/* <Button
-            className="service-menu__btn service-menu__btn--secondary"
-            onClick={() => null}
-            startIcon={<Filter size={16} />}
-          >
-            Filters
-          </Button> */}
-          {/* <Button
-            className="service-menu__btn service-menu__btn--secondary"
-            onClick={() =>null}
-            startIcon={<ArrowDown size={16} />}
-          >
-            Manage order
-          </Button> */}
-        </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="service-menu__content">
-        {/* Categories Sidebar */}
-        <div className="service-menu__sidebar">
-          <h3 className="service-menu__sidebar-title">Categories</h3>
-          <div className="service-menu__categories">
-            {categories.map((category) => (
-              <div
+        {/* Main Content */}
+        <div className="service-menu-content">
+          {/* Sidebar */}
+          <div className="sidebar-card">
+            <h3 className="sidebar-title">Categories</h3>
+            <div className="category-list">
+              {categories.map((category) => (
+              <div 
                 key={category.name}
-                className={`service-menu__category-wrapper ${selectedCategory === category.name
-                    ? "service-menu__category-wrapper--active"
-                    : ""
-                  }`}
+                className={`category-item ${selectedCategory === category.name ? 'active' : ''}`}
+                onClick={() => handleCategoryChange(category.name)}
               >
-                <button
-                  type="button"
-                  className={`service-menu__category ${selectedCategory === category.name
-                      ? "service-menu__category--active"
-                      : ""
-                    }`}
-                  onClick={() => handleCategoryChange(category.name)}
-                >
-                  <span className="service-menu__category-name">
-                    {category.name}
-                  </span>
-                  <span className="service-menu__category-count">
-                    {category.count}
-                  </span>
-                </button>
+                <div className="category-content">
+                  <span>{category.name}</span>
+                  <span className="category-count">{category.count}</span>
+                </div>
                 {category.name !== "All categories" && (
                   <button
-                    className="service-menu__category-delete-btn"
+                    className="category-delete-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       initiateDeleteCategory(category._id, category.name);
                     }}
                     title={`Delete ${category.name} category`}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 )}
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Services List (Grouped by Category) */}
-        <div className="service-menu__services-list">
-          {Object.keys(filteredAndCategorizedServices).length > 0 ? (
-            Object.keys(filteredAndCategorizedServices).map(categoryName => (
-              <div key={categoryName} className="service-menu__category-group">
-                <div className="service-menu__category-group-header">
-                  <h2 className="service-menu__category-group-title">{categoryName}</h2>
-                  {/* <Button
-                    className="service-menu__btn service-menu__btn--secondary service-menu__btn--dropdown service-menu__category-group-actions"
-                    onClick={() => null}
-                    endIcon={<ArrowDown size={16} />}
-                  >
-                    Actions
-                  </Button> */}
-                 </div>
-                {filteredAndCategorizedServices[categoryName].map((service) => (
-                  <div key={service._id} className="service-menu__service-card">
-                    <div className="service-menu__service-card-main-info">
-                      <h3 className="service-menu__service-card-name">{service.name}</h3>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button
-                          className="service-menu__action-icon-btn service-menu__service-card-more-options"
-                          onClick={() => handleEditService(service)} // Link to Edit for now
-                          title="Edit service"
-                        >
-                          <MoreVertical size={20} />
-                        </button>
-
-                        <button
-                          className="service-menu__action-icon-btn service-menu__service-card-delete"
-                          onClick={(e) => { e.stopPropagation(); deleteService(service._id); }}
-                          title="Delete service"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="service-menu__service-card-description">
-                      {service.description}
-                    </p>
-
-                    <div className="service-menu__service-options-list">
-                      {/* Base Service Option */}
-                      <div className="service-menu__service-option-item">
-                        <div className="service-menu__option-details">
-                          <span className="service-menu__option-name">
-                            {service.name}
-                          </span>
-                          <span className="service-menu__option-duration">
-                            {formatDuration(service.duration)}
-                          </span>
-                        </div>
-                        <span className="service-menu__option-price">
-                          {formatPrice(service.price)}
-                        </span>
-                      </div>
-
-                      {/* Simulated Discounted Service Option (as a variant) */}
-                      {service.discountPrice && service.discountPrice < service.price && (
-                        <div className="service-menu__service-option-item">
-                          <div className="service-menu__option-details">
-                            <span className="service-menu__option-name service-menu__option-name--discount">
-                              {service.name} (Discounted)
-                            </span>
-                            <span className="service-menu__option-duration">
-                              {formatDuration(service.duration)}
-                            </span>
-                          </div>
-                          <span className="service-menu__option-price service-menu__option-price--discount">
-                            {formatPrice(service.discountPrice)}
-                            <span className="service-menu__original-price">
-                              {formatPrice(service.price)}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))
-          ) : (
-            <div className="service-menu__no-results">
-              <p>No services found matching your criteria.</p>
             </div>
-          )}
+            <a 
+              className="add-category-btn"
+              onClick={(e) => { e.preventDefault(); setShowAddCategoryModal(true); }}
+            >
+              Add category
+            </a>
+          </div>
+
+          {/* Services List */}
+          <div className="services-section">
+            {Object.keys(filteredAndCategorizedServices).length > 0 ? (
+              Object.keys(filteredAndCategorizedServices).map(categoryName => (
+                <div key={categoryName} className="category-group">
+                  <div className="category-header">
+                    <h2 className="category-title">{categoryName}</h2>
+                
+                  </div>
+                  
+                  <div className="category-group-container">
+                    {filteredAndCategorizedServices[categoryName].map((service) => (
+                      <div key={service._id} className="service-card">
+                        <div className="service-info">
+                          <h3 className="service-name">{service.name}</h3>
+                          <p className="service-description">
+                            {service.description && service.description.length > 50 
+                              ? `${service.description.substring(0, 50)}...` 
+                              : service.description}
+                          </p>
+                        </div>
+                        <div className="service-meta">
+                          <span className="service-duration">{formatDuration(service.duration)}</span>
+                          <span className="service-price">{formatPrice(service.price)}</span>
+                        </div>
+                        <div className="service-actions" style={{ display: 'flex', alignItems: 'center' }}>
+                          <button
+                            className="service-actions-btn"
+                            onClick={(e) => { e.stopPropagation(); handleEditService(service); }}
+                            title="Edit service"
+                          >
+                            <FiMoreVertical size={20} />
+                          </button>
+                          <button
+                            className="service-actions-btn"
+                            onClick={(e) => { e.stopPropagation(); deleteService(service._id); }}
+                            title="Delete service"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="no-results" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                <p>No services found matching your criteria.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Add Service Modal */}
+      {/* Modals - Keeping existing functional modals but ensuring they render */}
       <Dialog open={showAddModal} onClose={() => setShowAddModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Service</DialogTitle>
         <DialogContent dividers>
-          <form onSubmit={handleSubmit} className="service-menu__form">
-            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" className="service-menu__form-input" />
-            <FormControl fullWidth margin="normal" variant="outlined" className="service-menu__form-control">
+          <form onSubmit={handleSubmit}>
+            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" />
+            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" />
+            <FormControl fullWidth margin="normal" variant="outlined">
               <InputLabel>Category</InputLabel>
               <Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} label="Category" required>
-                {availableCategories.length === 0 ? (
-                  <MenuItem disabled>No categories available. Please add a category first.</MenuItem>
-                ) : (
-                  availableCategories.map((category) => (
-                    <MenuItem key={category._id} value={category._id}>
-                      {category.displayName || category.name || 'Unnamed Category'}
-                    </MenuItem>
-                  ))
-                )}
+                {availableCategories.map((category) => (
+                  <MenuItem key={category._id} value={category._id}>
+                    {category.displayName || category.name || 'Unnamed Category'}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
-            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480}} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
-            {/* <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" /> */}
+            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15 }} variant="outlined" />
+            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" />
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
-          <Button onClick={() => setShowAddModal(false)} className="service-menu__btn service-menu__btn--cancel">Cancel</Button>
-          <Button onClick={handleSubmit} className="service-menu__btn service-menu__btn--primary">Add Service</Button>
+          <Button onClick={() => setShowAddModal(false)} className="btn btn-secondary">Cancel</Button>
+          <Button onClick={handleSubmit} className="btn btn-primary">Add Service</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Edit Service Modal */}
       <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Service</DialogTitle>
         <DialogContent dividers>
-          <form onSubmit={handleSubmit} className="service-menu__form">
-            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" className="service-menu__form-input" />
-            <FormControl fullWidth margin="normal" variant="outlined" className="service-menu__form-control">
+          <form onSubmit={handleSubmit}>
+            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" />
+            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" />
+            <FormControl fullWidth margin="normal" variant="outlined">
               <InputLabel>Category</InputLabel>
               <Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} label="Category" required>
-                {availableCategories.length === 0 ? (
-                  <MenuItem disabled>No categories available. Please add a category first.</MenuItem>
-                ) : (
-                  availableCategories.map((category) => (
-                    <MenuItem key={category._id} value={category._id}>
-                      {category.displayName || category.name || 'Unnamed Category'}
-                    </MenuItem>
-                  ))
-                )}
+                {availableCategories.map((category) => (
+                  <MenuItem key={category._id} value={category._id}>
+                    {category.displayName || category.name || 'Unnamed Category'}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
-            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480 }} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
-            {/* <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" /> */}
+            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15 }} variant="outlined" />
+            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" />
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
-          <Button onClick={() => setShowEditModal(false)} className="service-menu__btn service-menu__btn--cancel">Cancel</Button>
-          <Button onClick={handleSubmit} className="service-menu__btn service-menu__btn--primary">Update Service</Button>
+          <Button onClick={() => setShowEditModal(false)} className="btn btn-secondary">Cancel</Button>
+          <Button onClick={handleSubmit} className="btn btn-primary">Update Service</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Add Category Modal */}
       <Dialog open={showAddCategoryModal} onClose={() => setShowAddCategoryModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Category</DialogTitle>
         <DialogContent dividers>
-          <form onSubmit={handleCategorySubmit} className="service-menu__form">
-            <TextField fullWidth label="Category Name (Internal)" value={newCategoryData.name} onChange={(e) => setNewCategoryData({ ...newCategoryData, name: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" helperText="Used for internal identification (e.g., 'facial-treatments')" />
-            <TextField fullWidth label="Display Name" value={newCategoryData.displayName} onChange={(e) => setNewCategoryData({ ...newCategoryData, displayName: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" helperText="Name shown to users (e.g., 'Facial Treatments')" />
+          <form onSubmit={handleCategorySubmit}>
+            <TextField fullWidth label="Category Name (Internal)" value={newCategoryData.name} onChange={(e) => setNewCategoryData({ ...newCategoryData, name: e.target.value })} required margin="normal" variant="outlined" helperText="Used for internal identification" />
+            <TextField fullWidth label="Display Name" value={newCategoryData.displayName} onChange={(e) => setNewCategoryData({ ...newCategoryData, displayName: e.target.value })} required margin="normal" variant="outlined" helperText="Name shown to users" />
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
-          <Button onClick={() => setShowAddCategoryModal(false)} className="service-menu__btn service-menu__btn--cancel">Cancel</Button>
-          <Button onClick={handleCategorySubmit} className="service-menu__btn service-menu__btn--primary">Add Category</Button>
+          <Button onClick={() => setShowAddCategoryModal(false)} className="btn btn-secondary">Cancel</Button>
+          <Button onClick={handleCategorySubmit} className="btn btn-primary">Add Category</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Enhanced Delete Category Confirmation Dialog */}
-      <Dialog 
-        open={deleteDialog.open} 
-        onClose={handleDeleteDialogClose}
-        maxWidth="md" 
-        fullWidth
-        PaperProps={{
-          style: {
-            borderRadius: '12px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-            backgroundColor: '#ffffff'
-          }
-        }}
-      >
-        <DialogTitle style={{ 
-          padding: '24px 24px 16px', 
-          background: deleteDialog.hasServices ? '#f8f9fa' : '#ffffff',
-          borderBottom: '1px solid #e9ecef',
-          backgroundColor: '#ffffff'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {deleteDialog.hasServices ? (
-              <AlertTriangle size={24} style={{ color: '#495057' }} />
-            ) : (
-              <Info size={24} style={{ color: '#6c757d' }} />
-            )}
-            <span style={{ fontSize: '18px', fontWeight: '600', color: '#212529' }}>
-              {deleteDialog.hasServices ? 'Category Contains Services' : 'Confirm Category Deletion'}
-            </span>
-          </div>
-        </DialogTitle>
-        
-        <DialogContent style={{ padding: '24px', backgroundColor: '#ffffff' }}>
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ 
-              fontSize: '16px', 
-              color: '#495057', 
-              margin: '0 0 16px',
-              lineHeight: '1.5'
-            }}>
-              You are about to delete the category <strong>"{deleteDialog.category?.name}"</strong>.
-            </p>
-            
-            {deleteDialog.hasServices ? (
-              <div style={{ 
-                background: '#f8f9fa', 
-                border: '1px solid #dee2e6', 
-                borderRadius: '8px', 
-                padding: '16px',
-                marginBottom: '16px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <AlertTriangle size={20} style={{ color: '#495057', marginTop: '2px', flexShrink: 0 }} />
-                  <div>
-                    <h4 style={{ 
-                      margin: '0 0 8px', 
-                      fontSize: '16px', 
-                      fontWeight: '600', 
-                      color: '#212529' 
-                    }}>
-                      Warning: Category Not Empty
-                    </h4>
-                    <p style={{ margin: '0 0 12px', color: '#495057', fontSize: '14px' }}>
-                      This category currently contains <strong>{deleteDialog.serviceCount} service{deleteDialog.serviceCount !== 1 ? 's' : ''}</strong>. 
-                    </p>
-                    <p style={{ margin: 0, color: '#dc3545', fontSize: '14px', fontWeight: '500' }}>
-                      Deleting this category will permanently remove all associated services.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ 
-                background: '#f8f9fa', 
-                border: '1px solid #dee2e6', 
-                borderRadius: '8px', 
-                padding: '16px',
-                marginBottom: '16px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Info size={20} style={{ color: '#495057' }} />
-                  <p style={{ margin: 0, color: '#495057', fontSize: '14px' }}>
-                    This category is empty and safe to delete.
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            <p style={{ 
-              fontSize: '14px', 
-              color: '#6c757d', 
-              margin: 0,
-              fontStyle: 'italic'
-            }}>
-              This action cannot be undone. Please proceed with caution.
-            </p>
-          </div>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onClose={handleDeleteDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <p>Are you sure you want to delete the category <strong>"{deleteDialog.category?.name}"</strong>?</p>
+          {deleteDialog.hasServices && (
+            <Alert severity="warning" style={{ marginTop: '16px' }}>
+              This category contains {deleteDialog.serviceCount} services. Deleting it will remove all associated services.
+            </Alert>
+          )}
         </DialogContent>
-        
-        <DialogActions style={{ 
-          padding: '16px 24px 24px', 
-          gap: '12px',
-          borderTop: '1px solid #e9ecef',
-          backgroundColor: '#ffffff'
-        }}>
-          <Button 
-            onClick={handleDeleteDialogClose}
-            disabled={deleteDialog.loading}
-            style={{
-              color: '#495057',
-              borderColor: '#dee2e6',
-              padding: '10px 24px',
-              fontWeight: '500',
-              backgroundColor: '#ffffff'
-            }}
-            variant="outlined"
-          >
-            Cancel
-          </Button>
-          
-          <Button 
-            onClick={() => confirmDeleteCategory(true)}
-            disabled={deleteDialog.loading}
-            style={{
-              backgroundColor: '#212529',
-              color: '#ffffff',
-              padding: '10px 24px',
-              fontWeight: '500',
-              '&:hover': {
-                backgroundColor: '#343a40'
-              }
-            }}
-            variant="contained"
-          >
-            {deleteDialog.loading ? (
-              <CircularProgress size={16} style={{ color: '#ffffff' }} />
-            ) : (
-              deleteDialog.hasServices ? 
-                `Force Delete Category & ${deleteDialog.serviceCount} Service${deleteDialog.serviceCount !== 1 ? 's' : ''}` : 
-                'Delete Category'
-            )}
+        <DialogActions>
+          <Button onClick={handleDeleteDialogClose} color="inherit">Cancel</Button>
+          <Button onClick={() => confirmDeleteCategory(true)} color="error" variant="contained">
+            {deleteDialog.hasServices ? 'Force Delete' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

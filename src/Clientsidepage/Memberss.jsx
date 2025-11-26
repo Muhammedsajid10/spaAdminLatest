@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { IoClose } from "react-icons/io5";
-import { FaCalendarAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaFileCsv, FaFilePdf, FaFileExcel } from "react-icons/fa";
+import { FiSearch, FiFilter, FiPlus, FiChevronDown, FiMoreHorizontal, FiDownload } from "react-icons/fi";
+import { Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import api from '../Service/Api';
 import './Memberss.css';
 import Loading from "../states/Loading";
@@ -86,6 +91,17 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showServiceModal]);
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+    }
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   const fetchServices = async () => {
     try {
       const res = await api.get('/services');
@@ -133,7 +149,7 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
     setShowServiceModal(false);
   };
 
-  const parseValidFor = (str) => {
+  const parseValidForModal = (str) => {
     if (!str) return { validityPeriod: 1, validityUnit: 'months' };
     const parts = str.trim().split(/\s+/);
     const num = Number(parts[0]);
@@ -152,7 +168,7 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { validityPeriod, validityUnit } = parseValidFor(formData.validFor);
+      const { validityPeriod, validityUnit } = parseValidForModal(formData.validFor);
 
       // Validation
       if (!formData.name.trim()) {
@@ -380,6 +396,28 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
                 <span className="section-dot section-dot-yellow"></span>
                 Pricing and Payment
               </h3>
+
+              <div className="modern-form-group">
+                <label className="modern-label" style={{ marginBottom: 12 }}>Choose how you'd like your clients to pay.</label>
+                <div className="payment-options-row">
+                  <div 
+                    className={`payment-option-card ${formData.paymentType === 'one-time' ? 'selected' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, paymentType: 'one-time' }))}
+                  >
+                    <div className="payment-option-check">✓</div>
+                    <span className="payment-option-title">One-time payment</span>
+                    <span className="payment-option-desc">Clients are charged once at the time of purchase.</span>
+                  </div>
+                  <div 
+                    className={`payment-option-card ${formData.paymentType === 'recurring' ? 'selected' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, paymentType: 'recurring' }))}
+                  >
+                    <div className="payment-option-check">✓</div>
+                    <span className="payment-option-title">Recurring payments</span>
+                    <span className="payment-option-desc">Clients are charged on the membership renewal date.</span>
+                  </div>
+                </div>
+              </div>
               <div className="modern-form-row" style={{ marginBottom: '20px' }}>
                 <div className="modern-form-group">
                   <label className="modern-label">Valid For</label>
@@ -1175,32 +1213,123 @@ const MembershipTable = () => {
     setShowDetailModal(true);
   };
 
+  // --- Export Functionality ---
+  const [anchorEl, setAnchorEl] = useState(null);
+  const openMenu = Boolean(anchorEl);
+
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Name', 'Description', 'Type', 'Sessions', 'Price', 'Currency', 'Validity'];
+    const csvContent = [
+      headers.join(','),
+      ...memberships.map(m => [
+        `"${m.name}"`,
+        `"${m.description || ''}"`,
+        m.serviceType,
+        m.numberOfSessions || 'Unlimited',
+        m.price,
+        m.currency,
+        `${m.validityPeriod || ''} ${m.validityUnit || ''}`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'memberships.csv';
+    link.click();
+    handleMenuClose();
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(memberships.map(m => ({
+      Name: m.name,
+      Description: m.description,
+      Type: m.serviceType,
+      Sessions: m.numberOfSessions || 'Unlimited',
+      Price: m.price,
+      Currency: m.currency,
+      Validity: `${m.validityPeriod || ''} ${m.validityUnit || ''}`
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Memberships");
+    XLSX.writeFile(workbook, "memberships.xlsx");
+    handleMenuClose();
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Memberships List", 14, 15);
+    
+    const tableColumn = ["Name", "Type", "Sessions", "Price", "Validity"];
+    const tableRows = memberships.map(m => [
+      m.name,
+      m.serviceType,
+      m.numberOfSessions || 'Unlimited',
+      `${m.currency} ${m.price}`,
+      `${m.validityPeriod || ''} ${m.validityUnit || ''}`
+    ]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+    });
+    doc.save("memberships.pdf");
+    handleMenuClose();
+  };
+
   if (loading) return (<div className="membership-dashboard"><div className="dashboard-header"><h2 className="page-title">Memberships</h2></div><Loading/></div>);
   if (error) return (<div className="membership-dashboard"><div className="dashboard-header"><h2 className="page-title">Memberships</h2></div><Error500Page message={error}/></div>);
 
   if (noData) {
     return (
-      <div className="membership-dashboard" style={{ padding: 24, textAlign: 'center' }}>
-        <div className="dashboard-header" style={{ marginBottom: 16 }}>
+      <div className="membership-dashboard">
+        <div className="dashboard-header">
           <h2 className="page-title">Memberships</h2>
           <div className="action-buttons">
-            <button className='primary-button' onClick={() => setShowCreateModal(true)}>Add</button>
+            <button className="btn btn-secondary" onClick={handleMenuClick}>
+              Options <FiChevronDown />
+            </button>
+            <button className="btn btn-secondary" onClick={() => setShowCreateModal(true)}>
+              Add
+            </button>
           </div>
         </div>
 
         <div className="search-controls">
-          <input className='search-input' type="text" placeholder="Search by membership name" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <div className="search-wrapper">
+            <FiSearch className="search-icon" />
+            <input 
+              className="search-input" 
+              type="text" 
+              placeholder="Search by membership name" 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+            />
+          </div>
+        
         </div>
 
         <div className="data-table-header">
-          <span>Membership name</span><span>Valid for</span><span>Sessions</span><span>Price</span>
+          <span>Membership name</span>
+          <span>Valid for</span>
+          <span>Sessions</span>
+          <span style={{ textAlign: 'right' }}>Price</span>
         </div>
 
-        <NoData />
-
-        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 8 }}>
-          <button className="primary-button" onClick={() => setShowCreateModal(true)}>Add Membership</button>
-          <button className="secondary-button" onClick={fetchMemberships}>Retry</button>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <NoData />
+          <div style={{ marginTop: 16 }}>
+            <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>Add Membership</button>
+          </div>
         </div>
 
         <CreateMembershipModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={handleCreateSuccess} />
@@ -1213,33 +1342,62 @@ const MembershipTable = () => {
       <div className="dashboard-header">
         <h2 className="page-title">Memberships</h2>
         <div className="action-buttons">
-          <button className='primary-button' onClick={() => setShowCreateModal(true)}>Add</button>
+          <button className="btn btn-secondary" onClick={handleMenuClick}>
+            Options <FiChevronDown />
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+            Add
+          </button>
         </div>
       </div>
 
       <div className="search-controls">
-        <input className='search-input' type="text" placeholder="Search by membership name" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <div className="search-wrapper">
+          <FiSearch className="search-icon" />
+          <input 
+            className="search-input" 
+            type="text" 
+            placeholder="Search by membership name" 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
+        </div>
+        
       </div>
 
       <div className="data-table-header">
-        <span>Membership name</span><span>Valid for</span><span>Sessions</span><span>Price</span>
+        <span>Membership name</span>
+        <span>Valid for</span>
+        <span>Sessions</span>
+        <span style={{ textAlign: 'right' }}>Price</span>
       </div>
 
       {filteredMemberships.map((item, index) => (
-        <div key={item._id || index} className="data-table-row clickable-row" role="button" tabIndex={0}
+        <div 
+          key={item._id || index} 
+          className="data-table-row" 
           onClick={() => handleMembershipClick(item)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleMembershipClick(item); } }}
         >
           <div className="membership-info">
-            <div className="membership-icon"><FaCalendarAlt /></div>
+            <div className="membership-icon">
+              <FaCalendarAlt />
+            </div>
             <div className="membership-details">
               <div className="membership-title">{item.name}</div>
               <div className="membership-subtitle">{item.description || ''}</div>
             </div>
           </div>
-          <span className="validity-period">{item.validityPeriod ? `${item.validityPeriod} ${item.validityUnit || ''}` : ''}</span>
-          <span className="session-count">{item.serviceType ? item.serviceType : (typeof item.numberOfSessions !== 'undefined' ? item.numberOfSessions : (item.remainingSessions || ''))}</span>
-          <span className="membership-price">{item.price ? `${item.currency ? item.currency + ' ' : ''}${item.price}` : ''}</span>
+          <span className="validity-period">
+            {item.validityPeriod ? `${item.validityPeriod} ${item.validityUnit || ''}` : '-'}
+          </span>
+          <span className="session-count">
+            {item.serviceType === 'Unlimited' ? 'Unlimited' : 
+             (item.numberOfSessions ? `${item.numberOfSessions} sessions` : 
+             (item.serviceType || '-'))}
+          </span>
+          <span className="membership-price">
+            {item.price ? `${item.currency || 'AED'} ${item.price}` : 'Free'}
+          </span>
         </div>
       ))}
 
@@ -1253,6 +1411,33 @@ const MembershipTable = () => {
       />
 
       <MembershipDetailModal isOpen={showDetailModal} onClose={() => { setShowDetailModal(false); setSelectedMembership(null); }} membership={selectedMembership} onUpdateSuccess={handleDetailUpdateSuccess} />
+      
+      <Menu
+        anchorEl={anchorEl}
+        open={openMenu}
+        onClose={handleMenuClose}
+        PaperProps={{
+          style: {
+            borderRadius: 12,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            marginTop: 8,
+            minWidth: 180
+          }
+        }}
+      >
+        <MenuItem onClick={exportToCSV} style={{ fontSize: '14px', fontWeight: 500 }}>
+          <ListItemIcon style={{ minWidth: 32 }}><FaFileCsv size={18} /></ListItemIcon>
+          <ListItemText primaryTypographyProps={{ style: { fontSize: '14px', fontWeight: 500 } }}>Export CSV</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={exportToExcel} style={{ fontSize: '14px', fontWeight: 500 }}>
+          <ListItemIcon style={{ minWidth: 32 }}><FaFileExcel size={18} /></ListItemIcon>
+          <ListItemText primaryTypographyProps={{ style: { fontSize: '14px', fontWeight: 500 } }}>Export Excel</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={exportToPDF} style={{ fontSize: '14px', fontWeight: 500 }}>
+          <ListItemIcon style={{ minWidth: 32 }}><FaFilePdf size={18} /></ListItemIcon>
+          <ListItemText primaryTypographyProps={{ style: { fontSize: '14px', fontWeight: 500 } }}>Export PDF</ListItemText>
+        </MenuItem>
+      </Menu>
     </div>
   );
 };
