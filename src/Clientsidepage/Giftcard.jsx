@@ -648,31 +648,31 @@ const Giftcards = () => {
         <h1>Gift cards sold</h1>
         <div className="header-actions">
           <button className="mem-export-bbtn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
-        </div>
-        <div className="export-wrapper" ref={exportMenuRef}>
-          <button 
-            className="mem-export-bbtn"
-            onClick={handleExportClick}
-            disabled={filteredCards.length === 0}
-          >
-            Export
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
-              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          {showExportMenu && filteredCards.length > 0 && (
-            <div className="export-dropdown">
-              <button className="export-item" onClick={exportToCSV}>
-                Export as CSV
-              </button>
-              <button className="export-item" onClick={exportToPDF}>
-                Export as PDF
-              </button>
-              <button className="export-item" onClick={exportToExcel}>
-                Export as Excel
-              </button>
-            </div>
-          )}
+          <div className="export-wrapper" ref={exportMenuRef}>
+            <button 
+              className="mem-export-bbtn"
+              onClick={handleExportClick}
+              disabled={filteredCards.length === 0}
+            >
+              Export
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
+                <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {showExportMenu && filteredCards.length > 0 && (
+              <div className="export-dropdown">
+                <button className="export-item" onClick={exportToCSV}>
+                  Export as CSV
+                </button>
+                <button className="export-item" onClick={exportToPDF}>
+                  Export as PDF
+                </button>
+                <button className="export-item" onClick={exportToExcel}>
+                  Export as Excel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <p className="desc">
