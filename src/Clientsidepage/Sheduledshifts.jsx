@@ -469,7 +469,7 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="employee-edit-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="ss-schedule-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Set {employee.name}'s regular shifts</h3>
           <div className="modal-header-actions">
