@@ -1761,18 +1761,17 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         </div>
 
         {/* Main schedule table/cards container */}
-        <div className="schedule-table-container">
+        <div className="ss-table-container">
           {/* Desktop Table (Visible on larger screens) */}
     
-          <div className="schedule-table desktop-view">
+          <div className="ss-table desktop-view">
             {/* Table Header Section */}
-            <div className="table-header">
-              <div className="member-column-header">
+            <div className="ss-table-header">
+              <div className="ss-member-col-header">
                 <span className="member-title">Team member</span>
-                <span className="change-link" onClick={() => console.log('Change team members clicked')}>Change</span>
               </div>
               {currentWeekDays.map((day) => (
-                <div key={day.toISOString()} className="day-header">
+                <div key={day.toISOString()} className="ss-day-header">
                   <span className="day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
                   <span className="day-date">{day.getDate()}</span>
                   <span className="day-hours">{calculateDayHours(day, teamMembers)}</span>
@@ -1783,16 +1782,16 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
             {/* Table Rows Section (previously in `table-body`) */}
             {teamMembers.length > 0 ? (
               teamMembers.map((member) => (
-                <div key={member.id} className="member-row">
-                  <div className="member-info">
-                    <div className="member-avatar" style={{ backgroundColor: member.avatarColor }}>
+                <div key={member.id} className="ss-member-row">
+                  <div className="ss-member-info">
+                    <div className="ss-member-avatar" style={{ backgroundColor: member.avatarColor }}>
                       <span>{member.avatar}</span>
                     </div>
-                    <div className="member-details">
-                      <div className="member-name-row">
-                        <div className="member-name">{member.name}</div>
+                    <div className="ss-member-details">
+                      <div className="ss-member-name-row">
+                        <div className="ss-member-name">{member.name}</div>
                         <button
-                          className="edit-member-btn"
+                          className="ss-edit-member-btn"
                           onClick={() => handleEditMember(member.id)}
                           title="Edit employee details"
                         >
@@ -1807,16 +1806,16 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
                   {currentWeekDays.map((day) => {
                     const shifts = getShiftDisplay(member, day);
                     return (
-                      <div key={day.toISOString()} className="shift-cell">
+                      <div key={day.toISOString()} className="ss-shift-cell">
                         {shifts.length > 0 ? (
-                          <div className="shift-blocks" onClick={() => handleShiftClick(member.id, day)} title="Click to edit shift">
+                          <div className="ss-shift-block shift-block-vertical" onClick={() => handleShiftClick(member.id, day)} title="Click to edit shift">
                             {shifts.map((s, idx) => (
-                              <div key={idx} className="shift-block shift-block-vertical">{s}</div>
+                              <div key={idx} className="ss-shift-block shift-block-vertical">{s}</div>
                             ))}
                           </div>
                         ) : (
                           <div
-                            className="shift-block shift-empty"
+                            className="ss-shift-block ss-shift-empty"
                             onClick={() => handleShiftClick(member.id, day)}
                             title="Click to add shift"
                           >
