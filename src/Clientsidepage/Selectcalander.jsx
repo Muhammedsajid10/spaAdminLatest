@@ -2,32 +2,47 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Swal from 'sweetalert2';
 import Loading from '../states/Loading.jsx';
 import { useSelector, useDispatch } from 'react-redux';
-import { useDatePickerState, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
+import { useDatePickerState, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
 import { StaffColumn } from '../calendar/components/StaffColumn';
 import ClientSummary from '../calendar/components/ClientInformation.jsx';
 import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
+import { UnavailablePopup, LoadingOverlay, ErrorMessage, AppointmentCard, ServiceCatalogItem, ProfessionalCard, TimeSlotCard, EmptyState } from '../calendar/components/shared';
+import ServiceSelectionStep from '../calendar/components/booking/ServiceSelectionStep';
+import ClientInformationStep from '../calendar/components/booking/ClientInformationStep';
 import {
+  // Date utilities
   formatUTCToLocal,
+  formatDateLocal,
+  localDateKey,
+  getDayName,
+  getDatePickerCalendarDays,
+  getWeeksInMonth,
+  getMonthsInYear,
+  // Time utilities
   generateTimeSlots,
   formatTime,
-  getRandomColor,
-  getRandomAppointmentColor,
-  calculateAppointmentHeight,
+  addMinutesToTime,
+  timeToMinutes,
+  // Availability utilities
   generateTimeSlotsFromEmployeeShift,
   getValidTimeSlotsForProfessional,
   getAvailableProfessionalsForService,
-  getAccumulatedBookings,
-  addMinutesToTime,
-  isTimeSlotConflicting,
-  timeToMinutes,
-  detectProfessionalConflict,
   getAvailableTimeSlotsWithAccumulatedBookings,
   getAvailableProfessionalsWithAccumulatedBookings,
   getAvailableTimeSlotsForProfessional,
-  getDatePickerCalendarDays,
-  getWeeksInMonth,
-  getMonthsInYear
-} from './helpers/selectCalendarHelpers';
+  // Conflict detection
+  getAccumulatedBookings,
+  isTimeSlotConflicting,
+  detectProfessionalConflict,
+  // Formatters
+  getRandomColor,
+  getRandomAppointmentColor,
+  calculateAppointmentHeight,
+  // Shift utilities
+  hasShiftOnDate,
+  getEmployeeShiftHours,
+  getAppointmentColorByStatus
+} from '../calendar/utils';
 import axios from 'axios';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
@@ -3813,18 +3828,15 @@ const SelectCalendar = () => {
         </div>
       </div>
 
-      {/* Modals */}
-      {showUnavailablePopup && (
-        <div className="service-selection-overlay" onClick={closeBookingModal}>
-          <div className="service-selection-popup" onClick={e => e.stopPropagation()}>
-            <div className="service-popup-header">
-              <h3>Time Slot Unavailable</h3>
-              <p>{unavailableMessage}</p>
-            </div>
-            <button className="action-btn" onClick={closeBookingModal}>Got It</button>
-          </div>
-        </div>
-      )}
+      {/* Unavailable Popup */}
+      <UnavailablePopup
+        isOpen={showUnavailablePopup}
+        message={unavailableMessage}
+        onClose={() => {
+          setShowUnavailablePopup(false);
+          setUnavailableMessage('');
+        }}
+      />
 
       {/* Booking Status Modal */}
       {showBookingStatusModal && selectedBookingForStatus && (
@@ -4060,106 +4072,20 @@ const SelectCalendar = () => {
 
               {/* Service Selection Step */}
               {bookingStep === 1 && (currentView !== 'Week' || bookingDefaults?.isDirectTimeSlotSelection || selectedBookingDate) && (
-                <>
-                  {console.log('🎯 RENDERING STEP 1 - Service Selection')}
-                  {console.log('isAddingAdditionalService:', isAddingAdditionalService)}
-                  {console.log('availableServices count:', availableServices.length)}
-                  {console.log('currentAppointmentIndex:', currentAppointmentIndex)}
-                  <h3 className="services-section-title">Services</h3>
-
-                  {/* SERVICE CARDS LIKE DESIGN */}
-                  {(bookingDefaults?.professional || multipleAppointments.length > 0) && (
-                    <div className="service-cards-stack">
-                      {multipleAppointments.map((apt, idx) => {
-                        console.log('🎯 Rendering appointment card:', { id: apt.id, service: apt.service?.name, index: idx });
-                        const start = apt.timeSlot;
-                        const end = addMinutesToTime(apt.timeSlot, apt.duration);
-                        return (
-                          <div key={apt.id} className="service-card-mini">
-                            <div className="service-card-left-bar" />
-                            <div className="service-card-body">
-                              <div className="service-card-row1">
-                                <span className="svc-name">{apt.service.name}</span>
-                                <span className="svc-price">AED {apt.price}</span>
-                              </div>
-                              <div className="service-card-row2">
-                                <span className="svc-time">{start}</span>
-                                <span className="svc-dot">•</span>
-                                <span className="svc-duration">{Math.round(apt.duration / 60) || 1}h{apt.duration % 60 ? ` ${apt.duration % 60}m` : ''}</span>
-                                <span className="svc-dot">•</span>
-                                <span className="svc-prof">{apt.professional.user?.firstName || apt.professional.name}</span>
-                              </div>
-                            </div>
-                            <div className="service-card-actions">
-
-                              <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSessionLocal(apt.id)}>
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      <button
-                        type="button"
-                        className="add-service-inline-btn"
-                        onClick={() => { setShowServiceCatalog(true); setTimeout(() => document.querySelector('.service-catalog-grid')?.scrollIntoView({ behavior: 'smooth' }), 50); }}
-                        title="Add another service"
-                      >
-                        Add service
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Service catalog list for selection */}
-                  {showServiceCatalog && (
-                    <div className="service-catalog-grid pro-theme">
-                      {availableServices.map(service => {
-                        const isSelected = selectedService && selectedService._id === service._id;
-                        return (
-                          <button
-                            key={service._id}
-                            className={`service-catalog-item pro-theme ${isSelected ? 'selected' : ''}`}
-                            onClick={() => handleServiceSelect(service)}
-                            type="button"
-                          >
-                            <span className="catalog-name">{service.name}</span>
-                            <span className="catalog-meta">{service.duration}m • AED {service.price}</span>
-                            <div className="badge-row">
-                              <span className="badge"> {service.duration}m</span>
-                              <span className="badge"> AED {service.price}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Footer summary (total + actions) */}
-                  {bookingDefaults?.professional && (
-                    <div className="services-footer-summary">
-                      <div className="footer-left">
-                        <div className="footer-date-line">
-                          {currentDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        </div>
-                        <div className="footer-total-line">
-                          <span className="footer-total-label">Total</span>
-                          <span className="footer-total-value">AED {getTotalSessionPrice()}</span>
-                        </div>
-                      </div>
-                      <div className="footer-actions">
-                        <button type="button" className="footer-btn secondary" onClick={closeBookingModal}>Cancel</button>
-                        <button type="button" className="footer-btn" disabled={multipleAppointments.length === 0} onClick={() => setBookingStep(5)}>Checkout</button>
-                        {/* <button type="button" className="footer-btn primary" disabled={multipleAppointments.length===0} onClick={()=> setBookingStep(5)}>Save</button> */}
-                      </div>
-                    </div>
-                  )}
-                  {/* <div className="booking-modal-actions">
-                    <button className="booking-modal-cancel" onClick={closeBookingModal}>
-                      Cancel
-                    </button>
-                  </div> */}
-                </>
+                <ServiceSelectionStep
+                  availableServices={availableServices}
+                  multipleAppointments={multipleAppointments}
+                  selectedService={selectedService}
+                  bookingDefaults={bookingDefaults}
+                  currentDate={currentDate}
+                  showServiceCatalog={showServiceCatalog}
+                  totalPrice={getTotalSessionPrice()}
+                  onServiceSelect={handleServiceSelect}
+                  onRemoveAppointment={removeAppointmentFromSessionLocal}
+                  onShowServiceCatalog={setShowServiceCatalog}
+                  onCheckout={() => setBookingStep(5)}
+                  onCancel={closeBookingModal}
+                />
               )}
 
               {/* Professional Selection Step - Skip if employee already selected from week view */}
@@ -4167,74 +4093,42 @@ const SelectCalendar = () => {
                 <>
                   <h3> Choose Your Professional</h3>
                   {availableProfessionals.length === 0 ? (
-                    <div className="booking-modal-empty-state">
-                      <p>No professionals are available for this service on {(selectedBookingDate || currentDate).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric'
-                      })}.</p>
-                      <p>Please select a different date or service.</p>
-                    </div>
+                    <EmptyState
+                      message={[
+                        `No professionals are available for this service on ${(selectedBookingDate || currentDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`,
+                        'Please select a different date or service.'
+                      ]}
+                    />
                   ) : (
                     <div className="booking-modal-list">
                       {availableProfessionals.map(prof => {
                         const bookingDate = selectedBookingDate || currentDate;
-                        // FIXED: Create proper employee object for shift checking
-                        const employeeForShiftCheck = {
-                          workSchedule: prof.workSchedule || {}
-                        };
-                        const hasShift = hasShiftOnDate(employeeForShiftCheck, bookingDate);
-                        const dayName = getDayName(bookingDate);
-                        const todaySchedule = prof.workSchedule?.[dayName];
-
+                        
                         // Check if this professional has conflicts in current session
                         const sessionConflicts = multipleAppointments.filter(apt =>
                           apt.professional._id === prof._id &&
                           formatDateLocal(new Date(apt.date)) === formatDateLocal(bookingDate)
                         );
 
-                        // FIXED: Better shift info display
-                        let shiftInfo = 'Available';
-                        if (todaySchedule) {
-                          if (todaySchedule.shifts && typeof todaySchedule.shifts === 'string') {
-                            shiftInfo = todaySchedule.shifts;
-                          } else if (todaySchedule.startTime && todaySchedule.endTime) {
-                            shiftInfo = `${todaySchedule.startTime} - ${todaySchedule.endTime}`;
-                          } else if (Array.isArray(todaySchedule.shiftsData) && todaySchedule.shiftsData.length > 0) {
-                            const firstShift = todaySchedule.shiftsData[0];
-                            shiftInfo = `${firstShift.startTime} - ${firstShift.endTime}`;
-                            if (todaySchedule.shiftsData.length > 1) {
-                              shiftInfo += ' +more';
-                            }
-                          }
-                        }
+                        const isSelected = selectedProfessional && selectedProfessional._id === prof._id;
+                        const hasConflicts = sessionConflicts.length > 0;
 
                         return (
-                          <button
+                          <ProfessionalCard
                             key={prof._id}
-                            className={`booking-modal-list-item${selectedProfessional && selectedProfessional._id === prof._id ? ' selected' : ''}${sessionConflicts.length > 0 ? ' has-conflicts' : ''}`}
-                            onClick={() => {
-                              setSelectedProfessional(prof); // Correctly sets the professional from the map
+                            professional={prof}
+                            isSelected={isSelected}
+                            hasConflicts={hasConflicts}
+                            shiftInfo="Available"
+                            onSelect={(professional) => {
+                              setSelectedProfessional(professional);
                               setBookingStep(3);
                               const service = selectedService;
                               const bookingDate = selectedBookingDate || currentDate;
-                              const slots = getValidTimeSlotsForProfessional(prof, bookingDate, service.duration, appointments);
+                              const slots = getValidTimeSlotsForProfessional(professional, bookingDate, service.duration, appointments);
                               setAvailableTimeSlots(slots);
                             }}
-                          >
-                            <div className="booking-modal-item-name">
-                              {prof.name}
-
-                              <span className="professional-shift-indicator">
-                                Available
-                              </span>
-
-                            </div>
-                            <div className="booking-modal-list-desc">
-                              {prof.position}
-
-                            </div>
-                          </button>
+                          />
                         );
                       })}
                     </div>
@@ -4268,24 +4162,27 @@ const SelectCalendar = () => {
                         
                         return true;
                       })
-                      .map(slot => (
-                      <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => {
-                        console.log('🕐 TIME SLOT SELECTED:', slot);
-                        // Set then immediately add to session (auto-add first service)
-                        setSelectedTimeSlot(slot);
-                        const added = handleAddToBookingSession(slot);
-                        // Move to multi-service management (step 4) after auto-add
-                        setBookingStep(4);
-                        console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
-                      }}>
-                        <div className="booking-modal-item-name">
-                          {formatUTCToLocal(slot.startTime, { hour: '2-digit', minute: '2-digit', hour12: false })} - {formatUTCToLocal(slot.endTime, { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </div>
-                        <div className="booking-modal-list-desc">
-                          {selectedService?.duration} minutes with {selectedProfessional?.name}
-                        </div>
-                      </button>
-                    ))}
+                      .map(slot => {
+                        const isSelected = selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime;
+                        
+                        return (
+                          <TimeSlotCard
+                            key={slot.startTime}
+                            slot={slot}
+                            isSelected={isSelected}
+                            serviceDuration={selectedService?.duration}
+                            professionalName={selectedProfessional?.name}
+                            onSelect={(selectedSlot) => {
+                              console.log('🕐 TIME SLOT SELECTED:', selectedSlot);
+                              setSelectedTimeSlot(selectedSlot);
+                              const added = handleAddToBookingSession(selectedSlot);
+                              setBookingStep(4);
+                              console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
+                            }}
+                          />
+                        );
+                      })
+                    }
                   </div>
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => {
@@ -4412,272 +4309,49 @@ const SelectCalendar = () => {
 
               {/* Client Information Step */}
               {bookingStep === 5 && (
-                <>
-                  <h3> Client Information</h3>
-
-                  {/* Services Summary Header */}
-                  {/* <div className="client-step-services-summary">
-                    <h4> Selected Services ({multipleAppointments.length})</h4>
-                    <div className="mini-services-list">
-                      {multipleAppointments.map((apt, index) => (
-                        <div key={apt.id} className="mini-service-item">
-                          <span className="mini-service-name">{apt.service.name}</span>
-                          <span className="mini-service-price">AED {apt.service.price}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mini-total">
-                      <strong>Total: AED {getTotalSessionPrice()}</strong>
-                    </div>
-                  </div> */}
-
-                  <div className="client-step-grid">
-                    <aside className="client-right-panel">
-                      <h4 className="client-right-heading">Walk-in client</h4>
-                      <div className="walkin-control">
-                        <label className="walkin-switch" htmlFor="walkInSwitch">
-                          <input
-                            id="walkInSwitch"
-                            type="checkbox"
-                            checked={isWalkIn}
-                            onChange={e => {
-                              const checked = e.target.checked;
-                              setIsWalkIn(checked);
-                                if (checked) {
-                                  // If user marks as walk-in, clear any selected existing client
-                                  setSelectedExistingClient(null);
-                                  // Clear all client info including name to prevent previous selection from showing
-                                  setClientInfo({ name: '', email: '', phone: '' });
-                                }
-                            }}
-                          />
-                          <span className="walkin-slider" />
-                        </label>
-                        <div className="walkin-labels">
-                          <div className="walkin-title">Walk-in client</div>
-                          <div className="walkin-sub">No additional data required</div>
-                        </div>
-                      </div>
-
-                      {/* <div className="walkin-help">
-                    <p>If checked, only client name is required. When you Continue, the summary will show the client as a walk-in.</p>
-                  </div> */}
-                    </aside>
-                    <div className="client-search-section">
-                      <div className="client-search-header">
-                        <h4>Search Existing Client</h4>
-                        <div className="client-search-right">
-                          {selectedExistingClient && (
-                            <button
-                              className="clear-client-btn"
-                              onClick={clearClientSelection}
-                            >
-                              Clear Selection
-                            </button>
-                          )}
-
-                          {/* Walk-in checkbox on the right side */}
-                          {/* <div className="walkin-control-inline">
-                                <label className="checkbox-container">
-                                <input
-                                  type="checkbox"
-                                  checked={isWalkIn}
-                                  onChange={e => {
-                                  const checked = e.target.checked;
-                                  setIsWalkIn(checked);
-                                  if (checked) {
-                                    setSelectedExistingClient(null);
-                                    setClientInfo(f => ({ ...f, email: '', phone: '' }));
-                                    setIsAddingNewClient(false);
-                                    setShowClientSearch(false);
-                                  }
-                                  }}
-                                />
-                                <span className="checkmark"></span>
-                                </label>
-                              </div> */}
-
-                          {/* <div className="walkin-text">Walk-in client (no data required)</div> */}
-                        </div>
-                      </div>
-
-                      {!selectedExistingClient && !isAddingNewClient && (
-                        <div className="client-search-input-wrapper">
-                          <input
-                            type="text"
-                            placeholder="Search by name, email, or phone..."
-                            value={clientSearchQuery}
-                            onChange={handleClientSearchChange}
-                            onFocus={() => {
-                              setShowClientSearch(true);
-                              searchClients(clientSearchQuery);
-                            }}
-                            onBlur={() => {
-                              setTimeout(() => setShowClientSearch(false), 200);
-                            }}
-                          />
-                          {showClientSearch && clientSearchResults.length > 0 && (
-                            <div className="client-search-results">
-                              {clientSearchResults.map(client => (
-                                <div
-                                  key={client._id}
-                                  className="client-search-result"
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  onClick={() => selectExistingClient(client)}
-                                >
-                                  <div className="client-result-avatar">
-                                    {(client.firstName?.[0] || '') + (client.lastName?.[0] || '')}
-                                  </div>
-                                  <div className="client-result-info">
-                                    <div className="client-result-name">
-                                      {client.firstName} {client.lastName}
-                                    </div>
-                                    <div className="client-result-contact">
-                                      {client.email} • {client.phone}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {showClientSearch && clientSearchQuery && clientSearchResults.length === 0 && (
-                            <div className="client-search-no-results">
-                              <p>No clients found</p>
-                              <button
-                                className="add-new-client-btn"
-                                onClick={addNewClient}
-                              >
-                                Add New Client
-                              </button>
-                            </div>
-                          )}
-
-                          {!showClientSearch && !isAddingNewClient && (
-                            <button
-                              className="add-new-client-btn"
-                              onClick={addNewClient}
-                            >
-                              Add New Client
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Selected Client Display */}
-                      {selectedExistingClient && (
-                        <div className="selected-client-display">
-                          <div className="selected-client-avatar">
-                            {(selectedExistingClient.firstName?.[0] || '') + (selectedExistingClient.lastName?.[0] || '')}
-                          </div>
-                          <div className="selected-client-info">
-                            <div className="selected-client-name">
-                              {selectedExistingClient.firstName} {selectedExistingClient.lastName}
-                            </div>
-                            <div className="selected-client-contact">
-                              {selectedExistingClient.email} • {selectedExistingClient.phone}
-                            </div>
-                          </div>
-                          <div className="selected-client-badge">
-                            Existing Client
-                          </div>
-                        </div>
-                      )}
-
-                      {/* New Client Form */}
-                      {isAddingNewClient && (
-                        <div className="new-client-form">
-                          <div className="new-client-header">
-                            <h4>Add New Client</h4>
-                            <button
-                              className="back-to-search-btn"
-                              onClick={() => {
-                                setIsAddingNewClient(false);
-                                setShowClientSearch(true);
-                                setClientInfo({ name: '', 
-                                  email: '', phone: '' });
-                                setIsWalkIn(false);
-                              }}
-                            >
-                              ← Back to Search
-                            </button>
-                          </div>
-                          <div className="booking-modal-form">
-
-                            <div className="form-group">
-                              <label htmlFor="clientName">Client Name {isWalkIn ? '(optional for walk-ins)' : '*'}</label>
-                              <input
-                                id="clientName"
-                                type="text"
-                                placeholder="Enter client's full name"
-                                value={clientInfo.name}
-                                onChange={e => setClientInfo(f => ({ ...f, name: e.target.value }))}
-                                required={!isWalkIn}
-                              />
-                            </div>
-                            {/* Email and phone are optional/hidden for walk-in bookings */}
-                            {!isWalkIn && (
-                              <>
-                                <div className="form-group">
-                                  <label htmlFor="clientEmail">Email Address (Optional)</label>
-                                  <input
-                                    id="clientEmail"
-                                    type="email"
-                                    placeholder="Enter client's email address"
-                                    value={clientInfo.email}
-                                    onChange={e => setClientInfo(f => ({ ...f, email: e.target.value }))}
-                                  />
-                                </div>
-                                <div className="form-group">
-                                  <label htmlFor="clientPhone">Phone Number (Optional)</label>
-                                  <input
-                                    id="clientPhone"
-                                    type="tel"
-                                    placeholder="Enter client's phone number"
-                                    value={clientInfo.phone}
-                                    onChange={e => setClientInfo(f => ({ ...f, phone: e.target.value }))}
-                                  />
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right-side panel: Walk-in toggle and helpers */}
-
-                  </div>
-
-                  <div className="booking-modal-actions">
-                    <button
-                      className="booking-modal-next"
-                      onClick={() => setBookingStep(6)}
-                      disabled={
-                        !selectedExistingClient && !(
-                          isWalkIn || (clientInfo.name && clientInfo.name.trim())
-                        )
-                      }
-                    >
-                      Continue to Payment
-                    </button>
-                    <button className="booking-modal-back" onClick={() => {
-                      // If booking came from grid/calendar time slot (bookingDefaults exists),
-                      // skip professional/time selection and go directly back to service selection (step 1)
-                      if (bookingDefaults?.professional && bookingDefaults?.time) {
-                        console.log('⬅️ Going back from step 5 to step 1 (grid booking mode)');
-                        setBookingStep(1);
-                        // DON'T clear booking defaults - keep professional & time info for grid booking flow
-                        // setBookingDefaults(null); ❌ Removed - this was causing the flow to forget grid selection
-                        // Show service catalog so user can select services
-                        setShowServiceCatalog(true);
-                      } else {
-                        console.log('⬅️ Going back from step 5 to step 4 (normal booking mode)');
-                        setBookingStep(4);
-                      }
-                    }}>← Back to Services</button>
-                  </div>
-                </>
+                <ClientInformationStep
+                  clientInfo={clientInfo}
+                  isWalkIn={isWalkIn}
+                  selectedExistingClient={selectedExistingClient}
+                  clientSearchQuery={clientSearchQuery}
+                  clientSearchResults={clientSearchResults}
+                  showClientSearch={showClientSearch}
+                  isAddingNewClient={isAddingNewClient}
+                  bookingDefaults={bookingDefaults}
+                  onClientInfoChange={setClientInfo}
+                  onWalkInToggle={(checked) => {
+                    setIsWalkIn(checked);
+                    if (checked) {
+                      setSelectedExistingClient(null);
+                      setClientInfo({ name: '', email: '', phone: '' });
+                    }
+                  }}
+                  onClientSearchChange={(query) => {
+                    setClientSearchQuery(query);
+                    searchClients(query);
+                  }}
+                  onShowClientSearch={setShowClientSearch}
+                  onClientSelect={selectExistingClient}
+                  onClearClient={clearClientSelection}
+                  onAddNewClient={addNewClient}
+                  onBackToSearch={() => {
+                    setIsAddingNewClient(false);
+                    setShowClientSearch(true);
+                    setClientInfo({ name: '', email: '', phone: '' });
+                    setIsWalkIn(false);
+                  }}
+                  onContinueToPayment={() => setBookingStep(6)}
+                  onBack={() => {
+                    if (bookingDefaults?.professional && bookingDefaults?.time) {
+                      console.log('⬅️ Going back from step 5 to step 1 (grid booking mode)');
+                      setBookingStep(1);
+                      setShowServiceCatalog(true);
+                    } else {
+                      console.log('⬅️ Going back from step 5 to step 4 (normal booking mode)');
+                      setBookingStep(4);
+                    }
+                  }}
+                />
               )}
 
               {/* Payment & Confirmation Step */}
