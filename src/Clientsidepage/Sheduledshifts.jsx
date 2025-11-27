@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './Sheduledshifts.css'; // Your responsive CSS for this component
 import './EmployeeEditModal.css'; // CSS for employee edit modal
 import { Base_url } from '../Service/Base_url'; // Your Base URL for API calls
-import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react'; // Icon imports
+import { FiChevronDown, FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiInfo, FiX } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Loading from '../states/Loading.jsx';
@@ -226,7 +226,7 @@ const ShiftEditorModal = ({
             {editingShift?.memberName}'s shift &nbsp;
             {editingShift?.day && formatDateHeader(editingShift.day)}
           </h3>
-          <button className="close-btn" onClick={handleInternalClose}>×</button>
+          <button className="close-btn" onClick={handleInternalClose}><FiX /></button>
         </div>
 
         <div className="modal-content">
@@ -273,14 +273,14 @@ const ShiftEditorModal = ({
                     disabled={shifts.length <= 1}
                     title="Remove this shift"
                   >
-                    🗑️
+                    <FiTrash2 />
                   </button>
                 </div>
               ))}
             </div>
 
             <button className="add-shift-btn" onClick={addShift}>
-              <span className="plus-icon">⊕</span> Add another shift
+              <span className="plus-icon"><FiPlus /></span> Add another shift
             </button>
 
             <div className="total-hours">
@@ -480,7 +480,7 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
             >
               {saving ? 'Saving...' : 'Save'}
             </button>
-            <button className="close-btn" onClick={onClose}>×</button>
+            <button className="close-btn" onClick={onClose}><FiX /></button>
           </div>
         </div>
 
@@ -528,10 +528,7 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
           </div>
 
           <div className="info-note">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1C11.866 1 15 4.134 15 8C15 11.866 11.866 15 8 15C4.134 15 1 11.866 1 8C1 4.134 4.134 1 8 1Z" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <FiInfo size={16} />
             Team members will not be scheduled on business closed periods.
           </div>
 
@@ -584,7 +581,7 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
                           onClick={() => removeShift(key)}
                           title="Remove shift"
                         >
-                          🗑️
+                          <FiTrash2 />
                         </button>
                       </div>
                     ) : (
@@ -635,7 +632,7 @@ const DatePickerModal = ({ isOpen, onClose, onDateSelect, selectedYear, setSelec
       <div className="date-picker-modal" onClick={(e) => e.stopPropagation()}>
         <div className="date-picker-header">
           <h3>Select Date</h3>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose}><FiX /></button>
         </div>
         <div className="date-picker-content">
           <div className="date-picker-selects">
@@ -759,7 +756,7 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       <div className="calendar-modal" onClick={(e) => e.stopPropagation()}>
         <div className="calendar-header">
           <div className="calendar-nav">
-            <button className="cal-nav-btn" onClick={() => addMonths(-1)} aria-label="Previous month">‹</button>
+            <button className="cal-nav-btn" onClick={() => addMonths(-1)} aria-label="Previous month"><FiChevronLeft /></button>
             <div className="calendar-month-select">
               <select
                 value={viewMonth.getMonth()}
@@ -789,7 +786,7 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
                 })()}
               </select>
             </div>
-            <button className="cal-nav-btn" onClick={() => addMonths(1)} aria-label="Next month">›</button>
+            <button className="cal-nav-btn" onClick={() => addMonths(1)} aria-label="Next month"><FiChevronRight /></button>
           </div>
           <div className="calendar-actions">
             <button className="btn btn-secondary" onClick={cancelSelection}>Cancel</button>

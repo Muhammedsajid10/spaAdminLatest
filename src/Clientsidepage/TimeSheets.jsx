@@ -524,8 +524,8 @@ const TimesheetApp = () => {
             <p className="timesheet-subtitle">Manage your team members' timesheets</p>
           </div>
           <div className="timesheet-actions">
-            <button className="btn-action btn-secondary" onClick={() => setShowExportModal(true)}>
-              Export <FiChevronDown />
+            <button className="btn-action btn-secondary" onClick={() => setShowExportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FiDownload /> Export <FiChevronDown />
             </button>
          
           </div>

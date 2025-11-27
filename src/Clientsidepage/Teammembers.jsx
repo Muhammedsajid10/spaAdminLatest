@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './Teammembers.css';
 import './PasswordResetModal.css';
-import { FiSearch, FiMoreVertical, FiFilter, FiPlus, FiChevronDown, FiEye, FiEyeOff, FiCopy, FiRefreshCw } from 'react-icons/fi';
+import { FiSearch, FiMoreVertical, FiFilter, FiPlus, FiChevronDown, FiEye, FiEyeOff, FiCopy, FiRefreshCw, FiDownload } from 'react-icons/fi';
 import { FaStar } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import api from '../Service/Api';
@@ -665,8 +665,9 @@ const TeamMembers = () => {
                                 className="team-export-btn"
                                 onClick={() => setShowExportDropdown(!showExportDropdown)}
                                 disabled={filteredMembers.length === 0}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                             >
-                                Export <FiChevronDown />
+                                <FiDownload /> Export <FiChevronDown />
                             </button>
                             {showExportDropdown && filteredMembers.length > 0 && (
                                 <div className="team-export-dropdown">
@@ -682,8 +683,8 @@ const TeamMembers = () => {
                                 </div>
                             )}
                         </div>
-                        <button className="team-add-btn" onClick={() => setShowAddModal(true)}>
-                            Add
+                        <button className="team-add-btn" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <FiPlus /> Add
                         </button>
                     </div>
                 </div>

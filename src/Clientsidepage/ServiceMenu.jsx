@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, Filter, ArrowDown, Plus, Edit, Trash2, MoreVertical, AlertTriangle, Info, ChevronDown, ArrowUpDown } from "lucide-react";
-import { FiSearch, FiFilter, FiChevronDown, FiPlus, FiMoreVertical, FiArrowUp, FiArrowDown } from "react-icons/fi";
+import { FiSearch, FiFilter, FiChevronDown, FiPlus, FiMoreVertical, FiArrowUp, FiArrowDown, FiTrash2 } from "react-icons/fi";
 import { Button, TextField, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, Menu, /* Add Menu from MUI */ TextareaAutosize } from "@mui/material"; // Import Menu
 import api from "../Service/Api";
 import Swal from 'sweetalert2';
@@ -1156,7 +1155,7 @@ const ServiceMenu = () => {
                     }}
                     title={`Delete ${category.name} category`}
                   >
-                    <Trash2 size={14} />
+                    <FiTrash2 size={14} />
                   </button>
                 )}
               </div>
@@ -1208,7 +1207,7 @@ const ServiceMenu = () => {
                             onClick={(e) => { e.stopPropagation(); deleteService(service._id); }}
                             title="Delete service"
                           >
-                            <Trash2 size={18} />
+                            <FiTrash2 size={18} />
                           </button>
                         </div>
                       </div>

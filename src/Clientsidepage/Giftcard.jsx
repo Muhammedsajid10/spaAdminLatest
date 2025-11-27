@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FiSearch, FiPlus, FiChevronDown, FiCopy, FiX, FiDownload } from 'react-icons/fi';
 import './Giftcard.css';
 import api from "../Service/Api";
 import Loading from "../states/Loading";
@@ -454,7 +455,9 @@ const Giftcards = () => {
         <div className="header-section">
           <h1>Gift cards sold</h1>
           <div className="header-actions">
-            <button className="mem-export-bbtn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+            <button className="mem-export-bbtn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>
+              <FiPlus style={{ marginRight: '6px' }} /> Assign gift card
+            </button>
           </div>
         </div>
         <p className="desc">View, filter and export gift cards purchased by your clients.</p>
@@ -478,7 +481,9 @@ const Giftcards = () => {
         <div className="header-section">
           <h1>Gift cards sold</h1>
           <div className="header-actions">
-            <button className="mem-export-bbtn" onClick={openAssign} disabled>Assign gift card</button>
+            <button className="mem-export-bbtn" onClick={openAssign} disabled>
+              <FiPlus style={{ marginRight: '6px' }} /> Assign gift card
+            </button>
           </div>
         </div>
         <p className="desc">View, filter and export gift cards purchased by your clients.</p>
@@ -494,7 +499,9 @@ const Giftcards = () => {
         <div className="header-section">
           <h1>Gift cards sold</h1>
           <div className="header-actions">
-            <button className="primary-btn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+            <button className="primary-btn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>
+              <FiPlus style={{ marginRight: '6px' }} /> Assign gift card
+            </button>
           </div>
         </div>
         <p className="desc">View, filter and export gift cards purchased by your clients.</p>
@@ -548,10 +555,7 @@ const Giftcards = () => {
                           onClick={clearClientSelection}
                           title="Clear selection"
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                          </svg>
+                          <FiX size={16} />
                         </button>
                       </div>
                     ) : (
@@ -647,17 +651,19 @@ const Giftcards = () => {
       <div className="header-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Gift cards sold</h1>
         <div className="header-actions">
-          <button className="mem-export-bbtn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>Assign gift card</button>
+
+          <button className="mem-export-bbtn" onClick={openAssign} disabled={templates.filter(t=>!t.__isLegacyMissingValue).length === 0 || clients.length === 0}>
+            <FiPlus style={{ marginRight: '6px' }} /> Assign gift card
+          </button>
           <div className="export-wrapper" ref={exportMenuRef}>
             <button 
               className="mem-export-bbtn"
               onClick={handleExportClick}
               disabled={filteredCards.length === 0}
+              style={{ display: 'flex', alignItems: 'center' }}
             >
               Export
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '6px' }}>
-                <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <FiChevronDown style={{ marginLeft: '6px' }} />
             </button>
             {showExportMenu && filteredCards.length > 0 && (
               <div className="export-dropdown">
@@ -707,10 +713,12 @@ const Giftcards = () => {
               fontSize: '16px',
               marginLeft: '12px',
               cursor: 'pointer',
-              padding: '0'
+              padding: '0',
+              display: 'flex',
+              alignItems: 'center'
             }}
           >
-            ✕
+            <FiX />
           </button>
         </div>
       )}
@@ -757,10 +765,7 @@ const Giftcards = () => {
                         aria-label="Copy code"
                         onClick={() => navigator.clipboard && navigator.clipboard.writeText(card.code)}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4c0-1.1.9-2 2-2h9a2 2 0 0 1 2 2v1" />
-                        </svg>
+                        <FiCopy size={14} />
                       </button>
                     </div>
                   </td>

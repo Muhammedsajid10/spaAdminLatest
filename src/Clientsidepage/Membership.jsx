@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Membership.css';
 import api from '../Service/Api';
-import { SearchCheck, SearchXIcon } from 'lucide-react';
+import { FiSearch, FiFilter, FiDownload, FiChevronDown, FiPlus, FiX } from 'react-icons/fi';
 import Loading from '../states/Loading';
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
@@ -343,25 +343,7 @@ const Membership = () => {
   //   </svg>
   // );
 
-  const FilterIcon = () => (
-    <svg className="mem-icon" viewBox="0 0 24 24">
-      <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
-    </svg>
-  );
 
-  const ChevronDownIcon = () => (
-    <svg className="mem-icon" viewBox="0 0 24 24">
-      <polyline points="6,9 12,15 18,9"></polyline>
-    </svg>
-  );
-
-  const DownloadIcon = () => (
-    <svg className="mem-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7,10 12,15 17,10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
-  );
 
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
   const toggleFilters = () => setShowFilters(!showFilters);
@@ -613,6 +595,7 @@ const Membership = () => {
                 setShowAssignModal(true);
               }}
             >
+              <FiPlus style={{ marginRight: '6px' }} />
               Assign Membership
             </button>
            
@@ -620,9 +603,9 @@ const Membership = () => {
               className="mem-export-btn dropdown"
               onClick={toggleExportDropdown}
             >
-              <DownloadIcon />
+              <FiDownload style={{ marginRight: '6px' }} />
               <span>Export</span>
-              <ChevronDownIcon />
+              <FiChevronDown style={{ marginLeft: '6px' }} />
             </button>
             
             {showExportDropdown && (
@@ -643,7 +626,7 @@ const Membership = () => {
 
         <div className="mem-search-container">
           <div className="mem-search-wrapper">
-            {/* <SearchCheck /> */}
+            <FiSearch className="mem-search-icon" />
             <input
               type="text"
               className="mem-search-input"
@@ -789,16 +772,14 @@ const Membership = () => {
                             </div>
                             <div className="selected-client-email">{selectedClient.email}</div>
                           </div>
-                          <button 
-                            type="button" 
-                            className="clear-selection-btn"
-                            onClick={clearClientSelection}
-                            title="Clear selection"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <line x1="18" y1="6" x2="6" y2="18"></line>
-                              <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
+                            <button 
+                              type="button" 
+                              className="clear-selection-btn"
+                              onClick={clearClientSelection}
+                              title="Clear selection"
+                            >
+                              <FiX size={16} />
+
                           </button>
                         </div>
                       ) : (

@@ -14,13 +14,7 @@ import * as XLSX from "xlsx";
 
 // import{mem-export-bbtn} from './'
 
-// --- SVG Icons for UI ---
-const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
-const FilterIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h16M3 10h10M3 16h5" /></svg>;
-const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
-const OptionsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>;
-const SortIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" /></svg>;
-const RefreshIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
+import { FiSearch, FiCalendar, FiFilter, FiMoreVertical, FiRefreshCw, FiDownload, FiChevronDown, FiChevronUp, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 
 const Spinner = () => (<div className="spinner-container"><div className="spinner"></div></div>);
 
@@ -384,7 +378,11 @@ const PaymentClient = () => {
               <th className="pay-th" key={column.key} style={{ width: column.width }}>
                 <button className="pay-sort-btn" onClick={() => handleSort(column.key)} style={{ width: '100%', justifyContent: 'space-between' }}>
                   {column.label}
-                  <SortIcon />
+                  {sortConfig.key === column.key ? (
+                    sortConfig.direction === 'asc' ? <FiArrowUp /> : <FiArrowDown />
+                  ) : (
+                    <span style={{ opacity: 0.3 }}><FiArrowUp /></span>
+                  )}
                 </button>
               </th>
             ))}
@@ -468,17 +466,19 @@ const PaymentClient = () => {
               className="pay-refresh-btn mem-export-bbtn" 
               onClick={() => fetchPayments(true)}
               disabled={isRefreshing || loading}
-              style={{ marginRight: '8px' }}
+              style={{ marginRight: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
+              <FiRefreshCw className={isRefreshing ? "spin-animation" : ""} />
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
 
             <button 
-              className="pay-options-btn  mem-export-bbtn" 
+              className="pay-options-btn mem-export-bbtn" 
               onClick={(e) => { e.stopPropagation(); setIsOptionsOpen(!isOptionsOpen); }}
               disabled={sortedAndFilteredPayments.length === 0}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-               Export
+               Export <FiChevronDown />
             </button>
 
             {isOptionsOpen && sortedAndFilteredPayments.length > 0 && (
@@ -500,7 +500,7 @@ const PaymentClient = () => {
               />
             </div>
             <div className="pay-search">
-              <span className="pay-search-icon"><SearchIcon /></span>
+              <span className="pay-search-icon"><FiSearch /></span>
               <input 
                 type="text" 
                 placeholder="Search by reference, name, or payment method..." 
