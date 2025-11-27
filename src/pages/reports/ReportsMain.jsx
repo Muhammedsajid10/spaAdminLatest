@@ -22,6 +22,14 @@ const reports = [
     route: "sales-summary"
   },
   {
+    id: 2,
+    category: "sales",
+    title: "Invoice Details",
+    desc: "Detailed view of invoices with download option.",
+    premium: false,
+    route: "invoice-details"
+  },
+  {
     id: 4,
     category: "finance",
     title: "Finance summary",

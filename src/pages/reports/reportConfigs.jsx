@@ -321,5 +321,102 @@ export const reportsConfig = {
       { key: 'paymentMethod', label: 'Payment method', sortable: true },
       { key: 'paymentAmount', label: 'Payment amount', type: 'currency', align: 'right', sortable: true }
     ]
+  },
+
+  'invoice-details': {
+    title: 'Invoice Details',
+    description: 'Detailed view of invoices with download option.',
+    category: 'Sales',
+    dataFetcher: async ({ dateRange }) => {
+      const res = await ReportsAPI.getInvoiceDetails({ 
+        startDate: dateRange?.start, 
+        endDate: dateRange?.end 
+      });
+      // Map booking/sales data to invoice format
+      const bookings = res?.data?.bookings || [];
+      return bookings.map(booking => ({
+        invoiceNumber: booking.bookingId || booking._id?.substring(0, 8).toUpperCase(),
+        serviceName: booking.services?.map(s => s.name).join(', ') || '-',
+        professionalName: booking.staff?.name || '-',
+        servicePrice: booking.totalAmount || 0, // Simplified mapping
+        discount: 0, // Placeholder if not directly available
+        subtotal: booking.totalAmount || 0,
+        total: booking.totalAmount || 0,
+        paymentMethod: booking.paymentStatus === 'paid' ? 'Paid' : 'Pending', // Adjust based on actual data
+        date: booking.appointmentDate,
+        // Keep original object for PDF generation if needed
+        original: booking
+      }));
+    },
+    columns: [
+      { key: 'invoiceNumber', label: 'Invoice #', sortable: true },
+      { key: 'serviceName', label: 'Service Name', sortable: true },
+      { key: 'professionalName', label: 'Professional', sortable: true },
+      { key: 'servicePrice', label: 'Price', type: 'currency', align: 'right', sortable: true },
+      { key: 'discount', label: 'Discount', type: 'currency', align: 'right', sortable: true },
+      { key: 'subtotal', label: 'Subtotal', type: 'currency', align: 'right', sortable: true },
+      { key: 'total', label: 'Total', type: 'currency', align: 'right', sortable: true },
+      { key: 'paymentMethod', label: 'Payment Method', sortable: true },
+      { key: 'date', label: 'Invoice Date', type: 'date', sortable: true },
+      { key: 'action', label: 'Action', align: 'center' }
+    ],
+    customRenderer: (row, column) => {
+      if (column.key === 'action') {
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              import('jspdf').then(({ default: jsPDF }) => {
+                import('jspdf-autotable').then(({ default: autoTable }) => {
+                  const doc = new jsPDF();
+                  doc.setFontSize(18);
+                  doc.text("Invoice Details", 14, 20);
+                  
+                  doc.setFontSize(12);
+                  doc.text(`Invoice #: ${row.invoiceNumber}`, 14, 30);
+                  doc.text(`Date: ${new Date(row.date).toLocaleDateString()}`, 14, 36);
+                  
+                  autoTable(doc, {
+                    startY: 45,
+                    head: [['Service', 'Professional', 'Price', 'Discount', 'Subtotal', 'Total']],
+                    body: [[
+                      row.serviceName,
+                      row.professionalName,
+                      row.servicePrice,
+                      row.discount,
+                      row.subtotal,
+                      row.total
+                    ]],
+                  });
+                  
+                  const finalY = doc.lastAutoTable.finalY || 50;
+                  doc.text(`Payment Method: ${row.paymentMethod}`, 14, finalY + 10);
+                  
+                  doc.save(`invoice_${row.invoiceNumber}.pdf`);
+                });
+              });
+            }}
+            style={{
+              background: 'none',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              padding: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Download Invoice"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+        );
+      }
+      return null;
+    }
   }
 };

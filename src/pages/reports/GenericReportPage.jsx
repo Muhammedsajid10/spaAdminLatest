@@ -371,6 +371,7 @@ const GenericReportPage = ({
             paginated={true}
             className="report-table"
             emptyMessage="No data available for the selected period"
+            renderCell={customRenderer} // Pass customRenderer as renderCell to DataTable
           />
         </div>
       </div>

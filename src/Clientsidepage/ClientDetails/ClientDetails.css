@@ -1,0 +1,485 @@
+/* Client Details Modal Overlay */
+.client-details-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* Modal Container */
+.client-details-modal {
+  background: #fff;
+  width: 90%;
+  max-width: 1000px; /* Adjust as needed for "big modal" */
+  height: 85vh;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Close Button */
+.client-details-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+  color: #666;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.client-details-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+/* --- Left Sidebar --- */
+.client-profile-sidebar {
+  width: 320px;
+  background: #fff;
+  border-right: 1px solid #eee;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.sidebar-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.sidebar-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 4px 0;
+}
+
+.sidebar-phone {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.btn-action-dropdown {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-action-dropdown:hover {
+  background: #f9f9f9;
+  border-color: #ccc;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: #eee;
+  margin: 0 0 24px 0;
+  width: 100%;
+}
+
+.sidebar-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer; /* Suggests interactivity */
+}
+
+.info-item:hover {
+  color: #333;
+}
+
+.info-icon {
+  color: #333;
+}
+
+/* --- Right Content Area --- */
+.client-details-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row; /* Change to row for side-by-side layout */
+  background: #fafafa;
+  overflow: hidden;
+}
+
+/* Navigation Tabs (Now Vertical Sidebar) */
+.content-tabs {
+  display: flex;
+  flex-direction: column; /* Vertical list */
+  width: 220px; /* Fixed width for nav sidebar */
+  padding: 24px 12px;
+  background: #fff;
+  border-right: 1px solid #eee; /* Separator from content */
+  border-bottom: none; /* Remove bottom border from old tab style */
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  text-align: left; /* Left align text */
+  border-radius: 8px; /* Rounded corners for active state */
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* For badge/icon alignment */
+}
+
+.tab-btn:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.tab-btn.active {
+  color: #111;
+  font-weight: 600;
+  background-color: #f0f0f0; /* Active background instead of underline */
+}
+
+.tab-btn.active::after {
+  display: none; /* Remove the bottom underline */
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #eee;
+  color: #666;
+  font-size: 10px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 9px;
+  margin-left: 6px;
+  padding: 0 5px;
+}
+
+/* Tab Content Container */
+.tab-content-area {
+  flex: 1;
+  padding: 32px 40px; /* More padding for content area */
+  overflow-y: auto;
+}
+
+/* Overview Tab Styles */
+.overview-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 16px 0;
+}
+
+.overview-wallet-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.wallet-balance-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.wallet-balance-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111;
+}
+
+.btn-view-wallet {
+  font-size: 14px;
+  color: #6366f1; /* Indigo-ish */
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.overview-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.summary-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.summary-card.full-width {
+  grid-column: span 2;
+}
+
+.summary-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111;
+}
+
+.info-tooltip-icon {
+  color: #ccc;
+  cursor: help;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .client-details-modal {
+    flex-direction: column;
+    height: 95vh;
+    width: 95%;
+  }
+
+  .client-profile-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #eee;
+    padding: 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: auto;
+  }
+  
+  .sidebar-profile-header {
+    flex-direction: row;
+    text-align: left;
+    margin-bottom: 0;
+    gap: 12px;
+  }
+  
+  .sidebar-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    margin-bottom: 0;
+  }
+  
+  .sidebar-actions, .sidebar-divider, .sidebar-info-list {
+    display: none; /* Hide extra details on mobile sidebar for compactness, or move them */
+  }
+
+  .content-tabs {
+    overflow-x: auto;
+    padding: 12px 16px 0;
+  }
+}
+/* Sub-items in navigation sidebar */
+.nav-dropdown-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.tab-btn.sub-item {
+  padding-left: 32px; /* Indent sub-items */
+  font-size: 13px;
+  color: #777;
+}
+
+.tab-btn.sub-item.active {
+  color: #111;
+  background-color: #f5f5f5;
+  font-weight: 500;
+}
+/* Actions Dropdown */
+.sidebar-actions {
+  position: relative; /* For absolute positioning of dropdown */
+  z-index: 20; /* Ensure it's above other things */
+}
+
+.actions-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.action-item {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.action-item:hover {
+  background: #f9f9f9;
+}
+
+.action-item.delete {
+  color: #ef4444;
+}
+
+.action-item.delete:hover {
+  background: #fef2f2;
+}
+/* Sales Tab Styles */
+.sales-table-container {
+  overflow-x: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sales-table th {
+  background: #f9f9f9;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.sales-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+  white-space: nowrap;
+}
+
+.sales-table tr:last-child td {
+  border-bottom: none;
+}
+
+.sales-table tr:hover {
+  background-color: #fafafa;
+}
+
+.btn-download-invoice {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-download-invoice:hover {
+  background: #f0f0f0;
+  color: #333;
+  border-color: #ccc;
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}

@@ -174,4 +174,14 @@ export class ReportsAPI {
   static exportData(data, format) {
     return exportDataUtil(data, format);
   }
+
+  static async getInvoiceDetails({ page = 1, limit = 15000, ...params } = {}) {
+    // Reusing bookings endpoint as it likely contains the necessary sales/invoice data
+    // Adjust endpoint if a specific /invoices endpoint exists
+    const response = await api.get('/bookings/admin/all', {
+      params: { page, limit, ...params },
+      headers: withAuth()
+    });
+    return response.data;
+  }
 }

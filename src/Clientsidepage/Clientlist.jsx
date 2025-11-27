@@ -11,6 +11,7 @@ import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import ClientDetailsModal from "./ClientDetails/ClientDetailsModal";
 
 // Helper function to get random color for avatars (Moved out for reusability)
 const getRandomColor = () => {
@@ -190,6 +191,10 @@ const ClientDirectory = () => {
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState(null);
+
+  // Client Details Modal State
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedClientForDetails, setSelectedClientForDetails] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -563,6 +568,17 @@ const ClientDirectory = () => {
     setClientToDelete(null);
   };
 
+  // --- Client Details Modal Handlers ---
+  const openDetailsModal = (client) => {
+    setSelectedClientForDetails(client.id);
+    setShowDetailsModal(true);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedClientForDetails(null);
+  };
+
   // --- Effect Hook for Initial Data Load ---
   // Track current page for API
   useEffect(() => {
@@ -855,9 +871,9 @@ const ClientDirectory = () => {
                 </thead>
                 <tbody>
                   {filteredAndSortedClients.map((client) => (
-                    <tr key={client.id}>
-                      <td></td>
-                      <td>
+                    <tr key={client.id} onClick={() => openDetailsModal(client)} style={{ cursor: 'pointer' }}>
+                        <td></td>
+                        <td>
                         <div className="client-avatar-name">
                           <div className={`avatar-color avatar-${client.color}`}>
                             {client.initial}
@@ -1001,6 +1017,21 @@ const ClientDirectory = () => {
           </div>
         </div>
       )}
+
+      {/* Client Details Modal */}
+      <ClientDetailsModal 
+        isOpen={showDetailsModal}
+        onClose={closeDetailsModal}
+        clientId={selectedClientForDetails}
+        onEdit={(client) => {
+          closeDetailsModal();
+          openEditModal(client);
+        }}
+        onDelete={(clientId) => {
+          closeDetailsModal();
+          handleDeleteClient(clientId);
+        }}
+      />
     </div>
   );
 };
