@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, User, Calendar, Clock, FileText, AlertCircle, Edit, Trash2 } from 'lucide-react';
 import { PiGenderFemale, PiGenderMale, PiGenderNeuter } from "react-icons/pi";
 import AddNoteModal from './AddNoteModal';
+import AddAllergyModal from './AddAllergyModal';
 
 const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+  const [isAddAllergyOpen, setIsAddAllergyOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   if (!client) return null;
@@ -40,6 +42,11 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
     console.log('Saving note for client:', client.id, note);
     // Here you would typically call an API to save the note
     // e.g., onSaveNote(client.id, note);
+  };
+
+  const handleSaveAllergy = (allergyData) => {
+    console.log('Saving allergy for client:', client.id, allergyData);
+    // API call placeholder
   };
 
   return (
@@ -78,7 +85,13 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
               <FileText size={16} />
               Add Simple Note
             </button>
-            <button className="action-item">
+            <button 
+              className="action-item"
+              onClick={() => {
+                setIsActionsOpen(false);
+                setIsAddAllergyOpen(true);
+              }}
+            >
               <AlertCircle size={16} />
               Add Allergy
             </button>
@@ -131,6 +144,13 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
         isOpen={isAddNoteOpen} 
         onClose={() => setIsAddNoteOpen(false)} 
         onSave={handleSaveNote}
+      />
+
+      {/* Add Allergy Modal */}
+      <AddAllergyModal
+        isOpen={isAddAllergyOpen}
+        onClose={() => setIsAddAllergyOpen(false)}
+        onSave={handleSaveAllergy}
       />
     </div>
   );
