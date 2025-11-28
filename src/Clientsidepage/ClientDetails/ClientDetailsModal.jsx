@@ -12,6 +12,7 @@ import AddNoteModal from './components/AddNoteModal';
 import useClientDetails from './hooks/useClientDetails';
 import AddAllergyModal from './components/AddAllergyModal';
 import ClientAllergiesTab from './components/ClientAllergiesTab';
+import ClientGiftCardsTab from './components/ClientGiftCardsTab';
 import Loading from '../../states/Loading';
 
 
@@ -190,7 +191,10 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                      onAddAllergy={() => setIsAddAllergyOpen(true)}
                    />
                 )}
-                {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'items' && activeTab !== 'notes' && activeTab !== 'allergy' && (
+                {activeTab === 'giftcards' && (
+                   <ClientGiftCardsTab client={client} />
+                )}
+                {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'items' && activeTab !== 'notes' && activeTab !== 'allergy' && activeTab !== 'giftcards' && (
                   <div className="tab-scrollable-content">
                     <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
                       {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content coming soon...
