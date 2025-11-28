@@ -25,7 +25,12 @@ export const reportTabs = [
         desc: "Sales quantities and value, excluding tips and gift card sales",
         category: "Sales"
       },
-      // Add more sales reports here
+      {
+        key: "invoice-details",
+        title: "Invoice Details",
+        desc: "View and download invoice details for completed transactions",
+        category: "Sales"
+      }
     ]
   },
   {
