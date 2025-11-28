@@ -3,6 +3,7 @@ import { X, ChevronDown } from 'lucide-react';
 import './ClientDetails.css';
 import ClientProfileSidebar from './components/ClientProfileSidebar';
 import ClientOverviewTab from './components/ClientOverviewTab';
+import ClientAppointmentsTab from './components/ClientAppointmentsTab';
 import useClientDetails from './hooks/useClientDetails';
 import Loading from '../../states/Loading';
 
@@ -131,26 +132,35 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
               {/* Tab Content */}
               <div className="tab-content-area">
                 {activeTab === 'overview' && (
-                  <>
+                  <div className="tab-scrollable-content">
                     <h2 className="overview-section-title" style={{ fontSize: 24, marginBottom: 24 }}>Overview</h2>
                     <ClientOverviewTab stats={stats} />
-                  </>
+                  </div>
+                )}
+                {activeTab === 'appointments' && (
+                  <ClientAppointmentsTab client={client} />
                 )}
                 {activeTab === 'notes' && (
-                   <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
-                     <h3>Notes</h3>
-                     <p>No notes found.</p>
+                   <div className="tab-scrollable-content">
+                     <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
+                       <h3>Notes</h3>
+                       <p>No notes found.</p>
+                     </div>
                    </div>
                 )}
                 {activeTab === 'allergy' && (
-                   <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
-                     <h3>Allergy Notes</h3>
-                     <p>No allergy notes found.</p>
+                   <div className="tab-scrollable-content">
+                     <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
+                       <h3>Allergy Notes</h3>
+                       <p>No allergy notes found.</p>
+                     </div>
                    </div>
                 )}
-                {activeTab !== 'overview' && activeTab !== 'notes' && activeTab !== 'allergy' && (
-                  <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
-                    {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content coming soon...
+                {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'notes' && activeTab !== 'allergy' && (
+                  <div className="tab-scrollable-content">
+                    <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
+                      {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content coming soon...
+                    </div>
                   </div>
                 )}
               </div>
