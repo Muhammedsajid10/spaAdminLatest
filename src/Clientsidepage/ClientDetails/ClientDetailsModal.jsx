@@ -6,6 +6,7 @@ import ClientOverviewTab from './components/ClientOverviewTab';
 import ClientAppointmentsTab from './components/ClientAppointmentsTab';
 import ClientSalesTab from './components/ClientSalesTab';
 import ClientInfoTab from './components/ClientInfoTab';
+import ClientItemsTab from './components/ClientItemsTab';
 import useClientDetails from './hooks/useClientDetails';
 import Loading from '../../states/Loading';
 
@@ -152,6 +153,9 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                     onUpdate={updateClient}
                   />
                 )}
+                {activeTab === 'items' && (
+                  <ClientItemsTab client={client} />
+                )}
                 {activeTab === 'notes' && (
                    <div className="tab-scrollable-content">
                      <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
@@ -168,7 +172,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                      </div>
                    </div>
                 )}
-                {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'notes' && activeTab !== 'allergy' && (
+                {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'items' && activeTab !== 'notes' && activeTab !== 'allergy' && (
                   <div className="tab-scrollable-content">
                     <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
                       {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content coming soon...
