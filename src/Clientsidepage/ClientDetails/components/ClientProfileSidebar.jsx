@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, User, Calendar, Clock, FileText, AlertCircle, Edit, Trash2 } from 'lucide-react';
 import { PiGenderFemale, PiGenderMale, PiGenderNeuter } from "react-icons/pi";
+import AddNoteModal from './AddNoteModal';
 
 const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   if (!client) return null;
@@ -34,6 +36,12 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
     };
   }, [isActionsOpen]);
 
+  const handleSaveNote = (note) => {
+    console.log('Saving note for client:', client.id, note);
+    // Here you would typically call an API to save the note
+    // e.g., onSaveNote(client.id, note);
+  };
+
   return (
     <div className="client-profile-sidebar">
       {/* Profile Header */}
@@ -60,7 +68,13 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
 
         {isActionsOpen && (
           <div className="actions-dropdown-menu">
-            <button className="action-item">
+            <button 
+              className="action-item"
+              onClick={() => {
+                setIsActionsOpen(false);
+                setIsAddNoteOpen(true);
+              }}
+            >
               <FileText size={16} />
               Add Simple Note
             </button>
@@ -111,6 +125,13 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete }) => {
           <span>Created {formatDate(client.createdAt)}</span>
         </div>
       </div>
+
+      {/* Add Note Modal */}
+      <AddNoteModal 
+        isOpen={isAddNoteOpen} 
+        onClose={() => setIsAddNoteOpen(false)} 
+        onSave={handleSaveNote}
+      />
     </div>
   );
 };
