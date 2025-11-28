@@ -7,12 +7,22 @@ import ClientAppointmentsTab from './components/ClientAppointmentsTab';
 import ClientSalesTab from './components/ClientSalesTab';
 import ClientInfoTab from './components/ClientInfoTab';
 import ClientItemsTab from './components/ClientItemsTab';
+import ClientNotesTab from './components/ClientNotesTab';
+import AddNoteModal from './components/AddNoteModal';
 import useClientDetails from './hooks/useClientDetails';
+import AddAllergyModal from './components/AddAllergyModal';
+import ClientAllergiesTab from './components/ClientAllergiesTab';
 import Loading from '../../states/Loading';
+
+
+
+// ... (existing imports)
 
 const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
+  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+  const [isAddAllergyOpen, setIsAddAllergyOpen] = useState(false);
   const { client, stats, loading, error, updateClient } = useClientDetails(clientId);
 
   if (!isOpen) return null;
@@ -23,6 +33,17 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
     if (tab !== 'documents' && tab !== 'notes' && tab !== 'allergy') {
       setIsDocumentsOpen(false);
     }
+  };
+
+  const handleSaveNote = (note) => {
+    console.log('Saving note for client:', client?.id, note);
+    // Here you would typically call an API to save the note
+    // e.g., onSaveNote(client.id, note);
+  };
+
+  const handleSaveAllergy = (allergyData) => {
+    console.log('Saving allergy for client:', client?.id, allergyData);
+    // API call placeholder
   };
 
   return (
@@ -45,6 +66,8 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
               client={client} 
               onEdit={onEdit}
               onDelete={onDelete}
+              onAddNote={() => setIsAddNoteOpen(true)}
+              onAddAllergy={() => setIsAddAllergyOpen(true)}
             />
 
             {/* Right Content */}
@@ -112,7 +135,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                         className={`tab-btn sub-item ${activeTab === 'allergy' ? 'active' : ''}`}
                         onClick={() => handleTabClick('allergy')}
                       >
-                        Allergy notes
+                        Allergies
                       </button>
                     </div>
                   )}
@@ -143,7 +166,6 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                 {activeTab === 'appointments' && (
                   <ClientAppointmentsTab client={client} />
                 )}
-
                 {activeTab === 'sales' && (
                   <ClientSalesTab client={client} />
                 )}
@@ -157,20 +179,16 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                   <ClientItemsTab client={client} />
                 )}
                 {activeTab === 'notes' && (
-                   <div className="tab-scrollable-content">
-                     <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
-                       <h3>Notes</h3>
-                       <p>No notes found.</p>
-                     </div>
-                   </div>
+                   <ClientNotesTab 
+                     client={client} 
+                     onAddNote={() => setIsAddNoteOpen(true)}
+                   />
                 )}
                 {activeTab === 'allergy' && (
-                   <div className="tab-scrollable-content">
-                     <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
-                       <h3>Allergy Notes</h3>
-                       <p>No allergy notes found.</p>
-                     </div>
-                   </div>
+                   <ClientAllergiesTab 
+                     client={client} 
+                     onAddAllergy={() => setIsAddAllergyOpen(true)}
+                   />
                 )}
                 {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'items' && activeTab !== 'notes' && activeTab !== 'allergy' && (
                   <div className="tab-scrollable-content">
@@ -181,6 +199,18 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                 )}
               </div>
             </div>
+
+            {/* Modals */}
+            <AddNoteModal 
+              isOpen={isAddNoteOpen} 
+              onClose={() => setIsAddNoteOpen(false)} 
+              onSave={handleSaveNote}
+            />
+            <AddAllergyModal
+              isOpen={isAddAllergyOpen}
+              onClose={() => setIsAddAllergyOpen(false)}
+              onSave={handleSaveAllergy}
+            />
           </>
         ) : null}
       </div>
