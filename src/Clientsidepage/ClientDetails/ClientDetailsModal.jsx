@@ -142,10 +142,10 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                 </div>
 
                 <button 
-                  className={`tab-btn ${activeTab === 'wallet' ? 'active' : ''}`}
-                  onClick={() => handleTabClick('wallet')}
+                  className={`tab-btn ${activeTab === 'giftcards' ? 'active' : ''}`}
+                  onClick={() => handleTabClick('giftcards')}
                 >
-                  Wallet
+                  Gift cards
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
