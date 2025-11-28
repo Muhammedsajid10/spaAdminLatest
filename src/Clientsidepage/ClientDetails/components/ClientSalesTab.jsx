@@ -1,103 +1,84 @@
 import React from 'react';
-import { Download } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { Tag } from 'lucide-react';
+import './ClientSalesTab.css';
 
-const ClientSalesTab = ({ sales }) => {
-  
-  const handleDownloadInvoice = (invoice) => {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(18);
-    doc.text("Invoice Details", 14, 20);
-    
-    doc.setFontSize(12);
-    doc.text(`Invoice #: ${invoice.invoiceNumber || '-'}`, 14, 30);
-    doc.text(`Date: ${new Date(invoice.date).toLocaleDateString()}`, 14, 36);
-    
-    // Table
-    autoTable(doc, {
-      startY: 45,
-      head: [['Service', 'Professional', 'Price', 'Discount', 'Subtotal', 'Total']],
-      body: [
-        [
-          invoice.serviceName || '-',
-          invoice.professionalName || '-',
-          invoice.servicePrice || '0',
-          invoice.discount || '0',
-          invoice.subtotal || '0',
-          invoice.total || '0'
-        ]
-      ],
-    });
-    
-    // Footer
-    const finalY = doc.lastAutoTable.finalY || 50;
-    doc.text(`Payment Method: ${invoice.paymentMethod || '-'}`, 14, finalY + 10);
-
-    doc.save(`invoice_${invoice.invoiceNumber || 'unknown'}.pdf`);
-  };
-
-  if (!sales || sales.length === 0) {
-    return (
-      <div className="no-data-message">
-        <p>No sales history found for this client.</p>
-      </div>
-    );
+const MOCK_SALES = [
+  {
+    id: 1,
+    status: 'Paid',
+    date: '28 Nov 2025',
+    items: [
+      { name: 'Relaxing Massage', price: 200 },
+      { name: 'Relaxing Massage', price: 200 }
+    ],
+    total: 400
+  },
+  {
+    id: 2,
+    status: 'Draft',
+    date: '27 Nov 2025',
+    items: [
+      { name: 'Deep Tissue Massage', price: 250 }
+    ],
+    total: 250
+  },
+  {
+    id: 3,
+    status: 'Paid',
+    date: '25 Nov 2025',
+    items: [
+      { name: 'Facial', price: 150 }
+    ],
+    total: 150
   }
+];
 
+const ClientSalesTab = ({ client }) => {
   return (
-    <div className="client-sales-tab">
-      <h2 className="overview-section-title" style={{ fontSize: 24, marginBottom: 24 }}>Sales History</h2>
-      
-      <div className="sales-table-container">
-        <table className="sales-table">
-          <thead>
-            <tr>
-              <th>Invoice #</th>
-              <th>Service Name</th>
-              <th>Professional</th>
-              <th>Price</th>
-              <th>Discount</th>
-              <th>Subtotal</th>
-              <th>Total</th>
-              <th>Payment</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sales.map((invoice, index) => (
-              <tr key={index}>
-                <td>{invoice.invoiceNumber || '-'}</td>
-                <td>{invoice.serviceName || '-'}</td>
-                <td>{invoice.professionalName || '-'}</td>
-                <td>{invoice.servicePrice || '0'}</td>
-                <td>{invoice.discount || '0'}</td>
-                <td>{invoice.subtotal || '0'}</td>
-                <td style={{ fontWeight: 600 }}>{invoice.total || '0'}</td>
-                <td>{invoice.paymentMethod || '-'}</td>
-                <td>
-                  {invoice.date ? new Date(invoice.date).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric'
-                  }) : '-'}
-                </td>
-                <td>
-                  <button 
-                    className="btn-download-invoice"
-                    onClick={() => handleDownloadInvoice(invoice)}
-                    title="Download Invoice"
-                  >
-                    <Download size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="sales-tab-container">
+      <div className="sales-header">
+        <h2 className="sales-title">Sales</h2>
+      </div>
+
+      {/* Sales List */}
+      <div className="sales-list">
+        {MOCK_SALES.length > 0 ? (
+          MOCK_SALES.map(sale => (
+            <div key={sale.id} className="sales-card">
+              <div className="timeline-icon">
+                <Tag size={16} />
+              </div>
+              <div className="timeline-line" />
+              
+              <div className="sales-content">
+                <div className="sales-header-row">
+                  <span className="sales-title-text">Sale</span>
+                </div>
+                <div className="sales-meta">
+                  {sale.date}
+                </div>
+
+                <div className="sales-items">
+                  {sale.items.map((item, index) => (
+                    <div key={index} className="sale-item">
+                      <span className="item-name">{item.name}</span>
+                      <span className="item-price">AED {item.price}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="sales-total">
+                  <span className="total-label">Total</span>
+                  <span className="total-amount">AED {sale.total}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+            No sales found for this filter.
+          </div>
+        )}
       </div>
     </div>
   );

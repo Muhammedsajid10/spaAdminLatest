@@ -1,0 +1,290 @@
+/* ClientSalesTab.css */
+
+.sales-tab-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+  padding: 32px 40px;
+}
+
+.sales-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sales-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+}
+
+.btn-sell {
+  padding: 6px 16px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sell:hover {
+  background: #f9f9f9;
+  border-color: #ccc;
+}
+
+/* Filter Bar */
+.sales-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background: #f5f5f5;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-btn:hover {
+  color: #111;
+  background: #e0e0e0;
+}
+
+.filter-btn.active {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.filter-count {
+  background: rgba(0,0,0,0.1);
+  color: inherit;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 10px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-btn.active .filter-count {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Dropdown */
+.filter-dropdown-container {
+  position: relative;
+}
+
+.filter-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+}
+
+.filter-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 6px;
+  min-width: 180px;
+  z-index: 100;
+}
+
+.dropdown-item {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+  background: #f5f5f5;
+}
+
+.dropdown-item.active {
+  background: #f0f0f0;
+  font-weight: 600;
+}
+
+/* Sales List */
+.sales-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  padding-bottom: 20px;
+}
+
+.sales-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sales-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sales-list::-webkit-scrollbar-thumb {
+  background-color: #e0e0e0;
+  border-radius: 3px;
+}
+
+/* Sales Card */
+.sales-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+  height: auto;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+  transition: box-shadow 0.2s;
+}
+
+.sales-card:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  border-color: #e0e0e0;
+}
+
+/* Timeline line */
+.timeline-icon {
+  width: 40px;
+  height: 40px;
+  background: #111;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  z-index: 2;
+  position: relative;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 64px;
+  left: 43px;
+  bottom: -17px;
+  width: 2px;
+  background: #f0f0f0;
+  z-index: 1;
+}
+
+.sales-card:last-child .timeline-line {
+  display: none;
+}
+
+.sales-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.sales-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.sales-title-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+.sales-meta {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sales-status {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sales-status.paid { color: #166534; }
+.sales-status.draft { color: #666; }
+.sales-status.voided { color: #991b1b; }
+.sales-status.refunded { color: #9a3412; }
+
+/* Items List */
+.sales-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.sale-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-name {
+  font-size: 14px;
+  color: #333;
+}
+
+.item-price {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.sales-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.total-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}

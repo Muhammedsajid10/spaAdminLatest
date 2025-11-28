@@ -4,13 +4,15 @@ import './ClientDetails.css';
 import ClientProfileSidebar from './components/ClientProfileSidebar';
 import ClientOverviewTab from './components/ClientOverviewTab';
 import ClientAppointmentsTab from './components/ClientAppointmentsTab';
+import ClientSalesTab from './components/ClientSalesTab';
+import ClientInfoTab from './components/ClientInfoTab';
 import useClientDetails from './hooks/useClientDetails';
 import Loading from '../../states/Loading';
 
 const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
-  const { client, stats, loading, error } = useClientDetails(clientId);
+  const { client, stats, loading, error, updateClient } = useClientDetails(clientId);
 
   if (!isOpen) return null;
 
@@ -140,6 +142,16 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                 {activeTab === 'appointments' && (
                   <ClientAppointmentsTab client={client} />
                 )}
+
+                {activeTab === 'sales' && (
+                  <ClientSalesTab client={client} />
+                )}
+                {activeTab === 'details' && (
+                  <ClientInfoTab 
+                    client={client} 
+                    onUpdate={updateClient}
+                  />
+                )}
                 {activeTab === 'notes' && (
                    <div className="tab-scrollable-content">
                      <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
@@ -156,7 +168,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                      </div>
                    </div>
                 )}
-                {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'notes' && activeTab !== 'allergy' && (
+                {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'notes' && activeTab !== 'allergy' && (
                   <div className="tab-scrollable-content">
                     <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
                       {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content coming soon...
