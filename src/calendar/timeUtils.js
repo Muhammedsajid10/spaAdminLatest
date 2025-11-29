@@ -21,3 +21,11 @@ export const generateRangeSlots = (startLabel,endLabel,interval=30) => {
   while(cur<=end){ out.push(minutesToLabel(cur)); cur+=interval; }
   return out;
 };
+
+export const formatTime = (timeStr) => {
+  if (!timeStr) return '';
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+};

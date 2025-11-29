@@ -1,0 +1,820 @@
+/* CalendarHeader.module.css */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  min-height: 64px;
+  gap: 16px;
+}
+
+.leftControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 40px;
+  white-space: nowrap;
+  gap: 6px;
+}
+
+.btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.todayBtn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #111827;
+  font-weight: 500;
+  padding: 8px 16px;
+}
+
+.todayBtn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.dateNav {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 4px;
+}
+
+.navArrowBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  color: #374151;
+}
+
+.navArrowBtn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.dateText {
+  padding: 0 12px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: center;
+}
+
+.teamControl,
+.calendarControl,
+.settingsControl {
+  position: relative;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.iconBtn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.teamPopup {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 300px;
+  max-width: calc(100vw - 20px);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  height: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.teamPopupHeader {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.teamFilterBtn {
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.teamFilterBtn:hover {
+  background: #f3f4f6;
+}
+
+.teamFilterBtn.active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.clearSelectionBtn {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.clearSelectionBtn:hover {
+  color: #374151;
+}
+
+.teamPopupContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.employeeItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.employeeItem:last-child {
+  border-bottom: none;
+}
+
+.employeeItem:hover {
+  background: #f9fafb;
+}
+
+.employeeItem.selected {
+  background-color: #f0fdf4;
+}
+
+.employeeInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.employeeAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.employeeName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.employeeCheckbox {
+  position: relative;
+  cursor: pointer;
+}
+
+.employeeCheckbox input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 3px;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.employeeCheckbox input:checked + .checkmark {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.teamPopupFooter {
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.rightControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.viewDropdownBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+
+.viewDropdownBtn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #000000;
+  color: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+  text-transform: none;
+  letter-spacing: 0.25px;
+}
+
+.addBtn:hover {
+  background: #333333;
+  border-color: #333333;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.addBtn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.addBtn h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.calendarPopup {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  z-index: 1000;
+}
+
+.calendarPopupTabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.popupTab {
+  flex: 1;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.popupTab:hover {
+  background: #f9fafb;
+}
+
+.popupTab.active {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-bottom: 2px solid #1d4ed8;
+}
+
+.calendarPopupContent {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.appointmentPopupItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 16px;
+  transition: background 0.2s ease;
+  border-radius: 6px;
+  margin: 2px 8px;
+}
+
+.appointmentPopupItem:hover {
+  background: #f8fafc;
+}
+
+.appointmentColorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.appointmentPopupDetails {
+  flex: 1;
+}
+
+.appointmentPopupClient {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.appointmentPopupService {
+  font-size: 12px;
+  color: #374151;
+  margin-bottom: 2px;
+}
+
+.appointmentPopupMeta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.noAppointmentsMessage {
+  padding: 32px 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.viewControls {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #6b7280;
+}
+
+.refreshBtn:hover {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.viewSelector {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 8px 32px 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  cursor: pointer;
+  outline: none;
+  min-width: 100px;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.viewSelector:hover {
+  background-color: #f9fafb;
+}
+
+.viewSelector:focus {
+  background-color: #f3f4f6;
+}
+
+.viewSelector option {
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+}
+
+.popupBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  background: transparent;
+}
+
+/* Date Picker Styles */
+.datePickerBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 998;
+}
+
+.datePickerContainer {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  z-index: 10002;
+  min-width: 320px;
+  padding: 20px;
+  font-family: inherit;
+  pointer-events: auto;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  animation: datePickerSlideIn 0.2s ease-out;
+}
+
+.datePickerHeader {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.datePickerMonthYear {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+.datePickerNavBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #ffffff;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.datePickerNavBtn:hover {
+  background: #f9fafb;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.datePickerNavBtn:active {
+  transform: scale(0.95);
+}
+
+.datePickerWeekdays {
+  margin-bottom: 8px;
+  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.datePickerWeekday {
+  padding: 8px 0;
+  font-size: 11px;
+  background: transparent;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.datePickerDays {
+  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.datePickerDay {
+  width: 100%;
+  aspect-ratio: 1;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.datePickerDay:hover {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.datePickerDay.selected {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+  font-weight: 600;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.datePickerDay.today:not(.selected) {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+  font-weight: 600;
+}
+
+.datePickerDay.otherMonth {
+  color: #000000;
+  opacity: 0.4;
+}
+
+.datePickerFooter {
+  margin-top: 16px;
+  padding-top: 12px;
+  gap: 12px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.datePickerTodayBtn,
+.datePickerCloseBtn {
+  padding: 8px 16px;
+  font-size: 13px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-weight: 500;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.datePickerTodayBtn:hover,
+.datePickerCloseBtn:hover {
+  background: #f9fafb;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+@keyframes datePickerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .datePickerContainer {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 340px;
+    max-width: 90vw;
+    padding: 20px;
+  }
+
+  .datePickerDay {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .datePickerMonthYear {
+    font-size: 18px;
+    min-width: 180px;
+  }
+
+  .datePickerNavBtn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.datePickerWeeks {
+  margin-bottom: 8px;
+  gap: 4px;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.datePickerWeek {
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.datePickerWeek:hover {
+  background: #f3f4f6;
+}
+
+.datePickerWeek.currentWeek {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+}
+
+.datePickerWeek.selectedWeek {
+  background: #111827;
+  color: #ffffff;
+}
+
+.weekInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.weekNumber {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.weekRange {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.datePickerMonths {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.datePickerMonth {
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.datePickerMonth:hover {
+  background: #f3f4f6;
+}
+
+.datePickerMonth.currentMonth {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+}
+
+.datePickerMonth.selectedMonth {
+  background: #111827;
+  color: #ffffff;
+}
+
+.monthInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.monthName {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.monthYear {
+  font-size: 12px;
+  opacity: 0.8;
+}

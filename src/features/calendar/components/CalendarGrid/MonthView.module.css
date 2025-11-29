@@ -1,0 +1,23 @@
+.monthView {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+}
+
+.placeholder {
+  text-align: center;
+  color: #6b7280;
+}
+
+.placeholder p {
+  font-size: 18px;
+  margin: 8px 0;
+}
+
+.date {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+}

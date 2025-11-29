@@ -1,5 +1,6 @@
 import React from 'react';
 import { hasShiftOnDate, getDayName, formatDateLocal } from '..';
+import '../../Clientsidepage/BookingModals.css';
 
 // Extracted Booking Modal component to reduce size of SelectCalendar
 export const BookingModal = ({

@@ -1,0 +1,22 @@
+.calendar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.calendarBody {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+
+@media (max-width: 768px) {
+  .calendarBody {
+    flex-direction: column;
+    padding: 0 16px 16px;
+  }
+}

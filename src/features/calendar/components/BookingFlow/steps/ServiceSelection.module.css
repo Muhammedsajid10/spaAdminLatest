@@ -1,0 +1,142 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 16px;
+}
+
+.searchContainer {
+  position: relative;
+  width: 100%;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.listContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.categorySection {
+  margin-bottom: 24px;
+}
+
+.categoryTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.servicesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.serviceCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #ffffff;
+}
+
+.serviceCard:hover {
+  border-color: #6366f1;
+  background-color: #f5f7ff;
+}
+
+.serviceCard.selected {
+  border-color: #6366f1;
+  background-color: #eef2ff;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+}
+
+.serviceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.serviceName {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.serviceMeta {
+  display: flex;
+  gap: 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.selectionIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radioOuter {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.serviceCard.selected .radioOuter {
+  border-color: #6366f1;
+}
+
+.radioInner {
+  width: 10px;
+  height: 10px;
+  background-color: #6366f1;
+  border-radius: 50%;
+}
+
+.loading, .noResults {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}

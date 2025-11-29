@@ -1,0 +1,533 @@
+/* CalendarGrid.module.css */
+
+.gridContent {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.calendarGridContainer {
+  display: flex;
+  flex: 1;
+  min-height: 0; /* Important for nested flex scroll */
+  position: relative;
+}
+
+.timeColumn {
+  width: 60px;
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  left: 0;
+}
+
+.timeHeader {
+  height: auto; /* Matches staff header height */
+  min-height: 86px; /* Approximate height of staff header */
+  border-bottom: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.timeSlots {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeSlotLabel {
+  height: 20px; /* var(--time-slot-height) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #6b7280;
+  position: relative;
+}
+
+.timeSlotLabel.hourStart {
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.timeSlotLabel.halfHour {
+  font-weight: 400;
+  color: #9ca3af;
+  /* border-bottom: 1px solid #f3f4f6; */
+}
+
+.timeText {
+  transform: translateY(-50%);
+  background: #ffffff;
+  padding: 0 4px;
+}
+
+.staffGridWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  position: relative;
+}
+
+.staffHeadersRow {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: #ffffff;
+  border-bottom: 2px solid #e5e7eb;
+  width: fit-content; /* Ensure it stretches with content */
+  min-width: 100%;
+}
+
+.staffHeaderCell {
+  width: var(--dynamic-column-width, 200px);
+  min-width: 180px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.staffAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.staffInfo {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.staffName {
+  font-weight: 600;
+  color: #111827;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.staffGrid {
+  display: flex;
+  flex: 1;
+  width: fit-content;
+  min-width: 100%;
+}
+
+/* Week View Styles */
+.weekViewContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 800px; /* Ensure horizontal scroll on small screens */
+}
+
+.weekHeadersRow {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 25;
+}
+
+.weekStaffHeaderCell {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #374151;
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+}
+
+.weekDayHeaderCell {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px;
+  text-align: center;
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.weekDayHeaderCell.isToday {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.weekDayName {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.weekDayNumber {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.weekEmployeeRow {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  min-height: 100px;
+}
+
+.weekStaffCell {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+}
+
+.staffPosition {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.weekDayCell {
+  flex: 1;
+  min-width: 120px;
+  border-right: 1px solid #e5e7eb;
+  padding: 4px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weekDayCell.noShift {
+  background: #f3f4f6;
+  opacity: 0.6;
+}
+
+.weekNoShift {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.weekAppointmentsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weekAppointmentBlock {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ffffff; /* Assuming dark background colors */
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: transform 0.1s ease;
+}
+
+.weekAppointmentBlock:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.appointmentClient {
+  font-weight: 600;
+}
+
+.appointmentService {
+  opacity: 0.9;
+}
+
+.weekAddAppointmentBtn {
+  margin-top: auto;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #d1d5db;
+  border-radius: 4px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weekAddAppointmentBtn:hover {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #9ca3af;
+}
+
+.addAppointmentIcon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.moreAppointments {
+  font-size: 10px;
+  color: #6b7280;
+  text-align: center;
+  padding: 2px;
+}
+
+/* Current Time Line */
+.currentTimeLine {
+  position: absolute;
+  left: 60px; /* Matches timeColumn width */
+  right: 0;
+  height: 2px;
+  background-color: #ef4444;
+  z-index: 28; /* Above appointments (usually z-index 10-20) but below headers */
+  pointer-events: none;
+}
+
+.currentTimeMarker {
+  position: absolute;
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Loading/Error States */
+.loadingOverlay,
+.errorOverlay,
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  background: #ffffff;
+  padding: 40px;
+}
+
+.loadingMessage,
+.emptyStateContent {
+  text-align: center;
+  color: #6b7280;
+}
+
+/* Month View Styles */
+.monthViewContainer {
+  padding: 16px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.monthDayNames {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.monthDayName {
+  font-size: 12px;
+}
+
+.monthViewGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background-color: #e5e7eb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.monthDayCell {
+  background-color: #ffffff;
+  min-height: 100px;
+  padding: 8px;
+  position: relative;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.monthDayCell:hover {
+  background-color: #f9fafb;
+}
+
+.monthDayCell.empty {
+  background-color: #f9fafb;
+  cursor: default;
+}
+
+.monthDayCell.isToday {
+  background-color: #eff6ff;
+}
+
+.monthDayCell.isToday .monthDayDate {
+  background-color: #2563eb;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.monthDayHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.monthDayDate {
+  font-size: 14px;
+  color: #111827;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.monthAddAppointmentHint {
+  font-size: 16px;
+  color: #9ca3af;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.monthDayCell:hover .monthAddAppointmentHint {
+  opacity: 1;
+}
+
+.monthAppointments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.monthAppointmentEntry {
+  font-size: 10px;
+  color: white;
+  padding: 4px 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.monthAppointmentEntry:hover {
+  transform: scale(1.02);
+  z-index: 2;
+}
+
+.appointmentClientName {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.appointmentServiceName {
+  font-weight: 400;
+  line-height: 1.2;
+  opacity: 0.9;
+}
+
+.monthMoreAppointments {
+  font-size: 10px;
+  color: #6b7280;
+  text-align: center;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.monthMoreAppointments:hover {
+  text-decoration: underline;
+  color: #374151;
+}
+
+.monthEmptyDay {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.monthDayCell:hover .monthEmptyDay {
+  opacity: 1;
+}
+
+.addAppointmentText {
+  font-size: 10px;
+  color: #9ca3af;
+}

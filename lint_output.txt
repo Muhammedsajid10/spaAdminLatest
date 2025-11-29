@@ -1,0 +1,430 @@
+
+> spaAdminSideFrontEnd@0.0.0 lint
+> eslint .
+
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Appoint.jsx
+  138:37  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?                 react-hooks/rules-of-hooks
+  139:35  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?                 react-hooks/rules-of-hooks
+  140:35  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?                 react-hooks/rules-of-hooks
+  543:6   warning  React Hook useEffect has missing dependencies: 'CACHE_DURATION', 'activeFilters.status', 'activeFilters.teamMember', 'sortDirection', and 'sortField'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientAllergiesTab.jsx
+  5:31  error  'client' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientAppointmentsTab.jsx
+  36:34  error  'client' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientGiftCardsTab.jsx
+  5:31  error  'client' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientItemsTab.jsx
+  22:27  error  'client' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientNotesTab.jsx
+  5:27  error  'client' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientProfileSidebar.jsx
+  22:3  error  React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientReviewsTab.jsx
+  5:29  error  'client' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/components/ClientSalesTab.jsx
+  36:27  error  'client' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ClientDetails/hooks/useClientDetails.js
+  61:5  error  Unnecessary try/catch wrapper  no-useless-catch
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Clientlist.jsx
+  424:18  error    'err' is defined but never used                                                                                         no-unused-vars
+  435:6   warning  React Hook useCallback has a missing dependency: 'allClients.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  600:9   error    'handleSelectClient' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                      no-unused-vars
+  608:9   error    'handleSelectAll' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                         no-unused-vars
+  713:6   warning  React Hook useMemo has a missing dependency: 'allClients'. Either include it or remove the dependency array             react-hooks/exhaustive-deps
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Dailysalesss.jsx
+  20:10  error  'showAddMenu' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  38:9   error  'isToday' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  92:17  error  'refundsCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Dashboard.jsx
+  13:7  error  'months' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/DashboardLayout.jsx
+  36:9  error  'mainAreaClass' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Giftcard.jsx
+  132:6  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  255:9  error    'handleClientChange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/HomePage.jsx
+   52:10  error    'appointmentData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+   59:9   error    'weekdayParam' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                       no-unused-vars
+  107:15  error    'dashboardData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                      no-unused-vars
+  246:6   warning  React Hook useEffect has a missing dependency: 'CACHE_DURATION'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  782:15  error    'employeeRes' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Membership.jsx
+  266:28  error  'setAssignSubmitting' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  349:9   error  'toggleFilters' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+  860:31  error  'message' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Memberss.jsx
+   16:7  error  'parseValidFor' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  608:9  error  'formatStatus' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  621:9  error  'getStatusColor' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/MultiServiceBookingModal.jsx
+   3:8   error  'dayjs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                            no-unused-vars
+   7:3   error  'availableServices' is defined but never used                                                           no-unused-vars
+   8:3   error  'availableProfessionals' is defined but never used                                                      no-unused-vars
+  10:3   error  'onClose' is defined but never used                                                                     no-unused-vars
+  12:3   error  'loading' is defined but never used                                                                     no-unused-vars
+  13:3   error  'error' is defined but never used                                                                       no-unused-vars
+  14:3   error  'success' is defined but never used                                                                     no-unused-vars
+  16:10  error  'step' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  16:16  error  'setStep' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  19:22  error  'setClientInfo' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  20:25  error  'setPaymentMethod' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+  23:9   error  'toggleServiceSelection' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  39:9   error  'assignProfessional' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  48:9   error  'assignTime' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  59:9   error  'handleSubmit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/PaymentSummary.jsx
+  21:6  warning  React Hook useEffect has a missing dependency: 'fetchPaymentData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Selectcalander.jsx
+     5:46   error    'getEmployeeShiftHours' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                              no-unused-vars
+     5:69   error    'getAppointmentColorByStatus' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                        no-unused-vars
+     5:129  error    'getDayName' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                         no-unused-vars
+    46:10   error    'addAppointmentToSession' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                            no-unused-vars
+    46:35   error    'removeAppointmentFromSession' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                       no-unused-vars
+    47:30   error    'fetchServicesThunk' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                 no-unused-vars
+    68:9    error    'currentAppointmentIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                   no-unused-vars
+    69:9    error    'showServiceCatalog' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                        no-unused-vars
+    70:9    error    'isAddingAdditionalService' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                 no-unused-vars
+    76:9    error    'goToDatePickerPreviousWeek' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                no-unused-vars
+    82:9    error    'goToDatePickerNextWeek' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                    no-unused-vars
+   119:9    error    'employeesLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                          no-unused-vars
+   120:9    error    'employeesError' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                            no-unused-vars
+   124:9    error    'selectedStaff' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                             no-unused-vars
+   156:27   error    'setTeamSearchQuery' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                        no-unused-vars
+   157:10   error    'teamViewMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                              no-unused-vars
+   157:24   error    'setTeamViewMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                           no-unused-vars
+   189:9    error    'getEmployeeAppointmentCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                               no-unused-vars
+   398:20   error    'setAppointments' is not defined                                                                                                                                                                                                                                                          no-undef
+   489:18   error    'setAppointments' is not defined                                                                                                                                                                                                                                                          no-undef
+   500:47   error    '_' is defined but never used                                                                                                                                                                                                                                                             no-unused-vars
+   500:50   error    Empty block statement                                                                                                                                                                                                                                                                     no-empty
+   668:6    warning  React Hook useEffect has a missing dependency: 'setShowDatePicker'. Either include it or remove the dependency array                                                                                                                                                                      react-hooks/exhaustive-deps
+   737:9    error    'formatTooltipTime' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                         no-unused-vars
+   749:6    warning  React Hook useEffect has a missing dependency: 'selectedEmployees.size'. Either include it or remove the dependency array                                                                                                                                                                 react-hooks/exhaustive-deps
+   902:14   error    'getDatePickerCalendarDays' is not defined                                                                                                                                                                                                                                                no-undef
+   934:6    warning  React Hook useEffect has a missing dependency: 'setShowDatePicker'. Either include it or remove the dependency array                                                                                                                                                                      react-hooks/exhaustive-deps
+   951:6    warning  React Hook useEffect has a missing dependency: 'closeBookingModal'. Either include it or remove the dependency array                                                                                                                                                                      react-hooks/exhaustive-deps
+   979:9    error    'formatDateForAPI' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                          no-unused-vars
+   994:6    warning  React Hook useEffect has a missing dependency: 'fetchCalendarData'. Either include it or remove the dependency array                                                                                                                                                                      react-hooks/exhaustive-deps
+  1000:7    error    'setBookingStep' is not defined                                                                                                                                                                                                                                                           no-undef
+  1001:7    error    'fetchBookingServices' is not defined                                                                                                                                                                                                                                                     no-undef
+  1002:7    error    'fetchExistingClients' is not defined                                                                                                                                                                                                                                                     no-undef
+  1004:6    warning  React Hook useEffect has unnecessary dependencies: 'fetchBookingServices' and 'fetchExistingClients'. Either exclude them or remove the dependency array. Outer scope values like 'fetchBookingServices' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+  1004:28   error    'fetchBookingServices' is not defined                                                                                                                                                                                                                                                     no-undef
+  1004:50   error    'fetchExistingClients' is not defined                                                                                                                                                                                                                                                     no-undef
+  1008:55   error    'existingClients' is not defined                                                                                                                                                                                                                                                          no-undef
+  1009:9    error    'existingClients' is not defined                                                                                                                                                                                                                                                          no-undef
+  1010:41   error    'existingClients' is not defined                                                                                                                                                                                                                                                          no-undef
+  1012:6    warning  React Hook useEffect has an unnecessary dependency: 'existingClients'. Either exclude it or remove the dependency array. Outer scope values like 'existingClients' aren't valid dependencies because mutating them doesn't re-render the component                                        react-hooks/exhaustive-deps
+  1012:7    error    'existingClients' is not defined                                                                                                                                                                                                                                                          no-undef
+  1022:10   error    'currentTime' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                               no-unused-vars
+  1055:6    warning  React Hook useEffect has a missing dependency: 'updateCurrentTimeLine'. Either include it or remove the dependency array                                                                                                                                                                  react-hooks/exhaustive-deps
+  1076:13   error    'slotKey' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                   no-unused-vars
+  1217:26   error    'getDatePickerCalendarDays' is not defined                                                                                                                                                                                                                                                no-undef
+  1278:26   error    'getWeeksInMonth' is not defined                                                                                                                                                                                                                                                          no-undef
+  1340:26   error    'getMonthsInYear' is not defined                                                                                                                                                                                                                                                          no-undef
+  1429:31   error    'hasShift' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                  no-unused-vars
+  1591:32   error    'setIsNewAppointment' is not defined                                                                                                                                                                                                                                                      no-undef
+  1793:20   error    'selectedService' is not defined                                                                                                                                                                                                                                                          no-undef
+  1794:58   error    'selectedProfessional' is not defined                                                                                                                                                                                                                                                     no-undef
+  1795:46   error    'selectedTimeSlot' is not defined                                                                                                                                                                                                                                                         no-undef
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/ServiceMenu.jsx
+   27:10  error    'searchLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                 no-unused-vars
+   44:9   error    'openAddMenu' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                   no-unused-vars
+   53:9   error    'openExportMenu' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                no-unused-vars
+  437:9   error    'deleteCategory' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                no-unused-vars
+  772:6   warning  React Hook useEffect has a missing dependency: 'searchServices'. Either include it or remove the dependency array                             react-hooks/exhaustive-deps
+  793:6   warning  React Hook useEffect has missing dependencies: 'categories.length' and 'fetchCategories'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  920:23  error    'data' is defined but never used                                                                                                              no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Sheduledshifts.jsx
+   327:26  error  'setSuccessMessage' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+   865:11  error  'handleCalendarMonthChange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   879:12  error  'showAdd' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+   879:21  error  'setShowAdd' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+   880:12  error  'showDatePicker' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   884:12  error  'selectedYear' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u               no-unused-vars
+   885:12  error  'selectedMonth' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   982:25  error  'data' is defined but never used                                                                           no-unused-vars
+  1021:11  error  'transform' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                  no-unused-vars
+  1143:11  error  'handleDateSelect' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  1149:11  error  'isCurrentWeek' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Signuppage.jsx
+   4:8   error  'axios' is defined but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  18:10  error  'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  19:10  error  'error' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/Teammembers.jsx
+    1:38  error  'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u               no-unused-vars
+   23:12  error  'copySuccess' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  372:12  error  'showPassword' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  372:26  error  'setShowPassword' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/TimeSheets.jsx
+    1:51  error  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  274:10  error  'allEmployees' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/TopNavBar.jsx
+  204:6  warning  React Hook useMemo has an unnecessary dependency: 'fetchAppointments'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/test.jsx
+  138:3   error    'selectedDate' is defined but never used                                                                                                              no-unused-vars
+  160:6   warning  React Hook useEffect has a missing dependency: 'fetchServices'. Either include it or remove the dependency array                                      react-hooks/exhaustive-deps
+  291:6   warning  React Hook useEffect has missing dependencies: 'fetchBookingServices' and 'fetchExistingClients'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  303:6   warning  React Hook useEffect has a missing dependency: 'fetchBookingTimeSlots'. Either include it or remove the dependency array                              react-hooks/exhaustive-deps
+  908:10  error    'isMobileView' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                          no-unused-vars
+  909:10  error    'activeMobileStaffIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                no-unused-vars
+  909:34  error    'setActiveMobileStaffIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                             no-unused-vars
+  916:10  error    'waitlistVisible' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                       no-unused-vars
+  916:27  error    'setWaitlistVisible' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                    no-unused-vars
+  925:10  error    'waitlistBookings' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                      no-unused-vars
+  926:10  error    'activeWaitlistTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                     no-unused-vars
+  926:29  error    'setActiveWaitlistTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+  929:9   error    'tooltipRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                            no-unused-vars
+  930:9   error    'waitlistRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                           no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Clientsidepage/test_backup.jsx
+  138:3   error    'selectedDate' is defined but never used                                                                                                              no-unused-vars
+  160:6   warning  React Hook useEffect has a missing dependency: 'fetchServices'. Either include it or remove the dependency array                                      react-hooks/exhaustive-deps
+  291:6   warning  React Hook useEffect has missing dependencies: 'fetchBookingServices' and 'fetchExistingClients'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  303:6   warning  React Hook useEffect has a missing dependency: 'fetchBookingTimeSlots'. Either include it or remove the dependency array                              react-hooks/exhaustive-deps
+  908:10  error    'isMobileView' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                          no-unused-vars
+  909:10  error    'activeMobileStaffIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                no-unused-vars
+  909:34  error    'setActiveMobileStaffIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                             no-unused-vars
+  916:10  error    'waitlistVisible' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                       no-unused-vars
+  916:27  error    'setWaitlistVisible' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                    no-unused-vars
+  925:10  error    'waitlistBookings' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                      no-unused-vars
+  926:10  error    'activeWaitlistTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                     no-unused-vars
+  926:29  error    'setActiveWaitlistTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+  929:9   error    'tooltipRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                            no-unused-vars
+  930:9   error    'waitlistRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                           no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Service/Api.jsx
+   25:30  error  Promise executor functions should not be async  no-async-promise-executor
+  110:14  error  'e' is defined but never used                   no-unused-vars
+  110:17  error  Empty block statement                           no-empty
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/Service/api/reportsApi.js
+  135:42  error  'all' is assigned a value but never used     no-unused-vars
+  135:57  error  'params' is assigned a value but never used  no-unused-vars
+  150:34  error  'all' is assigned a value but never used     no-unused-vars
+  150:49  error  'params' is assigned a value but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/components/AdminMembershipChecker.jsx
+  28:6  warning  React Hook useEffect has a missing dependency: 'fetchClientMemberships'. Either include it or remove the dependency array     react-hooks/exhaustive-deps
+  35:6  warning  React Hook useEffect has a missing dependency: 'filterEligibleMemberships'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/components/BookingModal.jsx
+   11:3   error  'isAddingAdditionalService' is defined but never used  no-unused-vars
+   13:3   error  'currentAppointmentIndex' is defined but never used    no-unused-vars
+  131:40  error  'selectedService' is not defined                       no-undef
+  131:59  error  'selectedService' is not defined                       no-undef
+  211:43  error  'selectedService' is not defined                       no-undef
+  248:18  error  'availableTimeSlots' is not defined                    no-undef
+  250:21  error  'setSelectedTimeSlot' is not defined                   no-undef
+  266:24  error  'selectedService' is not defined                       no-undef
+  281:18  error  'selectedService' is not defined                       no-undef
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/components/ClientInformation.jsx
+  14:9  error  'isVip' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/components/ProfessionalList .jsx
+  17:22   error  'styles' is not defined                                                                no-undef
+  19:25   error  'styles' is not defined                                                                no-undef
+  28:25   error  'styles' is not defined                                                                no-undef
+  40:31   error  'styles' is not defined                                                                no-undef
+  40:122  error  'styles' is not defined                                                                no-undef
+  40:160  error  'styles' is not defined                                                                no-undef
+  46:25   error  'slots' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  53:33   error  'styles' is not defined                                                                no-undef
+  55:50   error  'styles' is not defined                                                                no-undef
+  55:77   error  'styles' is not defined                                                                no-undef
+  59:33   error  'styles' is not defined                                                                no-undef
+  67:23   error  'styles' is not defined                                                                no-undef
+  68:28   error  'styles' is not defined                                                                no-undef
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/components/StaffColumn.jsx
+   55:6    warning  React Hook useMemo has a missing dependency: 'employeeId'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   98:132  error    'overlapEndsAtSlotEnd' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+  131:17   error    'toMinutes' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/shiftUtils.js
+  1:21  error  'minutesToLabel' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/useBookingSession.js
+  2:10  error  'toMinutes' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/calendar/useDatePickerState.js
+  2:10  error  'minutesToLabel' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/components/Calendar/Calendar.jsx
+   27:24  error    'removeAppointmentFromSession' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                            no-unused-vars
+   80:5   error    'selectDate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                     no-unused-vars
+  107:5   error    'getMembershipDiscount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                          no-unused-vars
+  108:5   error    'hasMembershipApplied' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                           no-unused-vars
+  124:5   error    'removeAppliedGiftCard' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                          no-unused-vars
+  127:5   error    'getGiftCardDetails' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                             no-unused-vars
+  133:5   error    'getGiftCardDiscount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                            no-unused-vars
+  134:5   error    'hasGiftCardApplied' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                             no-unused-vars
+  238:6   warning  React Hook useEffect has a missing dependency: 'selectedEmployeeIds.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  270:6   warning  React Hook useEffect has a missing dependency: 'clients'. Either include it or remove the dependency array                     react-hooks/exhaustive-deps
+  408:11  error    'dateKey' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                        no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/components/Calendar/Grid/StaffColumn.jsx
+  7:52  error  'getAppointmentColorByStatus' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/components/common/FilterSection.jsx
+   9:3  error  'setDateRange' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  63:9  error  'handleDateRangeChange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  83:9  error  'handleExportClick' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/components/reports/ActionRow.jsx
+  6:3  error  'searchValue' is defined but never used                 no-unused-vars
+  7:3  error  'onSearchChange' is defined but never used              no-unused-vars
+  8:3  error  'searchPlaceholder' is assigned a value but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/components/ui/MonthPicker.jsx
+   12:3  error  'showPresets' is assigned a value but never used                                                   no-unused-vars
+   29:9  error  'presets' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+   82:9  error  'handlePresetClick' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  126:9  error  'isSameDay' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/components/BookingFlow/steps/ProfessionalSelection.jsx
+  31:22  error    Unsafe usage of optional chaining. If it short-circuits with 'undefined' the evaluation will throw TypeError   no-unsafe-optional-chaining
+  36:6   warning  React Hook useMemo has an unnecessary dependency: 'service'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/components/CalendarGrid/MonthView.jsx
+  13:35  error  'onDayClick' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/components/CalendarGrid/WeekView.jsx
+  15:3  error  'currentDate' is defined but never used         no-unused-vars
+  20:3  error  'onAppointmentClick' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/components/CalendarHeader/CalendarHeader.jsx
+   46:3   error  'hasShiftOnDate' is defined but never used                                                     no-unused-vars
+  156:31  error  'isCurrentView' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/components/CalendarToolbar/CalendarToolbar.jsx
+  22:3  error  'allSelected' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/hooks/useAvailability.js
+  62:34  error  'require' is not defined  no-undef
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/hooks/useDateNavigation.js
+   90:9  error  Unexpected lexical declaration in case block  no-case-declarations
+   91:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  103:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  104:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/utils/availability/conflictDetection.js
+  65:45  error  'require' is not defined  no-undef
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/utils/legacy-compat.js
+   14:3   error  'formatTime24Hour' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+   15:3   error  'formatDuration' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   77:27  error  'emp' is defined but never used                                                           no-unused-vars
+  123:3   error  'sessionAppointments' is defined but never used                                           no-unused-vars
+  145:9   error  'firstDay' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/utils/slots/slotFiltering.js
+  49:53  error  'require' is not defined  no-undef
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/utils/slots/slotGeneration.js
+  44:37  error  'require' is not defined  no-undef
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/hooks/useReportExport.js
+  13:40  error    'require' is not defined                                                                                    no-undef
+  17:12  error    'e' is defined but never used                                                                               no-unused-vars
+  54:6   warning  React Hook useCallback has a missing dependency: 'toast'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  89:6   warning  React Hook useCallback has a missing dependency: 'toast'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/hooks/useReports.js
+  65:16  error  'err' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/pages/reports/FinanceSummary.jsx
+  213:51  error  'sectionIndex' is defined but never used  no-unused-vars
+  221:49  error  'rowIndex' is defined but never used      no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/pages/reports/GenericReportPage.jsx
+  12:30  error  'useReportClients' is defined but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+  25:7   error  'filterByDateRange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  53:3   error  'searchPlaceholder' is assigned a value but never used                                             no-unused-vars
+  63:18  error  'setSearch' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+  72:53  error  'clearExportError' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/pages/reports/reportConfigs.jsx
+  12:7   error  'mockDataFetchers' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  13:24  error  'dateRange' is defined but never used                                                             no-unused-vars
+  42:31  error  'dateRange' is defined but never used                                                             no-unused-vars
+  64:24  error  'dateRange' is defined but never used                                                             no-unused-vars
+  84:22  error  'dateRange' is defined but never used                                                             no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/states/Loading.jsx
+  4:20  error  'text' is assigned a value but never used     no-unused-vars
+  4:41  error  'overlay' is assigned a value but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/store/reports/hooks/useSalesSummary.js
+  26:10  error  'forceUpdate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/store/reports/slices/appointmentSummarySlice.js
+  217:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  227:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  238:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/store/reports/slices/salesSummarySlice.js
+  211:25  error  'state' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/store/slices/filtersSlice.js
+   30:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   39:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   48:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   57:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   58:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   66:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   67:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   75:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   76:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   77:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   85:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+   86:7   error  Unexpected lexical declaration in case block                               no-case-declarations
+  347:19  error  Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/store/thunks.js
+   10:10   error  'addAppointmentToSession' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  349:89   error  'date' is defined but never used                                                                no-unused-vars
+  349:99   error  'dispatch' is defined but never used                                                            no-unused-vars
+  361:121  error  'dispatch' is defined but never used                                                            no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/utils/invoiceGenerator.js
+  81:20  error  'data' is defined but never used  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/verification-checklist.js
+  41:10  error  'forceRealData' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/vite.config.js
+  29:11  error  'process' is not defined  no-undef
+
+✖ 285 problems (254 errors, 31 warnings)
+

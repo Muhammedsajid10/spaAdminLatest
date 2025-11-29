@@ -9,7 +9,7 @@ import LazyLoader from './components/LazyLoader';
 
 // Lazy-load heavy routes to reduce initial bundle size
 const DashboardPage = React.lazy(() => import('./Clientsidepage/HomePage'));
-const Scheduler = React.lazy(() => import('./Clientsidepage/Selectcalander'));
+const Scheduler = React.lazy(() => import('./features/calendar/components/Calendar'));
 const ClientsList = React.lazy(() => import('./Clientsidepage/Clientlist'));
 const DailySalesSummary = React.lazy(() => import('./Clientsidepage/Dailysalesss'));
 const SalesAppointments = React.lazy(() => import('./Clientsidepage/Appoint'));
