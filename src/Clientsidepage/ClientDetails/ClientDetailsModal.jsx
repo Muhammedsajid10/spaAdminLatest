@@ -25,7 +25,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [isAddAllergyOpen, setIsAddAllergyOpen] = useState(false);
-  const { client, stats, loading, error, updateClient } = useClientDetails(clientId);
+  const { client, stats, allBookings, bookings, sales, giftCards, reviews, memberships, loading, error, updateClient } = useClientDetails(clientId);
 
   if (!isOpen) return null;
 
@@ -166,10 +166,10 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                   </div>
                 )}
                 {activeTab === 'appointments' && (
-                  <ClientAppointmentsTab client={client} />
+                  <ClientAppointmentsTab client={client} bookings={allBookings} />
                 )}
                 {activeTab === 'sales' && (
-                  <ClientSalesTab client={client} />
+                  <ClientSalesTab client={client} sales={sales} />
                 )}
                 {activeTab === 'details' && (
                   <ClientInfoTab 
@@ -178,7 +178,11 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                   />
                 )}
                 {activeTab === 'items' && (
-                  <ClientItemsTab client={client} />
+                  <ClientItemsTab 
+                    client={client} 
+                    bookings={bookings}
+                    memberships={memberships}
+                  />
                 )}
                 {activeTab === 'notes' && (
                    <ClientNotesTab 
@@ -193,10 +197,10 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                    />
                 )}
                 {activeTab === 'giftcards' && (
-                   <ClientGiftCardsTab client={client} />
+                   <ClientGiftCardsTab client={client} giftCards={giftCards} />
                 )}
                 {activeTab === 'reviews' && (
-                   <ClientReviewsTab client={client} />
+                   <ClientReviewsTab client={client} reviews={reviews} />
                 )}
                 {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'items' && activeTab !== 'notes' && activeTab !== 'allergy' && activeTab !== 'giftcards' && activeTab !== 'reviews' && (
                   <div className="tab-scrollable-content">

@@ -9,6 +9,12 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllerg
 
   if (!client) return null;
 
+  // Extract client data with fallbacks
+  const clientName = client.fullName || `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.name || 'Unknown';
+  const clientPhone = client.phone || client.mobile || '';
+  const clientEmail = client.email || '';
+  const clientInitial = client.initial || (client.firstName ? client.firstName.charAt(0).toUpperCase() : '?');
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -41,12 +47,12 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllerg
       <div className="sidebar-profile-header">
         <div 
           className="sidebar-avatar" 
-          style={{ backgroundColor: client.color || '#ccc' }}
+          style={{ backgroundColor: client.color || '#6366f1' }}
         >
-          {client.initial || '?'}
+          {clientInitial}
         </div>
-        <h3 className="sidebar-name">{client.name}</h3>
-        <p className="sidebar-phone">{client.mobile}</p>
+        <h3 className="sidebar-name">{clientName}</h3>
+        <p className="sidebar-phone">{clientPhone}</p>
       </div>
 
       {/* Actions */}
@@ -95,7 +101,7 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllerg
               className="action-item delete"
               onClick={() => {
                 setIsActionsOpen(false);
-                if (onDelete) onDelete(client.id);
+                if (onDelete) onDelete(client._id || client.id);
               }}
             >
               <Trash2 size={16} />
@@ -110,13 +116,19 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllerg
       {/* Additional Info List */}
       <div className="sidebar-info-list">
         <div className="info-item">
-          <PiGenderNeuter size={20} className="info-icon" />
-          <span>Add pronouns</span>
+          {client.gender === 'male' ? (
+            <PiGenderMale size={20} className="info-icon" />
+          ) : client.gender === 'female' ? (
+            <PiGenderFemale size={20} className="info-icon" />
+          ) : (
+            <PiGenderNeuter size={20} className="info-icon" />
+          )}
+          <span>{client.pronouns || client.gender || 'Add pronouns'}</span>
         </div>
         
         <div className="info-item">
           <Calendar size={20} className="info-icon" />
-          <span>Add date of birth</span>
+          <span>{client.dob ? formatDate(client.dob) : 'Add date of birth'}</span>
         </div>
 
         <div className="info-item" style={{ cursor: 'default' }}>

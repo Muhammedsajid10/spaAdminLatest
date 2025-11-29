@@ -10000,30 +10000,277 @@
   text-align: center;
 }
 
-/* --- Two Column Layout for Payment Step --- */
-.booking-modal.final-step .payment-step-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 16px;
+/* ===== COMPACT STYLES FOR PAYMENT STEP ===== */
+
+/* Compact Appointments Summary */
+.multiple-appointments-summary.compact {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
-.booking-modal.final-step .payment-left-column {
+.multiple-appointments-summary.compact h4 {
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.multiple-appointments-summary.compact .appointments-list {
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.multiple-appointments-summary.compact .appointment-summary-item {
+  padding: 8px 10px;
+  min-height: auto;
+}
+
+.multiple-appointments-summary.compact .appointment-number {
+  width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+}
+
+.multiple-appointments-summary.compact .service-name {
+  font-size: 0.8125rem;
+  margin-bottom: 2px;
+}
+
+.multiple-appointments-summary.compact .appointment-meta {
+  font-size: 0.75rem;
+}
+
+.multiple-appointments-summary.compact .remove-appointment-btn {
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+}
+
+.session-totals.compact {
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.session-totals.compact .total-item {
+  padding: 6px 0;
+  font-size: 0.8125rem;
+}
+
+.session-totals.compact .total-price {
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+/* Compact Client Summary */
+.client-summary.compact {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.client-summary.compact h4 {
+  font-size: 0.875rem;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.client-summary.compact .summary-item {
+  padding: 5px 0;
+  font-size: 0.8125rem;
+}
+
+/* Compact Gift Card Section */
+.booking-modal-form.gift-card-compact {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border-radius: 8px;
+  border: 1px solid #fde68a;
+}
+
+.booking-modal-form.gift-card-compact h4 {
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+
+.available-gift-cards-section.compact {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.available-gift-cards-list.compact {
+  gap: 6px;
+  max-height: 120px;
+  padding: 0;
+}
+
+.gift-card-item.compact {
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.gift-card-icon.compact {
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
+  font-size: 18px;
+  background: transparent;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
 }
 
-.booking-modal.final-step .payment-right-column {
+.gift-card-info.compact {
   display: flex;
-  flex-direction: column;
   gap: 12px;
+  align-items: center;
 }
 
-@media (max-width: 900px) {
-  .booking-modal.final-step .payment-step-grid {
-    grid-template-columns: 1fr;
-  }
+.gift-card-info.compact .gift-card-code {
+  font-size: 0.8125rem;
+  margin-bottom: 0;
+  font-weight: 600;
+}
+
+.gift-card-info.compact .gift-card-balance {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #059669;
+}
+
+.gift-card-select-btn.compact {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  background: #1f2937;
+  color: white;
+  border: none;
+  font-weight: 500;
+}
+
+.gift-card-item.compact.selected .gift-card-select-btn.compact {
+  background: #059669;
+}
+
+.applied-gift-card-section.compact {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.applied-gift-card-info.compact {
+  padding: 8px 10px;
+  background: white;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.applied-gift-card-info.compact .gift-card-details {
+  flex: 1;
+}
+
+.applied-gift-card-info.compact .gift-card-code {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.applied-gift-card-info.compact .gift-card-value {
+  font-size: 0.75rem;
+  color: #059669;
+  font-weight: 500;
+}
+
+.remove-gift-card-btn.compact {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 16px;
+}
+
+/* Compact Payment Summary */
+.booking-modal-form.payment-summary-compact {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.payment-summary-box.compact {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.payment-summary-box.compact .summary-row {
+  padding: 6px 0;
+  font-size: 0.8125rem;
+}
+
+.payment-summary-box.compact .summary-row.total {
+  font-size: 0.9375rem;
+  padding-top: 8px;
+  margin-top: 6px;
+}
+
+/* Compact Payment Method */
+.payment-method-section.compact {
+  margin-top: 12px;
+}
+
+.payment-method-section.compact h4 {
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.payment-method-grid.compact {
+  display: flex;
+  gap: 8px;
+}
+
+.payment-method-tile.compact {
+  flex: 1;
+  padding: 10px;
+  font-size: 0.8125rem;
+  border-radius: 6px;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-method-tile.compact:hover {
+  border-color: #94a3b8;
+}
+
+.payment-method-tile.compact.selected {
+  background: #1f2937;
+  color: white;
+  border-color: #1f2937;
+}
+
+.full-payment-message.compact {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.full-payment-message.compact .success-message {
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  border-radius: 6px;
+  text-align: center;
 }
 
 /* ========================================

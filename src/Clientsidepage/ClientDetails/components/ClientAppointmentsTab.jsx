@@ -1,39 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Calendar } from 'lucide-react';
 import './ClientAppointmentsTab.css';
 
-const MOCK_APPOINTMENTS = [
-  {
-    id: 1,
-    status: 'Completed',
-    date: 'Thu 27 Nov 17:00',
-    location: 'Allora Spa and Massage Centre Dubai',
-    services: [
-      { id: 1, name: 'Relaxing Massage', duration: '1h', staff: 'margirita Balute', price: 200 },
-      { id: 2, name: 'Relaxing Massage', duration: '1h', staff: 'sarita Lamsal', price: 200 }
-    ]
-  },
-  {
-    id: 2,
-    status: 'Booked',
-    date: 'Fri 28 Nov 10:00',
-    location: 'Allora Spa and Massage Centre Dubai',
-    services: [
-      { id: 3, name: 'Deep Tissue Massage', duration: '1h', staff: 'John Doe', price: 250 }
-    ]
-  },
-  {
-    id: 3,
-    status: 'Canceled',
-    date: 'Wed 26 Nov 14:00',
-    location: 'Allora Spa and Massage Centre Dubai',
-    services: [
-      { id: 4, name: 'Facial', duration: '45m', staff: 'Jane Smith', price: 150 }
-    ]
-  }
-];
-
-const ClientAppointmentsTab = ({ client }) => {
+const ClientAppointmentsTab = ({ client, bookings = [] }) => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -63,10 +32,54 @@ const ClientAppointmentsTab = ({ client }) => {
     setIsMoreOpen(false);
   };
 
-  const filteredAppointments = MOCK_APPOINTMENTS.filter(appt => {
-    if (filterStatus === 'All') return true;
-    return appt.status.toLowerCase() === filterStatus.toLowerCase();
-  });
+  // Format bookings into appointments structure
+  const formattedAppointments = useMemo(() => {
+    return bookings.map(booking => {
+      const date = booking.appointmentDate 
+        ? new Date(booking.appointmentDate).toLocaleString('en-GB', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          }).replace(',', '')
+        : '';
+
+      const services = (booking.services || []).map((svc, index) => {
+        const employeeName = svc.employee?.user 
+          ? `${svc.employee.user.firstName || ''} ${svc.employee.user.lastName || ''}`.trim()
+          : (svc.employee?.firstName && svc.employee?.lastName 
+            ? `${svc.employee.firstName} ${svc.employee.lastName}`.trim()
+            : 'Staff TBD');
+
+        return {
+          id: svc._id || index,
+          name: svc.service?.name || 'Service',
+          duration: `${svc.duration || 60}min`,
+          staff: employeeName,
+          price: svc.price || 0
+        };
+      });
+
+      return {
+        id: booking._id,
+        bookingNumber: booking.bookingNumber,
+        status: booking.status || 'booked',
+        date: date,
+        location: 'Allora Spa Dubai',
+        services: services,
+        totalAmount: booking.finalAmount || booking.totalAmount || 0
+      };
+    });
+  }, [bookings]);
+
+  const filteredAppointments = useMemo(() => {
+    return formattedAppointments.filter(appt => {
+      if (filterStatus === 'All') return true;
+      return appt.status.toLowerCase() === filterStatus.toLowerCase();
+    });
+  }, [formattedAppointments, filterStatus]);
 
   const isMoreActive = moreOptions.includes(filterStatus);
 
@@ -113,9 +126,6 @@ const ClientAppointmentsTab = ({ client }) => {
         </div>
       </div>
 
-      {/* Month Divider (Mock) */}
-      <div className="month-divider">November</div>
-
       {/* Appointments List */}
       <div className="appointments-list">
         {filteredAppointments.length > 0 ? (
@@ -151,8 +161,8 @@ const ClientAppointmentsTab = ({ client }) => {
                 </div>
 
                 <div className="appointment-actions">
-                  <button className="btn-card-action">View sale</button>
-                  <button className="btn-card-action">Rebook</button>
+                  <button className="btn-card-action" onClick={() => console.log('View sale:', appt.bookingNumber)}>View sale</button>
+                  <button className="btn-card-action" onClick={() => console.log('Rebook:', appt.id)}>Rebook</button>
                 </div>
               </div>
             </div>

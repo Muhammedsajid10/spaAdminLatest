@@ -7,6 +7,23 @@ const ClientInfoTab = ({ client, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({});
 
+  console.log('📋 ClientInfoTab received:', {
+    clientProp: client,
+    firstName: client?.firstName,
+    lastName: client?.lastName,
+    email: client?.email,
+    phone: client?.phone
+  });
+
+  // Safety check - if client is null/undefined, show loading or error
+  if (!client) {
+    return (
+      <div className="client-info-container">
+        <p>Loading client data...</p>
+      </div>
+    );
+  }
+
   // Initialize form data when entering edit mode
   const handleEditClick = () => {
     setFormData({
@@ -131,6 +148,15 @@ const ClientInfoTab = ({ client, onUpdate }) => {
       <div className="client-info-section">
         <h3 className="section-title">Profile</h3>
         <div className="info-grid">
+          {console.log('🔍 Rendering fields:', {
+            firstName: client.firstName,
+            lastName: client.lastName,
+            email: client.email,
+            phone: client.phone,
+            dob: client.dob,
+            gender: client.gender,
+            createdAt: client.createdAt
+          })}
           {renderField('First name', 'firstName', client.firstName)}
           {renderField('Last name', 'lastName', client.lastName)}
           {renderField('Email', 'email', client.email, 'email')}

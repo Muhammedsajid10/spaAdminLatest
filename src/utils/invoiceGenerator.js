@@ -40,15 +40,67 @@ export const generateInvoicePDF = (transaction) => {
 
   // --- Items Table ---
   // Prepare data for the table
-  // Assuming transaction has items or we construct it from service details
-  const items = transaction.items || [
-    {
+  console.log('📄 Generating PDF for transaction:', {
+    hasServices: !!transaction.services,
+    servicesLength: transaction.services?.length,
+    employeeName: transaction.employeeName,
+    serviceName: transaction.serviceName,
+    fullTransaction: transaction
+  });
+  
+  const items = [];
+  
+  if (transaction.services && transaction.services.length > 0) {
+    // We have full booking services data
+    transaction.services.forEach((svc, idx) => {
+      const service = svc.service || {};
+      const employee = svc.employee || {};
+      const serviceName = service.name || transaction.serviceName || "Service";
+      
+      console.log(`🔍 Service ${idx}:`, {
+        service: service,
+        employee: employee,
+        hasFirstName: !!employee.firstName,
+        hasLastName: !!employee.lastName,
+        hasUser: !!employee.user
+      });
+      
+      // Employee data can be in employee.user (populated) or directly on employee
+      const employeeUser = employee.user || employee;
+      const employeeName = employeeUser.firstName && employeeUser.lastName
+        ? `${employeeUser.firstName} ${employeeUser.lastName}`
+        : (employeeUser.firstName || employeeUser.lastName || employee.firstName || employee.lastName || transaction.employeeName || '');
+      
+      console.log(`👤 Employee name result: "${employeeName}"`);
+      
+      // Get the date for the service booking
+      const serviceDate = svc.startTime || transaction.date || transaction.createdAt;
+      const formattedDate = serviceDate ? new Date(serviceDate).toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : '';
+      
+      items.push({
+        name: serviceName,
+        description: `${formattedDate ? formattedDate + ' ' : ''}${employeeName ? 'with ' + employeeName : ''}`.trim(),
+        price: svc.price || service.price || transaction.amount || 0,
+        discount: transaction.discount || 0
+      });
+    });
+  } else {
+    // Fallback to transaction level data
+    console.log('⚠️ No services array, using transaction level data');
+    const serviceDate = transaction.date || transaction.createdAt;
+    const formattedDate = serviceDate ? new Date(serviceDate).toLocaleString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }) : '';
+    
+    items.push({
       name: transaction.serviceName || "Service",
-      description: transaction.description || "",
+      description: `${formattedDate ? formattedDate + ' ' : ''}${transaction.employeeName ? 'with ' + transaction.employeeName : ''}`.trim() || transaction.description || "",
       price: transaction.amount || 0,
       discount: transaction.discount || 0
-    }
-  ];
+    });
+  }
 
   const tableBody = items.map((item, index) => {
     const originalPrice = parseFloat(item.price || 0);

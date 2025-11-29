@@ -15,7 +15,12 @@ const useClientDetails = (clientId) => {
     noShowCount: 0,
     rating: '-'
   });
-  const [sales, setSales] = useState([]); // New state for sales list
+  const [allBookings, setAllBookings] = useState([]); // All appointments (all statuses)
+  const [bookings, setBookings] = useState([]); // Filtered bookings for Items tab
+  const [memberships, setMemberships] = useState([]); // Memberships list
+  const [sales, setSales] = useState([]); // Sales/payments list
+  const [giftCards, setGiftCards] = useState([]); // Gift cards list
+  const [reviews, setReviews] = useState([]); // Reviews list
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,11 +31,27 @@ const useClientDetails = (clientId) => {
     setError(null);
     
     try {
-      const [clientData, statsData, salesData] = await Promise.all([
+      const [clientData, statsData, bookingsData, allAppointmentsData, salesData, giftCardsData, reviewsData, membershipsData] = await Promise.all([
         clientService.getClientDetails(clientId),
         clientService.getClientStats(clientId),
-        clientService.getClientSales(clientId)
+        clientService.getClientBookings(clientId), // Filtered bookings for Items tab
+        clientService.getAllClientBookings(clientId), // All bookings for Appointments tab
+        clientService.getClientSales(clientId),
+        clientService.getClientGiftCards(clientId),
+        clientService.getClientReviews(clientId),
+        clientService.getClientMemberships(clientId)
       ]);
+
+      console.log('📦 Hook received data:', {
+        clientData,
+        statsData,
+        bookingsData,
+        allAppointmentsData,
+        salesData,
+        giftCardsData,
+        reviewsData,
+        membershipsData
+      });
 
       setClient(clientData);
       if (statsData) {
@@ -42,9 +63,45 @@ const useClientDetails = (clientId) => {
           rating: statsData.rating || '-'
         });
       }
-      if (salesData) {
-        setSales(salesData);
+      if (bookingsData && Array.isArray(bookingsData)) {
+        // Backend already filters for: confirmed, noshow, complete, started
+        setBookings(bookingsData);
+      } else {
+        setBookings([]);
       }
+      if (allAppointmentsData && Array.isArray(allAppointmentsData)) {
+        setAllBookings(allAppointmentsData);
+      } else {
+        setAllBookings([]);
+      }
+      if (salesData && Array.isArray(salesData)) {
+        setSales(salesData);
+      } else {
+        setSales([]);
+      }
+      if (giftCardsData && Array.isArray(giftCardsData)) {
+        setGiftCards(giftCardsData);
+      } else {
+        setGiftCards([]);
+      }
+      if (reviewsData && Array.isArray(reviewsData)) {
+        setReviews(reviewsData);
+      } else {
+        setReviews([]);
+      }
+      if (membershipsData) {
+        setMemberships(membershipsData);
+      }
+      
+      console.log('✅ Hook state updated:', {
+        client: clientData,
+        allBookings: allAppointmentsData?.length,
+        bookings: bookingsData?.length,
+        sales: salesData?.length,
+        giftCards: giftCardsData?.length,
+        reviews: reviewsData?.length,
+        memberships: membershipsData?.length
+      });
     } catch (err) {
       setError(err.message || 'Failed to fetch client details');
       console.error(err);
@@ -70,7 +127,12 @@ const useClientDetails = (clientId) => {
   return {
     client,
     stats,
-    sales, // Return sales data
+    allBookings, // All appointments for Appointments tab
+    bookings, // Filtered bookings for Items tab
+    sales, // Sales/payments data
+    giftCards, // Gift cards data
+    reviews, // Reviews data
+    memberships, // Memberships data
     loading,
     error,
     refetch: fetchClientData,

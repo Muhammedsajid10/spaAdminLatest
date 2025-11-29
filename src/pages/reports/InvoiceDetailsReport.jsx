@@ -10,6 +10,7 @@ const InvoiceDetailsReport = () => {
     { key: 'date', label: 'Date', sortable: true, render: (row) => new Date(row.date).toLocaleDateString() },
     { key: 'clientName', label: 'Client', sortable: true },
     { key: 'serviceName', label: 'Service', sortable: true },
+    { key: 'employeeName', label: 'Professional', sortable: true, render: (row) => row.employeeName || '-' },
     { key: 'amount', label: 'Amount', sortable: true, render: (row) => `AED ${parseFloat(row.amount || 0).toFixed(2)}` },
     { key: 'status', label: 'Status', sortable: true, render: (row) => (
       <span style={{ 
@@ -46,17 +47,66 @@ const InvoiceDetailsReport = () => {
       // Filter for completed transactions only
       const completedTransactions = transactions.filter(t => t.status === 'completed');
       
-      return completedTransactions.map(t => ({
-        ...t,
-        // Ensure fields map correctly for the report and PDF
-        invoiceNumber: t.invoiceNumber || t._id?.slice(-6).toUpperCase(),
-        clientName: t.clientName || t.user?.fullName || 'Guest',
-        clientPhone: t.clientPhone || t.user?.phoneNumber || '',
-        serviceName: t.serviceName || t.items?.[0]?.name || 'Service',
-        amount: t.amount || t.totalAmount || 0,
-        discount: t.discount || 0,
-        paymentMethod: t.paymentMethod || 'Card'
-      }));
+      return completedTransactions.map(t => {
+        // Extract booking details
+        const booking = t.booking || {};
+        const services = booking.services || [];
+        const firstService = services[0] || {};
+        
+        console.log('📊 Processing transaction:', {
+          transactionId: t._id,
+          hasBooking: !!booking,
+          servicesCount: services.length,
+          firstService: firstService
+        });
+        
+        // Get client details from booking or user
+        const client = booking.client || t.user || {};
+        const clientName = client.firstName && client.lastName 
+          ? `${client.firstName} ${client.lastName}`
+          : (client.firstName || client.lastName || t.user?.firstName || 'Walk-in Customer');
+        const clientPhone = client.phone || t.user?.phone || '';
+        
+        // Get service details
+        const service = firstService.service || {};
+        const serviceName = service.name || 'Service';
+        
+        // Get employee/professional details
+        const employee = firstService.employee || {};
+        // Employee data can be in employee.user (populated) or directly on employee
+        const employeeUser = employee.user || employee;
+        const employeeName = employeeUser.firstName && employeeUser.lastName
+          ? `${employeeUser.firstName} ${employeeUser.lastName}`
+          : (employeeUser.firstName || employeeUser.lastName || employee.firstName || employee.lastName || '');
+        
+        console.log('👤 Extracted employee data:', {
+          employee: employee,
+          employeeUser: employeeUser,
+          employeeName: employeeName,
+          hasFirstName: !!employeeUser.firstName,
+          hasLastName: !!employeeUser.lastName
+        });
+        
+        // Get proper date from booking or transaction
+        const transactionDate = booking.appointmentDate || t.createdAt || new Date();
+        
+        return {
+          ...t,
+          // Ensure fields map correctly for the report and PDF
+          date: transactionDate,
+          invoiceNumber: t.bookingNumber || booking.bookingNumber || t._id?.slice(-6).toUpperCase(),
+          clientName: clientName,
+          clientPhone: clientPhone,
+          serviceName: serviceName,
+          employeeName: employeeName,
+          amount: t.amount || t.totalAmount || 0,
+          discount: t.discount || 0,
+          paymentMethod: t.paymentMethod || 'card',
+          // Pass full booking data for PDF generation
+          booking: booking,
+          services: services
+        };
+      });
     } catch (error) {
       console.error("Error fetching invoice data:", error);
       throw error;

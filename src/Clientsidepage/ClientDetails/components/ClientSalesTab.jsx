@@ -1,39 +1,42 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tag } from 'lucide-react';
 import './ClientSalesTab.css';
 
-const MOCK_SALES = [
-  {
-    id: 1,
-    status: 'Paid',
-    date: '28 Nov 2025',
-    items: [
-      { name: 'Relaxing Massage', price: 200 },
-      { name: 'Relaxing Massage', price: 200 }
-    ],
-    total: 400
-  },
-  {
-    id: 2,
-    status: 'Draft',
-    date: '27 Nov 2025',
-    items: [
-      { name: 'Deep Tissue Massage', price: 250 }
-    ],
-    total: 250
-  },
-  {
-    id: 3,
-    status: 'Paid',
-    date: '25 Nov 2025',
-    items: [
-      { name: 'Facial', price: 150 }
-    ],
-    total: 150
-  }
-];
+const ClientSalesTab = ({ client, sales = [] }) => {
+  // Format sales data for display
+  const formattedSales = useMemo(() => {
+    return sales.map(payment => {
+      const date = payment.createdAt 
+        ? new Date(payment.createdAt).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          })
+        : '';
 
-const ClientSalesTab = ({ client }) => {
+      const items = [];
+      // Extract items from booking services
+      if (payment.booking?.services) {
+        payment.booking.services.forEach(svc => {
+          items.push({
+            name: svc.service?.name || 'Service',
+            price: svc.price || 0
+          });
+        });
+      }
+
+      return {
+        id: payment._id,
+        status: payment.paymentStatus || 'pending',
+        date: date,
+        items: items,
+        total: payment.finalAmount || payment.amount || 0,
+        paymentMethod: payment.paymentMethod,
+        bookingNumber: payment.booking?.bookingNumber
+      };
+    });
+  }, [sales]);
+
   return (
     <div className="sales-tab-container">
       <div className="sales-header">
@@ -42,8 +45,8 @@ const ClientSalesTab = ({ client }) => {
 
       {/* Sales List */}
       <div className="sales-list">
-        {MOCK_SALES.length > 0 ? (
-          MOCK_SALES.map(sale => (
+        {formattedSales.length > 0 ? (
+          formattedSales.map(sale => (
             <div key={sale.id} className="sales-card">
               <div className="timeline-icon">
                 <Tag size={16} />
@@ -53,9 +56,10 @@ const ClientSalesTab = ({ client }) => {
               <div className="sales-content">
                 <div className="sales-header-row">
                   <span className="sales-title-text">Sale</span>
+                  <span className={`sale-status ${sale.status.toLowerCase()}`}>{sale.status}</span>
                 </div>
                 <div className="sales-meta">
-                  {sale.date}
+                  {sale.date} {sale.paymentMethod && `• ${sale.paymentMethod}`}
                 </div>
 
                 <div className="sales-items">
@@ -76,7 +80,7 @@ const ClientSalesTab = ({ client }) => {
           ))
         ) : (
           <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
-            No sales found for this filter.
+            No sales found for this client.
           </div>
         )}
       </div>
