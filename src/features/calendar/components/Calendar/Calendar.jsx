@@ -6,7 +6,7 @@
 import React from 'react';
 import { useCalendar } from '../../hooks';
 import CalendarHeader from '../CalendarHeader/CalendarHeader';
-import CalendarToolbar from '../CalendarToolbar/CalendarToolbar';
+
 import CalendarGrid from '../CalendarGrid/CalendarGrid';
 import SessionSidebar from '../SessionSidebar/SessionSidebar';
 import BookingModal from '../BookingFlow/BookingModal';
@@ -36,17 +36,7 @@ const Calendar = ({ serviceDuration = 30 }) => {
         onViewChange={calendar.setViewMode}
       />
 
-      {/* Toolbar with employee filter and actions */}
-      <CalendarToolbar
-        employees={calendar.employees}
-        selectedEmployees={calendar.selectedEmployees}
-        searchQuery={calendar.searchQuery}
-        onSearchChange={calendar.setSearchQuery}
-        onToggleEmployee={calendar.toggleEmployee}
-        onSelectAll={calendar.selectAll}
-        onDeselectAll={calendar.deselectAll}
-        allSelected={calendar.allSelected}
-      />
+
 
       <div className={styles.calendarBody}>
         {/* Main calendar grid */}

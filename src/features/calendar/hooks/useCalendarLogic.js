@@ -1,11 +1,11 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
 import { Base_url } from '../../../Service/Base_url';
 import { fetchCalendarThunk } from '../../../store/thunks';
 import { setAppointments } from '../../../store/appointmentsSlice';
 import { clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction } from '../../../store/bookingSessionSlice';
-import { hasShiftOnDate, localDateKey } from '../../../calendar';
+import { localDateKey } from './home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/utils/date/index.js';
+import { hasShiftOnDate } from '../utils/availability';
 
 export const useCalendarLogic = (currentDate, currentView) => {
   const dispatch = useDispatch();

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { localDateKey, computeAppointmentLayout } from '../../calendar/dateUtils';
-import { hasShiftOnDate, getEmployeeShiftHours } from '../../calendar/shiftUtils';
-import { getAppointmentColorByStatus } from '../../calendar/uiUtils';
+import { localDateKey, computeAppointmentLayout } from '../../utils/date';
+import { hasShiftOnDate, getEmployeeShiftHours } from '../../utils/availability';
+import { AppointmentCard } from './AppointmentCard';
 
 export const StaffColumn = ({
   employee,
@@ -24,7 +24,7 @@ export const StaffColumn = ({
   const dayKey = localDateKey(currentDate);
   const hasShift = hasShiftOnDate(employee, currentDate);
   const shiftHours = getEmployeeShiftHours(employee, currentDate);
-  const hasValidShifts = shiftHours.length > 0;
+  const hasValidShifts = shiftHours && shiftHours.length > 0;
 
   const { appointmentBlocks, processedSlots } = useMemo(()=>{
     const employeeAppointments = appointments[employeeId] || {};
@@ -52,26 +52,11 @@ export const StaffColumn = ({
       });
     });
     return { appointmentBlocks, processedSlots: processed };
-  }, [appointments, employee.id, currentDate, timeSlots, timeSlotHeightPx, dayKey]);
+  }, [appointments, employeeId, currentDate, timeSlots, timeSlotHeightPx, dayKey]);
 
   return (
     <div key={employeeId} className={`staff-column ${!hasShift ? 'staff-absent' : ''} ${!hasValidShifts ? 'no-shifts' : ''}`}>
-      {!hideHeader && (
-        <div className="staff-header">
-          <div className="staff-avatar" style={{
-            backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
-            opacity: hasShift && hasValidShifts ? 1 : 0.5
-          }}>
-            {employee.avatar ?
-              <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{ opacity: hasShift && hasValidShifts ? 1 : 0.5 }} /> :
-              employee.name.charAt(0)
-            }
-          </div>
-          <div className="staff-info">
-            <div className="staff-name" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.name}</div>
-          </div>
-        </div>
-      )}
+
       <div className="time-slots-column" style={{ position: 'relative' }}>
   {timeSlots.map(slot=>{
           const slotKey = `${dayKey}_${slot}`;
@@ -195,17 +180,18 @@ export const StaffColumn = ({
           );
         })}
         {appointmentBlocks.map((block,i)=> (
-          <div key={`block-${i}`} className="appointment-block fresha-style" style={{ position:'absolute', top:`${block.topPx}px`, left:'4px', right:'4px', height:`${block.height}px`, backgroundColor: getAppointmentColorByStatus(block.appointment.status, block.appointment.color), borderRadius:'12px', display:'flex', flexDirection:'column', justifyContent:'center', padding:'8px 12px', boxShadow:'0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)', cursor:'pointer', zIndex:10, border:'2px solid rgba(255,255,255,0.2)', transition:'all 0.2s ease', overflow:'hidden'}}
-            onClick={()=>{ const details={ ...block.appointment, employeeId: employee.id, employeeName: employee.name, slotTime:block.startSlot, date:dayKey, slotKey:`${dayKey}_${block.startSlot}` }; setSelectedBookingForStatus(details); setShowBookingStatusModal(true); }}
-            onMouseEnter={(e)=> showBookingTooltipHandler(e,{ client:block.appointment.client, service:block.appointment.service, time:block.appointment.startTime, professional: employee.name, status:block.appointment.status||'Confirmed', notes:block.appointment.notes })}
-            onMouseLeave={hideBookingTooltip}>
-            <div className="appointment-client" style={{ fontWeight:700, color:'#fff', fontSize:14 }}>{block.appointment.client}</div>
-            <div className="appointment-service" style={{ color:'#fff', fontSize:13, opacity:0.95 }}>{block.appointment.service}</div>
-            <div className="appointment-time" style={{ fontSize:11, color:'rgba(255,255,255,0.8)', fontWeight:500 }}>{block.appointment.startTime} - {block.appointment.endTime}</div>
-          </div>
+          <AppointmentCard
+            key={`block-${i}`}
+            block={block}
+            employee={employee}
+            dayKey={dayKey}
+            setSelectedBookingForStatus={setSelectedBookingForStatus}
+            setShowBookingStatusModal={setShowBookingStatusModal}
+            showBookingTooltipHandler={showBookingTooltipHandler}
+            hideBookingTooltip={hideBookingTooltip}
+          />
         ))}
       </div>
     </div>
   );
 };
-

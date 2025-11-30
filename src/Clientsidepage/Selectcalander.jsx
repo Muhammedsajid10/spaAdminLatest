@@ -17,7 +17,9 @@ import { useCalendarView } from '../features/calendar/hooks/useCalendarView';
 import { useCalendarModals } from '../features/calendar/hooks/useCalendarModals';
 
 // Utils
-import { BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
+import { BookingTooltip } from '../features/calendar/components/shared/BookingTooltip';
+import { TimeHoverTooltip } from '../features/calendar/components/shared/TimeHoverTooltip';
+import { MoreAppointmentsDropdown } from '../features/calendar/components/shared/MoreAppointmentsDropdown';
 import { clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction } from '../store/bookingSessionSlice';
 
 const SelectCalendar = () => {

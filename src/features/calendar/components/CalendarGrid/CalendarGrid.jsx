@@ -1,12 +1,14 @@
 import React from 'react';
 import {
   hasShiftOnDate,
-  getEmployeeShiftHours,
+  getEmployeeShiftHours
+} from '../../utils/availability';
+import {
   formatDateLocal,
   localDateKey
-} from '../../../../calendar'; // Adjust path as needed
-import { formatTime } from '../../../../calendar/timeUtils';
-import { StaffColumn } from '../../../../calendar/components/StaffColumn';
+} from '/home/sajad-yoosuf/Desktop/allora/spaAdminLatest/src/features/calendar/utils/date/index.js';
+import { formatTime } from '../../utils/time';
+import { StaffColumn } from './StaffColumn';
 import Loading from '../../../../states/Loading.jsx';
 import Error500Page from '../../../../states/ErrorPage';
 import NoDataState from '../../../../states/NoData';

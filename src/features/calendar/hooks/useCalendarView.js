@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { useDatePickerState, formatDateLocal, getDayName } from '../../../calendar';
+import { useDatePickerState } from './useDatePickerState';
+import { formatDateLocal, getDayName } from '../utils/date';
 
 export const useCalendarView = (initialDate = new Date()) => {
   const [currentView, setCurrentView] = useState('Day');

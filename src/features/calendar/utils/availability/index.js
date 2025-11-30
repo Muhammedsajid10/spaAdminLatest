@@ -4,3 +4,4 @@
  */
 
 export * from './conflictDetection';
+export * from './shiftUtils';
