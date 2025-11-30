@@ -219,6 +219,167 @@ const clientService = {
       console.error("Error fetching employees:", error);
       return [];
     }
+  },
+
+  /**
+   * Fetch allergy configuration (reactions, severity levels, etc.)
+   * @returns {Promise<Object>} Configuration data
+   */
+  getAllergyConfig: async () => {
+    try {
+      const response = await api.get('/admin/allergies/config');
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching allergy config:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Fetch client allergies
+   * @param {string} clientId 
+   * @param {boolean} includeAll - Include all statuses (active, resolved, archived)
+   * @returns {Promise<Array>} List of client allergies
+   */
+  getClientAllergies: async (clientId, includeAll = false) => {
+    try {
+      const url = includeAll 
+        ? `/admin/clients/${clientId}/allergies?includeAll=true`
+        : `/admin/clients/${clientId}/allergies`;
+      const response = await api.get(url);
+      return response.data.data || [];
+    } catch (error) {
+      console.error("Error fetching client allergies:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Create a new allergy for a client
+   * @param {string} clientId 
+   * @param {Object} allergyData - { type, name, reaction, severity, note }
+   * @returns {Promise<Object>} Created allergy
+   */
+  createAllergy: async (clientId, allergyData) => {
+    try {
+      const response = await api.post(`/admin/clients/${clientId}/allergies`, allergyData);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error creating allergy:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update an existing allergy
+   * @param {string} allergyId 
+   * @param {Object} allergyData - { name, reaction, severity, note, status }
+   * @returns {Promise<Object>} Updated allergy
+   */
+  updateAllergy: async (allergyId, allergyData) => {
+    try {
+      const response = await api.patch(`/admin/allergies/${allergyId}`, allergyData);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error updating allergy:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete (archive) an allergy
+   * @param {string} allergyId 
+   * @returns {Promise<Object>} Response
+   */
+  deleteAllergy: async (allergyId) => {
+    try {
+      const response = await api.delete(`/admin/allergies/${allergyId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting allergy:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Fetch client notes
+   * @param {string} clientId 
+   * @param {string} type - Optional filter: 'client' or 'appointment'
+   * @returns {Promise<Array>} List of client notes
+   */
+  getClientNotes: async (clientId, type = null) => {
+    try {
+      const url = type 
+        ? `/admin/clients/${clientId}/notes?type=${type}`
+        : `/admin/clients/${clientId}/notes`;
+      const response = await api.get(url);
+      return response.data.data || [];
+    } catch (error) {
+      console.error("Error fetching client notes:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Create a new note for a client
+   * @param {string} clientId 
+   * @param {Object} noteData - { content, type, bookingId, isPinned, isPrivate }
+   * @returns {Promise<Object>} Created note
+   */
+  createNote: async (clientId, noteData) => {
+    try {
+      const response = await api.post(`/admin/clients/${clientId}/notes`, noteData);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error creating note:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update an existing note
+   * @param {string} noteId 
+   * @param {Object} noteData - { content, isPinned, isPrivate }
+   * @returns {Promise<Object>} Updated note
+   */
+  updateNote: async (noteId, noteData) => {
+    try {
+      const response = await api.patch(`/admin/notes/${noteId}`, noteData);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error updating note:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a note
+   * @param {string} noteId 
+   * @returns {Promise<Object>} Response
+   */
+  deleteNote: async (noteId) => {
+    try {
+      const response = await api.delete(`/admin/notes/${noteId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Toggle pin status of a note
+   * @param {string} noteId 
+   * @returns {Promise<Object>} Updated note
+   */
+  togglePinNote: async (noteId) => {
+    try {
+      const response = await api.patch(`/admin/notes/${noteId}/toggle-pin`);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error toggling pin note:", error);
+      throw error;
+    }
   }
 };
 

@@ -1,15 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import './AddAllergyModal.css';
-
-const REACTION_OPTIONS = [
-  "Acute kidney failure", "Altered mental state", "Anaphylaxis", "Angioedema", 
-  "Arthralgia", "Chills", "Cough", "Diarrhea", "Dizziness", "Fever", 
-  "Gastrointestinal irritation", "Headache", "Hives", "Itching", "Myalgia", 
-  "Nasal congestion", "Nausea", "Pain in injection site", "Palpitations", 
-  "Rash", "Respiratory distress", "Rhinorrhea", "Shortness of breath", 
-  "Sneezing", "Sore throat", "Swelling", "Vomiting"
-];
+import clientService from '../services/clientService';
 
 const SEVERITY_LEVELS = [
   { id: 'mild', label: 'Mild', colorClass: 'severity-mild' },
@@ -26,8 +18,38 @@ const AddAllergyModal = ({ isOpen, onClose, onSave }) => {
     severity: '',
     note: ''
   });
+  const [reactionOptions, setReactionOptions] = useState([]);
+  const [loadingConfig, setLoadingConfig] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Fetch reaction options from API when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchReactionOptions();
+    }
+  }, [isOpen]);
+
+  const fetchReactionOptions = async () => {
+    try {
+      setLoadingConfig(true);
+      const config = await clientService.getAllergyConfig();
+      setReactionOptions(config.reactions || []);
+    } catch (error) {
+      console.error('Failed to fetch allergy config:', error);
+      // Fallback to hardcoded list if API fails
+      setReactionOptions([
+        "Acute kidney failure", "Altered mental state", "Anaphylaxis", "Angioedema", 
+        "Arthralgia", "Chills", "Cough", "Diarrhea", "Dizziness", "Fever", 
+        "Gastrointestinal irritation", "Headache", "Hives", "Itching", "Myalgia", 
+        "Nasal congestion", "Nausea", "Pain in injection site", "Palpitations", 
+        "Rash", "Respiratory distress", "Rhinorrhea", "Shortness of breath", 
+        "Sneezing", "Sore throat", "Swelling", "Vomiting"
+      ]);
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -108,18 +130,28 @@ const AddAllergyModal = ({ isOpen, onClose, onSave }) => {
             </div>
             {isDropdownOpen && (
               <div className="custom-select-options">
-                {REACTION_OPTIONS.map(option => (
-                  <div 
-                    key={option} 
-                    className={`custom-option ${formData.reaction === option ? 'selected' : ''}`}
-                    onClick={() => {
-                      handleInputChange('reaction', option);
-                      setIsDropdownOpen(false);
-                    }}
-                  >
-                    {option}
+                {loadingConfig ? (
+                  <div className="custom-option" style={{ textAlign: 'center', color: '#999' }}>
+                    Loading reactions...
                   </div>
-                ))}
+                ) : reactionOptions.length === 0 ? (
+                  <div className="custom-option" style={{ textAlign: 'center', color: '#999' }}>
+                    No reactions available
+                  </div>
+                ) : (
+                  reactionOptions.map(option => (
+                    <div 
+                      key={option} 
+                      className={`custom-option ${formData.reaction === option ? 'selected' : ''}`}
+                      onClick={() => {
+                        handleInputChange('reaction', option);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      {option}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>

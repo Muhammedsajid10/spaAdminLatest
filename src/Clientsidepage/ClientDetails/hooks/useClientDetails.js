@@ -22,6 +22,8 @@ const useClientDetails = (clientId) => {
   const [reviews, setReviews] = useState([]); // Reviews list
   const [servicesMap, setServicesMap] = useState({}); // Services lookup map
   const [employeesMap, setEmployeesMap] = useState({}); // Employees lookup map
+  const [allergies, setAllergies] = useState([]); // Allergies list
+  const [notes, setNotes] = useState([]); // Notes list
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,7 +34,7 @@ const useClientDetails = (clientId) => {
     setError(null);
     
     try {
-      const [clientData, statsData, bookingsData, salesData, giftCardsData, reviewsData, membershipsData, servicesData, employeesData] = await Promise.all([
+      const [clientData, statsData, bookingsData, salesData, giftCardsData, reviewsData, membershipsData, servicesData, employeesData, allergiesData, notesData] = await Promise.all([
         clientService.getClientDetails(clientId),
         clientService.getClientStats(clientId),
         clientService.getClientBookings(clientId), // Bookings for both Appointments and Items tabs
@@ -41,7 +43,9 @@ const useClientDetails = (clientId) => {
         clientService.getClientReviews(clientId),
         clientService.getClientMemberships(clientId),
         clientService.getServices(), // Fetch all services for lookup
-        clientService.getEmployees() // Fetch all employees for lookup
+        clientService.getEmployees(), // Fetch all employees for lookup
+        clientService.getClientAllergies(clientId), // Allergies data
+        clientService.getClientNotes(clientId) // Notes data
       ]);
 
       console.log('📦 Hook received data:', {
@@ -51,18 +55,52 @@ const useClientDetails = (clientId) => {
         salesData,
         giftCardsData,
         reviewsData,
-        membershipsData
+        membershipsData,
+        allergiesData,
+        notesData
       });
 
       setClient(clientData);
+      
+      // Process stats data from backend
+      let processedStats = {
+        totalSpent: 0,
+        appointmentsCount: 0,
+        canceledCount: 0,
+        noShowCount: 0,
+        rating: '-'
+      };
+
       if (statsData) {
-        setStats({
-          totalSpent: statsData.totalSpent || 0,
-          appointmentsCount: statsData.appointmentsCount || 0,
-          canceledCount: statsData.canceledCount || 0,
-          noShowCount: statsData.noShowCount || 0,
-          rating: statsData.rating || '-'
-        });
+        processedStats = {
+          totalSpent: statsData.totalStats?.totalSpent || 0,
+          appointmentsCount: statsData.totalStats?.totalBookings || 0,
+          canceledCount: 0,
+          noShowCount: 0,
+          rating: '-'
+        };
+
+        // Count canceled and no-show bookings from bookingStats
+        if (statsData.bookingStats && Array.isArray(statsData.bookingStats)) {
+          statsData.bookingStats.forEach(stat => {
+            if (stat._id === 'canceled' || stat._id === 'cancelled') {
+              processedStats.canceledCount = stat.count;
+            } else if (stat._id === 'noshow' || stat._id === 'no-show') {
+              processedStats.noShowCount = stat.count;
+            }
+          });
+        }
+
+        // Calculate average rating from recent feedback
+        if (statsData.recentFeedback && Array.isArray(statsData.recentFeedback) && statsData.recentFeedback.length > 0) {
+          const totalRating = statsData.recentFeedback.reduce((sum, feedback) => {
+            return sum + (feedback.ratings?.overall || 0);
+          }, 0);
+          const avgRating = totalRating / statsData.recentFeedback.length;
+          processedStats.rating = avgRating.toFixed(1);
+        }
+
+        setStats(processedStats);
       }
       if (bookingsData && Array.isArray(bookingsData)) {
         setBookings(bookingsData);
@@ -86,6 +124,16 @@ const useClientDetails = (clientId) => {
       }
       if (membershipsData) {
         setMemberships(membershipsData);
+      }
+      if (allergiesData && Array.isArray(allergiesData)) {
+        setAllergies(allergiesData);
+      } else {
+        setAllergies([]);
+      }
+      if (notesData && Array.isArray(notesData)) {
+        setNotes(notesData);
+      } else {
+        setNotes([]);
       }
       
       // Create lookup maps for services and employees
@@ -114,7 +162,10 @@ const useClientDetails = (clientId) => {
         reviews: reviewsData?.length,
         memberships: membershipsData?.length,
         servicesMapSize: Object.keys(svcMap).length,
-        employeesMapSize: Object.keys(empMap).length
+        employeesMapSize: Object.keys(empMap).length,
+        allergies: allergiesData?.length,
+        notes: notesData?.length,
+        stats: processedStats
       });
     } catch (err) {
       setError(err.message || 'Failed to fetch client details');
@@ -149,6 +200,8 @@ const useClientDetails = (clientId) => {
     memberships, // Memberships data
     servicesMap, // Services lookup map
     employeesMap, // Employees lookup map
+    allergies, // Allergies data
+    notes, // Notes data
     loading,
     error,
     refetch: fetchClientData,

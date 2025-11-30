@@ -1,16 +1,29 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Info } from 'lucide-react';
 
-const ClientOverviewTab = ({ stats }) => {
+const ClientOverviewTab = ({ stats, giftCards }) => {
+  // Calculate total gift card balance
+  const totalGiftCardBalance = useMemo(() => {
+    if (!giftCards || !Array.isArray(giftCards)) return 0;
+    return giftCards.reduce((total, card) => {
+      // Only count active gift cards
+      if (card.status === 'active' || card.status === 'Active') {
+        return total + (parseFloat(card.balance) || 0);
+      }
+      return total;
+    }, 0);
+  }, [giftCards]);
+
   return (
     <div className="client-overview-tab">
-      <h4 className="overview-section-title">Gift Card</h4>
+      <h4 className="overview-section-title">Gift Card Balance</h4>
       
       <div className="overview-wallet-card">
         <div>
           <div className="wallet-balance-label">Balance</div>
-          <div className="wallet-balance-amount">AED 0</div>
+          <div className="wallet-balance-amount">AED {totalGiftCardBalance.toLocaleString()}</div>
         </div>
+        <button className="btn-view-wallet">View gift cards</button>
       </div>
 
       <h4 className="overview-section-title">Summary</h4>

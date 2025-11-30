@@ -15,6 +15,7 @@ import ClientAllergiesTab from './components/ClientAllergiesTab';
 import ClientGiftCardsTab from './components/ClientGiftCardsTab';
 import ClientReviewsTab from './components/ClientReviewsTab';
 import Loading from '../../states/Loading';
+import clientService from './services/clientService';
 
 
 
@@ -25,7 +26,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [isAddAllergyOpen, setIsAddAllergyOpen] = useState(false);
-  const { client, stats, allBookings, bookings, sales, giftCards, reviews, memberships, servicesMap, employeesMap, loading, error, updateClient } = useClientDetails(clientId);
+  const { client, stats, allBookings, bookings, sales, giftCards, reviews, memberships, servicesMap, employeesMap, allergies, notes, loading, error, updateClient, refetch } = useClientDetails(clientId);
 
   if (!isOpen) return null;
 
@@ -37,15 +38,61 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
     }
   };
 
-  const handleSaveNote = (note) => {
-    console.log('Saving note for client:', client?.id, note);
-    // Here you would typically call an API to save the note
-    // e.g., onSaveNote(client.id, note);
+  const handleSaveNote = async (noteContent) => {
+    try {
+      await clientService.createNote(clientId, { 
+        content: noteContent, 
+        type: 'client' 
+      });
+      refetch(); // Reload all data including new note
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      alert('Failed to save note. Please try again.');
+    }
   };
 
-  const handleSaveAllergy = (allergyData) => {
-    console.log('Saving allergy for client:', client?.id, allergyData);
-    // API call placeholder
+  const handleDeleteNote = async (noteId) => {
+    if (window.confirm('Are you sure you want to delete this note?')) {
+      try {
+        await clientService.deleteNote(noteId);
+        refetch(); // Reload data
+      } catch (error) {
+        console.error('Failed to delete note:', error);
+        alert('Failed to delete note. Please try again.');
+      }
+    }
+  };
+
+  const handlePinNote = async (noteId) => {
+    try {
+      await clientService.togglePinNote(noteId);
+      refetch(); // Reload data to update pin status
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+      alert('Failed to toggle pin. Please try again.');
+    }
+  };
+
+  const handleSaveAllergy = async (allergyData) => {
+    try {
+      await clientService.createAllergy(clientId, allergyData);
+      // Refresh client data to show new allergy
+      refetch();
+    } catch (error) {
+      console.error('Failed to save allergy:', error);
+      alert('Failed to save allergy. Please try again.');
+    }
+  };
+
+  const handleDeleteAllergy = async (allergyId) => {
+    try {
+      await clientService.deleteAllergy(allergyId);
+      // Refresh client data to remove deleted allergy
+      refetch();
+    } catch (error) {
+      console.error('Failed to delete allergy:', error);
+      alert('Failed to delete allergy. Please try again.');
+    }
   };
 
   return (
@@ -161,8 +208,8 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
               <div className="tab-content-area">
                 {activeTab === 'overview' && (
                   <div className="tab-scrollable-content">
-                    <h2 className="overview-section-title">Overview</h2>
-                    <ClientOverviewTab stats={stats} />
+                    <h2 className="overview-section-title" style={{ fontSize: 24, marginBottom: 24 }}>Overview</h2>
+                    <ClientOverviewTab stats={stats} giftCards={giftCards} />
                   </div>
                 )}
                 {activeTab === 'appointments' && (
@@ -195,15 +242,20 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                   />
                 )}
                 {activeTab === 'notes' && (
-                   <ClientNotesTab 
-                     client={client} 
-                     onAddNote={() => setIsAddNoteOpen(true)}
-                   />
+                  <ClientNotesTab 
+                    client={client} 
+                    notes={notes}
+                    onAddNote={() => setIsAddNoteOpen(true)}
+                    onDeleteNote={handleDeleteNote}
+                    onPinNote={handlePinNote}
+                  />
                 )}
                 {activeTab === 'allergy' && (
                    <ClientAllergiesTab 
-                     client={client} 
+                     client={client}
+                     allergies={allergies}
                      onAddAllergy={() => setIsAddAllergyOpen(true)}
+                     onDeleteAllergy={handleDeleteAllergy}
                    />
                 )}
                 {activeTab === 'giftcards' && (
