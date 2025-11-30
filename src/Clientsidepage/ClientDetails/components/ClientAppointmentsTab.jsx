@@ -7,8 +7,8 @@ const ClientAppointmentsTab = ({ client, bookings = [] }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const moreOptions = ['Arrived', 'Started', 'Completed', 'Canceled', 'No-show'];
-  const mainOptions = ['All', 'Booked', 'Confirmed'];
+  const moreOptions = ['Started', 'Completed',  'No-show'];
+  const mainOptions = ['All',  'Confirmed'];
 
   // Close dropdown when clicking outside
   useEffect(() => {

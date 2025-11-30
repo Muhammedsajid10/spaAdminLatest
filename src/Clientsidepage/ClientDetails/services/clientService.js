@@ -44,7 +44,9 @@ const clientService = {
   updateClient: async (clientId, updateData) => {
     try {
       const response = await api.patch(`/admin/clients/${clientId}`, updateData);
-      return response.data.data;
+      // Backend returns { data: { client: {...} } } or just { data: {...} }
+      // Check for nested client object first
+      return response.data.data.client || response.data.data;
     } catch (error) {
       console.error("Error updating client:", error);
       throw error;

@@ -4,14 +4,13 @@ import { Info } from 'lucide-react';
 const ClientOverviewTab = ({ stats }) => {
   return (
     <div className="client-overview-tab">
-      <h4 className="overview-section-title">Wallet</h4>
+      <h4 className="overview-section-title">Gift Card</h4>
       
       <div className="overview-wallet-card">
         <div>
           <div className="wallet-balance-label">Balance</div>
           <div className="wallet-balance-amount">AED 0</div>
         </div>
-        <button className="btn-view-wallet">View wallet</button>
       </div>
 
       <h4 className="overview-section-title">Summary</h4>

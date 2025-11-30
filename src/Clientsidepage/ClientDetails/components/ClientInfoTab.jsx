@@ -172,7 +172,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
       </div>
 
       {/* Additional Info Section */}
-      <div className="client-info-section">
+      {/* <div className="client-info-section">
         <h3 className="section-title">Additional info</h3>
         <div className="info-grid">
           {renderField('Client source', 'clientSource', client.clientSource, 'select', ['Walk-In', 'Google', 'Social Media', 'Referral'])}
@@ -183,10 +183,10 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           {renderField('Additional email', 'additionalEmail', client.additionalEmail, 'email')}
           {renderField('Additional phone', 'additionalPhone', client.additionalPhone, 'tel')}
         </div>
-      </div>
+      </div> */}
 
       {/* Addresses Section */}
-      <div className="client-info-section">
+      {/* <div className="client-info-section">
         <h3 className="section-title">Addresses</h3>
         <div className="info-grid">
           {renderField('Address', 'address', client.address)}
@@ -194,7 +194,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           {renderField('Zip Code', 'zipCode', client.zipCode)}
           {renderField('State', 'state', client.state)}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

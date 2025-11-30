@@ -161,7 +161,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
               <div className="tab-content-area">
                 {activeTab === 'overview' && (
                   <div className="tab-scrollable-content">
-                    <h2 className="overview-section-title" style={{ fontSize: 24, marginBottom: 24 }}>Overview</h2>
+                    <h2 className="overview-section-title">Overview</h2>
                     <ClientOverviewTab stats={stats} />
                   </div>
                 )}
@@ -204,7 +204,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                 )}
                 {activeTab !== 'overview' && activeTab !== 'appointments' && activeTab !== 'sales' && activeTab !== 'details' && activeTab !== 'items' && activeTab !== 'notes' && activeTab !== 'allergy' && activeTab !== 'giftcards' && activeTab !== 'reviews' && (
                   <div className="tab-scrollable-content">
-                    <div style={{ color: '#666', textAlign: 'center', marginTop: 40 }}>
+                    <div className="coming-soon-message">
                       {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content coming soon...
                     </div>
                   </div>
