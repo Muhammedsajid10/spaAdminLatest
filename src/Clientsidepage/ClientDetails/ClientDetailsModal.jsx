@@ -25,7 +25,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [isAddAllergyOpen, setIsAddAllergyOpen] = useState(false);
-  const { client, stats, allBookings, bookings, sales, giftCards, reviews, memberships, loading, error, updateClient } = useClientDetails(clientId);
+  const { client, stats, allBookings, bookings, sales, giftCards, reviews, memberships, servicesMap, employeesMap, loading, error, updateClient } = useClientDetails(clientId);
 
   if (!isOpen) return null;
 
@@ -166,10 +166,19 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                   </div>
                 )}
                 {activeTab === 'appointments' && (
-                  <ClientAppointmentsTab client={client} bookings={allBookings} />
+                  <ClientAppointmentsTab 
+                    client={client} 
+                    bookings={bookings}
+                    servicesMap={servicesMap}
+                    employeesMap={employeesMap}
+                  />
                 )}
                 {activeTab === 'sales' && (
-                  <ClientSalesTab client={client} sales={sales} />
+                  <ClientSalesTab 
+                    client={client} 
+                    sales={sales}
+                    servicesMap={servicesMap}
+                  />
                 )}
                 {activeTab === 'details' && (
                   <ClientInfoTab 
@@ -182,6 +191,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                     client={client} 
                     bookings={bookings}
                     memberships={memberships}
+                    servicesMap={servicesMap}
                   />
                 )}
                 {activeTab === 'notes' && (

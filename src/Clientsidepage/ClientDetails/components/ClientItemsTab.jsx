@@ -2,13 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { User, Calendar, MapPin } from 'lucide-react';
 import './ClientItemsTab.css';
 
-const ClientItemsTab = ({ client, bookings = [], memberships = [] }) => {
+const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap = {} }) => {
   const [activeSubTab, setActiveSubTab] = useState('memberships');
 
   // Debug: Log received data
   console.log('📊 ClientItemsTab received:', { 
     bookingsCount: bookings.length, 
     membershipsCount: memberships.length,
+    servicesMapSize: Object.keys(servicesMap).length,
     bookings,
     memberships 
   });
@@ -18,7 +19,19 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [] }) => {
     console.log('🔄 Formatting bookings:', bookings);
     return bookings.map(booking => {
       const firstService = booking.services?.[0];
-      const serviceName = firstService?.service?.name || 'Service';
+      
+      // Lookup service name using servicesMap
+      let serviceName = 'Service';
+      if (firstService?.service) {
+        const serviceId = typeof firstService.service === 'string' ? firstService.service : firstService.service._id;
+        const serviceObj = servicesMap[serviceId];
+        if (serviceObj) {
+          serviceName = serviceObj.name;
+        } else if (typeof firstService.service === 'object' && firstService.service.name) {
+          serviceName = firstService.service.name;
+        }
+      }
+      
       const employeeName = firstService?.employee?.user 
         ? `${firstService.employee.user.firstName || ''} ${firstService.employee.user.lastName || ''}`.trim()
         : (firstService?.employee?.firstName && firstService?.employee?.lastName 
@@ -47,7 +60,7 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [] }) => {
       console.log('✅ Formatted service:', formatted);
       return formatted;
     });
-  }, [bookings]);
+  }, [bookings, servicesMap]);
 
   // Format memberships data for display
   const formattedMemberships = useMemo(() => {

@@ -78,8 +78,11 @@ const clientService = {
   getClientBookings: async (clientId) => {
     try {
       const response = await api.get(`/admin/clients/${clientId}/bookings`);
-      // Backend returns data: [...] (direct array)
-      return response.data.data || [];
+      let bookings = response.data.data;
+      if (!Array.isArray(bookings)) {
+        bookings = bookings?.bookings || [];
+      }
+      return Array.isArray(bookings) ? bookings : [];
     } catch (error) {
       console.error("Error fetching client bookings:", error);
       return [];
@@ -95,7 +98,11 @@ const clientService = {
     try {
       // Use same endpoint with includeAll=true to get all bookings
       const response = await api.get(`/admin/clients/${clientId}/bookings?includeAll=true`);
-      return response.data.data || [];
+      let bookings = response.data.data;
+      if (!Array.isArray(bookings)) {
+        bookings = bookings?.bookings || [];
+      }
+      return Array.isArray(bookings) ? bookings : [];
     } catch (error) {
       console.error("Error fetching all client bookings:", error);
       return [];
@@ -111,7 +118,17 @@ const clientService = {
     try {
       // Get bookings and convert to sales format
       const response = await api.get(`/admin/clients/${clientId}/bookings`);
-      const bookings = response.data.data || [];
+      let bookings = response.data.data;
+      
+      // Handle potential response structures
+      if (!Array.isArray(bookings)) {
+        bookings = bookings?.bookings || [];
+      }
+      
+      if (!Array.isArray(bookings)) {
+        console.warn("getClientSales: Expected array but got:", bookings);
+        return [];
+      }
       // Convert bookings to sales/payment format
       return bookings.map(booking => ({
         _id: booking._id,
@@ -172,6 +189,34 @@ const clientService = {
       return response.data.data?.memberships || [];
     } catch (error) {
       console.error("Error fetching client memberships:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Fetch all services for lookup
+   * @returns {Promise<Array>} List of all services
+   */
+  getServices: async () => {
+    try {
+      const response = await api.get('/services');
+      return response.data.data || [];
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Fetch all employees for lookup
+   * @returns {Promise<Array>} List of all employees
+   */
+  getEmployees: async () => {
+    try {
+      const response = await api.get('/employees');
+      return response.data.data || [];
+    } catch (error) {
+      console.error("Error fetching employees:", error);
       return [];
     }
   }

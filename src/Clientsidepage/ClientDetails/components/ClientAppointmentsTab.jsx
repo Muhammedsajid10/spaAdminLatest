@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Calendar } from 'lucide-react';
 import './ClientAppointmentsTab.css';
 
-const ClientAppointmentsTab = ({ client, bookings = [] }) => {
+const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employeesMap = {} }) => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -47,15 +47,37 @@ const ClientAppointmentsTab = ({ client, bookings = [] }) => {
         : '';
 
       const services = (booking.services || []).map((svc, index) => {
-        const employeeName = svc.employee?.user 
-          ? `${svc.employee.user.firstName || ''} ${svc.employee.user.lastName || ''}`.trim()
-          : (svc.employee?.firstName && svc.employee?.lastName 
-            ? `${svc.employee.firstName} ${svc.employee.lastName}`.trim()
-            : 'Staff TBD');
+        // Lookup service name
+        let serviceName = 'Service';
+        if (svc.service) {
+          const serviceId = typeof svc.service === 'string' ? svc.service : svc.service._id;
+          const serviceObj = servicesMap[serviceId];
+          if (serviceObj) {
+            serviceName = serviceObj.name;
+          } else if (typeof svc.service === 'object' && svc.service.name) {
+            serviceName = svc.service.name;
+          }
+        }
+        
+        // Lookup employee name
+        let employeeName = 'Staff TBD';
+        if (svc.employee) {
+          const employeeId = typeof svc.employee === 'string' ? svc.employee : svc.employee._id;
+          const employeeObj = employeesMap[employeeId];
+          if (employeeObj) {
+            employeeName = `${employeeObj.user?.firstName || employeeObj.firstName || ''} ${employeeObj.user?.lastName || employeeObj.lastName || ''}`.trim() || 'Staff Member';
+          } else if (typeof svc.employee === 'object') {
+            if (svc.employee.user) {
+              employeeName = `${svc.employee.user.firstName || ''} ${svc.employee.user.lastName || ''}`.trim();
+            } else if (svc.employee.firstName) {
+              employeeName = `${svc.employee.firstName} ${svc.employee.lastName || ''}`.trim();
+            }
+          }
+        }
 
         return {
           id: svc._id || index,
-          name: svc.service?.name || 'Service',
+          name: serviceName,
           duration: `${svc.duration || 60}min`,
           staff: employeeName,
           price: svc.price || 0
@@ -72,7 +94,7 @@ const ClientAppointmentsTab = ({ client, bookings = [] }) => {
         totalAmount: booking.finalAmount || booking.totalAmount || 0
       };
     });
-  }, [bookings]);
+  }, [bookings, servicesMap, employeesMap]);
 
   const filteredAppointments = useMemo(() => {
     return formattedAppointments.filter(appt => {
@@ -159,11 +181,11 @@ const ClientAppointmentsTab = ({ client, bookings = [] }) => {
                     </div>
                   ))}
                 </div>
-
+{/* 
                 <div className="appointment-actions">
                   <button className="btn-card-action" onClick={() => console.log('View sale:', appt.bookingNumber)}>View sale</button>
                   <button className="btn-card-action" onClick={() => console.log('Rebook:', appt.id)}>Rebook</button>
-                </div>
+                </div> */}
               </div>
             </div>
           ))

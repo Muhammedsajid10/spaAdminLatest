@@ -15,12 +15,13 @@ const useClientDetails = (clientId) => {
     noShowCount: 0,
     rating: '-'
   });
-  const [allBookings, setAllBookings] = useState([]); // All appointments (all statuses)
-  const [bookings, setBookings] = useState([]); // Filtered bookings for Items tab
+  const [bookings, setBookings] = useState([]); // Bookings for both Appointments and Items tabs
   const [memberships, setMemberships] = useState([]); // Memberships list
   const [sales, setSales] = useState([]); // Sales/payments list
   const [giftCards, setGiftCards] = useState([]); // Gift cards list
   const [reviews, setReviews] = useState([]); // Reviews list
+  const [servicesMap, setServicesMap] = useState({}); // Services lookup map
+  const [employeesMap, setEmployeesMap] = useState({}); // Employees lookup map
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -31,22 +32,22 @@ const useClientDetails = (clientId) => {
     setError(null);
     
     try {
-      const [clientData, statsData, bookingsData, allAppointmentsData, salesData, giftCardsData, reviewsData, membershipsData] = await Promise.all([
+      const [clientData, statsData, bookingsData, salesData, giftCardsData, reviewsData, membershipsData, servicesData, employeesData] = await Promise.all([
         clientService.getClientDetails(clientId),
         clientService.getClientStats(clientId),
-        clientService.getClientBookings(clientId), // Filtered bookings for Items tab
-        clientService.getAllClientBookings(clientId), // All bookings for Appointments tab
+        clientService.getClientBookings(clientId), // Bookings for both Appointments and Items tabs
         clientService.getClientSales(clientId),
         clientService.getClientGiftCards(clientId),
         clientService.getClientReviews(clientId),
-        clientService.getClientMemberships(clientId)
+        clientService.getClientMemberships(clientId),
+        clientService.getServices(), // Fetch all services for lookup
+        clientService.getEmployees() // Fetch all employees for lookup
       ]);
 
       console.log('📦 Hook received data:', {
         clientData,
         statsData,
         bookingsData,
-        allAppointmentsData,
         salesData,
         giftCardsData,
         reviewsData,
@@ -64,15 +65,9 @@ const useClientDetails = (clientId) => {
         });
       }
       if (bookingsData && Array.isArray(bookingsData)) {
-        // Backend already filters for: confirmed, noshow, complete, started
         setBookings(bookingsData);
       } else {
         setBookings([]);
-      }
-      if (allAppointmentsData && Array.isArray(allAppointmentsData)) {
-        setAllBookings(allAppointmentsData);
-      } else {
-        setAllBookings([]);
       }
       if (salesData && Array.isArray(salesData)) {
         setSales(salesData);
@@ -93,14 +88,33 @@ const useClientDetails = (clientId) => {
         setMemberships(membershipsData);
       }
       
+      // Create lookup maps for services and employees
+      const svcMap = {};
+      if (Array.isArray(servicesData)) {
+        servicesData.forEach(svc => {
+          if (svc._id) svcMap[svc._id] = svc;
+        });
+      }
+      
+      const empMap = {};
+      if (Array.isArray(employeesData)) {
+        employeesData.forEach(emp => {
+          if (emp._id) empMap[emp._id] = emp;
+        });
+      }
+      
+      setServicesMap(svcMap);
+      setEmployeesMap(empMap);
+      
       console.log('✅ Hook state updated:', {
         client: clientData,
-        allBookings: allAppointmentsData?.length,
         bookings: bookingsData?.length,
         sales: salesData?.length,
         giftCards: giftCardsData?.length,
         reviews: reviewsData?.length,
-        memberships: membershipsData?.length
+        memberships: membershipsData?.length,
+        servicesMapSize: Object.keys(svcMap).length,
+        employeesMapSize: Object.keys(empMap).length
       });
     } catch (err) {
       setError(err.message || 'Failed to fetch client details');
@@ -127,12 +141,14 @@ const useClientDetails = (clientId) => {
   return {
     client,
     stats,
-    allBookings, // All appointments for Appointments tab
-    bookings, // Filtered bookings for Items tab
+    allBookings: bookings, // Alias for compatibility
+    bookings, // Bookings for both tabs
     sales, // Sales/payments data
     giftCards, // Gift cards data
     reviews, // Reviews data
     memberships, // Memberships data
+    servicesMap, // Services lookup map
+    employeesMap, // Employees lookup map
     loading,
     error,
     refetch: fetchClientData,
