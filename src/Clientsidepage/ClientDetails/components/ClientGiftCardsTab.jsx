@@ -3,13 +3,16 @@ import { Gift } from 'lucide-react';
 import './ClientGiftCardsTab.css';
 
 const ClientGiftCardsTab = ({ client, giftCards = [] }) => {
+  console.log('🎁 GiftCards Tab - received giftCards:', giftCards);
+  console.log('🎁 GiftCards Tab - length:', giftCards?.length);
+  
   const formattedGiftCards = useMemo(() => {
-    return giftCards.map(card => ({
+    const formatted = giftCards.map(card => ({
       id: card._id,
-      code: card.code,
-      amount: card.amount || card.balance || 0,
-      balance: card.balance || 0,
-      status: card.status,
+      code: card.code, // Actual gift card code like "6XUB37469HUW"
+      amount: card.value || 0, // Original value
+      balance: card.remainingValue || 0, // Remaining balance
+      status: card.status, // "Redeemed", "Active", etc.
       purchaseDate: card.purchaseDate 
         ? new Date(card.purchaseDate).toLocaleDateString('en-GB')
         : '',
@@ -17,6 +20,8 @@ const ClientGiftCardsTab = ({ client, giftCards = [] }) => {
         ? new Date(card.expiryDate).toLocaleDateString('en-GB')
         : ''
     }));
+    console.log('📋 Formatted gift cards:', formatted);
+    return formatted;
   }, [giftCards]);
 
   return (

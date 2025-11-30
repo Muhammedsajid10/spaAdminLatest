@@ -3,38 +3,43 @@ import { Tag } from 'lucide-react';
 import './ClientSalesTab.css';
 
 const ClientSalesTab = ({ client, sales = [] }) => {
-  // Format sales data for display
+  // Format sales data for display - only show completed bookings
   const formattedSales = useMemo(() => {
-    return sales.map(payment => {
-      const date = payment.createdAt 
-        ? new Date(payment.createdAt).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          })
-        : '';
+    return sales
+      .filter(payment => {
+        const status = payment.booking?.status?.toLowerCase();
+        return status === 'complete' || status === 'completed';
+      })
+      .map(payment => {
+        const date = payment.createdAt 
+          ? new Date(payment.createdAt).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            })
+          : '';
 
-      const items = [];
-      // Extract items from booking services
-      if (payment.booking?.services) {
-        payment.booking.services.forEach(svc => {
-          items.push({
-            name: svc.service?.name || 'Service',
-            price: svc.price || 0
+        const items = [];
+        // Extract items from booking services
+        if (payment.booking?.services) {
+          payment.booking.services.forEach(svc => {
+            items.push({
+              name: svc.service?.name || 'Service',
+              price: svc.price || 0
+            });
           });
-        });
-      }
+        }
 
-      return {
-        id: payment._id,
-        status: payment.paymentStatus || 'pending',
-        date: date,
-        items: items,
-        total: payment.finalAmount || payment.amount || 0,
-        paymentMethod: payment.paymentMethod,
-        bookingNumber: payment.booking?.bookingNumber
-      };
-    });
+        return {
+          id: payment._id,
+          status: payment.paymentStatus || 'pending',
+          date: date,
+          items: items,
+          total: payment.finalAmount || payment.amount || 0,
+          paymentMethod: payment.paymentMethod,
+          bookingNumber: payment.booking?.bookingNumber
+        };
+      });
   }, [sales]);
 
   return (

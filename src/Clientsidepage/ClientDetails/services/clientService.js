@@ -153,8 +153,8 @@ const clientService = {
   getClientGiftCards: async (clientId) => {
     try {
       const response = await api.get(`/giftcards/purchased?clientId=${clientId}`);
-      // Backend returns data: { giftcards: [...] } or data: [...]
-      return response.data.data?.giftcards || response.data.data || [];
+      // Backend returns data: { giftCards: [...] } (note: capital C)
+      return response.data.data?.giftCards || response.data.data || [];
     } catch (error) {
       console.error("Error fetching client gift cards:", error);
       return [];

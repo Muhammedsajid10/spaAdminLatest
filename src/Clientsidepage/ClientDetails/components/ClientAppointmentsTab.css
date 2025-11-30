@@ -130,54 +130,56 @@
 }
 
 /* Appointment Card */
-.appointment-card {
+.appointment-card-client-side {
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 16px; /* More rounded */
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
   padding: 24px;
   margin-bottom: 16px;
   position: relative;
   display: flex;
-  flex-direction: row; /* Enforce row */
+  flex-direction: row;
   align-items: flex-start;
   gap: 20px;
-  height: auto; /* Let content dictate height */
-  flex-shrink: 0; /* Prevent card from shrinking */
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-  transition: box-shadow 0.2s;
+  height: auto;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
 }
 
-.appointment-card:hover {
-  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-  border-color: #e0e0e0;
+.appointment-card-client-side:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: #d1d5db;
+  transform: translateY(-2px);
 }
 
 /* Timeline line */
 .timeline-icon {
-  width: 40px; /* Slightly larger */
+  width: 40px;
   height: 40px;
-  background: #111;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   flex-shrink: 0;
-  z-index: 2; /* Above line */
+  z-index: 2;
   position: relative;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 .timeline-line {
   position: absolute;
-  top: 64px; /* 24px padding + 40px icon */
-  left: 43px; /* 24px padding + 20px half-icon - 0.5px line width approx */
+  top: 64px;
+  left: 43px;
   bottom: -17px;
-  width: 2px; /* Slightly thicker */
-  background: #f0f0f0;
+  width: 2px;
+  background: linear-gradient(to bottom, #e5e7eb 0%, transparent 100%);
   z-index: 1;
 }
 
-.appointment-card:last-child .timeline-line {
+.appointment-card-client-side:last-child .timeline-line {
   display: none;
 }
 

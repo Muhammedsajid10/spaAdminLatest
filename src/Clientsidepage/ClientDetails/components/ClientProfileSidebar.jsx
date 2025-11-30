@@ -3,7 +3,7 @@ import { ChevronDown, User, Calendar, Clock, FileText, AlertCircle, Edit, Trash2
 import { PiGenderFemale, PiGenderMale, PiGenderNeuter } from "react-icons/pi";
 
 
-const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllergy }) => {
+const ClientProfileSidebar = ({ client, allergies = [], notes = [], onEdit, onDelete, onAddNote, onAddAllergy }) => {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -14,6 +14,9 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllerg
   const clientPhone = client.phone || client.mobile || '';
   const clientEmail = client.email || '';
   const clientInitial = client.initial || (client.firstName ? client.firstName.charAt(0).toUpperCase() : '?');
+
+  // Get most recent note
+  const mostRecentNote = notes.length > 0 ? notes[0] : null;
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -126,6 +129,37 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllerg
           <Clock size={20} className="info-icon" />
           <span>Created {formatDate(client.createdAt)}</span>
         </div>
+
+        {/* Allergies */}
+        {allergies && allergies.length > 0 && (
+          <div className="info-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <AlertCircle size={20} className="info-icon" style={{ color: '#dc2626' }} />
+              <span style={{ fontWeight: 600, color: '#dc2626' }}>Allergies</span>
+            </div>
+            <div style={{ paddingLeft: '28px', fontSize: '13px', color: '#666' }}>
+              {allergies.map((allergy, index) => (
+                <div key={allergy._id || index} style={{ marginBottom: '2px' }}>
+                  • {allergy.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Most Recent Note */}
+        {mostRecentNote && (
+          <div className="info-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <FileText size={20} className="info-icon" />
+              <span style={{ fontWeight: 600 }}>Recent Note</span>
+            </div>
+            <div style={{ paddingLeft: '28px', fontSize: '13px', color: '#666', lineHeight: '1.4' }}>
+              {mostRecentNote.content?.substring(0, 100)}
+              {mostRecentNote.content?.length > 100 ? '...' : ''}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

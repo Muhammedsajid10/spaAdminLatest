@@ -152,7 +152,7 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
       <div className="appointments-list">
         {filteredAppointments.length > 0 ? (
           filteredAppointments.map(appt => (
-            <div key={appt.id} className="appointment-card">
+            <div key={appt.id} className="appointment-card-client-side">
               <div className="timeline-icon">
                 <Calendar size={16} />
               </div>

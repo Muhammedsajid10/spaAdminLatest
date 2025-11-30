@@ -179,15 +179,7 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap =
                     </div>
                     <span className="item-price">AED {service.price}</span>
                   </div>
-                  <button 
-                    className="btn-view-sale"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('View booking:', service.bookingNumber);
-                    }}
-                  >
-                    View sale
-                  </button>
+                
                 </div>
               ))}
             </div>

@@ -1,18 +1,37 @@
 import React, { useMemo } from 'react';
 import { Info } from 'lucide-react';
 
-const ClientOverviewTab = ({ stats, giftCards }) => {
-  // Calculate total gift card balance
+const ClientOverviewTab = ({ stats, giftCards, bookings = [] }) => {
+  console.log('🎁 Overview - giftCards prop:', giftCards);
+  console.log('🎁 Overview - giftCards length:', giftCards?.length);
+  console.log('📋 Overview - bookings prop:', bookings);
+  
+  // Calculate total gift card balance from remainingValue
   const totalGiftCardBalance = useMemo(() => {
-    if (!giftCards || !Array.isArray(giftCards)) return 0;
-    return giftCards.reduce((total, card) => {
-      // Only count active gift cards
-      if (card.status === 'active' || card.status === 'Active') {
-        return total + (parseFloat(card.balance) || 0);
-      }
-      return total;
+    if (!giftCards || !Array.isArray(giftCards)) {
+      console.log('⚠️ No gift cards or not an array');
+      return 0;
+    }
+    const total = giftCards.reduce((total, card) => {
+      const cardValue = parseFloat(card.remainingValue) || 0;
+      return total + cardValue;
     }, 0);
+    console.log('💰 Total gift card balance:', total);
+    return total;
   }, [giftCards]);
+
+  // Calculate total sales from only completed bookings
+  const totalCompletedSales = useMemo(() => {
+    if (!bookings || !Array.isArray(bookings)) return 0;
+    return bookings
+      .filter(booking => {
+        const status = booking.status?.toLowerCase();
+        return status === 'complete' || status === 'completed';
+      })
+      .reduce((total, booking) => {
+        return total + (booking.finalAmount || booking.totalAmount || 0);
+      }, 0);
+  }, [bookings]);
 
   return (
     <div className="client-overview-tab">
@@ -36,7 +55,7 @@ const ClientOverviewTab = ({ stats, giftCards }) => {
             <Info size={16} className="info-tooltip-icon" />
           </div>
           <div className="summary-value">
-            AED {stats.totalSpent?.toLocaleString() || '0'}
+            AED {totalCompletedSales.toLocaleString()}
           </div>
         </div>
 
@@ -59,13 +78,13 @@ const ClientOverviewTab = ({ stats, giftCards }) => {
         </div>
 
         {/* Canceled */}
-        <div className="summary-card">
+        {/* <div className="summary-card">
           <div className="summary-label">
             Canceled
             <Info size={16} className="info-tooltip-icon" />
           </div>
           <div className="summary-value">{stats.canceledCount || 0}</div>
-        </div>
+        </div> */}
 
         {/* No show */}
         <div className="summary-card">

@@ -113,6 +113,8 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
             {/* Left Sidebar */}
             <ClientProfileSidebar 
               client={client} 
+              allergies={allergies}
+              notes={notes}
               onEdit={onEdit}
               onDelete={onDelete}
               onAddNote={() => setIsAddNoteOpen(true)}
@@ -209,7 +211,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                 {activeTab === 'overview' && (
                   <div className="tab-scrollable-content">
                     <h2 className="overview-section-title" style={{ fontSize: 24, marginBottom: 24 }}>Overview</h2>
-                    <ClientOverviewTab stats={stats} giftCards={giftCards} />
+                    <ClientOverviewTab stats={stats} giftCards={giftCards} bookings={bookings} />
                   </div>
                 )}
                 {activeTab === 'appointments' && (

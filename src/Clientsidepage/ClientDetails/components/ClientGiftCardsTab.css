@@ -68,3 +68,81 @@
   color: #666;
   max-width: 300px;
 }
+
+/* Gift Cards List */
+.giftcards-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  padding: 4px;
+}
+
+/* Gift Card Item */
+.giftcard-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.giftcard-item:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.giftcard-item svg {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.giftcard-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.giftcard-code {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  font-family: 'Monaco', 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+.giftcard-meta {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.giftcard-status {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.giftcard-status.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.giftcard-status.redeemed {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.giftcard-status.expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
