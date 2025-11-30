@@ -464,6 +464,12 @@
   border-color: rgba(239, 68, 68, 0.2);
 }
 
+.btn-view:hover {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
 /* --- MODAL STYLES --- */
 .client-modal-overlay,
 .modal-overlay {

@@ -87,16 +87,7 @@ const ClientProfileSidebar = ({ client, onEdit, onDelete, onAddNote, onAddAllerg
               <AlertCircle size={16} />
               Add Allergy
             </button>
-            <button 
-              className="action-item"
-              onClick={() => {
-                setIsActionsOpen(false);
-                if (onEdit) onEdit(client);
-              }}
-            >
-              <Edit size={16} />
-              Edit Client Details
-            </button>
+         
             <button 
               className="action-item delete"
               onClick={() => {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Search, ChevronDown, Plus, Edit, Trash2, X } from "lucide-react";
+import { Search, ChevronDown, Plus, Edit, Trash2, X, Eye } from "lucide-react";
 import "./Clientlist.css";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -900,18 +900,14 @@ const ClientDirectory = () => {
                       <td>
                         <div className="table-col-actions">
                           <button
-                            onClick={() => openEditModal(client)}
-                            className="btn-action btn-edit"
-                            title="Edit client"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetailsModal(client);
+                            }}
+                            className="btn-action btn-view"
+                            title="View client details"
                           >
-                            <Edit className="icon-small" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClient(client.id)}
-                            className="btn-action btn-delete"
-                            title="Delete client"
-                          >
-                            <Trash2 className="icon-small" />
+                            <Eye className="icon-small" />
                           </button>
                         </div>
                       </td>
