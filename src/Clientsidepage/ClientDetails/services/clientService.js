@@ -168,9 +168,21 @@ const clientService = {
    */
   getClientReviews: async (clientId) => {
     try {
-      // Backend doesn't have a client-specific feedback endpoint
-      // Return empty for now - can be implemented later if needed
-      return [];
+      // Try common review endpoints. Some backends expose client reviews at
+      // /admin/clients/:id/reviews or at /reviews?clientId=:id
+      try {
+        const res = await api.get(`/admin/clients/${clientId}/reviews`);
+        return res.data.data || [];
+      } catch (err) {
+        // fallback to query param style
+        try {
+          const res2 = await api.get(`/reviews?clientId=${clientId}`);
+          return res2.data.data || [];
+        } catch (err2) {
+          console.warn('getClientReviews: no reviews endpoint found, returning empty array');
+          return [];
+        }
+      }
     } catch (error) {
       console.error("Error fetching client reviews:", error);
       return [];

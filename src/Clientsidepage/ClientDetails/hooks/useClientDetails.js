@@ -37,7 +37,7 @@ const useClientDetails = (clientId) => {
       const [clientData, statsData, bookingsData, salesData, giftCardsData, reviewsData, membershipsData, servicesData, employeesData, allergiesData, notesData] = await Promise.all([
         clientService.getClientDetails(clientId),
         clientService.getClientStats(clientId),
-        clientService.getClientBookings(clientId), // Bookings for both Appointments and Items tabs
+        clientService.getAllClientBookings(clientId), // Fetch ALL bookings (includeAll=true) for Appointments tab
         clientService.getClientSales(clientId),
         clientService.getClientGiftCards(clientId),
         clientService.getClientReviews(clientId),
@@ -117,10 +117,92 @@ const useClientDetails = (clientId) => {
       } else {
         setGiftCards([]);
       }
-      if (reviewsData && Array.isArray(reviewsData)) {
+      if (reviewsData && Array.isArray(reviewsData) && reviewsData.length > 0) {
         setReviews(reviewsData);
+      } else if (statsData && Array.isArray(statsData.recentFeedback) && statsData.recentFeedback.length > 0) {
+        // Some backends include recent feedback/reviews inside the stats payload (recentFeedback)
+        const statsReviews = statsData.recentFeedback.map((f, idx) => ({
+          _id: f._id || `stats-feedback-${idx}`,
+          rating: f.ratings?.overall || f.rating || f.ratingValue || 0,
+          comment: f.comment || f.text || f.review || f.feedback || '',
+          createdAt: f.createdAt || f.date || null,
+          service: f.service?.name || f.serviceName || '',
+          bookingId: f.bookingId || f.booking?._id || null
+        }));
+
+        try {
+          // eslint-disable-next-line no-console
+          console.debug('Using statsData.recentFeedback as reviews fallback:', statsReviews);
+        } catch (e) {}
+
+        setReviews(statsReviews);
       } else {
-        setReviews([]);
+        // If backend has no dedicated reviews endpoint or stats feedback, try extracting reviews from bookings
+        const derivedReviews = [];
+        if (Array.isArray(bookingsData)) {
+          bookingsData.forEach(booking => {
+            // Various places reviews/feedback might be attached
+            // 1) Single rating/comment fields
+            const rating1 = booking.rating || booking.ratingValue || booking.ratingScore;
+            const comment1 = booking.review || booking.comment || booking.reviewText;
+
+            // 2) Nested feedback object
+            const rating2 = booking.feedback?.rating || booking.feedback?.ratings?.overall;
+            const comment2 = booking.feedback?.comment || booking.feedback?.text;
+
+            // 3) Arrays of reviews/feedbacks
+            const arrayReviews = Array.isArray(booking.reviews) ? booking.reviews : (Array.isArray(booking.feedbacks) ? booking.feedbacks : []);
+
+            // 4) Other possible shapes
+            const rating3 = booking.ratings?.overall || booking.ratings?.score;
+            const comment3 = booking.customerFeedback || booking.clientFeedback;
+
+            // Collect primary rating/comment if present
+            const rating = rating1 || rating2 || rating3;
+            const comment = comment1 || comment2 || comment3 || '';
+
+            if (rating || comment) {
+              derivedReviews.push({
+                _id: `booking-${booking._id}-review`,
+                rating: rating || 0,
+                comment: comment || '',
+                createdAt: booking.updatedAt || booking.completedAt || booking.createdAt,
+                service: booking.services?.[0]?.service?.name || '' ,
+                bookingId: booking._id
+              });
+            }
+
+            // If booking contains an array of review objects, map them
+            if (arrayReviews && Array.isArray(arrayReviews) && arrayReviews.length > 0) {
+              arrayReviews.forEach((r, idx) => {
+                const rrating = r.rating || r.ratings?.overall || r.score;
+                const rcomment = r.comment || r.text || r.review || r.feedback;
+                if (rrating || rcomment) {
+                  derivedReviews.push({
+                    _id: r._id || `booking-${booking._id}-review-${idx}`,
+                    rating: rrating || 0,
+                    comment: rcomment || '',
+                    createdAt: r.createdAt || booking.updatedAt || booking.createdAt,
+                    service: r.service?.name || booking.services?.[0]?.service?.name || '',
+                    bookingId: booking._id
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        // Debug derived reviews
+        try {
+          // eslint-disable-next-line no-console
+          console.debug('Derived reviews from bookings:', derivedReviews);
+        } catch (e) {}
+
+        if (derivedReviews.length > 0) {
+          setReviews(derivedReviews);
+        } else {
+          setReviews([]);
+        }
       }
       if (membershipsData) {
         setMemberships(membershipsData);

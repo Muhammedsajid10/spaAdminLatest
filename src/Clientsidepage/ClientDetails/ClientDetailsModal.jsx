@@ -217,7 +217,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                 {activeTab === 'appointments' && (
                   <ClientAppointmentsTab 
                     client={client} 
-                    bookings={bookings}
+                    bookings={allBookings}
                     servicesMap={servicesMap}
                     employeesMap={employeesMap}
                   />

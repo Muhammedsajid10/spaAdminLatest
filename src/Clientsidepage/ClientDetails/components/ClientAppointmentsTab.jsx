@@ -10,6 +10,20 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
   const moreOptions = ['Started', 'Completed',  'No-show'];
   const mainOptions = ['All',  'Confirmed'];
 
+  // Normalize status strings for comparisons
+  const normalize = (s) => {
+    if (!s && s !== 0) return '';
+    return String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  };
+
+  // Mapping to handle multiple backend representations for same logical status
+  const statusMap = {
+    confirmed: ['confirmed', 'booked'],
+    started: ['started'],
+    completed: ['completed', 'complete'],
+    noshow: ['noshow', 'noshows', 'no_show']
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -97,11 +111,30 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
   }, [bookings, servicesMap, employeesMap]);
 
   const filteredAppointments = useMemo(() => {
+    const target = normalize(filterStatus);
+
     return formattedAppointments.filter(appt => {
-      if (filterStatus === 'All') return true;
-      return appt.status.toLowerCase() === filterStatus.toLowerCase();
+      if (target === 'all' || target === '') return true;
+      const apptStatus = normalize(appt.status);
+
+      // If we have a mapping for the selected filter, match against mapped values
+      if (statusMap[target]) {
+        return statusMap[target].some(mapped => mapped === apptStatus);
+      }
+
+      return apptStatus === target;
     });
   }, [formattedAppointments, filterStatus]);
+
+  // Debugging: print statuses so we can see what arrives from the backend
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('Appointments statuses:', formattedAppointments.map(a => ({ id: a.id, status: a.status, normalized: normalize(a.status) })));
+    } catch (e) {
+      // ignore
+    }
+  }, [formattedAppointments]);
 
   const isMoreActive = moreOptions.includes(filterStatus);
 
