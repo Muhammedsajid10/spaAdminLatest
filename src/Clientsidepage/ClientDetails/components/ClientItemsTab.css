@@ -127,6 +127,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
 }
 
 .item-name {
@@ -240,4 +241,63 @@
 .status-badge.partially.used {
   background: #fef3c7;
   color: #92400e;
+}
+
+/* --- Membership Specific Styles --- */
+.membership-card::before {
+  background: #8b5cf6; /* Purple accent for memberships */
+}
+
+.membership-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.membership-service {
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 16px;
+  background: #f3f4f6;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.membership-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.membership-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.membership-price-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
 }

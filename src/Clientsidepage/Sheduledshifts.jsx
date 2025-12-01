@@ -1672,7 +1672,7 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
               onClick={() => setShowOptions(!showOptions)}
             >
               Export
-              <ChevronDown size={16} />
+              <FiChevronDown size={16} />
             </button>
             {showOptions && (
               <div className="dropdown-menu export-container" role="menu" aria-label="Export options">
@@ -1729,7 +1729,7 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
 
         <div className="week-navigation">
           <button className="nav-btn" onClick={handlePrevWeek} aria-label="Previous week">
-            <ChevronLeft size={18} />
+            <FiChevronLeft size={18} />
           </button>
 
           <div className="week-info">
@@ -1746,12 +1746,12 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
               title="Open calendar"
             >
               <span className="week-date-range">{formatWeekRange(currentDate)}</span>
-              <ChevronDown size={14} />
+              <FiChevronDown size={14} />
             </button>
           </div>
 
           <button className="nav-btn" onClick={handleNextWeek} aria-label="Next week">
-            <ChevronRight size={18} />
+            <FiChevronRight size={18} />
           </button>
 
           <button className="today-btn" onClick={goToToday} title="Go to current week">Today</button>

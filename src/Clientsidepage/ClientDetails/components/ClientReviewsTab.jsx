@@ -15,7 +15,9 @@ const ClientReviewsTab = ({ client, reviews = [] }) => {
             year: 'numeric'
           })
         : '',
-      service: review.service?.name || review.booking?.services?.[0]?.service?.name || ''
+      service: review.service?.name || review.booking?.services?.[0]?.service?.name || '',
+      bookingTime: review.booking?.startTime || '',
+      employeeName: review.booking?.staff?.name || review.staff?.name || ''
     }));
   }, [reviews]);
 
@@ -43,9 +45,19 @@ const ClientReviewsTab = ({ client, reviews = [] }) => {
                   </div>
                   <span className="review-date">{review.date}</span>
                 </div>
-                {review.service && (
-                  <div className="review-service">{review.service}</div>
-                )}
+                
+                <div className="review-details-row">
+                  {review.service && (
+                    <span className="review-service">{review.service}</span>
+                  )}
+                  {review.bookingTime && (
+                    <span className="review-meta-item">at {review.bookingTime}</span>
+                  )}
+                  {review.employeeName && (
+                    <span className="review-meta-item">with {review.employeeName}</span>
+                  )}
+                </div>
+
                 {review.comment && (
                   <p className="review-comment">{review.comment}</p>
                 )}

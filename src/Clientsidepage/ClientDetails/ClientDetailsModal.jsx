@@ -226,6 +226,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
                   <ClientSalesTab 
                     client={client} 
                     sales={sales}
+                    bookings={allBookings}
                     servicesMap={servicesMap}
                   />
                 )}

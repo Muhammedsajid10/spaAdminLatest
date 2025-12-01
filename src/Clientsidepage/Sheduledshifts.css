@@ -871,7 +871,7 @@
 /* --- UPDATED SHIFT EDITOR MODAL STYLES --- */
 .modal-overlay {
   position: fixed;
-  top: 0;
+  top: 31px;
   left: 0;
   width: 100vw;
   height: 100vh;
