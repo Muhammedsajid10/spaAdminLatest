@@ -229,7 +229,7 @@ const ShiftEditorModal = ({
           <button className="close-btn" onClick={handleInternalClose}><FiX /></button>
         </div>
 
-        <div className="modal-content">
+        <div className="ss-modal-content">
           {/* --- DISPLAYING THE NEW VALIDATION ERROR --- */}
           {(error || validationError) && <div className="modal-error-message">{error || validationError}</div>}
 
@@ -484,7 +484,7 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
           </div>
         </div>
 
-        <div className="modal-content">
+        <div className="ss-modal-content">
           {error && <div className="modal-error-message">{error}</div>}
           {successMessage && <div className="modal-success-message">{successMessage}</div>}
 
