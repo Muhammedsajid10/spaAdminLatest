@@ -1975,8 +1975,8 @@
 
 .staff-grid.cols-3 .staff-column {
   width: 33.33%;
-  min-width: 250px;
-  flex: 1;
+  min-width: 300px; /* Increased to ensure good visibility */
+  flex: 0 0 33.33%;
 }
 
 /* 4 employees - 25% each */
@@ -1986,30 +1986,21 @@
 
 .staff-grid.cols-4 .staff-column {
   width: 25%;
-  min-width: 220px;
-  flex: 1;
+  min-width: 250px; /* Ensure readable width */
+  flex: 0 0 25%;
 }
 
-/* 5 employees - 20% each */
-.staff-grid.cols-5 {
-  overflow-x: hidden;
-}
-
-.staff-grid.cols-5 .staff-column {
-  width: 20%;
-  min-width: 200px;
-  flex: 1;
-}
-
-/* 6 employees - 16.66% each */
+/* 5+ employees - Force 4 columns visible, scroll for rest */
+.staff-grid.cols-5,
 .staff-grid.cols-6 {
-  overflow-x: hidden;
+  overflow-x: auto; /* Enable scroll */
 }
 
+.staff-grid.cols-5 .staff-column,
 .staff-grid.cols-6 .staff-column {
-  width: 16.66%;
-  min-width: 180px;
-  flex: 1;
+  width: 25%; /* Force 4 columns */
+  min-width: 250px;
+  flex: 0 0 25%;
 }
 
 /* 7+ employees - fixed width with horizontal scroll */
@@ -2044,8 +2035,8 @@
 .staff-grid.cols-18 .staff-column,
 .staff-grid.cols-19 .staff-column,
 .staff-grid.cols-20 .staff-column {
-  width: var(--staff-column-width);
-  min-width: var(--staff-column-width);
+  width: 25%; /* Force 4 columns visible */
+  min-width: 250px;
   flex-shrink: 0;
 }
 
@@ -13073,30 +13064,174 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  max-width: 400px; /* Prevent it from getting too wide */
+  margin-left: auto; /* Push to the right if in a flex container */
+  margin-right: 0;
+}
+
+/* Date Picker Section */
+.summary-date-picker-section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+}
+
+.summary-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-date-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.summary-date-display:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.summary-date-icon {
+  color: #6366f1;
+}
+
+.summary-date-display span {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.summary-edit-icon {
+  color: #9ca3af;
+}
+
+/* Inline Dropdown Styling */
+.summary-date-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  z-index: 50;
+}
+
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.date-picker-header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
+.date-picker-header button:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.date-picker-header span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.date-picker-grid-mini {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.date-picker-day-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  padding-bottom: 4px;
+}
+
+.date-picker-day-mini {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #374151;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.date-picker-day-mini:hover {
+  background: #f3f4f6;
+}
+
+.date-picker-day-mini.other-month {
+  color: #d1d5db;
+}
+
+.date-picker-day-mini.selected {
+  background: #6366f1;
+  color: white;
 }
 
 .summary-card-minimal {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .summary-card-minimal h4 {
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
   text-transform: uppercase;
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   letter-spacing: 0.5px;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 12px;
 }
 
 .minimal-service-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #f3f4f6;
+}
+
+.minimal-service-item:last-child {
+  border-bottom: none;
 }
 
 .minimal-service-item:last-child {
@@ -13511,20 +13646,24 @@
 
 .appointment-row-consolidated {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 16px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  gap: 16px;
+  border-radius: 12px;
+  gap: 12px;
+  width: 100%;
 }
 
 .apt-service-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1.5;
+  width: 100%;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .service-icon-generic {
@@ -13536,17 +13675,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .service-details {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .service-name {
   font-size: 14px;
   font-weight: 600;
   color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .service-duration {
@@ -13556,9 +13700,10 @@
 
 .apt-meta-info {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  flex: 2;
+  gap: 12px;
+  width: 100%;
   color: #374151;
   font-size: 13px;
 }
@@ -13567,6 +13712,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  background: #ffffff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 
 .edit-meta-btn {
@@ -13579,6 +13728,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto; /* Push to right if space allows */
 }
 
 .edit-meta-btn:hover {
@@ -13589,10 +13739,11 @@
 .apt-price-action {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
-  justify-content: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 4px;
 }
+
 
 .price-display-mini {
   font-size: 14px;

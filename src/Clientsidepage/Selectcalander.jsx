@@ -4471,37 +4471,68 @@ const SelectCalendar = () => {
                       <h3>Booking Summary</h3>
                       
                       {/* Services */}
-                      <div className="summary-section">
-                        <h4>Services</h4>
-                        {multipleAppointments.map((apt, idx) => (
-                          <div key={idx} className="summary-item">
-                            <span>{apt.service.name}</span>
-                            <span>{Math.round(apt.duration / 60) || 1}h - AED {apt.price}</span>
-                          </div>
-                        ))}
-                      </div>
+                     
 
                       {/* Date & Time */}
-                      <div className="summary-section">
-                        <h4>Date & Time</h4>
-                        <div className="summary-item">
-                          <span>{multipleAppointments[0]?.date ? new Date(multipleAppointments[0].date).toLocaleDateString() : 'Not selected'}</span>
-                          <span>{multipleAppointments[0]?.timeSlot || 'Not selected'}</span>
-                        </div>
-                      </div>
+                     
 
                       {/* Staff */}
-                      <div className="summary-section">
-                        <h4>Staff</h4>
-                        <div className="summary-item">
-                          <span>{multipleAppointments[0]?.professional?.user?.firstName || multipleAppointments[0]?.professional?.name || 'Any Staff'}</span>
-                          <span>{multipleAppointments[0]?.professional?.role || 'Professional'}</span>
-                        </div>
-                      </div>
+                    
 
                       {/* Minimalistic Final Summary */}
                       <div className="minimal-summary-container">
                         
+                        {/* Date Picker Section */}
+                        <div className="summary-date-picker-section">
+                          <label className="summary-label">Booking Date</label>
+                          <div 
+                            className="summary-date-display"
+                            onClick={() => setShowBookingDatePicker(!showBookingDatePicker)}
+                          >
+                            <Calendar size={16} className="summary-date-icon" />
+                            <span>
+                              {selectedBookingDate 
+                                ? new Date(selectedBookingDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) 
+                                : 'Select Date'}
+                            </span>
+                            <Edit2 size={14} className="summary-edit-icon" />
+                          </div>
+                          
+                          {/* Inline Date Picker Dropdown */}
+                          {showBookingDatePicker && (
+                            <div className="summary-date-picker-dropdown">
+                              <div className="date-picker-header">
+                                <button onClick={goToDatePickerPreviousMonth}><ChevronLeft size={16} /></button>
+                                <span>{datePickerCurrentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                                <button onClick={goToDatePickerNextMonth}><ChevronRight size={16} /></button>
+                              </div>
+                              <div className="date-picker-grid-mini">
+                                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                                  <div key={day} className="date-picker-day-header">{day}</div>
+                                ))}
+                                {getDatePickerCalendarDays(datePickerCurrentMonth).map((day, idx) => (
+                                  <button
+                                    key={idx}
+                                    className={`date-picker-day-mini ${!day.isCurrentMonth ? 'other-month' : ''} ${
+                                      selectedBookingDate && 
+                                      new Date(selectedBookingDate).toDateString() === day.date.toDateString() 
+                                        ? 'selected' 
+                                        : ''
+                                    }`}
+                                    onClick={() => {
+                                      setSelectedBookingDate(day.date);
+                                      setShowBookingDatePicker(false);
+                                      // Optional: Reset time slot if needed, or keep it if valid
+                                    }}
+                                  >
+                                    {day.day}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
                         {/* Consolidated Appointment Details */}
                         <div className="summary-card-minimal">
                           <h4>Appointment Details</h4>
@@ -4769,7 +4800,24 @@ const SelectCalendar = () => {
                   </>
                 ) : (
                   <>
-                    <h3>Click any day to schedule an appointment:</h3>
+                    {/* Month Navigation Header */}
+                    <div className="date-picker-header" style={{ marginBottom: '16px', justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+                      <button 
+                        onClick={goToDatePickerPreviousMonth}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <span style={{ fontSize: '16px', fontWeight: '600' }}>
+                        {datePickerCurrentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <button 
+                        onClick={goToDatePickerNextMonth}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </div>
 
                     {/* Day headers */}
                     <div className="calendar-day-headers">
