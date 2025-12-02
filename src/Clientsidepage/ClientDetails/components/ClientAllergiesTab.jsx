@@ -77,58 +77,46 @@ const ClientAllergiesTab = ({ client, allergies = [], onAddAllergy, onDeleteAlle
           </div>
         ) : (
           <div className="allergies-list">
-            {formattedAllergies.map((allergy) => (
-              <div key={allergy.id} className="allergy-card">
-                <div className="allergy-card-header">
-                  <div className="allergy-badges">
-                    <span className={`type-badge ${getTypeBadgeClass(allergy.type)}`}>
-                      {allergy.type === 'non-drug' ? 'Non-Drug' : 
-                       allergy.type === 'drug' ? 'Drug' : 'No Known Allergies'}
-                    </span>
-                    {allergy.severity && (
-                      <span className={`severity-badge ${getSeverityBadgeClass(allergy.severity)}`}>
-                        {allergy.severity.charAt(0).toUpperCase() + allergy.severity.slice(1)}
-                      </span>
-                    )}
-                  </div>
-                  <button 
-                    className="btn-delete-allergy" 
-                    onClick={() => handleDelete(allergy.id)}
-                    title="Delete allergy"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+            {formattedAllergies.map((allergy) => {
+               // Determine severity class
+               let severityClass = 'severity-mild'; // default
+               if (allergy.severity === 'moderate') severityClass = 'severity-moderate';
+               if (allergy.severity === 'severe') severityClass = 'severity-severe';
+               if (allergy.severity === 'fatal') severityClass = 'severity-fatal';
 
-                {allergy.type !== 'no-known' && (
-                  <>
-                    <div className="allergy-info">
-                      <div className="allergy-field">
-                        <span className="allergy-label">Name:</span>
-                        <span className="allergy-value">{allergy.name || '-'}</span>
-                      </div>
-                      <div className="allergy-field">
-                        <span className="allergy-label">Reaction:</span>
-                        <span className="allergy-value">{allergy.reaction || '-'}</span>
+               return (
+              <div key={allergy.id} className="allergy-card">
+                <div className="allergy-main-content">
+                  <div className="allergy-icon-wrapper">
+                     <div className={`allergy-severity-icon ${severityClass}`}></div>
+                  </div>
+                  <div className="allergy-details">
+                    <div className="allergy-header-row">
+                      <span className="allergy-name">{allergy.name || 'Unknown Allergy'}</span>
+                      <div className="allergy-meta-row">
+                        {allergy.severity ? `${allergy.severity} allergy` : 'Allergy'} 
+                        {allergy.reaction ? ` • ${allergy.reaction}` : ''}
                       </div>
                     </div>
-                  </>
-                )}
-
-                {allergy.note && (
-                  <div className="allergy-note">
-                    <AlertCircle size={14} />
-                    <span>{allergy.note}</span>
+                    
+                    {allergy.note && (
+                      <div className="allergy-note-text">
+                        {allergy.note}
+                      </div>
+                    )}
                   </div>
-                )}
-
-                <div className="allergy-footer">
-                  <span className="allergy-meta">
-                    Added by {allergy.createdBy} on {allergy.createdDate}
-                  </span>
                 </div>
+                
+                <button 
+                  className="btn-delete-allergy" 
+                  onClick={() => handleDelete(allergy.id)}
+                  title="Delete allergy"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
