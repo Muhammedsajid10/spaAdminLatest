@@ -50,9 +50,7 @@ const ClientAllergiesTab = ({ client, allergies = [], onAddAllergy, onDeleteAlle
   };
 
   const handleDelete = (allergyId) => {
-    if (window.confirm('Are you sure you want to delete this allergy?')) {
-      onDeleteAllergy(allergyId);
-    }
+    onDeleteAllergy(allergyId);
   };
 
   return (
