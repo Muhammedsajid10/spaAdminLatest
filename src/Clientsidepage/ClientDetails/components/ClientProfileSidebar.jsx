@@ -69,154 +69,157 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships 
         <p className="sidebar-phone">{clientPhone}</p>
         
         <div className="sidebar-header-actions">
-          <button 
-            className="btn-action-dropdown"
-            onClick={() => setIsActionsOpen(!isActionsOpen)}
-            ref={dropdownRef}
-          >
-            Actions
-            <ChevronDown size={16} style={{ transform: isActionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-          </button>
-        </div>
-
-        {isActionsOpen && (
-          <div className="actions-dropdown-menu" style={{ top: '180px', left: '20px' }}>
+          <div style={{ position: 'relative' }}>
             <button 
-              className="action-item"
-              onClick={() => {
-                setIsActionsOpen(false);
-                if (onAddNote) onAddNote();
-              }}
+              className="simple-actions-trigger"
+              onClick={() => setIsActionsOpen(!isActionsOpen)}
+              ref={dropdownRef}
             >
-              <FileText size={16} />
-              Add Simple Note
+              Actions
+              <ChevronDown size={16} style={{ transform: isActionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
-            <button 
-              className="action-item"
-              onClick={() => {
-                setIsActionsOpen(false);
-                if (onAddAllergy) onAddAllergy();
-              }}
-            >
-              <AlertCircle size={16} />
-              Add Allergy
-            </button>
-         
-            <button 
-              className="action-item delete"
-              onClick={() => {
-                setIsActionsOpen(false);
-                if (onDelete) onDelete(client._id || client.id);
-              }}
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
+            
+            {isActionsOpen && (
+              <div className="actions-dropdown-menu">
+                <button 
+                  className="action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    if (onAddNote) onAddNote();
+                  }}
+                >
+                  <FileText size={16} />
+                  Add Simple Note
+                </button>
+                <button 
+                  className="action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    if (onAddAllergy) onAddAllergy();
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  Add Allergy
+                </button>
+             
+                <button 
+                  className="action-item delete"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    if (onDelete) onDelete(client._id || client.id);
+                  }}
+                >
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="sidebar-divider" />
 
-      {/* Allergies (New Style) */}
-      {allergies && allergies.length > 0 && (
-        <>
-          {allergies.map((allergy, index) => {
-             // Determine severity class
-             let severityClass = 'severity-mild'; // default
-             if (allergy.severity === 'moderate') severityClass = 'severity-moderate';
-             if (allergy.severity === 'severe') severityClass = 'severity-severe';
-             if (allergy.severity === 'fatal') severityClass = 'severity-fatal';
-
-             return (
-              <div key={allergy._id || index} className="sidebar-allergy-card">
-                <div className="allergy-icon-wrapper">
-                   {/* Dot pattern icon matching AddAllergyModal style */}
-                   <div className={`allergy-severity-icon ${severityClass}`}>
-                     {/* CSS radial-gradient handles the pattern */}
-                   </div>
-                </div>
-                <div className="allergy-info">
-                  <div className="allergy-name">{allergy.name}</div>
-                  <div className="allergy-meta">
-                    {allergy.severity ? `${allergy.severity} allergy` : 'Allergy'} 
-                    {allergy.reaction ? ` • ${allergy.reaction}` : ''}
+      <div className="sidebar-scroll-content">
+        {/* Allergies (New Style) */}
+        {allergies && allergies.length > 0 && (
+          <>
+            {allergies.map((allergy, index) => {
+               // Determine severity class
+               let severityClass = 'severity-mild'; // default
+               if (allergy.severity === 'moderate') severityClass = 'severity-moderate';
+               if (allergy.severity === 'severe') severityClass = 'severity-severe';
+               if (allergy.severity === 'fatal') severityClass = 'severity-fatal';
+  
+               return (
+                <div key={allergy._id || index} className="sidebar-allergy-card">
+                  <div className="allergy-icon-wrapper">
+                     {/* Dot pattern icon matching AddAllergyModal style */}
+                     <div className={`allergy-severity-icon ${severityClass}`}>
+                       {/* CSS radial-gradient handles the pattern */}
+                     </div>
+                  </div>
+                  <div className="allergy-info">
+                    <div className="allergy-name">{allergy.name}</div>
+                    <div className="allergy-meta">
+                      {allergy.severity ? `${allergy.severity} allergy` : 'Allergy'} 
+                      {allergy.reaction ? ` • ${allergy.reaction}` : ''}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-          <div className="sidebar-divider" />
-        </>
-      )}
-
-      {/* Active Membership (if any) */}
-      {/* Active Membership (if any) */}
-      {activeMembership && (
-        <>
-          <div className="sidebar-membership-card">
-            <div className="membership-icon">
-              {/* Using a simple div or icon for the card representation */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
-            </div>
-            <div className="membership-info">
-              <div className="membership-name">{activeMembership.name}</div>
-              <div className="membership-meta">
-                {activeMembership.remainingSessions !== undefined && activeMembership.numberOfSessions !== undefined ? (
-                  <>
-                    {activeMembership.remainingSessions}/{activeMembership.numberOfSessions} sessions • Expires {formatShortDate(activeMembership.endDate || activeMembership.expiryDate)}
-                  </>
-                ) : (
-                  <>
-                    Expires {formatShortDate(activeMembership.endDate || activeMembership.expiryDate)}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="sidebar-divider" />
-        </>
-      )}
-
-      {/* Additional Info List */}
-      <div className="sidebar-info-list">
-        <div className="info-item">
-          {client.gender === 'male' ? (
-            <PiGenderMale size={20} className="info-icon" />
-          ) : client.gender === 'female' ? (
-            <PiGenderFemale size={20} className="info-icon" />
-          ) : (
-            <PiGenderNeuter size={20} className="info-icon" />
-          )}
-          <span>{client.pronouns || client.gender || 'Add pronouns'}</span>
-        </div>
-        
-        <div className="info-item">
-          <Calendar size={20} className="info-icon" />
-          <span>{client.dateOfBirth ? formatDate(client.dateOfBirth) : 'Add date of birth'}</span>
-        </div>
-
-        <div className="info-item" style={{ cursor: 'default' }}>
-          <Clock size={20} className="info-icon" />
-          <span>Created {formatDate(client.createdAt)}</span>
-        </div>
-
-        {/* Most Recent Note */}
-        {mostRecentNote && (
-          <div className="info-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <FileText size={20} className="info-icon" />
-              <span style={{ fontWeight: 600 }}>Recent Note</span>
-            </div>
-            <div style={{ paddingLeft: '28px', fontSize: '13px', color: '#666', lineHeight: '1.4' }}>
-              {mostRecentNote.content?.substring(0, 100)}
-              {mostRecentNote.content?.length > 100 ? '...' : ''}
-            </div>
-          </div>
+              );
+            })}
+            <div className="sidebar-divider" />
+          </>
         )}
+
+        {/* Active Membership (if any) */}
+        {activeMembership && (
+          <>
+            <div className="sidebar-membership-card">
+              <div className="membership-icon">
+                {/* Using a simple div or icon for the card representation */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              </div>
+              <div className="membership-info">
+                <div className="membership-name">{activeMembership.name}</div>
+                <div className="membership-meta">
+                  {activeMembership.remainingSessions !== undefined && activeMembership.numberOfSessions !== undefined ? (
+                    <>
+                      {activeMembership.remainingSessions}/{activeMembership.numberOfSessions} sessions • Expires {formatShortDate(activeMembership.endDate || activeMembership.expiryDate)}
+                    </>
+                  ) : (
+                    <>
+                      Expires {formatShortDate(activeMembership.endDate || activeMembership.expiryDate)}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="sidebar-divider" />
+          </>
+        )}
+
+        {/* Additional Info List */}
+        <div className="sidebar-info-list">
+          <div className="info-item">
+            {client.gender === 'male' ? (
+              <PiGenderMale size={20} className="info-icon" />
+            ) : client.gender === 'female' ? (
+              <PiGenderFemale size={20} className="info-icon" />
+            ) : (
+              <PiGenderNeuter size={20} className="info-icon" />
+            )}
+            <span>{client.pronouns || client.gender || 'Add pronouns'}</span>
+          </div>
+          
+          <div className="info-item">
+            <Calendar size={20} className="info-icon" />
+            <span>{client.dateOfBirth ? formatDate(client.dateOfBirth) : 'Add date of birth'}</span>
+          </div>
+
+          <div className="info-item" style={{ cursor: 'default' }}>
+            <Clock size={20} className="info-icon" />
+            <span>Created {formatDate(client.createdAt)}</span>
+          </div>
+
+          {/* Most Recent Note */}
+          {mostRecentNote && (
+            <div className="info-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <FileText size={20} className="info-icon" />
+                <span style={{ fontWeight: 600 }}>Recent Note</span>
+              </div>
+              <div style={{ paddingLeft: '28px', fontSize: '13px', color: '#666', lineHeight: '1.4' }}>
+                {mostRecentNote.content?.substring(0, 100)}
+                {mostRecentNote.content?.length > 100 ? '...' : ''}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
