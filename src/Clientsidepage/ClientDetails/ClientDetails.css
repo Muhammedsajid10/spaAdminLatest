@@ -194,6 +194,30 @@
   transform: translateY(-1px);
 }
 
+.simple-actions-trigger {
+  width: auto;
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.simple-actions-trigger:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-900);
+}
+
 .sidebar-allergy-card {
   display: flex;
   gap: 12px;
@@ -725,10 +749,11 @@
 }
 
 .sidebar-header-actions {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  margin-top: 16px;
+     display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-top: 16px;
+    justify-content: center;
 }
 
 .btn-book-now {

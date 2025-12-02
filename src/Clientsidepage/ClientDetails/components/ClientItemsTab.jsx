@@ -91,12 +91,7 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap =
       <div className="items-header">
         <h2 className="items-title">Items</h2>
         <div className="items-subtabs">
-          <button 
-            className={`subtab-btn ${activeSubTab === 'products' ? 'active' : ''}`}
-            onClick={() => setActiveSubTab('products')}
-          >
-            Products
-          </button>
+      
           <button 
             className={`subtab-btn ${activeSubTab === 'memberships' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('memberships')}
