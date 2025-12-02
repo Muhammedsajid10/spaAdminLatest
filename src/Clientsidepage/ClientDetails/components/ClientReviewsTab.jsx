@@ -1,24 +1,97 @@
 import React, { useMemo } from 'react';
-import { Star } from 'lucide-react';
+import { Star, Calendar, User, Briefcase } from 'lucide-react';
 import './ClientReviewsTab.css';
 
 const ClientReviewsTab = ({ client, reviews = [] }) => {
+  // Debug: Log the reviews data structure
+  console.log('📊 Reviews data:', reviews);
+  
   const formattedReviews = useMemo(() => {
-    return reviews.map(review => ({
-      id: review._id,
-      rating: review.rating || 0,
-      comment: review.comment || review.feedback || '',
-      date: review.createdAt 
+    return reviews.map(review => {
+      // Debug: Log each review to see its structure
+      console.log('🔍 Individual review:', review);
+      console.log('Employee data:', review.employee);
+      console.log('Booking data:', review.booking);
+      
+      // Extract employee name from various possible structures
+      let employeeName = 'Unknown';
+      
+      // Try different paths to find employee name
+      if (review.employeeName && review.employeeName !== 'Unknown') {
+        employeeName = review.employeeName;
+      } else if (review.employee?.user?.firstName || review.employee?.user?.lastName) {
+        employeeName = `${review.employee.user.firstName || ''} ${review.employee.user.lastName || ''}`.trim();
+      } else if (review.employee?.firstName || review.employee?.lastName) {
+        employeeName = `${review.employee.firstName || ''} ${review.employee.lastName || ''}`.trim();
+      } else if (review.employee?.name) {
+        employeeName = review.employee.name;
+      } else if (review.booking?.services?.length > 0) {
+        // Try to find the specific service in the booking that matches this review
+        const serviceId = review.service?._id || review.service;
+        const matchedService = review.booking.services.find(s => 
+          (s.service?._id === serviceId) || (s.service === serviceId)
+        );
+        
+        // Use matched service's employee, or fallback to first service's employee
+        const targetService = matchedService || review.booking.services[0];
+        
+        if (targetService?.employee?.user?.firstName || targetService?.employee?.user?.lastName) {
+          employeeName = `${targetService.employee.user.firstName || ''} ${targetService.employee.user.lastName || ''}`.trim();
+        } else if (targetService?.employee?.firstName || targetService?.employee?.lastName) {
+          employeeName = `${targetService.employee.firstName || ''} ${targetService.employee.lastName || ''}`.trim();
+        }
+      } else if (review.booking?.staff?.name) {
+        employeeName = review.booking.staff.name;
+      } else if (review.staff?.name) {
+        employeeName = review.staff.name;
+      }
+      
+      console.log('✅ Extracted employee name:', employeeName);
+
+      // Extract service name
+      const serviceName = 
+        review.service?.name || 
+        review.booking?.services?.[0]?.service?.name || 
+        '';
+
+      // Format appointment date and time
+      const appointmentDate = review.booking?.appointmentDate || review.booking?.createdAt;
+      const appointmentTime = review.booking?.appointmentTime || review.booking?.startTime;
+      
+      let formattedDateTime = '';
+      if (appointmentDate) {
+        const date = new Date(appointmentDate);
+        formattedDateTime = date.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+        
+        if (appointmentTime) {
+          formattedDateTime += ` at ${appointmentTime}`;
+        }
+      }
+
+      // Format review creation date
+      const reviewDate = review.createdAt 
         ? new Date(review.createdAt).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
             year: 'numeric'
           })
-        : '',
-      service: review.service?.name || review.booking?.services?.[0]?.service?.name || '',
-      bookingTime: review.booking?.startTime || '',
-      employeeName: review.booking?.staff?.name || review.staff?.name || ''
-    }));
+        : '';
+
+      return {
+        id: review._id,
+        rating: review.ratings?.overall || review.rating || 0,
+        comment: review.comment || review.feedback || '',
+        reviewDate,
+        serviceName,
+        appointmentDateTime: formattedDateTime,
+        employeeName,
+        bookingId: review.booking?._id || review.bookingId
+      };
+    });
   }, [reviews]);
 
   return (
@@ -42,19 +115,30 @@ const ClientReviewsTab = ({ client, reviews = [] }) => {
                         color="#6366f1" 
                       />
                     ))}
+                    <span className="rating-value">({review.rating}/5)</span>
                   </div>
-                  <span className="review-date">{review.date}</span>
+                  <span className="review-date">{review.reviewDate}</span>
                 </div>
                 
-                <div className="review-details-row">
-                  {review.service && (
-                    <span className="review-service">{review.service}</span>
+                {/* Booking Details Section */}
+                <div className="booking-details">
+                  {review.serviceName && (
+                    <div className="booking-detail-item">
+                      <Briefcase size={14} className="detail-icon" />
+                      <span className="detail-text">{review.serviceName}</span>
+                    </div>
                   )}
-                  {review.bookingTime && (
-                    <span className="review-meta-item">at {review.bookingTime}</span>
+                  {review.employeeName && review.employeeName !== 'Unknown' && (
+                    <div className="booking-detail-item">
+                      <User size={14} className="detail-icon" />
+                      <span className="detail-text">{review.employeeName}</span>
+                    </div>
                   )}
-                  {review.employeeName && (
-                    <span className="review-meta-item">with {review.employeeName}</span>
+                  {review.appointmentDateTime && (
+                    <div className="booking-detail-item">
+                      <Calendar size={14} className="detail-icon" />
+                      <span className="detail-text">{review.appointmentDateTime}</span>
+                    </div>
                   )}
                 </div>
 

@@ -126,8 +126,15 @@ const useClientDetails = (clientId) => {
           rating: f.ratings?.overall || f.rating || f.ratingValue || 0,
           comment: f.comment || f.text || f.review || f.feedback || '',
           createdAt: f.createdAt || f.date || null,
-          service: f.service?.name || f.serviceName || '',
-          bookingId: f.bookingId || f.booking?._id || null
+          service: f.service, // Keep the full service object if available
+          booking: f.booking, // Keep the full booking object if available
+          employee: f.employee, // Keep the full employee object if available
+          // Fallbacks for flat structures
+          serviceName: f.service?.name || f.serviceName || '',
+          bookingId: f.booking?._id || f.bookingId || null,
+          employeeName: f.employee?.user?.firstName 
+            ? `${f.employee.user.firstName} ${f.employee.user.lastName}` 
+            : (f.employee?.name || '')
         }));
 
         try {

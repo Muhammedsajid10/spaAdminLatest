@@ -24,6 +24,17 @@ const ClientInfoTab = ({ client, onUpdate }) => {
     );
   }
 
+  // Helper function to format date for input (YYYY-MM-DD)
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Initialize form data when entering edit mode
   const handleEditClick = () => {
     setFormData({
@@ -31,9 +42,9 @@ const ClientInfoTab = ({ client, onUpdate }) => {
       lastName: client.lastName || '',
       email: client.email || '',
       phone: client.phone || '',
-      dob: client.dob || '', // Assuming format YYYY-MM-DD or similar
+      dateOfBirth: formatDateForInput(client.dateOfBirth) || '',
       gender: client.gender || '',
-      pronouns: client.pronouns || '',
+      pronouns: client.pronouns || 'Not specified',
       clientSource: client.clientSource || '',
       referredBy: client.referredBy || '',
       preferredLanguage: client.preferredLanguage || '',
@@ -96,7 +107,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           type === 'select' ? (
             <select
               name={name}
-              value={formData[name]}
+              value={formData[name] || ''}
               onChange={handleChange}
               className="edit-select"
             >
@@ -109,7 +120,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
             <input
               type={type}
               name={name}
-              value={formData[name]}
+              value={formData[name] || ''}
               onChange={handleChange}
               className="edit-input"
               placeholder={label}
@@ -117,7 +128,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           )
         ) : (
           <div className={`field-value ${isValueEmpty ? 'empty' : ''}`}>
-            {name === 'dob' || name === 'joined' ? formatDate(value) : displayValue}
+            {name === 'dateOfBirth' || name === 'joined' ? formatDate(value) : displayValue}
           </div>
         )}
       </div>
@@ -153,15 +164,16 @@ const ClientInfoTab = ({ client, onUpdate }) => {
             lastName: client.lastName,
             email: client.email,
             phone: client.phone,
-            dob: client.dob,
+            dateOfBirth: client.dateOfBirth,
             gender: client.gender,
+            pronouns: client.pronouns,
             createdAt: client.createdAt
           })}
           {renderField('First name', 'firstName', client.firstName)}
           {renderField('Last name', 'lastName', client.lastName)}
           {renderField('Email', 'email', client.email, 'text')}
           {renderField('Phone number', 'phone', client.phone, 'tel')}
-          {renderField('Date of birth', 'dob', client.dob, 'date')}
+          {renderField('Date of birth', 'dateOfBirth', client.dateOfBirth, 'date')}
           {renderField('Gender', 'gender', client.gender, 'select', ['Male', 'Female', 'Non-binary', 'Prefer not to say'])}
           {renderField('Pronouns', 'pronouns', client.pronouns, 'select', ['He/Him', 'She/Her', 'They/Them', 'Not specified'])}
           <div className="info-field">

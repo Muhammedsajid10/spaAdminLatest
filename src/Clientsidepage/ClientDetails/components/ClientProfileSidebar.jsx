@@ -196,7 +196,7 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships 
         
         <div className="info-item">
           <Calendar size={20} className="info-icon" />
-          <span>{client.dob ? formatDate(client.dob) : 'Add date of birth'}</span>
+          <span>{client.dateOfBirth ? formatDate(client.dateOfBirth) : 'Add date of birth'}</span>
         </div>
 
         <div className="info-item" style={{ cursor: 'default' }}>
