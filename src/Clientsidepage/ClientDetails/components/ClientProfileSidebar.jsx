@@ -121,9 +121,48 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships 
       <div className="sidebar-divider" />
 
       <div className="sidebar-scroll-content">
+        {/* Additional Info List (Gender, DOB, Created, Note) */}
+        <div className="sidebar-info-list" style={{ marginBottom: '32px' }}>
+          <div className="info-item">
+            {client.gender === 'male' ? (
+              <PiGenderMale size={20} className="info-icon" />
+            ) : client.gender === 'female' ? (
+              <PiGenderFemale size={20} className="info-icon" />
+            ) : (
+              <PiGenderNeuter size={20} className="info-icon" />
+            )}
+            <span>{client.pronouns || client.gender || 'Add pronouns'}</span>
+          </div>
+          
+          <div className="info-item">
+            <Calendar size={20} className="info-icon" />
+            <span>{client.dateOfBirth ? formatDate(client.dateOfBirth) : 'Add date of birth'}</span>
+          </div>
+
+          <div className="info-item" style={{ cursor: 'default' }}>
+            <Clock size={20} className="info-icon" />
+            <span>Created {formatDate(client.createdAt)}</span>
+          </div>
+
+          {/* Most Recent Note */}
+          {mostRecentNote && (
+            <div className="info-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <FileText size={20} className="info-icon" />
+                <span style={{ fontWeight: 600 }}>Recent Note</span>
+              </div>
+              <div style={{ paddingLeft: '28px', fontSize: '13px', color: '#666', lineHeight: '1.4' }}>
+                {mostRecentNote.content?.substring(0, 100)}
+                {mostRecentNote.content?.length > 100 ? '...' : ''}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Allergies (New Style) */}
         {allergies && allergies.length > 0 && (
           <>
+            <div className="sidebar-divider" style={{ marginTop: '-12px' }} />
             {allergies.map((allergy, index) => {
                // Determine severity class
                let severityClass = 'severity-mild'; // default
@@ -182,44 +221,6 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships 
             <div className="sidebar-divider" />
           </>
         )}
-
-        {/* Additional Info List */}
-        <div className="sidebar-info-list">
-          <div className="info-item">
-            {client.gender === 'male' ? (
-              <PiGenderMale size={20} className="info-icon" />
-            ) : client.gender === 'female' ? (
-              <PiGenderFemale size={20} className="info-icon" />
-            ) : (
-              <PiGenderNeuter size={20} className="info-icon" />
-            )}
-            <span>{client.pronouns || client.gender || 'Add pronouns'}</span>
-          </div>
-          
-          <div className="info-item">
-            <Calendar size={20} className="info-icon" />
-            <span>{client.dateOfBirth ? formatDate(client.dateOfBirth) : 'Add date of birth'}</span>
-          </div>
-
-          <div className="info-item" style={{ cursor: 'default' }}>
-            <Clock size={20} className="info-icon" />
-            <span>Created {formatDate(client.createdAt)}</span>
-          </div>
-
-          {/* Most Recent Note */}
-          {mostRecentNote && (
-            <div className="info-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <FileText size={20} className="info-icon" />
-                <span style={{ fontWeight: 600 }}>Recent Note</span>
-              </div>
-              <div style={{ paddingLeft: '28px', fontSize: '13px', color: '#666', lineHeight: '1.4' }}>
-                {mostRecentNote.content?.substring(0, 100)}
-                {mostRecentNote.content?.length > 100 ? '...' : ''}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -121,6 +121,29 @@
   flex-direction: column;
   flex-shrink: 0;
   z-index: 2;
+  overflow: hidden; /* Prevent sidebar itself from scrolling */
+}
+
+.sidebar-scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  /* Custom scrollbar styling for webkit browsers */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-300) transparent;
+  padding-right: 4px; /* Space for scrollbar */
+}
+
+.sidebar-scroll-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll-content::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-300);
+  border-radius: 20px;
 }
 
 .sidebar-profile-header {
@@ -511,53 +534,109 @@
 }
 
 /* Actions Dropdown */
-.actions-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  background: #ffffff;
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  z-index: 50;
-  padding: 6px;
-  animation: slideDown 0.2s ease-out;
+/* Actions Dropdown - Professional Redesign */
+.sidebar-header-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 20px;
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.simple-actions-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 6px; /* Standard rounded corners for a cleaner look */
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-width: 110px;
+}
+
+.simple-actions-trigger:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-900);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.simple-actions-trigger:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.actions-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%); /* Center the dropdown relative to the button */
+  width: 200px; /* Fixed width for consistency */
+  background: #ffffff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  padding: 4px;
+  animation: dropdownFadeIn 0.15s ease-out forwards;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .action-item {
   width: 100%;
   background: none;
   border: none;
-  padding: 10px 12px;
+  padding: 8px 12px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-gray-700);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: all var(--transition-fast);
-  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  border-radius: 4px;
   font-weight: 500;
 }
 
 .action-item:hover {
-  background: var(--color-gray-100);
-  color: var(--color-gray-900);
+  background: var(--color-gray-50);
+  color: var(--color-primary);
+}
+
+.action-item svg {
+  color: var(--color-gray-400);
+  transition: color 0.15s ease;
+}
+
+.action-item:hover svg {
+  color: var(--color-primary);
 }
 
 .action-item.delete {
   color: var(--color-danger);
+  margin-top: 4px;
+  border-top: 1px solid var(--color-gray-100);
+  border-radius: 0 0 4px 4px; /* Round bottom corners only */
 }
 
 .action-item.delete:hover {
   background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.action-item.delete svg {
+  color: var(--color-danger);
 }
 
 /* Sales Tab Styles */
