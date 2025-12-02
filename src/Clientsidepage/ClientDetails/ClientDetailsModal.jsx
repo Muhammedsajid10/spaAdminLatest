@@ -13,12 +13,11 @@ import useClientDetails from './hooks/useClientDetails';
 import AddAllergyModal from './components/AddAllergyModal';
 import ClientAllergiesTab from './components/ClientAllergiesTab';
 import ClientGiftCardsTab from './components/ClientGiftCardsTab';
-import ClientReviewsTab from './components/ClientReviewsTab';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import Loading from '../../states/Loading';
+import ClientReviewsTab from './components/ClientReviewsTab';
+import Toast from '../../components/ui/Toast';
 import clientService from './services/clientService';
-
-
-
 // ... (existing imports)
 
 const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => {
@@ -26,9 +25,25 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [isAddAllergyOpen, setIsAddAllergyOpen] = useState(false);
+  const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false });
+  const [confirmModal, setConfirmModal] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: () => {} 
+  });
+
   const { client, stats, allBookings, bookings, sales, giftCards, reviews, memberships, servicesMap, employeesMap, allergies, notes, loading, error, updateClient, refetch } = useClientDetails(clientId);
 
   if (!isOpen) return null;
+
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type, isVisible: true });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
@@ -45,31 +60,39 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
         type: 'client' 
       });
       refetch(); // Reload all data including new note
+      showToast('Note saved successfully', 'success');
     } catch (error) {
       console.error('Failed to save note:', error);
-      alert('Failed to save note. Please try again.');
+      showToast('Failed to save note. Please try again.', 'error');
     }
   };
 
-  const handleDeleteNote = async (noteId) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      try {
-        await clientService.deleteNote(noteId);
-        refetch(); // Reload data
-      } catch (error) {
-        console.error('Failed to delete note:', error);
-        alert('Failed to delete note. Please try again.');
+  const handleDeleteNote = (noteId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Note',
+      message: 'Are you sure you want to delete this note? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await clientService.deleteNote(noteId);
+          refetch(); // Reload data
+          showToast('Note deleted successfully', 'success');
+        } catch (error) {
+          console.error('Failed to delete note:', error);
+          showToast('Failed to delete note. Please try again.', 'error');
+        }
       }
-    }
+    });
   };
 
   const handlePinNote = async (noteId) => {
     try {
       await clientService.togglePinNote(noteId);
       refetch(); // Reload data to update pin status
+      showToast('Note pin status updated', 'success');
     } catch (error) {
       console.error('Failed to toggle pin:', error);
-      alert('Failed to toggle pin. Please try again.');
+      showToast('Failed to toggle pin. Please try again.', 'error');
     }
   };
 
@@ -78,21 +101,30 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
       await clientService.createAllergy(clientId, allergyData);
       // Refresh client data to show new allergy
       refetch();
+      showToast('Allergy saved successfully', 'success');
     } catch (error) {
       console.error('Failed to save allergy:', error);
-      alert('Failed to save allergy. Please try again.');
+      showToast('Failed to save allergy. Please try again.', 'error');
     }
   };
 
-  const handleDeleteAllergy = async (allergyId) => {
-    try {
-      await clientService.deleteAllergy(allergyId);
-      // Refresh client data to remove deleted allergy
-      refetch();
-    } catch (error) {
-      console.error('Failed to delete allergy:', error);
-      alert('Failed to delete allergy. Please try again.');
-    }
+  const handleDeleteAllergy = (allergyId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Allergy',
+      message: 'Are you sure you want to delete this allergy record? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await clientService.deleteAllergy(allergyId);
+          // Refresh client data to remove deleted allergy
+          refetch();
+          showToast('Allergy deleted successfully', 'success');
+        } catch (error) {
+          console.error('Failed to delete allergy:', error);
+          showToast('Failed to delete allergy. Please try again.', 'error');
+        }
+      }
+    });
   };
 
   return (
@@ -286,7 +318,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
       {/* Modals Container - Stops propagation to prevent closing main modal */}
       <div onClick={(e) => e.stopPropagation()}>
         <AddNoteModal 
-          isOpen={isAddNoteOpen}
+          isOpen={isAddNoteOpen} 
           onClose={() => setIsAddNoteOpen(false)} 
           onSave={handleSaveNote}
         />
@@ -295,7 +327,21 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
           onClose={() => setIsAddAllergyOpen(false)}
           onSave={handleSaveAllergy}
         />
+        <ConfirmationModal
+          isOpen={confirmModal.isOpen}
+          onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+          onConfirm={confirmModal.onConfirm}
+          title={confirmModal.title}
+          message={confirmModal.message}
+        />
       </div>
+
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };
