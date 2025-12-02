@@ -62,7 +62,7 @@ const ClientNotesTab = ({ client, notes, onAddNote, onDeleteNote, onPinNote }) =
           className={`subtab-btn ${activeSubTab === 'appointment' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('appointment')}
         >
-          Appointment notes ({appointmentNotesCount})
+          {/* Appointment notes ({appointmentNotesCount}) */}
         </button>
       </div>
 

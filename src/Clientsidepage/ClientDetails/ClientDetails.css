@@ -121,7 +121,7 @@
   flex-direction: column;
   flex-shrink: 0;
   z-index: 2;
-  overflow: hidden; /* Prevent sidebar itself from scrolling */
+  /* overflow: hidden; Removed to allow dropdown to show */
 }
 
 .sidebar-scroll-content {
@@ -152,6 +152,8 @@
   align-items: center;
   text-align: center;
   margin-bottom: 32px;
+  position: relative; /* Create stacking context */
+  z-index: 10; /* Ensure header (and dropdown) stays above scroll content */
 }
 
 .sidebar-avatar {

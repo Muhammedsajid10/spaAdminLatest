@@ -278,19 +278,23 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
               </div>
             </div>
 
-            {/* Modals */}
-            <AddNoteModal 
-              isOpen={isAddNoteOpen} 
-              onClose={() => setIsAddNoteOpen(false)} 
-              onSave={handleSaveNote}
-            />
-            <AddAllergyModal
-              isOpen={isAddAllergyOpen}
-              onClose={() => setIsAddAllergyOpen(false)}
-              onSave={handleSaveAllergy}
-            />
+            {/* Modals - Moved outside to prevent clipping */}
           </>
         ) : null}
+      </div>
+
+      {/* Modals Container - Stops propagation to prevent closing main modal */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <AddNoteModal 
+          isOpen={isAddNoteOpen}
+          onClose={() => setIsAddNoteOpen(false)} 
+          onSave={handleSaveNote}
+        />
+        <AddAllergyModal
+          isOpen={isAddAllergyOpen}
+          onClose={() => setIsAddAllergyOpen(false)}
+          onSave={handleSaveAllergy}
+        />
       </div>
     </div>
   );

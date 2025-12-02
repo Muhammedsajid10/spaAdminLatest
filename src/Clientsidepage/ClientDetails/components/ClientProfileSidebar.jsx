@@ -69,11 +69,10 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships 
         <p className="sidebar-phone">{clientPhone}</p>
         
         <div className="sidebar-header-actions">
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={dropdownRef}>
             <button 
               className="simple-actions-trigger"
               onClick={() => setIsActionsOpen(!isActionsOpen)}
-              ref={dropdownRef}
             >
               Actions
               <ChevronDown size={16} style={{ transform: isActionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
