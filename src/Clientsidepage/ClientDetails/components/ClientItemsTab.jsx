@@ -92,6 +92,12 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap =
         <h2 className="items-title">Items</h2>
         <div className="items-subtabs">
           <button 
+            className={`subtab-btn ${activeSubTab === 'products' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('products')}
+          >
+            Products
+          </button>
+          <button 
             className={`subtab-btn ${activeSubTab === 'memberships' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('memberships')}
           >
@@ -113,6 +119,18 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap =
       </div>
 
       <div className="items-content">
+        {activeSubTab === 'products' && (
+           <div className="empty-state-container">
+             <div className="empty-icon-wrapper">
+               <User size={32} />
+             </div>
+             <h3 className="empty-title">No products</h3>
+             <p className="empty-description">
+               No products have been sold to this client
+             </p>
+           </div>
+        )}
+
         {activeSubTab === 'memberships' && (
           formattedMemberships.length === 0 ? (
             <div className="empty-state-container">
@@ -127,23 +145,23 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap =
           ) : (
             <div className="services-list">
               {formattedMemberships.map(membership => (
-                <div key={membership.id} className="item-card">
+                <div key={membership.id} className="item-card membership-card">
                   <div className="item-card-content">
                     <div className="item-info">
                       <span className="item-name">{membership.name}</span>
                       <span className="item-meta">
-                        <Calendar size={14} style={{ marginRight: 4 }} />
-                        {membership.purchaseDate}
-                        {membership.expiryDate && ` - Expires: ${membership.expiryDate}`}
-                        <span 
-                          className={`status-badge ${membership.status?.toLowerCase()}`}
-                          style={{ marginLeft: 8 }}
-                        >
-                          {membership.status}
-                        </span>
+                        1 year membership • <span className={`status-text ${membership.status?.toLowerCase()}`}>{membership.status}</span>
                       </span>
+                      
+                     
                     </div>
-                    <span className="item-price">AED {membership.price}</span>
+                    
+                    <div className="membership-icon-right">
+                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                        <line x1="2" y1="10" x2="22" y2="10" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               ))}

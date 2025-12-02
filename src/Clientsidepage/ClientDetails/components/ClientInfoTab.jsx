@@ -159,7 +159,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           })}
           {renderField('First name', 'firstName', client.firstName)}
           {renderField('Last name', 'lastName', client.lastName)}
-          {renderField('Email', 'email', client.email, 'email')}
+          {renderField('Email', 'email', client.email, 'text')}
           {renderField('Phone number', 'phone', client.phone, 'tel')}
           {renderField('Date of birth', 'dob', client.dob, 'date')}
           {renderField('Gender', 'gender', client.gender, 'select', ['Male', 'Female', 'Non-binary', 'Prefer not to say'])}
@@ -180,7 +180,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           {renderField('Preferred language', 'preferredLanguage', client.preferredLanguage)}
           {renderField('Country', 'country', client.country)}
           {renderField('Occupation', 'occupation', client.occupation)}
-          {renderField('Additional email', 'additionalEmail', client.additionalEmail, 'email')}
+          {renderField('Additional email', 'additionalEmail', client.additionalEmail, 'text')}
           {renderField('Additional phone', 'additionalPhone', client.additionalPhone, 'tel')}
         </div>
       </div> */}

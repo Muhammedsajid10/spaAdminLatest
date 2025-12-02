@@ -115,6 +115,7 @@ const ClientDetailsModal = ({ isOpen, onClose, clientId, onEdit, onDelete }) => 
               client={client} 
               allergies={allergies}
               notes={notes}
+              memberships={memberships}
               onEdit={onEdit}
               onDelete={onDelete}
               onAddNote={() => setIsAddNoteOpen(true)}

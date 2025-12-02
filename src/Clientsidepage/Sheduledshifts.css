@@ -588,15 +588,7 @@
 }
 
 /* Modal Content - Scrollable */
-.shift-editor-modal .modal-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  /* Removed fixed height to allow flex to take remaining space */
-}
+/* .shift-editor-modal .modal-content replaced by .ss-modal-content */
 
 /* Error Message */
 .modal-error-message {

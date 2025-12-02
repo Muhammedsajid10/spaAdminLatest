@@ -244,60 +244,85 @@
 }
 
 /* --- Membership Specific Styles --- */
-.membership-card::before {
-  background: #8b5cf6; /* Purple accent for memberships */
+.membership-card {
+  flex-direction: row;
+  align-items: center;
+  padding: 24px;
 }
 
-.membership-header-row {
+.membership-card::before {
+  display: none; /* Remove accent line */
+}
+
+.membership-card .item-card-content {
+  padding-left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.membership-card .item-info {
+  flex: 1;
+}
+
+.membership-card .item-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.membership-card .item-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.membership-service {
-  font-size: 14px;
-  color: #4b5563;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
   margin-bottom: 16px;
-  background: #f3f4f6;
-  padding: 6px 12px;
-  border-radius: 6px;
-  display: inline-block;
-  align-self: flex-start;
 }
 
-.membership-details-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid #f3f4f6;
-}
-
-.membership-detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.detail-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  color: #9ca3af;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.detail-value {
-  font-size: 14px;
-  color: #1f2937;
+.status-text {
   font-weight: 500;
 }
 
-.membership-price-col {
+.status-text.active {
+  color: #166534; /* Green */
+}
+
+.status-text.used, .status-text.expired {
+  color: #991b1b; /* Red */
+}
+
+.membership-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-start;
+  gap: 12px;
+}
+
+.btn-membership-action {
+  padding: 6px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-membership-action:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.membership-icon-right {
+  width: 40px;
+  height: 40px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6; /* Purple */
 }

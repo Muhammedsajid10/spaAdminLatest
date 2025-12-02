@@ -3,7 +3,7 @@ import { ChevronDown, User, Calendar, Clock, FileText, AlertCircle, Edit, Trash2
 import { PiGenderFemale, PiGenderMale, PiGenderNeuter } from "react-icons/pi";
 
 
-const ClientProfileSidebar = ({ client, allergies = [], notes = [], onEdit, onDelete, onAddNote, onAddAllergy }) => {
+const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships = [], onEdit, onDelete, onAddNote, onAddAllergy }) => {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -18,6 +18,9 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], onEdit, onDe
   // Get most recent note
   const mostRecentNote = notes.length > 0 ? notes[0] : null;
 
+  // Get active membership (case-insensitive, trimmed)
+  const activeMembership = memberships.find(m => m.status?.toLowerCase()?.trim() === 'active');
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -25,6 +28,14 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], onEdit, onDe
       month: 'short',
       year: 'numeric'
     });
+  };
+  
+  const formatShortDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      month: '2-digit',
+      year: '2-digit'
+    }); // e.g., 11/26
   };
 
   // Close dropdown when clicking outside
@@ -56,20 +67,20 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], onEdit, onDe
         </div>
         <h3 className="sidebar-name">{clientName}</h3>
         <p className="sidebar-phone">{clientPhone}</p>
-      </div>
-
-      {/* Actions */}
-      <div className="sidebar-actions" ref={dropdownRef}>
-        <button 
-          className="btn-action-dropdown"
-          onClick={() => setIsActionsOpen(!isActionsOpen)}
-        >
-          Actions
-          <ChevronDown size={16} style={{ transform: isActionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-        </button>
+        
+        <div className="sidebar-header-actions">
+          <button 
+            className="btn-action-dropdown"
+            onClick={() => setIsActionsOpen(!isActionsOpen)}
+            ref={dropdownRef}
+          >
+            Actions
+            <ChevronDown size={16} style={{ transform: isActionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+        </div>
 
         {isActionsOpen && (
-          <div className="actions-dropdown-menu">
+          <div className="actions-dropdown-menu" style={{ top: '180px', left: '20px' }}>
             <button 
               className="action-item"
               onClick={() => {
@@ -106,6 +117,37 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], onEdit, onDe
       </div>
 
       <div className="sidebar-divider" />
+
+      {/* Active Membership (if any) */}
+      {/* Active Membership (if any) */}
+      {activeMembership && (
+        <>
+          <div className="sidebar-membership-card">
+            <div className="membership-icon">
+              {/* Using a simple div or icon for the card representation */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            </div>
+            <div className="membership-info">
+              <div className="membership-name">{activeMembership.name}</div>
+              <div className="membership-meta">
+                {activeMembership.remainingSessions !== undefined && activeMembership.numberOfSessions !== undefined ? (
+                  <>
+                    {activeMembership.remainingSessions}/{activeMembership.numberOfSessions} sessions • Expires {formatShortDate(activeMembership.endDate || activeMembership.expiryDate)}
+                  </>
+                ) : (
+                  <>
+                    Expires {formatShortDate(activeMembership.endDate || activeMembership.expiryDate)}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="sidebar-divider" />
+        </>
+      )}
 
       {/* Additional Info List */}
       <div className="sidebar-info-list">

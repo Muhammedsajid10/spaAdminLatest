@@ -1,27 +1,41 @@
-import React, { useMemo } from 'react';
-import { Tag } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Tag, ChevronDown } from 'lucide-react';
 import './ClientSalesTab.css';
 
-const ClientSalesTab = ({ client, sales = [], bookings = [] }) => {
-  // Format sales data for display - only show completed bookings
-  // Format sales data for display - merge sales and completed bookings
+const ClientSalesTab = ({ client, sales = [], bookings = [], servicesMap = {} }) => {
+  const [filterStatus, setFilterStatus] = useState('All');
+
+  // Format sales data for display
   const formattedSales = useMemo(() => {
     const salesList = [];
     const processedBookingIds = new Set();
 
+    // Helper to get service name
+    const getServiceName = (svc) => {
+      if (svc.service) {
+        if (typeof svc.service === 'object' && svc.service.name) {
+          return svc.service.name;
+        }
+        const serviceId = typeof svc.service === 'string' ? svc.service : svc.service._id;
+        if (servicesMap[serviceId]) {
+          return servicesMap[serviceId].name;
+        }
+      }
+      return 'Service';
+    };
+
     // 1. Process existing sales
     sales.forEach(payment => {
-      // If payment is linked to a booking, check if that booking is completed
       if (payment.booking) {
         const status = payment.booking.status?.toLowerCase();
         if (status !== 'complete' && status !== 'completed') {
-          return; // Skip non-completed bookings
+          return; 
         }
       }
 
       const date = payment.createdAt 
         ? new Date(payment.createdAt).toLocaleDateString('en-GB', {
-            day: '2-digit',
+            day: 'numeric',
             month: 'short',
             year: 'numeric'
           })
@@ -31,20 +45,19 @@ const ClientSalesTab = ({ client, sales = [], bookings = [] }) => {
       if (payment.booking?.services) {
         payment.booking.services.forEach(svc => {
           items.push({
-            name: svc.service?.name || 'Service',
+            name: getServiceName(svc),
             price: svc.price || 0
           });
         });
       }
 
-      // Track booking ID to avoid duplicates from the bookings list
       if (payment.booking?._id) {
         processedBookingIds.add(payment.booking._id);
       }
 
       salesList.push({
         id: payment._id,
-        status: payment.paymentStatus || 'pending',
+        status: payment.paymentStatus || 'pending', // paid, pending, etc.
         date: date,
         items: items,
         total: payment.finalAmount || payment.amount || 0,
@@ -54,16 +67,15 @@ const ClientSalesTab = ({ client, sales = [], bookings = [] }) => {
       });
     });
 
-    // 2. Process completed bookings that are NOT in sales list
+    // 2. Process completed bookings not in sales
     if (bookings && Array.isArray(bookings)) {
       bookings.forEach(booking => {
-        // Check if completed and not already processed
         const status = (booking.status || '').toLowerCase();
         if ((status === 'completed' || status === 'complete') && !processedBookingIds.has(booking._id)) {
           
           const date = booking.appointmentDate 
             ? new Date(booking.appointmentDate).toLocaleDateString('en-GB', {
-                day: '2-digit',
+                day: 'numeric',
                 month: 'short',
                 year: 'numeric'
               })
@@ -73,7 +85,7 @@ const ClientSalesTab = ({ client, sales = [], bookings = [] }) => {
           if (booking.services) {
             booking.services.forEach(svc => {
               items.push({
-                name: svc.service?.name || 'Service',
+                name: getServiceName(svc),
                 price: svc.price || 0
               });
             });
@@ -81,7 +93,7 @@ const ClientSalesTab = ({ client, sales = [], bookings = [] }) => {
 
           salesList.push({
             id: `booking-sale-${booking._id}`,
-            status: 'completed', // Treat completed booking as completed sale/payment for display
+            status: 'Paid', // Assuming completed bookings are paid for display purposes based on image
             date: date,
             items: items,
             total: booking.finalAmount || booking.totalAmount || 0,
@@ -93,54 +105,68 @@ const ClientSalesTab = ({ client, sales = [], bookings = [] }) => {
       });
     }
 
-    // Sort by date descending
     return salesList.sort((a, b) => b.rawDate - a.rawDate);
-  }, [sales, bookings]);
+  }, [sales, bookings, servicesMap]);
+
+  const filteredSales = useMemo(() => {
+    if (filterStatus === 'All') return formattedSales;
+    return formattedSales.filter(s => s.status.toLowerCase() === filterStatus.toLowerCase());
+  }, [formattedSales, filterStatus]);
+
+  // Counts for filters
+  const counts = useMemo(() => {
+    return {
+      all: formattedSales.length,
+      paid: formattedSales.filter(s => s.status.toLowerCase() === 'paid').length,
+      drafts: formattedSales.filter(s => s.status.toLowerCase() === 'draft').length
+    };
+  }, [formattedSales]);
 
   return (
-    <div className="sales-tab-container">
-      <div className="sales-header">
-        <h2 className="sales-title">Sales</h2>
+    <div className="client-sales-container">
+      <div className="client-sales-header">
+        <h2 className="client-sales-title">Sales</h2>
       </div>
 
+      {/* Filters */}
+     
       {/* Sales List */}
-      <div className="sales-list">
-        {formattedSales.length > 0 ? (
-          formattedSales.map(sale => (
-            <div key={sale.id} className="sales-card">
-              <div className="timeline-icon">
-                <Tag size={16} />
+      <div className="client-sales-list">
+        {filteredSales.length > 0 ? (
+          filteredSales.map((sale, index) => (
+            <div key={sale.id} className="client-sales-card">
+              <div className="client-sales-timeline-icon">
+                <Tag size={14} color="#fff" />
               </div>
-              <div className="timeline-line" />
+              {index !== filteredSales.length - 1 && <div className="client-sales-timeline-line" />}
               
-              <div className="sales-content">
-                <div className="sales-header-row">
-                  <span className="sales-title-text">Sale</span>
-                  <span className={`sale-status ${sale.status.toLowerCase()}`}>{sale.status}</span>
+              <div className="client-sales-content">
+                <div className="client-sales-card-header">
+                  <span className="client-sales-card-title">Sale</span>
                 </div>
-                <div className="sales-meta">
-                  {sale.date} {sale.paymentMethod && `• ${sale.paymentMethod}`}
+                <div className="client-sales-meta">
+                  {sale.date} <span className="client-sales-meta-dot">•</span> <span className={`client-sales-status ${sale.status.toLowerCase()}`}>{sale.status}</span>
                 </div>
 
-                <div className="sales-items">
-                  {sale.items.map((item, index) => (
-                    <div key={index} className="sale-item">
-                      <span className="item-name">{item.name}</span>
-                      <span className="item-price">AED {item.price}</span>
+                <div className="client-sales-items">
+                  {sale.items.map((item, idx) => (
+                    <div key={idx} className="client-sales-item">
+                      <span className="client-sales-item-name">{item.name}</span>
+                      <span className="client-sales-item-price">AED {item.price}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="sales-total">
-                  <span className="total-label">Total</span>
-                  <span className="total-amount">AED {sale.total}</span>
+                <div className="client-sales-total">
+                  <span className="client-sales-total-label">Total</span>
+                  <span className="client-sales-total-amount">AED {sale.total}</span>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
-            No sales found for this client.
+          <div className="client-sales-empty">
+            No sales found.
           </div>
         )}
       </div>

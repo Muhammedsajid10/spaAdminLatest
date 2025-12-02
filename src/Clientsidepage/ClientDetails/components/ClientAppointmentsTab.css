@@ -1,62 +1,62 @@
 /* ClientAppointmentsTab.css */
 
-.appointments-tab-container {
+.client-appts-container {
   display: flex;
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  flex: 1; /* Fill remaining flex space */
-  overflow: hidden; /* Prevent outer scroll */
+  flex: 1;
+  overflow: hidden;
   padding: 32px 40px;
 }
 
-.appointments-list {
+.client-appts-list {
   flex: 1;
   overflow-y: auto;
-  padding-right: 4px; /* Space for scrollbar */
+  padding-right: 4px;
   padding-bottom: 20px;
 }
 
-/* Custom scrollbar for the list */
-.appointments-list::-webkit-scrollbar {
+/* Custom scrollbar */
+.client-appts-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.appointments-list::-webkit-scrollbar-track {
+.client-appts-list::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.appointments-list::-webkit-scrollbar-thumb {
+.client-appts-list::-webkit-scrollbar-thumb {
   background-color: #e0e0e0;
   border-radius: 3px;
 }
 
-.appointments-header {
+.client-appts-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.appointments-title {
-  font-size: 20px; /* Reduced from 24px for better proportion */
+.client-appts-title {
+  font-size: 20px;
   font-weight: 600;
   color: #111;
   margin: 0;
 }
 
 /* Filter Bar */
-.appointments-filters {
+.client-appts-filters {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.filter-btn {
+.client-appts-filter-btn {
   padding: 8px 16px;
   border-radius: 20px;
   border: 1px solid transparent;
-  background: #f5f5f5; /* Light gray background for inactive */
+  background: #f5f5f5;
   font-size: 13px;
   font-weight: 500;
   color: #666;
@@ -64,30 +64,30 @@
   transition: all 0.2s;
 }
 
-.filter-btn:hover {
+.client-appts-filter-btn:hover {
   color: #111;
   background: #e0e0e0;
 }
 
-.filter-btn.active {
+.client-appts-filter-btn.active {
   background: #000;
   color: #fff;
   border-color: #000;
 }
 
 /* Dropdown */
-.filter-dropdown-container {
+.client-appts-filter-dropdown {
   position: relative;
 }
 
-.filter-dropdown-trigger {
+.client-appts-filter-trigger {
   display: flex;
   align-items: center;
   gap: 6px;
   padding-right: 12px;
 }
 
-.filter-dropdown-menu {
+.client-appts-dropdown-menu {
   position: absolute;
   top: 100%;
   left: 0;
@@ -101,7 +101,7 @@
   z-index: 100;
 }
 
-.dropdown-item {
+.client-appts-dropdown-item {
   padding: 10px 12px;
   font-size: 13px;
   color: #333;
@@ -110,32 +110,31 @@
   transition: background 0.2s;
 }
 
-.dropdown-item:hover {
+.client-appts-dropdown-item:hover {
   background: #f5f5f5;
 }
 
-.dropdown-item.active {
+.client-appts-dropdown-item.active {
   background: #f0f0f0;
   font-weight: 600;
 }
 
 /* Month Divider */
-.month-divider {
-  font-size: 13px;
+.client-appts-month-divider {
+  font-size: 14px;
   font-weight: 600;
-  color: #999;
-  margin: 10px 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #666;
+  margin: 20px 0 16px 0;
+  text-transform: capitalize;
 }
 
 /* Appointment Card */
-.appointment-card-client-side {
+.client-appts-card {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 24px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   position: relative;
   display: flex;
   flex-direction: row;
@@ -143,21 +142,20 @@
   gap: 20px;
   height: auto;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   transition: all 0.2s ease;
 }
 
-.appointment-card-client-side:hover {
+.client-appts-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   border-color: #d1d5db;
-  transform: translateY(-2px);
 }
 
 /* Timeline line */
-.timeline-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+.client-appts-timeline-icon {
+  width: 32px;
+  height: 32px;
+  background: #111;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -166,141 +164,186 @@
   flex-shrink: 0;
   z-index: 2;
   position: relative;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
-.timeline-line {
+.client-appts-timeline-line {
   position: absolute;
-  top: 64px;
-  left: 43px;
-  bottom: -17px;
+  top: 56px;
+  left: 39px;
+  bottom: -24px;
   width: 2px;
-  background: linear-gradient(to bottom, #e5e7eb 0%, transparent 100%);
+  background: #e5e7eb;
   z-index: 1;
 }
 
-.appointment-card-client-side:last-child .timeline-line {
+.client-appts-card:last-child .client-appts-timeline-line {
   display: none;
 }
 
-.appointment-content {
+.client-appts-content {
   flex: 1;
-  min-width: 0; /* Prevent flex overflow */
+  min-width: 0;
 }
 
-.appointment-header-row {
+.client-appts-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-.appointment-title {
+.client-appts-card-title {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111;
 }
 
-.appointment-status {
-  font-size: 11px;
-  padding: 4px 10px;
+.client-appts-status {
+  font-size: 12px;
+  padding: 4px 12px;
   border-radius: 20px;
-  background: #f0f0f0;
-  color: #666;
-  font-weight: 600;
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 500;
   text-transform: capitalize;
 }
 
-.appointment-status.completed { background: #e0e0e0; color: #333; }
-.appointment-status.confirmed { background: #dcfce7; color: #166534; }
-.appointment-status.booked { background: #dbeafe; color: #1e40af; }
-.appointment-status.canceled { background: #fee2e2; color: #991b1b; }
+.client-appts-status.completed { background: rgb(220, 252, 231); color: #166534; }
+.client-appts-status.confirmed { background: rgb(224, 231, 255); color: #3730a3; }
+.client-appts-status.booked { background: #dbeafe; color: #1e40af; }
+.client-appts-status.canceled { background: #fee2e2; color: #991b1b; }
+.client-appts-status.noshow,
+.client-appts-status.no-show { background: rgb(243, 232, 255); color: #6b21a8; }
+.client-appts-status.started { background: #ffedd5; color: #9a3412; font-size: 12px; }
 
-.appointment-meta {
+.client-appts-meta {
   font-size: 13px;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 /* Services List */
-.appointment-services {
+.client-appts-services {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.service-item {
+.client-appts-service-item {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
 }
 
-.service-info {
+.client-appts-service-info {
   display: flex;
   gap: 12px;
 }
 
-.service-number {
-  width: 24px;
-  height: 24px;
-  background: #f5f5f5;
+.client-appts-service-number {
+  width: 20px;
+  height: 20px;
+  background: #f3f4f6;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #666;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.service-details {
+.client-appts-service-details {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.service-name {
+.client-appts-service-name {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: #111;
 }
 
-.service-meta {
-  font-size: 12px;
+.client-appts-service-meta {
+  font-size: 13px;
   color: #666;
 }
 
-.service-price {
+.client-appts-service-price {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: #111;
 }
 
 /* Action Buttons */
-.appointment-actions {
+.client-appts-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   margin-top: 24px;
 }
 
-.btn-card-action {
-  padding: 8px 20px;
-  border: 1px solid #e0e0e0;
+.client-appts-btn-action {
+  padding: 8px 24px;
+  border: 1px solid #e5e7eb;
   border-radius: 20px;
   background: #fff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: #111;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.btn-card-action:hover {
-  background: #f9f9f9;
-  border-color: #ccc;
-  transform: translateY(-1px);
+.client-appts-btn-action:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Empty State */
+.client-appts-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-align: center;
+  height: 100%;
+  min-height: 300px;
+}
+
+.client-appts-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 24px;
+  /* Placeholder for the gradient calendar icon if using an image or SVG */
+  background: linear-gradient(180deg, #a78bfa 0%, #818cf8 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 10px 20px rgba(129, 140, 248, 0.2);
+}
+
+.client-appts-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.client-appts-empty-desc {
+  font-size: 14px;
+  color: #666;
+  max-width: 300px;
+  line-height: 1.5;
 }

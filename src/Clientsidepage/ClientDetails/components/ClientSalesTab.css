@@ -1,6 +1,6 @@
 /* ClientSalesTab.css */
 
-.sales-tab-container {
+.client-sales-container {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -10,49 +10,49 @@
   padding: 32px 40px;
 }
 
-.sales-header {
+.client-sales-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.sales-title {
-  font-size: 20px;
-  font-weight: 600;
+.client-sales-title {
+  font-size: 24px;
+  font-weight: 700;
   color: #111;
   margin: 0;
 }
 
-.btn-sell {
-  padding: 6px 16px;
-  border: 1px solid #ddd;
+.client-sales-btn-sell {
+  padding: 8px 24px;
+  border: 1px solid #e5e7eb;
   border-radius: 20px;
   background: #fff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: #111;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.btn-sell:hover {
-  background: #f9f9f9;
-  border-color: #ccc;
+.client-sales-btn-sell:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
-/* Filter Bar */
-.sales-filters {
+/* Filters */
+.client-sales-filters {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.filter-btn {
+.client-sales-filter-btn {
   padding: 8px 16px;
   border-radius: 20px;
   border: 1px solid transparent;
-  background: #f5f5f5;
+  background: #fff;
   font-size: 13px;
   font-weight: 500;
   color: #666;
@@ -63,103 +63,59 @@
   gap: 6px;
 }
 
-.filter-btn:hover {
+.client-sales-filter-btn:hover {
   color: #111;
-  background: #e0e0e0;
+  background: #f3f4f6;
 }
 
-.filter-btn.active {
-  background: #000;
+.client-sales-filter-btn.active {
+  background: #111;
   color: #fff;
-  border-color: #000;
 }
 
-.filter-count {
-  background: rgba(0,0,0,0.1);
-  color: inherit;
-  font-size: 10px;
-  padding: 0 5px;
+.client-sales-filter-count {
+  background: #f3f4f6;
+  color: #666;
+  font-size: 11px;
+  padding: 0 6px;
   border-radius: 10px;
-  height: 16px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.filter-btn.active .filter-count {
-  background: rgba(255,255,255,0.2);
-}
-
-/* Dropdown */
-.filter-dropdown-container {
-  position: relative;
-}
-
-.filter-dropdown-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-right: 12px;
-}
-
-.filter-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 8px;
+.client-sales-filter-btn.active .client-sales-filter-count {
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  padding: 6px;
-  min-width: 180px;
-  z-index: 100;
-}
-
-.dropdown-item {
-  padding: 10px 12px;
-  font-size: 13px;
-  color: #333;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-
-.dropdown-item:hover {
-  background: #f5f5f5;
-}
-
-.dropdown-item.active {
-  background: #f0f0f0;
-  font-weight: 600;
+  color: #111;
 }
 
 /* Sales List */
-.sales-list {
+.client-sales-list {
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
   padding-bottom: 20px;
 }
 
-.sales-list::-webkit-scrollbar {
+.client-sales-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.sales-list::-webkit-scrollbar-track {
+.client-sales-list::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sales-list::-webkit-scrollbar-thumb {
+.client-sales-list::-webkit-scrollbar-thumb {
   background-color: #e0e0e0;
   border-radius: 3px;
 }
 
-/* Sales Card */
-.sales-card {
+/* Card */
+.client-sales-card {
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 24px;
   margin-bottom: 16px;
   position: relative;
@@ -169,19 +125,18 @@
   gap: 20px;
   height: auto;
   flex-shrink: 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-  transition: box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.sales-card:hover {
-  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-  border-color: #e0e0e0;
+.client-sales-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: #d1d5db;
 }
 
-/* Timeline line */
-.timeline-icon {
-  width: 40px;
-  height: 40px;
+/* Timeline */
+.client-sales-timeline-icon {
+  width: 32px;
+  height: 32px;
   background: #111;
   border-radius: 50%;
   display: flex;
@@ -191,100 +146,109 @@
   flex-shrink: 0;
   z-index: 2;
   position: relative;
+  transform: rotate(90deg); /* Rotate tag icon to match image if needed, or just keep it */
 }
 
-.timeline-line {
+.client-sales-timeline-line {
   position: absolute;
-  top: 64px;
-  left: 43px;
+  top: 56px;
+  left: 39px;
   bottom: -17px;
   width: 2px;
-  background: #f0f0f0;
+  background: #e5e7eb;
   z-index: 1;
 }
 
-.sales-card:last-child .timeline-line {
+.client-sales-card:last-child .client-sales-timeline-line {
   display: none;
 }
 
-.sales-content {
+.client-sales-content {
   flex: 1;
   min-width: 0;
 }
 
-.sales-header-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.client-sales-card-header {
   margin-bottom: 4px;
 }
 
-.sales-title-text {
+.client-sales-card-title {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111;
 }
 
-.sales-meta {
+.client-sales-meta {
   font-size: 13px;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.sales-status {
-  font-size: 12px;
+.client-sales-meta-dot {
+  color: #999;
+}
+
+.client-sales-status {
   font-weight: 600;
 }
 
-.sales-status.paid { color: #166534; }
-.sales-status.draft { color: #666; }
-.sales-status.voided { color: #991b1b; }
-.sales-status.refunded { color: #9a3412; }
+.client-sales-status.paid { color: #166534; }
+.client-sales-status.completed { color: #166534; }
+.client-sales-status.pending { color: #ca8a04; }
+.client-sales-status.draft { color: #666; }
 
-/* Items List */
-.sales-items {
+/* Items */
+.client-sales-items {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.sale-item {
+.client-sales-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.item-name {
+.client-sales-item-name {
   font-size: 14px;
-  color: #333;
+  color: #111;
 }
 
-.item-price {
+.client-sales-item-price {
   font-size: 14px;
   font-weight: 500;
   color: #111;
 }
 
-.sales-total {
+/* Total */
+.client-sales-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.total-label {
+.client-sales-total-label {
   font-size: 14px;
   font-weight: 600;
   color: #111;
 }
 
-.total-amount {
+.client-sales-total-amount {
   font-size: 16px;
   font-weight: 700;
   color: #111;
+}
+
+.client-sales-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px;
+  font-size: 14px;
 }

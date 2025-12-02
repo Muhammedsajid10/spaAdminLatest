@@ -49,16 +49,22 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
   // Format bookings into appointments structure
   const formattedAppointments = useMemo(() => {
     return bookings.map(booking => {
-      const date = booking.appointmentDate 
-        ? new Date(booking.appointmentDate).toLocaleString('en-GB', {
+      const bookingDate = booking.appointmentDate ? new Date(booking.appointmentDate) : null;
+      
+      const dateStr = bookingDate 
+        ? bookingDate.toLocaleString('en-GB', {
             weekday: 'short',
-            day: '2-digit',
+            day: 'numeric',
             month: 'short',
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
           }).replace(',', '')
         : '';
+
+      const monthYear = bookingDate
+        ? bookingDate.toLocaleString('en-GB', { month: 'long' }) // e.g., "November"
+        : 'Upcoming';
 
       const services = (booking.services || []).map((svc, index) => {
         // Lookup service name
@@ -102,8 +108,10 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
         id: booking._id,
         bookingNumber: booking.bookingNumber,
         status: booking.status || 'booked',
-        date: date,
-        location: 'Allora Spa Dubai',
+        date: dateStr,
+        monthYear: monthYear,
+        rawDate: bookingDate,
+        location: 'Allora Spa and Massage Centre Dubai',
         services: services,
         totalAmount: booking.finalAmount || booking.totalAmount || 0
       };
@@ -113,7 +121,7 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
   const filteredAppointments = useMemo(() => {
     const target = normalize(filterStatus);
 
-    return formattedAppointments.filter(appt => {
+    const filtered = formattedAppointments.filter(appt => {
       if (target === 'all' || target === '') return true;
       const apptStatus = normalize(appt.status);
 
@@ -124,6 +132,17 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
 
       return apptStatus === target;
     });
+
+    // Group by month
+    const groups = {};
+    filtered.forEach(appt => {
+      if (!groups[appt.monthYear]) {
+        groups[appt.monthYear] = [];
+      }
+      groups[appt.monthYear].push(appt);
+    });
+
+    return groups;
   }, [formattedAppointments, filterStatus]);
 
   // Debugging: print statuses so we can see what arrives from the backend
@@ -139,26 +158,26 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
   const isMoreActive = moreOptions.includes(filterStatus);
 
   return (
-    <div className="appointments-tab-container">
-      <div className="appointments-header">
-        <h2 className="appointments-title">Appointments</h2>
+    <div className="client-appts-container">
+      <div className="client-appts-header">
+        <h2 className="client-appts-title">Appointments</h2>
       </div>
 
       {/* Filters */}
-      <div className="appointments-filters">
+      <div className="client-appts-filters">
         {mainOptions.map(option => (
           <button
             key={option}
-            className={`filter-btn ${filterStatus === option ? 'active' : ''}`}
+            className={`client-appts-filter-btn ${filterStatus === option ? 'active' : ''}`}
             onClick={() => handleFilterClick(option)}
           >
             {option}
           </button>
         ))}
 
-        <div className="filter-dropdown-container" ref={dropdownRef}>
+        <div className="client-appts-filter-dropdown" ref={dropdownRef}>
           <button
-            className={`filter-btn filter-dropdown-trigger ${isMoreActive ? 'active' : ''}`}
+            className={`client-appts-filter-btn client-appts-filter-trigger ${isMoreActive ? 'active' : ''}`}
             onClick={() => setIsMoreOpen(!isMoreOpen)}
           >
             More
@@ -166,11 +185,11 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
           </button>
 
           {isMoreOpen && (
-            <div className="filter-dropdown-menu">
+            <div className="client-appts-dropdown-menu">
               {moreOptions.map(option => (
                 <div
                   key={option}
-                  className={`dropdown-item ${filterStatus === option ? 'active' : ''}`}
+                  className={`client-appts-dropdown-item ${filterStatus === option ? 'active' : ''}`}
                   onClick={() => handleFilterClick(option)}
                 >
                   {option}
@@ -182,49 +201,58 @@ const ClientAppointmentsTab = ({ client, bookings = [], servicesMap = {}, employ
       </div>
 
       {/* Appointments List */}
-      <div className="appointments-list">
-        {filteredAppointments.length > 0 ? (
-          filteredAppointments.map(appt => (
-            <div key={appt.id} className="appointment-card-client-side">
-              <div className="timeline-icon">
-                <Calendar size={16} />
-              </div>
-              <div className="timeline-line" />
-              
-              <div className="appointment-content">
-                <div className="appointment-header-row">
-                  <span className="appointment-title">Appointment</span>
-                  <span className={`appointment-status ${appt.status.toLowerCase()}`}>{appt.status}</span>
-                </div>
-                <div className="appointment-meta">
-                  {appt.date} • {appt.location}
-                </div>
-
-                <div className="appointment-services">
-                  {appt.services.map((service, index) => (
-                    <div key={service.id} className="service-item">
-                      <div className="service-info">
-                        <div className="service-number">{index + 1}</div>
-                        <div className="service-details">
-                          <span className="service-name">{service.name}</span>
-                          <span className="service-meta">{service.duration} • {service.staff}</span>
-                        </div>
-                      </div>
-                      <span className="service-price">AED {service.price}</span>
+      <div className="client-appts-list">
+        {Object.keys(filteredAppointments).length > 0 ? (
+          Object.entries(filteredAppointments).map(([monthYear, appts]) => (
+            <div key={monthYear} className="client-appts-month-group">
+              <div className="client-appts-month-divider">{monthYear}</div>
+              {appts.map((appt, index) => (
+                <div key={appt.id} className="client-appts-card">
+                  <div className="client-appts-timeline-icon">
+                    <Calendar size={16} color="#fff" />
+                  </div>
+                  {/* Show line if it's not the last item in the group */}
+                  {index !== appts.length - 1 && <div className="client-appts-timeline-line" />}
+                  
+                  <div className="client-appts-content">
+                    <div className="client-appts-header-row">
+                      <span className="client-appts-card-title">Appointment</span>
+                      <span className={`client-appts-status ${appt.status.toLowerCase()}`}>{appt.status}</span>
                     </div>
-                  ))}
+                    <div className="client-appts-meta">
+                      {appt.date} • {appt.location}
+                    </div>
+
+                    <div className="client-appts-services">
+                      {appt.services.map((service, idx) => (
+                        <div key={service.id} className="client-appts-service-item">
+                          <div className="client-appts-service-info">
+                            <div className="client-appts-service-number">{idx + 1}</div>
+                            <div className="client-appts-service-details">
+                              <span className="client-appts-service-name">{service.name}</span>
+                              <span className="client-appts-service-meta">{service.duration} • {service.staff}</span>
+                            </div>
+                          </div>
+                          <span className="client-appts-service-price">AED {service.price}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                   
+                  </div>
                 </div>
-{/* 
-                <div className="appointment-actions">
-                  <button className="btn-card-action" onClick={() => console.log('View sale:', appt.bookingNumber)}>View sale</button>
-                  <button className="btn-card-action" onClick={() => console.log('Rebook:', appt.id)}>Rebook</button>
-                </div> */}
-              </div>
+              ))}
             </div>
           ))
         ) : (
-          <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
-            No appointments found for this filter.
+          <div className="client-appts-empty-state">
+            <div className="client-appts-empty-icon">
+              <Calendar size={32} />
+            </div>
+            <h3 className="client-appts-empty-title">No appointments</h3>
+            <p className="client-appts-empty-desc">
+              No appointments have been created for this client with selected criteria
+            </p>
           </div>
         )}
       </div>
