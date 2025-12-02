@@ -118,6 +118,38 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships 
 
       <div className="sidebar-divider" />
 
+      {/* Allergies (New Style) */}
+      {allergies && allergies.length > 0 && (
+        <>
+          {allergies.map((allergy, index) => {
+             // Determine severity class
+             let severityClass = 'severity-mild'; // default
+             if (allergy.severity === 'moderate') severityClass = 'severity-moderate';
+             if (allergy.severity === 'severe') severityClass = 'severity-severe';
+             if (allergy.severity === 'fatal') severityClass = 'severity-fatal';
+
+             return (
+              <div key={allergy._id || index} className="sidebar-allergy-card">
+                <div className="allergy-icon-wrapper">
+                   {/* Dot pattern icon matching AddAllergyModal style */}
+                   <div className={`allergy-severity-icon ${severityClass}`}>
+                     {/* CSS radial-gradient handles the pattern */}
+                   </div>
+                </div>
+                <div className="allergy-info">
+                  <div className="allergy-name">{allergy.name}</div>
+                  <div className="allergy-meta">
+                    {allergy.severity ? `${allergy.severity} allergy` : 'Allergy'} 
+                    {allergy.reaction ? ` • ${allergy.reaction}` : ''}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div className="sidebar-divider" />
+        </>
+      )}
+
       {/* Active Membership (if any) */}
       {/* Active Membership (if any) */}
       {activeMembership && (
@@ -171,23 +203,6 @@ const ClientProfileSidebar = ({ client, allergies = [], notes = [], memberships 
           <Clock size={20} className="info-icon" />
           <span>Created {formatDate(client.createdAt)}</span>
         </div>
-
-        {/* Allergies */}
-        {allergies && allergies.length > 0 && (
-          <div className="info-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <AlertCircle size={20} className="info-icon" style={{ color: '#dc2626' }} />
-              <span style={{ fontWeight: 600, color: '#dc2626' }}>Allergies</span>
-            </div>
-            <div style={{ paddingLeft: '28px', fontSize: '13px', color: '#666' }}>
-              {allergies.map((allergy, index) => (
-                <div key={allergy._id || index} style={{ marginBottom: '2px' }}>
-                  • {allergy.name}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Most Recent Note */}
         {mostRecentNote && (

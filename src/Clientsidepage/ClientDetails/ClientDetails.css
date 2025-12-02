@@ -194,6 +194,54 @@
   transform: translateY(-1px);
 }
 
+.sidebar-allergy-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.allergy-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.allergy-severity-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 3px 3px; /* Slightly smaller pattern for smaller icon */
+}
+
+/* Colors for severity (matching AddAllergyModal) */
+.severity-mild { color: #22c55e; background-color: rgba(34, 197, 94, 0.1); }
+.severity-moderate { color: #f97316; background-color: rgba(249, 115, 22, 0.1); }
+.severity-severe { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+.severity-fatal { color: #111; background-color: rgba(0, 0, 0, 0.1); }
+
+.allergy-info {
+  flex: 1;
+}
+
+.allergy-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 2px;
+}
+
+.allergy-meta {
+  font-size: 13px;
+  color: #666;
+}
+
 .sidebar-divider {
   height: 1px;
   background: var(--color-gray-200);
