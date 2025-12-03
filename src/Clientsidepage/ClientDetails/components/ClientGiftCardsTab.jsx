@@ -9,10 +9,10 @@ const ClientGiftCardsTab = ({ client, giftCards = [] }) => {
   const formattedGiftCards = useMemo(() => {
     const formatted = giftCards.map(card => ({
       id: card._id,
-      code: card.code, // Actual gift card code like "6XUB37469HUW"
-      amount: card.value || 0, // Original value
-      balance: card.remainingValue || 0, // Remaining balance
-      status: card.status, // "Redeemed", "Active", etc.
+      code: card.code || 'N/A', // Actual gift card code
+      amount: parseFloat(card.value || card.amount || 0), // Handle value/amount fields
+      balance: parseFloat(card.remainingValue || card.balance || 0), // Handle remainingValue/balance fields
+      status: card.status || 'Active', // Default to Active if missing
       purchaseDate: card.purchaseDate 
         ? new Date(card.purchaseDate).toLocaleDateString('en-GB')
         : '',
@@ -39,8 +39,12 @@ const ClientGiftCardsTab = ({ client, giftCards = [] }) => {
                 <div className="giftcard-details">
                   <div className="giftcard-code">{card.code}</div>
                   <div className="giftcard-meta">
-                    Balance: AED {card.balance} / {card.amount}
-                    {card.expiryDate && ` • Expires: ${card.expiryDate}`}
+                    {card.amount > 0 && (
+                      <span>Balance: AED {card.balance} / {card.amount}</span>
+                    )}
+                    {card.expiryDate && (
+                      <span>{card.amount > 0 ? ' • ' : ''}Expires: {card.expiryDate}</span>
+                    )}
                   </div>
                   <span className={`giftcard-status ${card.status?.toLowerCase()}`}>
                     {card.status}

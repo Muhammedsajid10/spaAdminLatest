@@ -342,8 +342,28 @@ const ClientDirectory = () => {
             salesMap[client.id] = 0;
             return;
           }
-          const res = await api.get(`/admin/clients/${client.id}/stats`);
-          const totalSpent = res.data.data.totalSpent || 0;
+          // Fetch bookings to calculate total sales (matching ClientOverviewTab logic)
+          const res = await api.get(`/admin/clients/${client.id}/bookings?includeAll=true`);
+          let bookings = res.data.data;
+          
+          // Handle potential response structures
+          if (!Array.isArray(bookings)) {
+            bookings = bookings?.bookings || [];
+          }
+          
+          if (!Array.isArray(bookings)) {
+            bookings = [];
+          }
+
+          const totalSpent = bookings
+            .filter(booking => {
+              const status = booking.status?.toLowerCase();
+              return status === 'complete' || status === 'completed';
+            })
+            .reduce((total, booking) => {
+              return total + (booking.finalAmount || booking.totalAmount || 0);
+            }, 0);
+
           salesMap[client.id] = totalSpent;
         } catch (err) {
           console.error(`Failed to fetch sales for client ${client.id}:`, err);

@@ -96,7 +96,7 @@ const ClientInfoTab = ({ client, onUpdate }) => {
     });
   };
 
-  const renderField = (label, name, value, type = 'text', options = []) => {
+  const   renderField = (label, name, value, type = 'text', options = []) => {
     const displayValue = value || '-';
     const isValueEmpty = !value;
 
