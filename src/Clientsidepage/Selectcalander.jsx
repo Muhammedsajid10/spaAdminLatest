@@ -412,11 +412,14 @@ const SelectCalendar = () => {
     const existingAppointment = appointments[employeeId]?.[slotKey];
     console.log('Time slot clicked - Employee:', employeeId, 'Time:', slotTime, 'Day:', day);
 
-    // CUTOFF CHECK: Block any booking starting at or after 23:00
-    const [hours] = slotTime.split(':').map(Number);
-    if (hours >= 23) {
-      console.log('🚫 Booking blocked - Time slot at', slotTime, 'is past cutoff (23:00)');
-      setUnavailableMessage('Bookings cannot start at or after 23:00. Please select an earlier time slot.');
+    // CUTOFF CHECK: Block any booking starting at or after 23:30
+    const [hours, minutes] = slotTime.split(':').map(Number);
+    const slotTimeInMinutes = hours * 60 + minutes;
+    const cutoffTimeInMinutes = 23 * 60 + 30; // 23:30
+    
+    if (slotTimeInMinutes >= cutoffTimeInMinutes) {
+      console.log('🚫 Booking blocked - Time slot at', slotTime, 'is past cutoff (23:30)');
+      setUnavailableMessage('Bookings cannot start at or after 23:30 to prevent overflow into the next day. Please select an earlier time slot.');
       setShowUnavailablePopup(true);
       return;
     }
@@ -2160,6 +2163,27 @@ const SelectCalendar = () => {
         setBookingError('No appointments in session. Please add at least one service.');
         setBookingLoading(false);
         return;
+      }
+
+      // Validate that no appointment ends after 23:30 (to prevent overflow into next day)
+      const MAX_END_TIME_MINUTES = 23 * 60 + 30; // 23:30
+      for (const apt of multipleAppointments) {
+        const [hours, minutes] = apt.timeSlot.split(':').map(Number);
+        const startTimeInMinutes = hours * 60 + minutes;
+        const endTimeInMinutes = startTimeInMinutes + apt.service.duration;
+        
+        if (endTimeInMinutes > MAX_END_TIME_MINUTES) {
+          const endHours = Math.floor(endTimeInMinutes / 60);
+          const endMinutes = endTimeInMinutes % 60;
+          const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+          
+          setBookingError(
+            `Cannot confirm booking: "${apt.service.name}" scheduled at ${apt.timeSlot} would end at ${endTimeStr}, ` +
+            `which exceeds the maximum allowed time of 23:30. Please adjust the appointment time or choose a shorter service.`
+          );
+          setBookingLoading(false);
+          return;
+        }
       }
 
       let clientData;

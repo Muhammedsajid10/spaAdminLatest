@@ -1,6 +1,6 @@
 import { getEmployeeShiftHours, hasShiftOnDate, localDateKey, formatDateLocal } from '../../calendar';
 
-const MAX_BOOKING_END_MINUTES = 23 * 60;
+const MAX_BOOKING_END_MINUTES = 23 * 60 + 30; // 23:30 - Last booking time to prevent overflow into next day
 
 export const formatUTCToLocal = (utcString, opts = {}) => {
   if (!utcString) return '';
@@ -97,10 +97,11 @@ export const generateTimeSlotsFromEmployeeShift = (employee, date, serviceDurati
     }
 
     for (let slotStart = startMinutes; slotStart + serviceDuration <= endMinutes; slotStart += intervalMinutes) {
-      const slotEnd = slotStart + serviceDuration;
-      if (slotEnd > MAX_BOOKING_END_MINUTES) {
+      // Check if the slot START time exceeds the cutoff (23:30)
+      if (slotStart >= MAX_BOOKING_END_MINUTES) {
         break;
       }
+      const slotEnd = slotStart + serviceDuration;
       const startLabel = minutesToLabel(slotStart);
       const endLabel = minutesToLabel(slotEnd);
       slots.push({
@@ -133,14 +134,15 @@ export const getValidTimeSlotsForProfessional = (employee, date, serviceDuration
     const endMinutes = toMinutes(shift.endTime);
 
     for (let slotStart = startMinutes; slotStart + serviceDuration <= endMinutes; slotStart += intervalMinutes) {
+      // Check if the slot START time exceeds the cutoff (23:30)
+      if (slotStart >= MAX_BOOKING_END_MINUTES) {
+        break;
+      }
       const hour = Math.floor(slotStart / 60)
         .toString()
         .padStart(2, '0');
       const minute = (slotStart % 60).toString().padStart(2, '0');
       const slotEnd = slotStart + serviceDuration;
-      if (slotEnd > MAX_BOOKING_END_MINUTES) {
-        break;
-      }
       const slotLabel = `${hour}:${minute}`;
       const slotDate = new Date(date);
       slotDate.setHours(Number(hour), Number(minute), 0, 0);
