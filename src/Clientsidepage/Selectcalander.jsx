@@ -95,6 +95,38 @@ const SelectCalendar = () => {
   const [tempTotalPrice, setTempTotalPrice] = useState('');
   const [customTotalDiscount, setCustomTotalDiscount] = useState(0);
 
+  // Refs for scroll synchronization between headers and grid
+  const staffHeadersRef = useRef(null);
+  const staffGridRef = useRef(null);
+
+  // Scroll synchronization effect
+  useEffect(() => {
+    const headersEl = staffHeadersRef.current;
+    const gridEl = staffGridRef.current;
+
+    if (!headersEl || !gridEl) return;
+
+    const syncHeaderScroll = () => {
+      if (headersEl && gridEl) {
+        headersEl.scrollLeft = gridEl.scrollLeft;
+      }
+    };
+
+    const syncGridScroll = () => {
+      if (headersEl && gridEl) {
+        gridEl.scrollLeft = headersEl.scrollLeft;
+      }
+    };
+
+    gridEl.addEventListener('scroll', syncHeaderScroll);
+    headersEl.addEventListener('scroll', syncGridScroll);
+
+    return () => {
+      gridEl.removeEventListener('scroll', syncHeaderScroll);
+      headersEl.removeEventListener('scroll', syncGridScroll);
+    };
+  }, []);
+
   const setCurrentAppointmentIndex = (idx) => { /* UI-only; kept local for now */ dispatch({ type: 'bookingSession/setCurrentAppointmentIndex', payload: idx }); };
   const setShowServiceCatalog = (val) => dispatch(setShowServiceCatalogAction(val));
   const setIsAddingAdditionalService = (val) => dispatch({ type: 'bookingSession/setIsAddingAdditionalService', payload: val });
@@ -103,7 +135,7 @@ const SelectCalendar = () => {
     console.log('🗑️ Removing appointment with ID:', id);
     console.log('Current multipleAppointments:', multipleAppointments.map(a => ({ id: a.id, service: a.service?.name })));
     dispatch(removeAppointmentFromSession(id));
-    
+
     // If this is the last appointment being removed, show the service catalog
     const remainingAppointments = multipleAppointments.filter(apt => apt.id !== id);
     if (remainingAppointments.length === 0) {
@@ -130,7 +162,7 @@ const SelectCalendar = () => {
       const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
       return sum + Number(price || 0);
     }, 0);
-    
+
     const newTotal = parseFloat(tempTotalPrice);
     if (!isNaN(newTotal) && newTotal >= 0) {
       const discount = originalTotal - newTotal;
@@ -299,8 +331,8 @@ const SelectCalendar = () => {
   // Add this helper function:
   const getFilteredAndSearchedEmployees = () => {
     // First filter out "Allora Spa Dubai" staff
-    let filtered = employees.filter(emp => 
-      emp.name !== 'Allora Spa Dubai' && 
+    let filtered = employees.filter(emp =>
+      emp.name !== 'Allora Spa Dubai' &&
       emp.name?.toLowerCase() !== 'allora spa dubai'
     );
 
@@ -416,7 +448,7 @@ const SelectCalendar = () => {
     const [hours, minutes] = slotTime.split(':').map(Number);
     const slotTimeInMinutes = hours * 60 + minutes;
     const cutoffTimeInMinutes = 23 * 60 + 30; // 23:30
-    
+
     if (slotTimeInMinutes >= cutoffTimeInMinutes) {
       console.log('🚫 Booking blocked - Time slot at', slotTime, 'is past cutoff (23:30)');
       setUnavailableMessage('Bookings cannot start at or after 23:30 to prevent overflow into the next day. Please select an earlier time slot.');
@@ -589,7 +621,7 @@ const SelectCalendar = () => {
       const professionalToSet = bookingDefaults.professional;
       const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
       const professionalId = professionalToSet.id || professionalToSet._id;
-      
+
       console.log('🎯 Week view flow: Service selected, professional pre-set:', {
         professional: professionalToSet.name || professionalToSet.user?.firstName,
         professionalId: professionalId,
@@ -598,34 +630,34 @@ const SelectCalendar = () => {
         date: bookingDate,
         employeesCount: employees.length
       });
-      
+
       // Find the actual employee object from employees array (important for helper functions)
-      const actualEmployee = employees.find(emp => 
-        emp.id === professionalId || 
+      const actualEmployee = employees.find(emp =>
+        emp.id === professionalId ||
         emp._id === professionalId ||
         emp.id === professionalToSet.id ||
         emp._id === professionalToSet._id
       );
-      
+
       console.log('🔍 Found actual employee:', {
         found: !!actualEmployee,
         employeeName: actualEmployee?.name,
         hasWorkSchedule: !!actualEmployee?.workSchedule,
         workSchedule: actualEmployee?.workSchedule
       });
-      
+
       if (!actualEmployee) {
         console.error('❌ Could not find employee in employees array!', {
           searchingFor: professionalId,
           availableIds: employees.map(e => ({ id: e.id, _id: e._id, name: e.name }))
         });
       }
-      
+
       // Set all required state before moving to step 3
       setSelectedService(service);
       setSelectedProfessional(actualEmployee || professionalToSet); // Use actual employee if found
       setSelectedBookingDate(bookingDate); // Important: set the booking date
-      
+
       // Generate time slots immediately using the local function with CORRECT parameters
       const timeSlots = getAvailableTimeSlotsForProfessional(
         actualEmployee || professionalToSet,  // employee object (not ID)
@@ -633,14 +665,14 @@ const SelectCalendar = () => {
         service.duration,                     // service duration in minutes
         appointments                          // appointments object
       );
-      
+
       console.log('✅ Generated time slots for week view booking:', {
         count: timeSlots.length,
         samples: timeSlots.slice(0, 3),
         allSlots: timeSlots
       });
       setAvailableTimeSlots(timeSlots);
-      
+
       // Now move to step 3 with time slots already populated
       setBookingStep(3);
       return;
@@ -687,7 +719,7 @@ const SelectCalendar = () => {
 
     // Clear multiple appointments session when closing modal
     dispatch(clearSessionAction());
-    
+
     setBookingForm({
       clientName: '',
       clientEmail: '',
@@ -1432,7 +1464,7 @@ const SelectCalendar = () => {
   const searchClients = useCallback((query) => {
     console.log('🔍 Search triggered with query:', query);
     console.log('🔍 Total existing clients:', existingClients.length);
-    
+
     if (!query.trim()) {
       // Show all clients when search is empty
       console.log('🔍 Empty query - showing all clients:', existingClients.length);
@@ -1450,7 +1482,7 @@ const SelectCalendar = () => {
         email.includes(searchTerm) ||
         phone.includes(searchTerm);
     });
-    
+
     console.log('🔍 Filtered results:', filtered.length);
     console.log('🔍 Sample filtered clients:', filtered.slice(0, 3).map(c => `${c.firstName} ${c.lastName}`));
     setClientSearchResults(filtered);
@@ -1649,8 +1681,8 @@ const SelectCalendar = () => {
 
   const getFilteredEmployees = () => {
     // First filter out "Allora Spa Dubai" staff
-    let filteredByName = employees.filter(emp => 
-      emp.name !== 'Allora Spa Dubai' && 
+    let filteredByName = employees.filter(emp =>
+      emp.name !== 'Allora Spa Dubai' &&
       emp.name?.toLowerCase() !== 'allora spa dubai'
     );
 
@@ -2059,7 +2091,7 @@ const SelectCalendar = () => {
     if (selectedGiftCard) {
       const availableValue = calculateGiftCardValue(selectedGiftCard);
       giftCardDiscount = Math.min(total - discountFromMembership, availableValue);
-      
+
       console.log('💰 calculateTotalWithGiftCard:', {
         total,
         discountFromMembership,
@@ -2171,12 +2203,12 @@ const SelectCalendar = () => {
         const [hours, minutes] = apt.timeSlot.split(':').map(Number);
         const startTimeInMinutes = hours * 60 + minutes;
         const endTimeInMinutes = startTimeInMinutes + apt.service.duration;
-        
+
         if (endTimeInMinutes > MAX_END_TIME_MINUTES) {
           const endHours = Math.floor(endTimeInMinutes / 60);
           const endMinutes = endTimeInMinutes % 60;
           const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-          
+
           setBookingError(
             `Cannot confirm booking: "${apt.service.name}" scheduled at ${apt.timeSlot} would end at ${endTimeStr}, ` +
             `which exceeds the maximum allowed time of 23:30. Please adjust the appointment time or choose a shorter service.`
@@ -2335,7 +2367,7 @@ const SelectCalendar = () => {
         const giftCardId = selectedGiftCard._id || selectedGiftCard.id;
         const giftCardCode = selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber;
         const availableValue = calculateGiftCardValue(selectedGiftCard);
-        
+
         // Calculate the actual amount to redeem at booking time
         const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
         const actualRedeemAmount = Math.min(availableValue, amountAfterMembership);
@@ -2364,10 +2396,10 @@ const SelectCalendar = () => {
             code: giftCardCode,
             redeemAmount: actualRedeemAmount
           };
-          
+
           // Update finalAmount to reflect gift card redemption
           finalAmount = Math.max(0, amountAfterMembership - actualRedeemAmount);
-          
+
           console.log('💰 Updated finalAmount after gift card:', finalAmount);
         } else {
           console.log('⚠️ Gift card selected but no amount to redeem:', {
@@ -2469,9 +2501,9 @@ const SelectCalendar = () => {
         setAvailableGiftCards([]);
         setSelectedGiftCard(null);
         setRedeemGiftCardAmount(0);
-        
+
         console.log('🔄 Triggering gift card refresh after booking...');
-        
+
         // Add additional delay to ensure backend DB has been fully updated
         setTimeout(() => {
           if (selectedExistingClient?._id) {
@@ -2694,7 +2726,7 @@ const SelectCalendar = () => {
         const hasValue = card.remainingValue > 0;
         // Only include active or partially used cards that still have value
         const isUsable = ['active', 'partially used'].includes(card.status?.toLowerCase());
-        
+
         // Debug logging for each card
         console.log(`🎁 Gift card filter check for ${card.code}:`, {
           status: card.status,
@@ -2770,7 +2802,7 @@ const SelectCalendar = () => {
       hasService: !!selectedService,
       professionalsLength: availableProfessionals.length
     });
-    
+
     if (bookingStep === 2 && selectedService) {
       if (availableProfessionals.length === 0) {
         console.log('🔄 Step 2 - Fetching professionals for service:', selectedService.name);
@@ -2782,13 +2814,13 @@ const SelectCalendar = () => {
           appointments,
           availableServices
         );
-        
+
         // Fallback: use selectedProfessional if available
         if (professionals.length === 0 && selectedProfessional) {
           console.log('⚠️ Using selectedProfessional as fallback');
           professionals = [selectedProfessional];
         }
-        
+
         console.log('✅ Auto-populated professionals on step 2:', professionals.length, professionals);
         setAvailableProfessionals(professionals);
       } else {
@@ -2808,7 +2840,7 @@ const SelectCalendar = () => {
       professionalId: selectedProfessional?.id || selectedProfessional?._id,
       timeSlotsLength: availableTimeSlots.length
     });
-    
+
     if (bookingStep === 3 && selectedService && selectedProfessional) {
       if (availableTimeSlots.length === 0) {
         console.log('🔄 Step 3 - Fetching time slots for professional:', selectedProfessional.name || selectedProfessional.user?.firstName);
@@ -2819,7 +2851,7 @@ const SelectCalendar = () => {
           selectedService.duration, // service duration in minutes
           appointments             // appointments object
         );
-        
+
         console.log('✅ Auto-populated time slots on step 3:', timeSlots.length, timeSlots);
         setAvailableTimeSlots(timeSlots);
       } else {
@@ -3085,7 +3117,7 @@ const SelectCalendar = () => {
         <div className="staff-grid-wrapper">
           {/* Sticky Headers Row - All staff headers in one fixed row */}
           {currentView === 'Day' && (
-            <div className="staff-headers-row">
+            <div ref={staffHeadersRef} className="staff-headers-row">
               {displayEmployees.map(employee => {
                 const hasShift = hasShiftOnDate(employee, currentDate);
                 const shiftHours = getEmployeeShiftHours(employee, currentDate);
@@ -3113,6 +3145,7 @@ const SelectCalendar = () => {
 
           {/* Scrollable Content - Time slots for each employee */}
           <div
+            ref={staffGridRef}
             className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 20)}`}
             style={{
               '--dynamic-employee-count': displayEmployees.length || 1,
@@ -3661,7 +3694,7 @@ const SelectCalendar = () => {
                 <div className="popup-backdrop" onClick={() => setShowTeamPopup(false)} />
                 <div className="team-popup-enhanced">
                   {/* Header with Multiple team members title */}
-                  
+
 
                   {/* Team filter options */}
                   <div className="team-filter-options">
@@ -3880,7 +3913,7 @@ const SelectCalendar = () => {
 
               <div className="booking-status-details">
                 <div className="booking-status-header">
-             
+
                   <div className="booking-status-info">
                     <h3>{selectedBookingForStatus.client}</h3>
                     <p>{selectedBookingForStatus.service}</p>
@@ -4022,7 +4055,7 @@ const SelectCalendar = () => {
                 </div>
               </div>
 
-              
+
             </div>
           </div>
         </div>
@@ -4261,7 +4294,7 @@ const SelectCalendar = () => {
                       .filter(slot => {
                         // Filter out slots that are not available
                         if (!slot.available) return false;
-                        
+
                         // CUTOFF: Block any booking starting at or after 23:00
                         const startTime = slot.startTime;
                         const [hours] = startTime.split(':').map(Number);
@@ -4269,27 +4302,27 @@ const SelectCalendar = () => {
                           console.log('🚫 Blocking slot at', startTime, '- cutoff is 23:00');
                           return false;
                         }
-                        
+
                         return true;
                       })
                       .map(slot => (
-                      <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => {
-                        console.log('🕐 TIME SLOT SELECTED:', slot);
-                        // Set then immediately add to session (auto-add first service)
-                        setSelectedTimeSlot(slot);
-                        const added = handleAddToBookingSession(slot);
-                        // Move to multi-service management (step 4) after auto-add
-                        setBookingStep(4);
-                        console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
-                      }}>
-                        <div className="booking-modal-item-name">
-                          {formatUTCToLocal(slot.startTime, { hour: '2-digit', minute: '2-digit', hour12: false })} - {formatUTCToLocal(slot.endTime, { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </div>
-                        <div className="booking-modal-list-desc">
-                          {selectedService?.duration} minutes with {selectedProfessional?.name}
-                        </div>
-                      </button>
-                    ))}
+                        <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => {
+                          console.log('🕐 TIME SLOT SELECTED:', slot);
+                          // Set then immediately add to session (auto-add first service)
+                          setSelectedTimeSlot(slot);
+                          const added = handleAddToBookingSession(slot);
+                          // Move to multi-service management (step 4) after auto-add
+                          setBookingStep(4);
+                          console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
+                        }}>
+                          <div className="booking-modal-item-name">
+                            {formatUTCToLocal(slot.startTime, { hour: '2-digit', minute: '2-digit', hour12: false })} - {formatUTCToLocal(slot.endTime, { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          </div>
+                          <div className="booking-modal-list-desc">
+                            {selectedService?.duration} minutes with {selectedProfessional?.name}
+                          </div>
+                        </button>
+                      ))}
                   </div>
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => {
@@ -4447,12 +4480,12 @@ const SelectCalendar = () => {
                             onChange={e => {
                               const checked = e.target.checked;
                               setIsWalkIn(checked);
-                                if (checked) {
-                                  // If user marks as walk-in, clear any selected existing client
-                                  setSelectedExistingClient(null);
-                                  // Clear all client info including name to prevent previous selection from showing
-                                  setClientInfo({ name: '', email: '', phone: '' });
-                                }
+                              if (checked) {
+                                // If user marks as walk-in, clear any selected existing client
+                                setSelectedExistingClient(null);
+                                // Clear all client info including name to prevent previous selection from showing
+                                setClientInfo({ name: '', email: '', phone: '' });
+                              }
                             }}
                           />
                           <span className="walkin-slider" />
@@ -4598,8 +4631,10 @@ const SelectCalendar = () => {
                               onClick={() => {
                                 setIsAddingNewClient(false);
                                 setShowClientSearch(true);
-                                setClientInfo({ name: '', 
-                                  email: '', phone: '' });
+                                setClientInfo({
+                                  name: '',
+                                  email: '', phone: ''
+                                });
                                 setIsWalkIn(false);
                               }}
                             >
@@ -4691,7 +4726,7 @@ const SelectCalendar = () => {
                   <div className="payment-step-grid">
                     {/* Left Column */}
                     <div className="payment-left-column">
-                      
+
                       {/* 1. Appointment Summary */}
                       <div className="appointment-summary-card">
                         <h4><Calendar size={18} /> Appointment Summary</h4>
@@ -4764,18 +4799,18 @@ const SelectCalendar = () => {
                                   <Edit2 size={14} />
                                 </button>
                                 {customTotalDiscount > 0 && (
-                                   <button className="clear-discount-btn-modern" onClick={clearCustomDiscount} title="Remove Discount">
-                                     <X size={12} />
-                                   </button>
+                                  <button className="clear-discount-btn-modern" onClick={clearCustomDiscount} title="Remove Discount">
+                                    <X size={12} />
+                                  </button>
                                 )}
                               </div>
                             )}
-                            
+
                             {customTotalDiscount > 0 && !editingTotalPrice && (
-                               <div className="original-price-subtext">
-                                  <span className="original">AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}</span>
-                                  <span className="discount-tag">-{customTotalDiscount.toFixed(2)} off</span>
-                               </div>
+                              <div className="original-price-subtext">
+                                <span className="original">AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}</span>
+                                <span className="discount-tag">-{customTotalDiscount.toFixed(2)} off</span>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -4795,7 +4830,7 @@ const SelectCalendar = () => {
                             </div>
                           </div>
                         ) : (
-                           <div className="client-profile-header">
+                          <div className="client-profile-header">
                             <div className="client-avatar-large placeholder">
                               {clientInfo.name ? clientInfo.name[0] : 'G'}
                             </div>
@@ -4825,38 +4860,38 @@ const SelectCalendar = () => {
                       {/* 3. Billing & Redeem */}
                       <div className="billing-redeem-card">
                         <h4><Tag size={18} /> Billing & Redeem</h4>
-                        
+
                         {/* Gift Card Section */}
                         <div className="redeem-section">
                           <div className="redeem-header">
                             <Gift size={16} className="redeem-icon" />
                             <span className="redeem-title">Gift Card</span>
                           </div>
-                          
+
                           {selectedGiftCard && (
-                             <div className="applied-redeem-item">
-                                <div className="redeem-info">
-                                  <span className="redeem-code">{selectedGiftCard.code}</span>
-                                  <span className="redeem-amount">- AED {giftCardAppliedAmount}</span>
-                                </div>
-                                <button onClick={() => setSelectedGiftCard(null)} className="remove-redeem-btn">Remove</button>
-                             </div>
+                            <div className="applied-redeem-item">
+                              <div className="redeem-info">
+                                <span className="redeem-code">{selectedGiftCard.code}</span>
+                                <span className="redeem-amount">- AED {giftCardAppliedAmount}</span>
+                              </div>
+                              <button onClick={() => setSelectedGiftCard(null)} className="remove-redeem-btn">Remove</button>
+                            </div>
                           )}
-                          
+
                           {/* Available Gift Cards List (Simplified) */}
                           {availableGiftCards.length > 0 && !selectedGiftCard && (
-                             <div className="available-redeem-list">
-                                {availableGiftCards.map(gc => (
-                                   <button key={gc._id} className="redeem-option-chip" onClick={() => {
-                                      setSelectedGiftCard(gc);
-                                      const total = getTotalSessionPrice();
-                                      const val = calculateGiftCardValue(gc);
-                                      setGiftCardAppliedAmount(Math.min(val, total));
-                                   }}>
-                                     <Gift size={12} /> {gc.code} (AED {calculateGiftCardValue(gc)})
-                                   </button>
-                                ))}
-                             </div>
+                            <div className="available-redeem-list">
+                              {availableGiftCards.map(gc => (
+                                <button key={gc._id} className="redeem-option-chip" onClick={() => {
+                                  setSelectedGiftCard(gc);
+                                  const total = getTotalSessionPrice();
+                                  const val = calculateGiftCardValue(gc);
+                                  setGiftCardAppliedAmount(Math.min(val, total));
+                                }}>
+                                  <Gift size={12} /> {gc.code} (AED {calculateGiftCardValue(gc)})
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </div>
 
@@ -4866,27 +4901,27 @@ const SelectCalendar = () => {
                             <Crown size={16} className="redeem-icon" />
                             <span className="redeem-title">Membership</span>
                           </div>
-                          
+
                           <AdminMembershipChecker
-                              selectedClient={selectedExistingClient || {
-                                firstName: clientInfo.name?.split(' ')[0] || '',
-                                lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
-                                email: clientInfo.email,
-                                phone: clientInfo.phone
-                              }}
-                              selectedServices={multipleAppointments.map(apt => apt.service)}
-                              appliedMembership={appliedMembership}
-                              onMembershipApplied={handleMembershipApplied}
-                              onMembershipRemoved={handleMembershipRemoved}
-                              refreshSignal={membershipRefreshSignal}
-                            />
+                            selectedClient={selectedExistingClient || {
+                              firstName: clientInfo.name?.split(' ')[0] || '',
+                              lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
+                              email: clientInfo.email,
+                              phone: clientInfo.phone
+                            }}
+                            selectedServices={multipleAppointments.map(apt => apt.service)}
+                            appliedMembership={appliedMembership}
+                            onMembershipApplied={handleMembershipApplied}
+                            onMembershipRemoved={handleMembershipRemoved}
+                            refreshSignal={membershipRefreshSignal}
+                          />
                         </div>
                       </div>
                     </div>
 
                     {/* Right Column */}
                     <div className="payment-right-column">
-                      
+
                       {/* 1. Payment Breakdown */}
                       <div className="payment-breakdown-card">
                         <h4><Banknote size={18} /> Payment Breakdown</h4>
@@ -4894,30 +4929,30 @@ const SelectCalendar = () => {
                           <span className="breakdown-label">Service Total</span>
                           <span className="breakdown-value">AED {getTotalSessionPrice().toFixed(2)}</span>
                         </div>
-                        
+
                         {appliedMembership && membershipDiscountAmount > 0 && (
                           <div className="breakdown-row discount">
                             <span className="breakdown-label">Membership Discount</span>
                             <span className="breakdown-value">-AED {membershipDiscountAmount.toFixed(2)}</span>
                           </div>
                         )}
-                        
+
                         {selectedGiftCard && giftCardAppliedAmount > 0 && (
                           <div className="breakdown-row discount">
                             <span className="breakdown-label">Gift Card</span>
                             <span className="breakdown-value">-AED {giftCardAppliedAmount.toFixed(2)}</span>
                           </div>
                         )}
-                        
+
                         {customTotalDiscount > 0 && (
-                           <div className="breakdown-row discount">
+                          <div className="breakdown-row discount">
                             <span className="breakdown-label">Manual Discount</span>
                             <span className="breakdown-value">-AED {customTotalDiscount.toFixed(2)}</span>
                           </div>
                         )}
 
                         <div className="breakdown-divider"></div>
-                        
+
                         <div className="breakdown-row total">
                           <span className="breakdown-label">Remaining Amount</span>
                           <span className="breakdown-value">AED {calculateTotalWithGiftCard().remainingAmount.toFixed(2)}</span>
@@ -4928,22 +4963,22 @@ const SelectCalendar = () => {
                       <div className="payment-method-card">
                         <h4><CreditCard size={18} /> Payment Method</h4>
                         <div className="payment-methods-grid-large">
-                          <button 
+                          <button
                             className={`pm-card ${paymentMethod === 'cash' ? 'active' : ''}`}
                             onClick={() => setPaymentMethod('cash')}
                           >
                             <div className="pm-icon"><Banknote size={24} /></div>
                             <div className="pm-name">Cash</div>
                           </button>
-                          <button 
+                          <button
                             className={`pm-card ${paymentMethod === 'card' ? 'active' : ''}`}
                             onClick={() => setPaymentMethod('card')}
                           >
                             <div className="pm-icon"><CreditCard size={24} /></div>
                             <div className="pm-name">Card</div>
                           </button>
-                         
-                          <button 
+
+                          <button
                             className={`pm-card ${paymentMethod === 'upi' ? 'active' : ''}`}
                             onClick={() => setPaymentMethod('upi')}
                           >
@@ -4958,21 +4993,21 @@ const SelectCalendar = () => {
 
                   {/* Bottom Floating Action Bar */}
                   <div className="confirm-appointment-bar">
-                     <button className="back-btn-simple" onClick={() => setBookingStep(5)}>
-                        <ChevronLeft size={16} /> Back
-                     </button>
-                     <button 
-                        className="confirm-booking-btn-large"
-                        onClick={handleCreateBooking}
-                        disabled={bookingLoading}
-                     >
-                        {bookingLoading ? 'Processing...' : (
-                          <>
-                            <Check size={18} />
-                            {`Confirm Appointment — Pay AED ${calculateTotalWithGiftCard().remainingAmount.toFixed(2)}`}
-                          </>
-                        )}
-                     </button>
+                    <button className="back-btn-simple" onClick={() => setBookingStep(5)}>
+                      <ChevronLeft size={16} /> Back
+                    </button>
+                    <button
+                      className="confirm-booking-btn-large"
+                      onClick={handleCreateBooking}
+                      disabled={bookingLoading}
+                    >
+                      {bookingLoading ? 'Processing...' : (
+                        <>
+                          <Check size={18} />
+                          {`Confirm Appointment — Pay AED ${calculateTotalWithGiftCard().remainingAmount.toFixed(2)}`}
+                        </>
+                      )}
+                    </button>
                   </div>
                 </>
               )}
