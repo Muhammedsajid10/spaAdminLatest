@@ -63,7 +63,7 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
-import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction } from '../store/bookingSessionSlice';
+import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction, updateAppointment } from '../store/bookingSessionSlice';
 import { fetchCalendarThunk, fetchServicesThunk } from '../store/thunks';
 
 // --- API ENDPOINTS ---
@@ -278,6 +278,10 @@ const SelectCalendar = () => {
   // Signal to force membership checker to refetch from server
   const [membershipRefreshSignal, setMembershipRefreshSignal] = useState(0);
 
+  // Employee Change Feature States
+  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
+  const [availableProfessionalsForTimeSlot, setAvailableProfessionalsForTimeSlot] = useState([]);
+
   // Date selection for booking modal (especially for week view)
   const [selectedBookingDate, setSelectedBookingDate] = useState(null);
   const [showBookingDatePicker, setShowBookingDatePicker] = useState(false);
@@ -459,14 +463,20 @@ const SelectCalendar = () => {
     if (existingAppointment) {
       // Show booking status modal for existing appointment
       const employee = employees.find(emp => emp.id === employeeId);
+      const foundService = availableServices.find(s => s._id === existingAppointment.serviceEntryId || s.id === existingAppointment.serviceEntryId || s.name === existingAppointment.service);
+      const servicePrice = foundService?.price || 0;
       const appointmentDetails = {
         ...existingAppointment,
         employeeId,
         employeeName: employee?.name,
         slotTime,
         date: dayKey,
-        slotKey
+        slotKey,
+        // Include price information for display in booking modal
+        price: servicePrice,
+        finalAmount: servicePrice
       };
+      console.log('🎯 Day View (handleTimeSlotClick) Booking Details:', appointmentDetails);
       setSelectedBookingForStatus(appointmentDetails);
       setShowBookingStatusModal(true);
       return;
@@ -1423,6 +1433,94 @@ const SelectCalendar = () => {
     } finally {
       setBookingLoading(false);
       console.log('=== TIME SLOT FETCHING COMPLETE ===');
+    }
+  }, [employees, availableServices, appointments, multipleAppointments]);
+
+  // NEW: Function to get available professionals for a specific time slot
+  const getAvailableProfessionalsForTimeSlot = useCallback((serviceId, timeSlot, date, currentProfessionalId = null) => {
+    try {
+      console.log('🔍 Getting available professionals for:', { serviceId, timeSlot, date, currentProfessionalId });
+
+      const service = availableServices.find(s => s._id === serviceId);
+      const serviceDuration = service?.duration || 30;
+
+      console.log('📋 Service found:', service?.name, 'Duration:', serviceDuration);
+
+      // Get all ACTIVE employees who have a shift on this date
+      const employeesWithShift = employees.filter(emp => {
+        // Check 1: Employee must be active
+        const isActive = emp.isActive !== false;
+        if (!isActive) {
+          console.log(`❌ ${emp.name} is not active`);
+          return false;
+        }
+
+        // Check 2: Employee must have shift on this date
+        const hasShift = hasShiftOnDate(emp, date);
+        if (!hasShift) {
+          console.log(`❌ ${emp.name} has no shift on ${date.toDateString()}`);
+          return false;
+        }
+
+        console.log(`✅ ${emp.name} is active and has shift on ${date.toDateString()}`);
+        return true;
+      });
+
+      console.log('👥 Employees with shift on date:', employeesWithShift.length);
+
+      // Filter to only those who don't have conflicts at this specific time slot
+      const availableProfessionals = employeesWithShift.filter(emp => {
+        const dayKey = date.toISOString().split('T')[0];
+        
+        // Convert timeSlot (e.g., "14:30") to check for conflicts
+        const [hours, mins] = timeSlot.split(':').map(Number);
+        const slotStartMinutes = hours * 60 + mins;
+        const slotEndMinutes = slotStartMinutes + serviceDuration;
+
+        // Check 1: Check time slot conflict with existing appointments
+        const existingAppointmentsForEmp = appointments[emp.id] || {};
+        
+        const hasTimeConflict = Object.keys(existingAppointmentsForEmp).some(key => {
+          if (!key.includes(dayKey)) return false;
+          const existingSlot = key.split('_')[1];
+          const [h, m] = existingSlot.split(':').map(Number);
+          const existingStartMinutes = h * 60 + m;
+          const existingEndMinutes = existingStartMinutes + 30; // Assuming 30 min for checking
+          return slotStartMinutes < existingEndMinutes && slotEndMinutes > existingStartMinutes;
+        });
+
+        if (hasTimeConflict) {
+          console.log(`❌ ${emp.name} has time conflict at ${timeSlot}`);
+          return false;
+        }
+
+        // Check 2: Check against accumulated bookings in current session
+        const accumulatedBookings = multipleAppointments.filter(apt => 
+          apt.professional.id === emp.id && 
+          apt.date === dayKey
+        );
+
+        const hasSessionConflict = accumulatedBookings.some(apt => {
+          const [h, m] = apt.timeSlot.split(':').map(Number);
+          const aptStartMinutes = h * 60 + m;
+          const aptEndMinutes = aptStartMinutes + apt.service.duration;
+          return slotStartMinutes < aptEndMinutes && slotEndMinutes > aptStartMinutes;
+        });
+
+        if (hasSessionConflict) {
+          console.log(`❌ ${emp.name} has session conflict at ${timeSlot}`);
+          return false;
+        }
+
+        console.log(`✅ ${emp.name} is available at ${timeSlot}`);
+        return true;
+      });
+
+      console.log('✨ Final available professionals:', availableProfessionals.map(p => p.name));
+      return availableProfessionals.sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      console.error('Error getting available professionals:', error);
+      return [];
     }
   }, [employees, availableServices, appointments, multipleAppointments]);
 
@@ -2660,6 +2758,11 @@ const SelectCalendar = () => {
     fetchCalendarData();
   }, [currentDate, currentView]);
 
+  // Load services on component mount for price lookups
+  useEffect(() => {
+    fetchBookingServices();
+  }, [fetchBookingServices]);
+
   // Initialize booking modal when opened
   useEffect(() => {
     if (showAddBookingModal) {
@@ -3017,6 +3120,8 @@ const SelectCalendar = () => {
                             e.stopPropagation(); // Prevent day click when clicking on appointment
                             if (app.bookingId) {
                               // Show booking status for existing appointment
+                              const foundService = availableServices.find(s => s._id === app.serviceEntryId || s.id === app.serviceEntryId || s.name === app.service);
+                              const servicePrice = foundService?.price || 0;
                               const appointmentDetails = {
                                 ...app,
                                 employeeId: app.employeeId,
@@ -3024,8 +3129,12 @@ const SelectCalendar = () => {
                                 slotTime: app.time,
                                 date: dayKey,
                                 slotKey: `${dayKey}_${app.time}`,
-                                serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
+                                serviceEntryId: app.serviceEntryId,
+                                // Include price information for display in booking modal
+                                price: servicePrice,
+                                finalAmount: servicePrice
                               };
+                              console.log('🎯 Month View Booking Details:', appointmentDetails);
                               setSelectedBookingForStatus(appointmentDetails);
                               setShowBookingStatusModal(true);
                             }
@@ -3170,6 +3279,7 @@ const SelectCalendar = () => {
                 hideTimeHover={hideTimeHover}
                 setSelectedBookingForStatus={setSelectedBookingForStatus}
                 setShowBookingStatusModal={setShowBookingStatusModal}
+                availableServices={availableServices}
                 hideHeader={true}
               />
             ))}
@@ -3243,6 +3353,8 @@ const SelectCalendar = () => {
 
                                     if (app.timeSlot && app.bookingId) {
                                       // Show booking status for existing appointment
+                                      const foundService = availableServices.find(s => s._id === app.serviceEntryId || s.id === app.serviceEntryId || s.name === app.service);
+                                      const servicePrice = foundService?.price || 0;
                                       const appointmentDetails = {
                                         ...app,
                                         employeeId: employee.id,
@@ -3250,9 +3362,12 @@ const SelectCalendar = () => {
                                         slotTime: app.timeSlot,
                                         date: dayKey,
                                         slotKey: app.slotKey,
-                                        serviceEntryId: app.serviceEntryId // Include serviceEntryId for per-service operations
+                                        serviceEntryId: app.serviceEntryId,
+                                        // Include price information for display in booking modal
+                                        price: servicePrice,
+                                        finalAmount: servicePrice
                                       };
-                                      console.log('Opening booking status modal:', appointmentDetails);
+                                      console.log('🎯 Week View Booking Details:', appointmentDetails);
                                       setSelectedBookingForStatus(appointmentDetails);
                                       setShowBookingStatusModal(true);
                                     } else if (app.timeSlot) {
@@ -3976,26 +4091,17 @@ const SelectCalendar = () => {
                       <span className="detail-value">{selectedBookingForStatus.bookingId || 'N/A'}</span>
                     </div>
                   </div>
-                  {(selectedBookingForStatus.finalAmount !== undefined || selectedBookingForStatus.price !== undefined || selectedBookingForStatus.totalAmount !== undefined) && (
-                    <div className="status-detail">
-                      <div className="detail-icon">
-                        <Banknote size={20} />
-                      </div>
-                      <div className="detail-content">
-                        <span className="detail-label">Amount</span>
-                        <span className="detail-value" style={{ fontWeight: selectedBookingForStatus.finalAmount !== undefined && selectedBookingForStatus.finalAmount !== selectedBookingForStatus.price ? 'bold' : 'normal' }}>
-                          {selectedBookingForStatus.finalAmount !== undefined && selectedBookingForStatus.finalAmount !== selectedBookingForStatus.price && (
-                            <span style={{ textDecoration: 'line-through', marginRight: 8, opacity: 0.6 }}>
-                              AED {Number(selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
-                            </span>
-                          )}
-                          <span style={{ color: selectedBookingForStatus.finalAmount !== undefined && selectedBookingForStatus.finalAmount !== selectedBookingForStatus.price ? '#4ade80' : 'inherit' }}>
-                            AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
-                          </span>
-                        </span>
-                      </div>
+                  <div className="status-detail">
+                    <div className="detail-icon">
+                      <Banknote size={20} />
                     </div>
-                  )}
+                    <div className="detail-content">
+                      <span className="detail-label">Amount</span>
+                      <span className="detail-value">
+                        AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="booking-status-actions">
@@ -4736,12 +4842,105 @@ const SelectCalendar = () => {
                               <div className="appointment-main-info">
                                 <div className="service-name">{apt.service.name}</div>
                                 <div className="appointment-meta-row">
-                                  <span className="meta-icon"><User size={14} /></span> {apt.professional.user?.firstName || apt.professional.name}
+                                  {/* Professional with edit button */}
+                                  <div className="appointment-professional-selector">
+                                    <span className="meta-icon"><User size={14} /></span>
+                                    <span className="professional-name">{apt.professional.user?.firstName || apt.professional.name}</span>
+                                    <button
+                                      className="edit-professional-btn"
+                                      onClick={() => {
+                                        // Get available professionals for this appointment's time slot
+                                        const available = getAvailableProfessionalsForTimeSlot(
+                                          apt.service._id,
+                                          apt.timeSlot,
+                                          new Date(apt.date),
+                                          apt.professional.id
+                                        );
+                                        setAvailableProfessionalsForTimeSlot(available);
+                                        setEditingAppointmentId(apt.id);
+                                      }}
+                                      title="Change professional"
+                                    >
+                                      <Edit2 size={12} />
+                                    </button>
+                                  </div>
                                   <span className="meta-divider">|</span>
                                   <span className="meta-icon"><Clock size={14} /></span> {apt.timeSlot}
                                   <span className="meta-divider">|</span>
                                   <span className="meta-icon"><RotateCcw size={14} /></span> {apt.service.duration} min
                                 </div>
+                                
+                                {/* Professional selector dropdown */}
+                                {editingAppointmentId === apt.id && (
+                                  <div className="professional-change-dropdown">
+                                    <div className="professional-selector-header">
+                                      <span className="selector-title">Available professionals at {apt.timeSlot}:</span>
+                                      <button
+                                        className="close-selector-btn"
+                                        onClick={() => setEditingAppointmentId(null)}
+                                        title="Close"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                    {availableProfessionalsForTimeSlot.length === 0 ? (
+                                      <div className="no-alternatives-message">
+                                        <p>No other professionals available at this time slot.</p>
+                                      </div>
+                                    ) : (
+                                      <div className="professional-options">
+                                        {availableProfessionalsForTimeSlot.map((prof) => (
+                                          <button
+                                            key={prof.id}
+                                            className={`professional-option ${apt.professional.id === prof.id ? 'selected' : ''}`}
+                                            onClick={() => {
+                                              // Update the appointment with new professional
+                                              const updatedAppointments = multipleAppointments.map(a => {
+                                                if (a.id === apt.id) {
+                                                  return {
+                                                    ...a,
+                                                    professional: {
+                                                      id: prof.id,
+                                                      user: {
+                                                        firstName: prof.name.split(' ')[0],
+                                                        lastName: prof.name.split(' ').slice(1).join(' ') || ''
+                                                      },
+                                                      name: prof.name
+                                                    }
+                                                  };
+                                                }
+                                                return a;
+                                              });
+                                              // Update Redux store
+                                              dispatch(updateAppointment({
+                                                id: apt.id,
+                                                professional: {
+                                                  id: prof.id,
+                                                  user: {
+                                                    firstName: prof.name.split(' ')[0],
+                                                    lastName: prof.name.split(' ').slice(1).join(' ') || ''
+                                                  },
+                                                  name: prof.name
+                                                }
+                                              }));
+                                              setEditingAppointmentId(null);
+                                              Swal.fire({
+                                                icon: 'success',
+                                                title: 'Professional Changed',
+                                                text: `Service reassigned to ${prof.name}`,
+                                                timer: 2000
+                                              });
+                                            }}
+                                          >
+                                            <Check size={14} style={{ marginRight: '6px' }} />
+                                            {prof.name}
+                                            {apt.professional.id === prof.id && <span className="current-badge">(Current)</span>}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <div className="appointment-price-action">
                                 <div className="service-price">AED {apt.service.price}</div>

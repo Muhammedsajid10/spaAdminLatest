@@ -16,6 +16,7 @@ export const StaffColumn = ({
   hideTimeHover,
   setSelectedBookingForStatus,
   setShowBookingStatusModal,
+  availableServices = [],
   hideHeader = false
 }) => {
   // Normalize employee id (backend might use _id or employeeId)
@@ -196,7 +197,7 @@ export const StaffColumn = ({
         })}
         {appointmentBlocks.map((block,i)=> (
           <div key={`block-${i}`} className="appointment-block fresha-style" style={{ position:'absolute', top:`${block.topPx}px`, left:'4px', right:'4px', height:`${block.height}px`, backgroundColor: getAppointmentColorByStatus(block.appointment.status, block.appointment.color), borderRadius:'12px', display:'flex', flexDirection:'column', justifyContent:'center', padding:'8px 12px', boxShadow:'0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)', cursor:'pointer', zIndex:10, border:'2px solid rgba(255,255,255,0.2)', transition:'all 0.2s ease', overflow:'hidden'}}
-            onClick={()=>{ const details={ ...block.appointment, employeeId: employee.id, employeeName: employee.name, slotTime:block.startSlot, date:dayKey, slotKey:`${dayKey}_${block.startSlot}` }; setSelectedBookingForStatus(details); setShowBookingStatusModal(true); }}
+            onClick={()=>{ let servicePrice = 0; const foundService = availableServices.find(s => s._id === block.appointment.serviceEntryId || s.id === block.appointment.serviceEntryId || s.serviceId === block.appointment.serviceEntryId || s.name === block.appointment.service); if (foundService) { servicePrice = foundService.price || 0; console.log('✅ Service found by', (s => s._id === block.appointment.serviceEntryId ? '_id' : s.name === block.appointment.service ? 'name' : 'id')(foundService), ':', { name: foundService.name, price: foundService.price }); } else { console.log('❌ Service NOT found for serviceEntryId:', block.appointment.serviceEntryId, 'or name:', block.appointment.service); } const details={ ...block.appointment, employeeId: employee.id, employeeName: employee.name, slotTime:block.startSlot, date:dayKey, slotKey:`${dayKey}_${block.startSlot}`, price: servicePrice, finalAmount: servicePrice }; console.log('🎯 Day View (StaffColumn) Booking Details with price:', details); setSelectedBookingForStatus(details); setShowBookingStatusModal(true); }}
             onMouseEnter={(e)=> showBookingTooltipHandler(e,{ client:block.appointment.client, service:block.appointment.service, time:block.appointment.startTime, professional: employee.name, status:block.appointment.status||'Confirmed', notes:block.appointment.notes })}
             onMouseLeave={hideBookingTooltip}>
             <div className="appointment-client" style={{ fontWeight:700, color:'#fff', fontSize:14 }}>{block.appointment.client}</div>
