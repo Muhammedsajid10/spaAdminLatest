@@ -94,6 +94,10 @@ const SelectCalendar = () => {
   const [editingTotalPrice, setEditingTotalPrice] = useState(false);
   const [tempTotalPrice, setTempTotalPrice] = useState('');
   const [customTotalDiscount, setCustomTotalDiscount] = useState(0);
+  
+  // Individual service price editing states
+  const [editingServicePrices, setEditingServicePrices] = useState({}); // { [appointmentId]: { editing: boolean, value: '150' } }
+  const [editedServicePrices, setEditedServicePrices] = useState({}); // { [appointmentId]: 150 } - stores the final edited prices
 
   // Refs for scroll synchronization between headers and grid
   const staffHeadersRef = useRef(null);
@@ -176,6 +180,44 @@ const SelectCalendar = () => {
     setCustomTotalDiscount(0);
   };
 
+  // Individual service price editing functions
+  const startEditingServicePrice = (appointmentId, currentPrice) => {
+    setEditingServicePrices(prev => ({
+      ...prev,
+      [appointmentId]: { editing: true, value: currentPrice.toString() }
+    }));
+  };
+
+  const cancelEditingServicePrice = (appointmentId) => {
+    setEditingServicePrices(prev => {
+      const updated = { ...prev };
+      delete updated[appointmentId];
+      return updated;
+    });
+  };
+
+  const saveEditedServicePrice = (appointmentId) => {
+    const editState = editingServicePrices[appointmentId];
+    if (!editState) return;
+
+    const newPrice = parseFloat(editState.value);
+    if (!isNaN(newPrice) && newPrice >= 0) {
+      setEditedServicePrices(prev => ({
+        ...prev,
+        [appointmentId]: newPrice
+      }));
+      cancelEditingServicePrice(appointmentId);
+    }
+  };
+
+  const clearServicePriceEdit = (appointmentId) => {
+    setEditedServicePrices(prev => {
+      const updated = { ...prev };
+      delete updated[appointmentId];
+      return updated;
+    });
+  };
+
   // Week and Month navigation functions for date picker
   const goToDatePickerPreviousWeek = useCallback(() => {
     const newDate = new Date(datePickerCurrentMonth);
@@ -220,13 +262,14 @@ const SelectCalendar = () => {
   const getTotalSessionPrice = useCallback(() => {
     if (!Array.isArray(multipleAppointments)) return 0;
     const originalTotal = multipleAppointments.reduce((sum, a) => {
-      // Use original price (not custom price)
-      const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
+      // Use edited price if available, otherwise use original price
+      const editedPrice = editedServicePrices[a.id];
+      const price = editedPrice !== undefined ? editedPrice : (a && (a.price ?? a.service?.price ?? 0)) || 0;
       return sum + Number(price || 0);
     }, 0);
     // Apply custom discount to total
     return Math.max(0, originalTotal - customTotalDiscount);
-  }, [multipleAppointments, customTotalDiscount]);
+  }, [multipleAppointments, customTotalDiscount, editedServicePrices]);
 
   // Core scheduler state (moved to Redux)
   const employees = useSelector(state => state.employees.list);
@@ -392,6 +435,111 @@ const SelectCalendar = () => {
   const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
   const [bookingStatusLoading, setBookingStatusLoading] = useState(false);
   const [bookingStatusError, setBookingStatusError] = useState(null);
+  const [fullBookingDetailsLoading, setFullBookingDetailsLoading] = useState(false);
+
+  // Fetch full booking details with all service information including custom pricing
+  const fetchFullBookingDetails = useCallback(async (bookingId) => {
+    if (!bookingId) return;
+    
+    try {
+      setFullBookingDetailsLoading(true);
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      // Use admin endpoint to fetch full booking details
+      const response = await fetch(`${Base_url}/bookings/admin/${bookingId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to fetch full booking details:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (data && data.data) {
+        const booking = data.data.booking || data.data;
+        console.log('✅ Full booking details fetched:', {
+          bookingId: booking._id,
+          servicesCount: booking.services?.length,
+          services: booking.services?.map(s => ({
+            serviceName: s.serviceName,
+            originalPrice: s.originalPrice,
+            customPrice: s.customPrice,
+            priceDiscount: s.priceDiscount
+          }))
+        });
+
+        // Update selectedBookingForStatus with enriched data while preserving calendar view fields
+        setSelectedBookingForStatus(prev => {
+          // Extract client name from populated client object or keep existing value
+          let clientName = prev?.client;
+          if (booking.client) {
+            if (typeof booking.client === 'string') {
+              clientName = booking.client;
+            } else if (booking.client.fullName) {
+              clientName = booking.client.fullName;
+            } else if (booking.client.firstName || booking.client.lastName) {
+              clientName = `${booking.client.firstName || ''} ${booking.client.lastName || ''}`.trim();
+            } else {
+              clientName = booking.client;
+            }
+          }
+
+          // Filter services to only include the clicked service (by serviceEntryId)
+          let filteredServices = booking.services || [];
+          if (prev?.serviceEntryId && booking.services) {
+            console.log('🔍 Filtering services for serviceEntryId:', prev.serviceEntryId);
+            filteredServices = booking.services.filter(service => 
+              String(service._id) === String(prev.serviceEntryId)
+            );
+            console.log('📋 Filtered services count:', filteredServices.length);
+          }
+
+          // Extract service name from the filtered service
+          let serviceName = prev?.service;
+          if (filteredServices && filteredServices.length > 0) {
+            serviceName = filteredServices[0]?.serviceName || filteredServices[0]?.service?.name || prev?.service;
+          }
+
+          // Calculate total amount from only the filtered service(s)
+          const totalAmount = filteredServices.reduce((sum, service) => {
+            return sum + (service.price || 0);
+          }, 0);
+
+          return {
+            // Preserve all calendar view data
+            ...prev,
+            // Enrich with filtered services and custom pricing
+            services: filteredServices,
+            totalAmount: totalAmount,
+            finalAmount: totalAmount,
+            // Use the extracted strings for display
+            client: clientName,
+            service: serviceName,
+            // Keep original MongoDB object for reference if needed
+            _fullBookingData: booking
+          };
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching full booking details:', err);
+      // Don't show error to user - just log it
+    } finally {
+      setFullBookingDetailsLoading(false);
+    }
+  }, [Base_url]);
+
+  // Fetch full booking details when modal opens
+  useEffect(() => {
+    if (showBookingStatusModal && selectedBookingForStatus?.bookingId) {
+      console.log('📖 Booking Status Modal opened, fetching full details for:', selectedBookingForStatus.bookingId);
+      fetchFullBookingDetails(selectedBookingForStatus.bookingId);
+    }
+  }, [showBookingStatusModal, fetchFullBookingDetails]);
 
   // --- HELPER FUNCTIONS ---
   // const handleTimeSlotClick = (employeeId, slotTime, day) => {
@@ -2408,14 +2556,28 @@ const SelectCalendar = () => {
         console.log(`🕐 Created UTC datetime: ${appointmentDateTime.toISOString()}`);
         console.log(`✅ Time will display correctly as: ${timeStr}`);
 
-        return {
+        // Get the price for this appointment (edited or original)
+        const editedPrice = editedServicePrices[apt.id];
+        const finalPrice = editedPrice !== undefined ? editedPrice : apt.service.price;
+        const originalPrice = apt.service.price;
+
+        const serviceData = {
           service: apt.service._id,
           employee: apt.professional._id || apt.professional.id,
           duration: apt.service.duration,
-          price: apt.service.price,
+          price: finalPrice, // Use edited price if available
+          originalPrice: originalPrice, // Store original price for reference
           startTime: appointmentDateTime.toISOString(),
           endTime: endTime.toISOString(),
         };
+
+        // Add custom discount info if price was edited
+        if (editedPrice !== undefined) {
+          serviceData.customPrice = editedPrice;
+          serviceData.priceDiscount = originalPrice - editedPrice;
+        }
+
+        return serviceData;
       });
 
       // Calculate totals & apply payment adjustments using the new gift card flow
@@ -4030,8 +4192,18 @@ const SelectCalendar = () => {
                 <div className="booking-status-header">
 
                   <div className="booking-status-info">
-                    <h3>{selectedBookingForStatus.client}</h3>
-                    <p>{selectedBookingForStatus.service}</p>
+                    <h3>
+                      {typeof selectedBookingForStatus.client === 'string' 
+                        ? selectedBookingForStatus.client 
+                        : selectedBookingForStatus.client?.fullName || 
+                          `${selectedBookingForStatus.client?.firstName || ''} ${selectedBookingForStatus.client?.lastName || ''}`.trim() || 
+                          'Client'}
+                    </h3>
+                    <p>
+                      {typeof selectedBookingForStatus.service === 'string' 
+                        ? selectedBookingForStatus.service 
+                        : selectedBookingForStatus.service?.name || 'Service'}
+                    </p>
                   </div>
                   <div className={`booking-status-badge status-${selectedBookingForStatus.status?.toLowerCase() || 'booked'}`}>
                     {(selectedBookingForStatus.status || 'Booked').charAt(0).toUpperCase() + (selectedBookingForStatus.status || 'Booked').slice(1)}
@@ -4045,7 +4217,13 @@ const SelectCalendar = () => {
                     </div>
                     <div className="detail-content">
                       <span className="detail-label">Professional</span>
-                      <span className="detail-value">{selectedBookingForStatus.employeeName}</span>
+                      <span className="detail-value">
+                        {typeof selectedBookingForStatus.employeeName === 'string' 
+                          ? selectedBookingForStatus.employeeName 
+                          : selectedBookingForStatus.employeeName?.user?.firstName || 
+                            selectedBookingForStatus.employeeName?.fullName || 
+                            'Employee'}
+                      </span>
                     </div>
                   </div>
                   <div className="status-detail">
@@ -4097,9 +4275,35 @@ const SelectCalendar = () => {
                     </div>
                     <div className="detail-content">
                       <span className="detail-label">Amount</span>
-                      <span className="detail-value">
-                        AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
-                      </span>
+                      <div className="detail-value-wrapper">
+                        {selectedBookingForStatus.services && selectedBookingForStatus.services.some(s => s.customPrice !== undefined) ? (
+                          <div className="price-details-breakdown">
+                            {selectedBookingForStatus.services.map((service, idx) => (
+                              <div key={idx} className="service-price-line">
+                                <span className="service-name-inline">{service.serviceName || `Service ${idx + 1}`}</span>
+                                {service.customPrice !== undefined ? (
+                                  <span className="price-with-edit">
+                                    <span className="original-price">AED {Number(service.originalPrice || service.price).toFixed(2)}</span>
+                                    <span className="price-arrow">→</span>
+                                    <span className="edited-price">AED {Number(service.customPrice).toFixed(2)}</span>
+                                    <span className="discount-amount">-AED {(Number(service.originalPrice || service.price) - Number(service.customPrice)).toFixed(2)}</span>
+                                  </span>
+                                ) : (
+                                  <span className="price-regular">AED {Number(service.price).toFixed(2)}</span>
+                                )}
+                              </div>
+                            ))}
+                            <div className="total-price-line">
+                              <span className="total-label">Total Paid:</span>
+                              <span className="total-value">AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.totalAmount || 0).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span>
+                            AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4943,7 +5147,66 @@ const SelectCalendar = () => {
                                 )}
                               </div>
                               <div className="appointment-price-action">
-                                <div className="service-price">AED {apt.service.price}</div>
+                                {editingServicePrices[apt.id]?.editing ? (
+                                  <div className="service-price-edit-wrapper">
+                                    <span className="currency-prefix">AED</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      value={editingServicePrices[apt.id].value}
+                                      onChange={(e) => setEditingServicePrices(prev => ({
+                                        ...prev,
+                                        [apt.id]: { ...editingServicePrices[apt.id], value: e.target.value }
+                                      }))}
+                                      className="price-edit-input-modern"
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveEditedServicePrice(apt.id);
+                                        if (e.key === 'Escape') cancelEditingServicePrice(apt.id);
+                                      }}
+                                    />
+                                    <div className="edit-actions">
+                                      <button className="edit-action-btn save" onClick={() => saveEditedServicePrice(apt.id)} title="Save">
+                                        <Check size={14} />
+                                      </button>
+                                      <button className="edit-action-btn cancel" onClick={() => cancelEditingServicePrice(apt.id)} title="Cancel">
+                                        <X size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="service-price-display-wrapper">
+                                    <div className="service-price-container">
+                                      {editedServicePrices[apt.id] !== undefined ? (
+                                        <div className="price-comparison">
+                                          <span className="original-price">AED {apt.service.price.toFixed(2)}</span>
+                                          <span className="price-arrow">→</span>
+                                          <span className="edited-price">AED {editedServicePrices[apt.id].toFixed(2)}</span>
+                                          <span className="discount-badge">-AED {(apt.service.price - editedServicePrices[apt.id]).toFixed(2)}</span>
+                                        </div>
+                                      ) : (
+                                        <span className="service-price">AED {apt.service.price.toFixed(2)}</span>
+                                      )}
+                                    </div>
+                                    <button
+                                      className="edit-service-price-btn"
+                                      onClick={() => startEditingServicePrice(apt.id, editedServicePrices[apt.id] ?? apt.service.price)}
+                                      title="Edit service price"
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                    {editedServicePrices[apt.id] !== undefined && (
+                                      <button
+                                        className="clear-service-price-edit-btn"
+                                        onClick={() => clearServicePriceEdit(apt.id)}
+                                        title="Remove price edit"
+                                      >
+                                        <X size={12} />
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                                 <button
                                   className="remove-appointment-btn-simple"
                                   onClick={() => removeAppointmentFromSessionLocal(apt.id)}
