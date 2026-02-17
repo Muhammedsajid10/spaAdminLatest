@@ -5643,7 +5643,7 @@
   border-radius: 12px;
   transition: all 0.2s ease;
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .status-detail:hover {
