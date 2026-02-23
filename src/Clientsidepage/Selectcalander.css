@@ -12669,82 +12669,117 @@
 .price-details-breakdown {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
   font-size: 13px;
+}
+
+.price-details-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  padding: 4px 0;
 }
 
 .service-price-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px;
-  background: #f8fafc;
-  border-radius: 4px;
-  gap: 8px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 10px;
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.service-price-line:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .service-name-inline {
-  font-weight: 500;
-  color: #334155;
-  flex: 0 0 auto;
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+  font-size: 13px;
 }
 
 .price-with-edit {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 4px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  max-width: 180px;
 }
 
 .price-with-edit .original-price {
   text-decoration: line-through;
   color: #94a3b8;
-  font-weight: 500;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
 .price-with-edit .price-arrow {
-  color: #0f172a;
-  font-weight: 600;
-  margin: 0 2px;
+  display: none;
 }
 
 .price-with-edit .edited-price {
   color: #0f172a;
   font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .price-with-edit .discount-amount {
-  background: #dbeafe;
-  color: #0369a1;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: 600;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+  white-space: nowrap;
 }
 
 .price-regular {
-  font-weight: 600;
+  font-weight: 700;
   color: #0f172a;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .total-price-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 6px;
-  background: #e0f2fe;
-  border-radius: 4px;
-  border-top: 1px solid #bae6fd;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border-radius: 10px;
+  border: 2px solid #c7d2fe;
   margin-top: 4px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .total-price-line .total-label {
-  color: #0369a1;
+  color: #4338ca;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.3px;
 }
 
 .total-price-line .total-value {
-  color: #0f172a;
-  font-size: 14px;
+  color: #312e81;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
