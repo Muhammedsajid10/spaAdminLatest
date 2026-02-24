@@ -49,7 +49,7 @@ export const StaffColumn = ({
         s.serviceId === appointment.serviceEntryId ||
         s.name === appointment.service
       );
-      const servicePrice = foundService ? (foundService.price || 0) : 0;
+      const servicePrice = appointment.price || (foundService ? (foundService.price || 0) : 0);
 
       appointmentBlocks.push({
         startSlot: layout.startLabel,
@@ -216,17 +216,31 @@ export const StaffColumn = ({
                 date: dayKey,
                 slotKey: `${dayKey}_${block.startSlot}`,
                 price: block.servicePrice,
-                finalAmount: block.servicePrice
+                finalAmount: block.appointment.totalAmount || block.servicePrice,
+                totalAmount: block.appointment.totalAmount || block.servicePrice
               };
               console.log('🎯 Day View (StaffColumn) Booking Details with price:', details);
               setSelectedBookingForStatus(details);
               setShowBookingStatusModal(true);
             }}
-            onMouseEnter={(e) => showBookingTooltipHandler(e, { client: block.appointment.client, service: block.appointment.service, time: block.appointment.startTime, professional: employee.name, status: block.appointment.status || 'Confirmed', notes: block.appointment.notes })}
+            onMouseEnter={(e) => showBookingTooltipHandler(e, {
+              client: block.appointment.client,
+              service: block.appointment.service,
+              time: block.appointment.startTime,
+              professional: employee.name,
+              status: block.appointment.status || 'Confirmed',
+              notes: block.appointment.notes,
+              price: block.servicePrice,
+              totalAmount: block.appointment.totalAmount || block.servicePrice,
+              finalAmount: block.appointment.totalAmount || block.servicePrice
+            })}
             onMouseLeave={hideBookingTooltip}>
             <div className="appointment-client" style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>{block.appointment.client}</div>
             <div className="appointment-service" style={{ color: '#fff', fontSize: 13, opacity: 0.95 }}>{block.appointment.service}</div>
-            <div className="appointment-price" style={{ color: '#000000ff', fontSize: 12, fontWeight: 600, marginTop: '2px' }}>AED {block.servicePrice}</div>
+            <div className="appointment-price" style={{ color: '#000000ff', marginTop: '2px', display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: 11, fontWeight: 500 }}>Service amount: AED {block.servicePrice}</span>
+              <span style={{ fontSize: 13, opacity: 0.9, fontWeight: 800 }}>Total amount: AED {block.appointment.totalAmount || block.servicePrice}</span>
+            </div>
             <div className="appointment-time" style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{block.appointment.startTime} - {block.appointment.endTime}</div>
           </div>
         ))}

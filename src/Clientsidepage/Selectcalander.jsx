@@ -94,7 +94,7 @@ const SelectCalendar = () => {
   const [editingTotalPrice, setEditingTotalPrice] = useState(false);
   const [tempTotalPrice, setTempTotalPrice] = useState('');
   const [customTotalDiscount, setCustomTotalDiscount] = useState(0);
-  
+
   // Individual service price editing states
   const [editingServicePrices, setEditingServicePrices] = useState({}); // { [appointmentId]: { editing: boolean, value: '150' } }
   const [editedServicePrices, setEditedServicePrices] = useState({}); // { [appointmentId]: 150 } - stores the final edited prices
@@ -440,11 +440,11 @@ const SelectCalendar = () => {
   // Fetch full booking details with all service information including custom pricing
   const fetchFullBookingDetails = useCallback(async (bookingId) => {
     if (!bookingId) return;
-    
+
     try {
       setFullBookingDetailsLoading(true);
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      
+
       // Use admin endpoint to fetch full booking details
       const response = await fetch(`${Base_url}/bookings/admin/${bookingId}`, {
         headers: {
@@ -459,7 +459,7 @@ const SelectCalendar = () => {
       }
 
       const data = await response.json();
-      
+
       if (data && data.data) {
         const booking = data.data.booking || data.data;
         console.log('✅ Full booking details fetched:', {
@@ -489,37 +489,40 @@ const SelectCalendar = () => {
             }
           }
 
-          // Filter services to only include the clicked service (by serviceEntryId)
-          let filteredServices = booking.services || [];
-          if (prev?.serviceEntryId && booking.services) {
-            console.log('🔍 Filtering services for serviceEntryId:', prev.serviceEntryId);
-            filteredServices = booking.services.filter(service => 
-              String(service._id) === String(prev.serviceEntryId)
-            );
-            console.log('📋 Filtered services count:', filteredServices.length);
+          // Keep the full list of services for the breakdown
+          const allServices = booking.services || [];
+
+          // Identify the specific service clicked for the header (optional, if needed)
+          let targetService = prev;
+          if (prev?.serviceEntryId && allServices.length > 0) {
+            const found = allServices.find(s => String(s._id) === String(prev.serviceEntryId));
+            if (found) targetService = found;
           }
 
-          // Extract service name from the filtered service
-          let serviceName = prev?.service;
-          if (filteredServices && filteredServices.length > 0) {
-            serviceName = filteredServices[0]?.serviceName || filteredServices[0]?.service?.name || prev?.service;
-          }
-
-          // Calculate total amount from only the filtered service(s)
-          const totalAmount = filteredServices.reduce((sum, service) => {
-            return sum + (service.price || 0);
-          }, 0);
+          // Total amount should be the actual booking total
+          const actualTotalAmount = booking.totalAmount || booking.finalAmount || booking.finalPrice || 0;
 
           return {
-            // Preserve all calendar view data
             ...prev,
-            // Enrich with filtered services and custom pricing
-            services: filteredServices,
-            totalAmount: totalAmount,
-            finalAmount: totalAmount,
+            // Enrich with ALL services for the breakdown view
+            services: allServices.map(s => {
+              // Be very robust with price detection
+              const svcPrice = s.price ?? s.servicePrice ?? s.finalPrice ?? s.customPrice ?? s.originalPrice ?? 0;
+              const svcOrigPrice = s.originalPrice ?? s.price ?? svcPrice;
+
+              return {
+                ...s,
+                // Ensure price is what we want to show as the "current regular" price
+                price: svcPrice,
+                originalPrice: svcOrigPrice,
+                customPrice: s.customPrice // preserved
+              };
+            }),
+            totalAmount: actualTotalAmount,
+            finalAmount: actualTotalAmount,
             // Use the extracted strings for display
             client: clientName,
-            service: serviceName,
+            service: targetService.serviceName || targetService.service?.name || prev?.service,
             // Keep original MongoDB object for reference if needed
             _fullBookingData: booking
           };
@@ -1619,7 +1622,7 @@ const SelectCalendar = () => {
       // Filter to only those who don't have conflicts at this specific time slot
       const availableProfessionals = employeesWithShift.filter(emp => {
         const dayKey = date.toISOString().split('T')[0];
-        
+
         // Convert timeSlot (e.g., "14:30") to check for conflicts
         const [hours, mins] = timeSlot.split(':').map(Number);
         const slotStartMinutes = hours * 60 + mins;
@@ -1627,7 +1630,7 @@ const SelectCalendar = () => {
 
         // Check 1: Check time slot conflict with existing appointments
         const existingAppointmentsForEmp = appointments[emp.id] || {};
-        
+
         const hasTimeConflict = Object.keys(existingAppointmentsForEmp).some(key => {
           if (!key.includes(dayKey)) return false;
           const existingSlot = key.split('_')[1];
@@ -1643,8 +1646,8 @@ const SelectCalendar = () => {
         }
 
         // Check 2: Check against accumulated bookings in current session
-        const accumulatedBookings = multipleAppointments.filter(apt => 
-          apt.professional.id === emp.id && 
+        const accumulatedBookings = multipleAppointments.filter(apt =>
+          apt.professional.id === emp.id &&
           apt.date === dayKey
         );
 
@@ -4193,15 +4196,15 @@ const SelectCalendar = () => {
 
                   <div className="booking-status-info">
                     <h3>
-                      {typeof selectedBookingForStatus.client === 'string' 
-                        ? selectedBookingForStatus.client 
-                        : selectedBookingForStatus.client?.fullName || 
-                          `${selectedBookingForStatus.client?.firstName || ''} ${selectedBookingForStatus.client?.lastName || ''}`.trim() || 
-                          'Client'}
+                      {typeof selectedBookingForStatus.client === 'string'
+                        ? selectedBookingForStatus.client
+                        : selectedBookingForStatus.client?.fullName ||
+                        `${selectedBookingForStatus.client?.firstName || ''} ${selectedBookingForStatus.client?.lastName || ''}`.trim() ||
+                        'Client'}
                     </h3>
                     <p>
-                      {typeof selectedBookingForStatus.service === 'string' 
-                        ? selectedBookingForStatus.service 
+                      {typeof selectedBookingForStatus.service === 'string'
+                        ? selectedBookingForStatus.service
                         : selectedBookingForStatus.service?.name || 'Service'}
                     </p>
                   </div>
@@ -4218,11 +4221,11 @@ const SelectCalendar = () => {
                     <div className="detail-content">
                       <span className="detail-label">Professional</span>
                       <span className="detail-value">
-                        {typeof selectedBookingForStatus.employeeName === 'string' 
-                          ? selectedBookingForStatus.employeeName 
-                          : selectedBookingForStatus.employeeName?.user?.firstName || 
-                            selectedBookingForStatus.employeeName?.fullName || 
-                            'Employee'}
+                        {typeof selectedBookingForStatus.employeeName === 'string'
+                          ? selectedBookingForStatus.employeeName
+                          : selectedBookingForStatus.employeeName?.user?.firstName ||
+                          selectedBookingForStatus.employeeName?.fullName ||
+                          'Employee'}
                       </span>
                     </div>
                   </div>
@@ -4275,34 +4278,9 @@ const SelectCalendar = () => {
                     </div>
                     <div className="detail-content">
                       <span className="detail-label">Amount</span>
-                      <div className="detail-value-wrapper">
-                        {selectedBookingForStatus.services && selectedBookingForStatus.services.some(s => s.customPrice !== undefined) ? (
-                          <div className="price-details-breakdown">
-                            {selectedBookingForStatus.services.map((service, idx) => (
-                              <div key={idx} className="service-price-line">
-                                <span className="service-name-inline">{service.serviceName || `Service ${idx + 1}`}</span>
-                                {service.customPrice !== undefined ? (
-                                  <span className="price-with-edit">
-                                    <span className="original-price">AED {Number(service.originalPrice || service.price).toFixed(2)}</span>
-                                    <span className="price-arrow">→</span>
-                                    <span className="edited-price">AED {Number(service.customPrice).toFixed(2)}</span>
-                                    <span className="discount-amount">-AED {(Number(service.originalPrice || service.price) - Number(service.customPrice)).toFixed(2)}</span>
-                                  </span>
-                                ) : (
-                                  <span className="price-regular">AED {Number(service.price).toFixed(2)}</span>
-                                )}
-                              </div>
-                            ))}
-                            <div className="total-price-line">
-                              <span className="total-label">Total Paid:</span>
-                              <span className="total-value">AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.totalAmount || 0).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span>
-                            AED {Number(selectedBookingForStatus.finalAmount || selectedBookingForStatus.price || selectedBookingForStatus.totalAmount || 0).toFixed(2)}
-                          </span>
-                        )}
+                      <div className="detail-value-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>Service amount: AED {Number(selectedBookingForStatus.price || 0).toFixed(2)}</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#000' }}>Total amount: AED {Number(selectedBookingForStatus.totalAmount || selectedBookingForStatus.finalAmount || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -5073,7 +5051,7 @@ const SelectCalendar = () => {
                                   <span className="meta-divider">|</span>
                                   <span className="meta-icon"><RotateCcw size={14} /></span> {apt.service.duration} min
                                 </div>
-                                
+
                                 {/* Professional selector dropdown */}
                                 {editingAppointmentId === apt.id && (
                                   <div className="professional-change-dropdown">

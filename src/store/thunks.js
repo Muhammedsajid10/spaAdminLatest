@@ -122,25 +122,25 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
       }));
 
       const transformedAppointments = {};
-      
+
       // Create a helper function to find employee ID by name for Python-created bookings
       const findEmployeeIdByName = (employeeName) => {
         if (!employeeName || typeof employeeName !== 'string') return null;
-        
+
         const matchingEmployee = activeEmployees.find(emp => {
           const empFullName = `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim();
           return empFullName.toLowerCase() === employeeName.toLowerCase() ||
-                 emp.user?.firstName?.toLowerCase() === employeeName.toLowerCase() ||
-                 empFullName.toLowerCase().includes(employeeName.toLowerCase()) ||
-                 employeeName.toLowerCase().includes(empFullName.toLowerCase());
+            emp.user?.firstName?.toLowerCase() === employeeName.toLowerCase() ||
+            empFullName.toLowerCase().includes(employeeName.toLowerCase()) ||
+            employeeName.toLowerCase().includes(empFullName.toLowerCase());
         });
         return matchingEmployee?._id || null;
       };
-      
+
       allBookings.forEach(booking => {
         booking.services?.forEach(service => {
           let employeeId = null;
-          
+
           // Handle different employee data formats
           if (service.employee?._id) {
             // Check if it's a placeholder ObjectId for legacy data
@@ -167,7 +167,7 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
             // Normalized object format - try to match by fullName
             employeeId = findEmployeeIdByName(service.employee.fullName);
           }
-          
+
           if (!employeeId) {
             console.warn('❌ Could not find employee ID for booking:', booking._id, 'Employee data:', service.employee);
             console.log('Available employees:', activeEmployees.map(emp => ({
@@ -176,9 +176,9 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
             })));
             return;
           }
-          
+
           console.log('✅ Matched employee:', employeeId, 'for booking:', booking._id);
-          
+
           if (!transformedAppointments[employeeId]) transformedAppointments[employeeId] = {};
 
           const startISO = service.startTime ? String(service.startTime) : (booking.appointmentDate ? String(booking.appointmentDate) : null);
@@ -269,6 +269,8 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
             color: getAppointmentColorByStatus(service.status || booking.status || 'booked'),
             date: appointmentLocalDate,
             bookingId: booking._id,
+            totalAmount: booking.totalAmount || booking.finalAmount || 0,
+            price: service.price || service.customPrice || 0,
             status: service.status || booking.status || 'confirmed',
             serviceEntryId: service._id,
             isMainSlot: true,
@@ -362,7 +364,7 @@ export const fetchBookingTimeSlotsThunk = createAsyncThunk('timeslots/fetch', as
   try {
     // For this minimal migration, call the existing SelectCalendar handlers was previously used to compute shift-based slots.
     // We'll rely on a simple API route if available, fallback to an empty list.
-    const res = await api.get(`${Base_url}/employees/${employeeId}/timeslots?serviceId=${serviceId}&date=${date.toISOString().slice(0,10)}`);
+    const res = await api.get(`${Base_url}/employees/${employeeId}/timeslots?serviceId=${serviceId}&date=${date.toISOString().slice(0, 10)}`);
     if (res.data && res.data.success) return res.data.data.timeSlots || [];
     return [];
   } catch (err) {
