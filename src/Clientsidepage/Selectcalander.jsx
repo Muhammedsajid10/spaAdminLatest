@@ -259,17 +259,18 @@ const SelectCalendar = () => {
   }, [setCurrentDate, setDatePickerSelectedDate, setShowDatePicker]);
 
   // Calculate total session price from Redux booking session
-  const getTotalSessionPrice = useCallback(() => {
+  const getSessionSubtotal = useCallback(() => {
     if (!Array.isArray(multipleAppointments)) return 0;
-    const originalTotal = multipleAppointments.reduce((sum, a) => {
-      // Use edited price if available, otherwise use original price
+    return multipleAppointments.reduce((sum, a) => {
       const editedPrice = editedServicePrices[a.id];
       const price = editedPrice !== undefined ? editedPrice : (a && (a.price ?? a.service?.price ?? 0)) || 0;
       return sum + Number(price || 0);
     }, 0);
-    // Apply custom discount to total
-    return Math.max(0, originalTotal - customTotalDiscount);
-  }, [multipleAppointments, customTotalDiscount, editedServicePrices]);
+  }, [multipleAppointments, editedServicePrices]);
+
+  const getTotalSessionPrice = useCallback(() => {
+    return Math.max(0, getSessionSubtotal() - customTotalDiscount);
+  }, [getSessionSubtotal, customTotalDiscount]);
 
   // Core scheduler state (moved to Redux)
   const employees = useSelector(state => state.employees.list);
@@ -764,6 +765,7 @@ const SelectCalendar = () => {
         date: bookingDate,
         duration: service.duration,
         price: service.price,
+        originalPrice: service.price, // Store original price for discount calculation
         startTime,
         endTime
       };
@@ -2185,7 +2187,9 @@ const SelectCalendar = () => {
       professional: selectedProfessional,
       timeSlot: timeSlot,
       date: appointmentDate, // Store as consistent YYYY-MM-DD string
-      duration: selectedService.duration // ensure duration is present for conflict check
+      duration: selectedService.duration, // ensure duration is present for conflict check
+      price: selectedService.price,
+      originalPrice: selectedService.price // Store original price for discount calculation
     };
 
     // Double-check for session conflict before adding
@@ -4272,15 +4276,98 @@ const SelectCalendar = () => {
                       <span className="detail-value">{selectedBookingForStatus.bookingId || 'N/A'}</span>
                     </div>
                   </div>
-                  <div className="status-detail">
+                  <div className="status-detail full-width-breakdown">
                     <div className="detail-icon">
                       <Banknote size={20} />
                     </div>
-                    <div className="detail-content">
-                      <span className="detail-label">Amount</span>
-                      <div className="detail-value-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>Service amount: AED {Number(selectedBookingForStatus.price || 0).toFixed(2)}</span>
-                        <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#000' }}>Total amount: AED {Number(selectedBookingForStatus.totalAmount || selectedBookingForStatus.finalAmount || 0).toFixed(2)}</span>
+                    <div className="detail-content pricing-breakdown-content">
+                      <span className="detail-label">Payment Details</span>
+                      <div className="booking-breakdown-list">
+                        {/* Display only the specific service related to this calendar block */}
+                        {(() => {
+                          const allServices = selectedBookingForStatus.services || [];
+                          let currentSvc = null;
+
+                          // Try to find the specific service entry that was clicked
+                          if (selectedBookingForStatus.serviceEntryId && allServices.length > 0) {
+                            currentSvc = allServices.find(s => String(s._id) === String(selectedBookingForStatus.serviceEntryId));
+                          }
+
+                          // Fallback to the primary service info if specific lookup fails
+                          if (!currentSvc) {
+                            currentSvc = {
+                              serviceName: selectedBookingForStatus.service,
+                              price: Number(selectedBookingForStatus.price || 0),
+                              originalPrice: Number(selectedBookingForStatus.originalPrice || selectedBookingForStatus.price || 0)
+                            };
+                          }
+
+                          const svcPrice = Number(currentSvc.price ?? currentSvc.servicePrice ?? currentSvc.finalPrice ?? currentSvc.customPrice ?? currentSvc.originalPrice ?? 0);
+                          const svcOrigPrice = Number(currentSvc.originalPrice ?? currentSvc.price ?? svcPrice);
+                          const svcDiscount = svcOrigPrice - svcPrice;
+
+                          // Calculate totals for the entire booking to show overall discount
+                          const bookingTotalOrigValue = allServices.length > 0
+                            ? allServices.reduce((sum, s) => sum + Number(s.originalPrice || s.price || 0), 0)
+                            : Number(selectedBookingForStatus.originalPrice || selectedBookingForStatus.price || 0);
+
+                          const bookingFinalTotal = Number(selectedBookingForStatus.totalAmount || selectedBookingForStatus.finalAmount || 0);
+                          const totalSavings = bookingTotalOrigValue - bookingFinalTotal;
+
+                          const globalDiscount = Number(selectedBookingForStatus.customDiscount || selectedBookingForStatus.customTotalDiscount || 0);
+
+                          return (
+                            <>
+                              <div className="breakdown-service-item">
+                                <div className="svc-info">
+                                  <span className="svc-name-small">{currentSvc.serviceName || currentSvc.service?.name || selectedBookingForStatus.service}</span>
+                                  <div className="svc-pricing-line">
+                                    {svcDiscount > 0 ? (
+                                      <>
+                                        <span className="orig-price-strike">AED {svcOrigPrice.toFixed(2)}</span>
+                                        <span className="final-price-bold">AED {svcPrice.toFixed(2)}</span>
+                                        <span className="disc-tag-small">(-AED {svcDiscount.toFixed(2)})</span>
+                                      </>
+                                    ) : (
+                                      <span className="final-price-normal">AED {svcPrice.toFixed(2)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="breakdown-total-separator"></div>
+
+                              {globalDiscount > 0 && (
+                                <div className="breakdown-row discount-global">
+                                  <span className="final-label-small">Extra Booking Discount</span>
+                                  <span className="final-value-disc">-AED {globalDiscount.toFixed(2)}</span>
+                                </div>
+                              )}
+
+                              {totalSavings > globalDiscount && (
+                                <div className="breakdown-row discount-info-row">
+                                  <span className="final-label-small">Applied Service Discounts</span>
+                                  <span className="final-value-disc">-AED {(totalSavings - globalDiscount).toFixed(2)}</span>
+                                </div>
+                              )}
+
+                              <div className="breakdown-final-row">
+                                <div className="final-label-group">
+                                  <span className="final-label">Total Amount</span>
+                                  {totalSavings > 0 && (
+                                    <span className="total-savings-badge">AED {totalSavings.toFixed(2)} SAVED</span>
+                                  )}
+                                </div>
+                                <div className="final-value-stack">
+                                  {totalSavings > 0 && (
+                                    <span className="final-orig-strike-total">AED {bookingTotalOrigValue.toFixed(2)}</span>
+                                  )}
+                                  <span className="final-value-large">AED {bookingFinalTotal.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -5367,7 +5454,7 @@ const SelectCalendar = () => {
                         <h4><Banknote size={18} /> Payment Breakdown</h4>
                         <div className="breakdown-row">
                           <span className="breakdown-label">Service Total</span>
-                          <span className="breakdown-value">AED {getTotalSessionPrice().toFixed(2)}</span>
+                          <span className="breakdown-value">AED {getSessionSubtotal().toFixed(2)}</span>
                         </div>
 
                         {appliedMembership && membershipDiscountAmount > 0 && (

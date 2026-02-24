@@ -12446,6 +12446,7 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -12782,4 +12783,167 @@
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.5px;
+}
+
+/* --- BOOKING BREAKDOWN STYLES --- */
+.full-width-breakdown {
+  grid-column: 1 / -1 !important;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px !important;
+  margin-top: 10px;
+}
+
+.pricing-breakdown-content {
+  width: 100%;
+}
+
+.booking-breakdown-list {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.breakdown-service-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.breakdown-service-item:last-of-type {
+  border-bottom: none;
+}
+
+.svc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.svc-name-small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.svc-pricing-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orig-price-strike {
+  text-decoration: line-through;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.final-price-bold {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.final-price-normal {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.disc-tag-small {
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.breakdown-total-separator {
+  height: 2px;
+  background: #e2e8f0;
+  margin: 12px 0;
+}
+
+.breakdown-final-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.discount-global {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+
+.final-label-small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.final-value-disc {
+  font-weight: 700;
+  color: #dc2626;
+  font-size: 1rem;
+}
+
+.discount-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+.final-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.total-savings-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #10b981;
+  background: #ecfdf5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+  letter-spacing: 0.5px;
+}
+
+.final-value-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.final-orig-strike-total {
+  text-decoration: line-through;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.final-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.final-value-large {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #000;
 }
