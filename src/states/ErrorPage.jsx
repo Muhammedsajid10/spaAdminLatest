@@ -10,18 +10,18 @@ const Error500Page = () => {
         <div className="errorIconCircle_def456">
           <div className="exclamationIcon_ghi789">!</div>
         </div>
-        
+
         {/* Error 500 Text */}
-        
-        
+
+
         {/* Main Heading */}
         <h1 className="serverErrorHeading_mno345">Server Error</h1>
-        
+
         {/* Description Text */}
-        
-        
+
+
         {/* Action Buttons */}
-        
+
       </div>
     </div>
   );
