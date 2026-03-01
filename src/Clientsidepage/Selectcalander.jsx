@@ -2430,6 +2430,30 @@ const SelectCalendar = () => {
   };
 
   const handleCreateBooking = async () => {
+    // Show loading state for 3 seconds for testing "buggy" behavior
+    setBookingLoading(true);
+    setBookingError(null);
+    setBookingSuccess(null);
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    setBookingLoading(false);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Booking Error',
+      text: 'A server error occurred while creating the booking. Please try again.',
+      confirmButtonColor: '#1f2937',
+      background: '#fff',
+      customClass: {
+        popup: 'server-error-popup',
+        title: 'error-title',
+        content: 'error-content'
+      }
+    });
+
+    return;
+
     setBookingLoading(true);
     setBookingError(null);
     setBookingSuccess(null);
@@ -2817,6 +2841,20 @@ const SelectCalendar = () => {
     } catch (err) {
       console.error('Booking creation error:', err);
       setBookingError(`Failed to create booking: ${err.message}`);
+
+      // Show server error popup as requested
+      Swal.fire({
+        icon: 'error',
+        title: 'Booking Error',
+        text: err.message || 'A server error occurred while creating the booking. Please try again.',
+        confirmButtonColor: '#1f2937',
+        background: '#fff',
+        customClass: {
+          popup: 'server-error-popup',
+          title: 'error-title',
+          content: 'error-content'
+        }
+      });
     } finally {
       setBookingLoading(false);
     }
@@ -4444,7 +4482,7 @@ const SelectCalendar = () => {
               <h2>New Appointment</h2>
 
               {bookingError && <div className="booking-modal-error">{bookingError}</div>}
-              {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>}
+              {/* {bookingLoading && <div className="booking-modal-loading">Creating your perfect appointment...</div>} */}
               {bookingSuccess && <div className="booking-modal-success">{bookingSuccess}</div>}
 
               {/* Date Selection for Week View */}
@@ -5528,7 +5566,12 @@ const SelectCalendar = () => {
                       onClick={handleCreateBooking}
                       disabled={bookingLoading}
                     >
-                      {bookingLoading ? 'Processing...' : (
+                      {bookingLoading ? (
+                        <div className="button-loading-content">
+                          <div className="button-spinner"></div>
+                          <span>Processing...</span>
+                        </div>
+                      ) : (
                         <>
                           <Check size={18} />
                           {`Confirm Appointment — Pay AED ${calculateTotalWithGiftCard().remainingAmount.toFixed(2)}`}
