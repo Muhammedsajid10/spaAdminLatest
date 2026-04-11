@@ -132,6 +132,11 @@ const GenericReportPage = ({
   useEffect(() => {
     let result = [...data];
 
+    // Client-side Date filtering (crucial for APIs that don't strictly filter)
+    if (!usingDataHook && showDatePicker) {
+      result = filterByDateRange(result, dateRange);
+    }
+
     // Search filter
     if (search && showSearch) {
       const lowerSearch = search.toLowerCase();
@@ -152,7 +157,7 @@ const GenericReportPage = ({
     }
 
     setFiltered(result);
-  }, [data, search, selectedType, typeFilterKey, typeFilterPredicate, showSearch, usingDataHook]);
+  }, [data, search, selectedType, typeFilterKey, typeFilterPredicate, showSearch, usingDataHook, dateRange, showDatePicker]);
 
   const handleTypeChange = useCallback((newValue) => {
     // Extract string value from dropdown object or use as-is if string

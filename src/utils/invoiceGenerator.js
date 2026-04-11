@@ -22,9 +22,11 @@ export const generateInvoicePDF = (transaction) => {
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const dateStr = transaction.date ? new Date(transaction.date).toLocaleString('en-GB', {
+  const rawDate = transaction.appointmentDate || transaction.date || transaction.createdAt;
+  const dateObj = rawDate ? new Date(rawDate) : new Date();
+  const dateStr = dateObj.toLocaleString('en-GB', {
     weekday: 'long', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-  }) : new Date().toLocaleString();
+  });
   doc.text(dateStr, 105, 51, { align: "center" });
 
   // --- Client Details ---
@@ -54,10 +56,16 @@ export const generateInvoicePDF = (transaction) => {
         : (employeeUser.firstName || employeeUser.lastName || employee.firstName || employee.lastName || transaction.employeeName || '');
 
       // Get the date for the service booking
-      const serviceDate = svc.startTime || transaction.date || transaction.createdAt;
-      const formattedDate = serviceDate ? new Date(serviceDate).toLocaleString('en-GB', {
-        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      }) : '';
+      const serviceDate = svc.startTime || svc.appointmentDate || transaction.appointmentDate || transaction.date || transaction.createdAt;
+      let formattedDate = '';
+      if (serviceDate) {
+        const d = new Date(serviceDate);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+        }
+      }
 
       items.push({
         name: serviceName,
@@ -67,10 +75,16 @@ export const generateInvoicePDF = (transaction) => {
       });
     });
   } else {
-    const serviceDate = transaction.date || transaction.createdAt;
-    const formattedDate = serviceDate ? new Date(serviceDate).toLocaleString('en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    }) : '';
+    const serviceDate = transaction.appointmentDate || transaction.date || transaction.createdAt;
+    let formattedDate = '';
+    if (serviceDate) {
+      const d = new Date(serviceDate);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleString('en-GB', {
+          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+      }
+    }
 
     items.push({
       name: transaction.serviceName || "Service",
@@ -119,8 +133,9 @@ export const generateInvoicePDF = (transaction) => {
   doc.line(14, finalY, 196, finalY);
   finalY += 8;
 
-  const totalAmount = parseFloat(transaction.amount || 0);
-  const discountAmount = parseFloat(transaction.discount || 0);
+  // Derive total amount from transaction or booking accurately
+  const totalAmount = parseFloat(transaction.transactionTotal || transaction.booking?.totalAmount || transaction.amount || 0);
+  const discountAmount = parseFloat(transaction.transactionDiscount || transaction.booking?.discountAmount || transaction.discount || 0);
   const subtotal = totalAmount + discountAmount;
 
   // Helper for right aligned text

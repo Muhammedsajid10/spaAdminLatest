@@ -7,7 +7,12 @@ import { Download } from 'lucide-react';
 const InvoiceDetailsReport = () => {
   const columns = [
     { key: 'invoiceNumber', label: 'Invoice #', sortable: true },
-    { key: 'date', label: 'Date', sortable: true, render: (row) => new Date(row.date).toLocaleDateString() },
+    { key: 'date', label: 'Date', sortable: true, render: (row) => {
+      const d = new Date(row.date);
+      return !isNaN(d.getTime()) ? d.toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : row.date;
+    }},
     { key: 'clientName', label: 'Client', sortable: true },
     { key: 'serviceName', label: 'Service', sortable: true },
     { key: 'employeeName', label: 'Professional', sortable: true, render: (row) => row.employeeName || '-' },
@@ -47,11 +52,11 @@ const InvoiceDetailsReport = () => {
       // Filter for completed transactions only
       const completedTransactions = transactions.filter(t => t.status === 'completed');
       
-      return completedTransactions.map(t => {
+      const expandedRows = [];
+      completedTransactions.forEach(t => {
         // Extract booking details
         const booking = t.booking || {};
         const services = booking.services || [];
-        const firstService = services[0] || {};
 
         // Get client details from booking or user
         const client = booking.client || t.user || {};
@@ -60,38 +65,62 @@ const InvoiceDetailsReport = () => {
           : (client.firstName || client.lastName || t.user?.firstName || 'Walk-in Customer');
         const clientPhone = client.phone || t.user?.phone || '';
 
-        // Get service details
-        const service = firstService.service || {};
-        const serviceName = service.name || 'Service';
-
-        // Get employee/professional details
-        const employee = firstService.employee || {};
-        // Employee data can be in employee.user (populated) or directly on employee
-        const employeeUser = employee.user || employee;
-        const employeeName = employeeUser.firstName && employeeUser.lastName
-          ? `${employeeUser.firstName} ${employeeUser.lastName}`
-          : (employeeUser.firstName || employeeUser.lastName || employee.firstName || employee.lastName || '');
-
         // Get proper date from booking or transaction
         const transactionDate = booking.appointmentDate || t.createdAt || new Date();
+        const invoiceNumber = t.bookingNumber || booking.bookingNumber || t._id?.slice(-6).toUpperCase();
+        
+        const transactionTotal = t.amount || booking.totalAmount || 0;
+        const transactionDiscount = t.discount || booking.discountAmount || 0;
+        const paymentMethod = t.paymentMethod || booking.paymentMethod || 'card';
 
-        return {
-          ...t,
-          // Ensure fields map correctly for the report and PDF
-          date: transactionDate,
-          invoiceNumber: t.bookingNumber || booking.bookingNumber || t._id?.slice(-6).toUpperCase(),
-          clientName: clientName,
-          clientPhone: clientPhone,
-          serviceName: serviceName,
-          employeeName: employeeName,
-          amount: t.amount || t.totalAmount || 0,
-          discount: t.discount || 0,
-          paymentMethod: t.paymentMethod || 'card',
-          // Pass full booking data for PDF generation
-          booking: booking,
-          services: services
-        };
+        if (!services || services.length === 0) {
+          // Fallback if no specific nested services are available
+          expandedRows.push({
+            ...t,
+            date: transactionDate,
+            invoiceNumber,
+            clientName,
+            clientPhone,
+            serviceName: 'Service',
+            employeeName: '',
+            amount: transactionTotal,
+            discount: transactionDiscount,
+            paymentMethod,
+            booking,
+            services: []
+          });
+        } else {
+          // Create a row for each specific sub-service
+          services.forEach(svc => {
+            const service = svc.service || {};
+            const employeeObj = svc.employee || {};
+            const employeeUser = employeeObj.user || employeeObj;
+
+            const svcName = service.name || svc.serviceName || 'Unknown Service';
+            const empName = employeeUser.firstName 
+              ? `${employeeUser.firstName} ${employeeUser.lastName || ''}`.trim() 
+              : (employeeUser.name || '');
+
+            expandedRows.push({
+              ...t,
+              date: svc.startTime || svc.appointmentDate || transactionDate,
+              invoiceNumber,
+              clientName,
+              clientPhone,
+              serviceName: svcName,
+              employeeName: empName,
+              amount: svc.price || service.price || 0, // show individual svc price on the table Row
+              discount: 0,
+              paymentMethod,
+              transactionTotal,         // Store correct whole-booking amount just for PDF to reference
+              transactionDiscount,
+              booking,
+              services: services        // Pass the FULL services array into the row for the PDF renderer
+            });
+          });
+        }
       });
+      return expandedRows;
     } catch (error) {
       console.error("Error fetching invoice data:", error);
       throw error;
@@ -99,6 +128,12 @@ const InvoiceDetailsReport = () => {
   }, []);
 
   const customRenderer = (row, column) => {
+    if (column.key === 'date') {
+      const d = new Date(row.date);
+      return !isNaN(d.getTime()) ? d.toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : row.date;
+    }
     if (column.key === 'action') {
       return (
         <button 
