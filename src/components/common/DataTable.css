@@ -709,9 +709,51 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 64px 32px;
   text-align: center;
+  min-height: 280px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Icon wrapper */
+.data-table-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+}
+
+.data-table-state-icon--empty {
+  background: #f0f9ff;
+  color: #0ea5e9;
+}
+
+.data-table-state-icon--error {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* Title */
+.data-table-state-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Subtitle / message */
+.data-table-state-msg {
+  margin: 0;
+  font-size: 14px;
   color: #6b7280;
+  max-width: 340px;
+  line-height: 1.6;
 }
 
 .loading-spinner {

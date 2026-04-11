@@ -36,24 +36,31 @@ const normalizePaymentTransaction = (payment) => {
     ),
     currency: payment?.currency ?? 'AED',
     status: payment?.status ?? '',
+    bookingStatus: (booking.status ?? '').toLowerCase(),
     raw: payment
   };
 };
 
 export const buildPaymentTransactionsData = (items = [], dateRange = null) => {
-  if (!dateRange?.start || !dateRange?.end) return items;
-  
-  return items.filter((item) => {
-    const tsStr = item.paymentDate || item.saleDate;
-    if (!tsStr) return false;
-    const ts = new Date(tsStr);
-    if (Number.isNaN(ts.getTime())) return false;
-    const year = ts.getFullYear();
-    const month = String(ts.getMonth() + 1).padStart(2, '0');
-    const day = String(ts.getDate()).padStart(2, '0');
-    const localDateStr = `${year}-${month}-${day}`;
-    return localDateStr >= dateRange.start && localDateStr <= dateRange.end;
-  });
+  // Step 1: filter to completed bookings only
+  let result = items.filter((item) => item.bookingStatus === 'completed');
+
+  // Step 2: filter by date range (if provided)
+  if (dateRange?.start && dateRange?.end) {
+    result = result.filter((item) => {
+      const tsStr = item.paymentDate || item.saleDate;
+      if (!tsStr) return false;
+      const ts = new Date(tsStr);
+      if (Number.isNaN(ts.getTime())) return false;
+      const year = ts.getFullYear();
+      const month = String(ts.getMonth() + 1).padStart(2, '0');
+      const day = String(ts.getDate()).padStart(2, '0');
+      const localDateStr = `${year}-${month}-${day}`;
+      return localDateStr >= dateRange.start && localDateStr <= dateRange.end;
+    });
+  }
+
+  return result;
 };
 
 export const fetchPaymentTransactions = createAsyncThunk(

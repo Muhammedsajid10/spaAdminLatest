@@ -3,7 +3,9 @@ import {
   ChevronUp, 
   ChevronDown, 
   ChevronLeft, 
-  ChevronRight
+  ChevronRight,
+  Inbox,
+  AlertCircle
 } from 'lucide-react';
 import Button from '../ui/Button';
 import LoadingSpinner from './LoadingSpinner';
@@ -178,10 +180,11 @@ const DataTable = ({
   if (error) {
     return (
       <div className="data-table-error">
-        <p>Error loading data: {error}</p>
-        <Button variant="secondary" size="sm">
-          Retry
-        </Button>
+        <div className="data-table-state-icon data-table-state-icon--error">
+          <AlertCircle size={40} strokeWidth={1.5} />
+        </div>
+        <h3 className="data-table-state-title">Something went wrong</h3>
+        <p className="data-table-state-msg">{error}</p>
       </div>
     );
   }
@@ -189,7 +192,11 @@ const DataTable = ({
   if (!data || data.length === 0) {
     return (
       <div className="data-table-empty">
-        <p>{emptyMessage}</p>
+        <div className="data-table-state-icon data-table-state-icon--empty">
+          <Inbox size={40} strokeWidth={1.5} />
+        </div>
+        <h3 className="data-table-state-title">No data available</h3>
+        <p className="data-table-state-msg">{emptyMessage}</p>
       </div>
     );
   }

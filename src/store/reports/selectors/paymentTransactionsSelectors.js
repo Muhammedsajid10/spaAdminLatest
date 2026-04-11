@@ -2,7 +2,8 @@ const selectPaymentTransactionsState = (state) =>
   state.paymentTransactions ?? {
     items: [],
     status: 'idle',
-    error: null
+    error: null,
+    lastFetched: null
   };
 
 export const selectPaymentTransactions = (state) =>
@@ -13,3 +14,6 @@ export const selectPaymentTransactionsStatus = (state) =>
 
 export const selectPaymentTransactionsError = (state) =>
   selectPaymentTransactionsState(state).error;
+
+export const selectPaymentTransactionsLastFetched = (state) =>
+  selectPaymentTransactionsState(state).lastFetched;

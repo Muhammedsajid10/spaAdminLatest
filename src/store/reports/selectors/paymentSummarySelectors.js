@@ -2,7 +2,8 @@ const selectPaymentSummaryState = (state) =>
   state.paymentSummary ?? {
     rawItems: [],
     status: 'idle',
-    error: null
+    error: null,
+    fetchedAt: null
   };
 
 export const selectPaymentSummaryRawItems = (state) =>
@@ -13,3 +14,6 @@ export const selectPaymentSummaryStatus = (state) =>
 
 export const selectPaymentSummaryError = (state) =>
   selectPaymentSummaryState(state).error;
+
+export const selectPaymentSummaryFetchedAt = (state) =>
+  selectPaymentSummaryState(state).fetchedAt;

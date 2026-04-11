@@ -9,6 +9,7 @@ const toISO = (value) => {
 
 export const normalizePaymentForSummary = (payment) => {
   const metadata = payment?.metadata ?? {};
+  const booking = payment?.booking ?? {};
   
   // Priority: metadata.paymentDate -> createdAt
   const paymentDate = metadata.paymentDate ?? payment?.createdAt ?? null;
@@ -20,17 +21,20 @@ export const normalizePaymentForSummary = (payment) => {
       .toLowerCase(),
     paymentDate: toISO(paymentDate),
     paymentAmount: Number(metadata.paymentAmountCSV ?? payment?.amount ?? 0),
-    refundAmount: Number(payment?.refundAmount ?? 0)
+    refundAmount: Number(payment?.refundAmount ?? 0),
+    bookingStatus: (booking.status ?? '').toLowerCase()
   };
 };
 
 export const buildPaymentSummary = (rows = [], dateRange = null) => {
   const map = new Map();
 
-  // Filter by date range first if provided
-  let filteredRows = rows;
+  // Step 1: filter to completed bookings only
+  let filteredRows = rows.filter((item) => item.bookingStatus === 'completed');
+
+  // Step 2: Filter by date range if provided
   if (dateRange?.start && dateRange?.end) {
-    filteredRows = rows.filter((item) => {
+    filteredRows = filteredRows.filter((item) => {
       if (!item?.paymentDate) return false;
       const d = new Date(item.paymentDate);
       if (Number.isNaN(d.getTime())) return false;

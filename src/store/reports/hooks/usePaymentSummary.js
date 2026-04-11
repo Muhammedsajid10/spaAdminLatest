@@ -4,9 +4,13 @@ import { fetchPaymentSummary, buildPaymentSummary } from '../slices/paymentSumma
 import {
   selectPaymentSummaryRawItems,
   selectPaymentSummaryStatus,
-  selectPaymentSummaryError
+  selectPaymentSummaryError,
+  selectPaymentSummaryFetchedAt
 } from '../selectors/paymentSummarySelectors';
 import { useReportDateRange } from '../../reports/hooks';
+
+// Re-fetch if data is older than 2 minutes
+const STALE_MS = 2 * 60 * 1000;
 
 export const usePaymentSummary = () => {
   const dispatch = useDispatch();
@@ -14,13 +18,14 @@ export const usePaymentSummary = () => {
   const rawItems = useSelector(selectPaymentSummaryRawItems);
   const status = useSelector(selectPaymentSummaryStatus);
   const error = useSelector(selectPaymentSummaryError);
+  const fetchedAt = useSelector(selectPaymentSummaryFetchedAt);
 
-  // Fetch data only once when idle
   useEffect(() => {
-    if (status === 'idle') {
+    const isStale = !fetchedAt || (Date.now() - fetchedAt > STALE_MS);
+    if (status === 'idle' || (status === 'succeeded' && isStale)) {
       dispatch(fetchPaymentSummary());
     }
-  }, [dispatch, status]);
+  }, [dispatch, status, fetchedAt]);
 
   // Build summary with current date range
   const data = useMemo(() => {

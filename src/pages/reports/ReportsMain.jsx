@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search } from "lucide-react";
 import "../../styles/ReportsMain.css";
 
@@ -80,21 +80,21 @@ const reports = [
 ];
 
 export default function ReportsMain() {
-  const [active, setActive] = useState("sales");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'sales';
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
+  const setActive = (tab) => {
+    setSearchParams({ tab }, { replace: true });
+  };
+
   // Fixed filtering logic - properly filter by category and search
   const filteredReports = reports.filter((report) => {
-    // First filter by category (must match the active tab)
-    const matchesCategory = report.category === active;
-    
-    // Then filter by search term (if search is provided)
+    const matchesCategory = report.category === activeTab;
     const matchesSearch = search === "" || 
       report.title.toLowerCase().includes(search.toLowerCase()) ||
       report.desc.toLowerCase().includes(search.toLowerCase());
-    
-    // Report must match both category AND search criteria
     return matchesCategory && matchesSearch;
   });
 
@@ -129,7 +129,7 @@ export default function ReportsMain() {
         {reportTabs.map((tab) => (
           <button
             key={tab.key}
-            className={`tab-btn ${active === tab.key ? "active" : ""}`}
+            className={`tab-btn ${activeTab === tab.key ? "active" : ""}`}
             onClick={() => setActive(tab.key)}
           >
             {tab.label}
@@ -158,8 +158,8 @@ export default function ReportsMain() {
           <div className="no-results">
             <p>
               {search 
-                ? `No reports found for "${search}" in ${active} category.`
-                : `No reports available in ${active} category.`
+                ? `No reports found for "${search}" in ${activeTab} category.`
+                : `No reports available in ${activeTab} category.`
               }
             </p>
           </div>

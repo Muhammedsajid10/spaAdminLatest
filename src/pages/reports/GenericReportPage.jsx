@@ -246,7 +246,7 @@ const GenericReportPage = ({
       </div>
     )}
     {showDatePicker && (
-      <MonthPicker value={dateRange} onChange={setDateRange} showPresets={true} />
+      <MonthPicker value={dateRange} onChange={setDateRange} />
     )}
   </div>
 );

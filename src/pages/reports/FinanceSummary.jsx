@@ -114,7 +114,7 @@ const FinanceSummary = () => {
 
   // Left slot - MonthPicker
   const leftSlot = (
-    <MonthPicker value={dateRange} onChange={setDateRange} showPresets={true} />
+    <MonthPicker value={dateRange} onChange={setDateRange} />
   );
 
   // Right slot - Export Button

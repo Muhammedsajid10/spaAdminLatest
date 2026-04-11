@@ -69,7 +69,7 @@
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 640px;
+  min-width: 620px;
   border-radius: var(--mp-radius-lg);
   background: var(--mp-color-bg);
   border: 1px solid var(--mp-color-border);
@@ -91,32 +91,43 @@
   }
 }
 
-/* ===== PRESETS SECTION ===== */
+/* ===== PRESETS SIDEBAR ===== */
 .month-picker__presets {
   display: flex;
-  gap: 8px;
-  padding: 16px 24px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 16px;
+  min-width: 148px;
   background: var(--mp-color-surface);
-  border-bottom: 1px solid var(--mp-color-border);
+  border-right: 1px solid var(--mp-color-border);
 }
 
-.month-picker__preset {
+/* right-side containing block: calendar + actions stacked */
+.month-picker__main {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  padding: 8px 12px;
+}
+
+.month-picker__preset-btn,
+.month-picker__preset {
+  width: 100%;
+  padding: 9px 12px;
   border-radius: var(--mp-radius-sm);
-  border: 1px solid var(--mp-color-border);
-  background: #ffffff;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--mp-color-text);
   font-size: 13px;
   font-weight: 500;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
   transition: all var(--mp-transition);
 }
 
+.month-picker__preset-btn:hover,
 .month-picker__preset:hover {
   border-color: var(--mp-color-border-hover);
-  background: #f9fafb;
+  background: #f3f4f6;
 }
 
 /* ===== CALENDAR CONTAINER ===== */

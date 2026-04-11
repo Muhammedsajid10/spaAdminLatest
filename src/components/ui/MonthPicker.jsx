@@ -8,8 +8,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MonthPicker = ({ 
   value, 
   onChange, 
-  className = '',
-  showPresets = true 
+  className = ''
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(new Date());
@@ -25,44 +24,6 @@ const MonthPicker = ({
     return next;
   }, [viewDate]);
 
-  // Preset date ranges
-  const presets = [
-    {
-      label: 'Month to date',
-      getValue: () => {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
-        return {
-          start: formatISO(start),
-          end: formatISO(now)
-        };
-      }
-    },
-    {
-      label: 'Last 30 days',
-      getValue: () => {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(start.getDate() - 30);
-        return {
-          start: formatISO(start),
-          end: formatISO(end)
-        };
-      }
-    },
-    {
-      label: 'Last 6 months',
-      getValue: () => {
-        const end = new Date();
-        const start = new Date();
-        start.setMonth(start.getMonth() - 6);
-        return {
-          start: formatISO(start),
-          end: formatISO(end)
-        };
-      }
-    }
-  ];
 
   const formatDateRange = (range) => {
     if (!range?.start || !range?.end) return 'Select date range';
@@ -79,12 +40,6 @@ const MonthPicker = ({
       : `${fmt(startDate, { year: 'numeric' })} - ${fmt(endDate, { year: 'numeric' })}`;
   };
 
-  const handlePresetClick = (preset) => {
-    const range = preset.getValue();
-    setDraftRange(range);
-    onChange?.(range);
-    setIsOpen(false);
-  };
 
   const addMonths = (date, count) => {
     const next = new Date(date);
@@ -123,10 +78,6 @@ const MonthPicker = ({
     return days;
   };
 
-  const isSameDay = (dateA, dateB) =>
-    dateA.getFullYear() === dateB.getFullYear() &&
-    dateA.getMonth() === dateB.getMonth() &&
-    dateA.getDate() === dateB.getDate();
 
   const formatISO = (date) => {
     const year = date.getFullYear();
@@ -276,13 +227,11 @@ const handleApply = () => {
         onClick={() => setIsOpen((prev) => !prev)}
         className="month-picker__trigger"
       >
-        {formatDateRange(draftRange.start && draftRange.end ? draftRange : value)}
+        {formatDateRange(value)}
       </Button>
 
       {isOpen && (
         <div className="month-picker__dropdown">
-      
-
           <div className="month-picker__calendar">
             <div className="month-picker__calendars">
               {renderCalendar(viewDate, 0)}
