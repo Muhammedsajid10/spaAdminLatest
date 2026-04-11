@@ -1,0 +1,254 @@
+/* ClientSalesTab.css */
+
+.client-sales-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+  padding: 32px 40px;
+}
+
+.client-sales-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.client-sales-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+
+.client-sales-btn-sell {
+  padding: 8px 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.client-sales-btn-sell:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Filters */
+.client-sales-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.client-sales-filter-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.client-sales-filter-btn:hover {
+  color: #111;
+  background: #f3f4f6;
+}
+
+.client-sales-filter-btn.active {
+  background: #111;
+  color: #fff;
+}
+
+.client-sales-filter-count {
+  background: #f3f4f6;
+  color: #666;
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 10px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.client-sales-filter-btn.active .client-sales-filter-count {
+  background: #fff;
+  color: #111;
+}
+
+/* Sales List */
+.client-sales-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  padding-bottom: 20px;
+}
+
+.client-sales-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.client-sales-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.client-sales-list::-webkit-scrollbar-thumb {
+  background-color: #e0e0e0;
+  border-radius: 3px;
+}
+
+/* Card */
+.client-sales-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+  height: auto;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.client-sales-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: #d1d5db;
+}
+
+/* Timeline */
+.client-sales-timeline-icon {
+  width: 32px;
+  height: 32px;
+  background: #111;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  z-index: 2;
+  position: relative;
+  transform: rotate(90deg); /* Rotate tag icon to match image if needed, or just keep it */
+}
+
+.client-sales-timeline-line {
+  position: absolute;
+  top: 56px;
+  left: 39px;
+  bottom: -17px;
+  width: 2px;
+  background: #e5e7eb;
+  z-index: 1;
+}
+
+.client-sales-card:last-child .client-sales-timeline-line {
+  display: none;
+}
+
+.client-sales-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-sales-card-header {
+  margin-bottom: 4px;
+}
+
+.client-sales-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+}
+
+.client-sales-meta {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.client-sales-meta-dot {
+  color: #999;
+}
+
+.client-sales-status {
+  font-weight: 600;
+}
+
+.client-sales-status.paid { color: #166534; }
+.client-sales-status.completed { color: #166534; }
+.client-sales-status.pending { color: #ca8a04; }
+.client-sales-status.draft { color: #666; }
+
+/* Items */
+.client-sales-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.client-sales-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.client-sales-item-name {
+  font-size: 14px;
+  color: #111;
+}
+
+.client-sales-item-price {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+/* Total */
+.client-sales-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.client-sales-total-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.client-sales-total-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+.client-sales-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px;
+  font-size: 14px;
+}

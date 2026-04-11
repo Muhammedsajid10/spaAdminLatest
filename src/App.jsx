@@ -3,43 +3,58 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardLayout from "./Clientsidepage/DashboardLayout";
 import LoginPage from "./Clientsidepage/Loginpage";
+import ProtectedRoute from "./ProtectedRoute";
+import React, { Suspense } from 'react';
+import LazyLoader from './components/LazyLoader';
 
-// Import all page components
-import DashboardPage from "./Clientsidepage/HomePage";
-import Scheduler from "./Clientsidepage/Selectcalander";
-import ClientsList from "./Clientsidepage/Clientlist";
-import DailySalesSummary from './Clientsidepage/Dailysalesss';
-import SalesAppointments from './Clientsidepage/Appoint';
-import SalesPayments from './Clientsidepage/Paymentclient';
-import GiftCardsSold from './Clientsidepage/Giftcard';
-import MembershipsSold from './Clientsidepage/Memberss';
-import TeamMembers from './Clientsidepage/Teammembers';
-import ScheduledShifts from './Clientsidepage/Sheduledshifts';
-import TimeSheets from './Clientsidepage/TimeSheets';
-import ServiceMenu from './Clientsidepage/ServiceMenu';
-import CatalogMemberships from './Clientsidepage/Membership';
-import Searchbar from "./Clientsidepage/SearchBar";
-import Reporting from "./Clientsidepage/Dashboard";
-import Membership from "./Clientsidepage/Membership";
+// Lazy-load heavy routes to reduce initial bundle size
+const DashboardPage = React.lazy(() => import('./Clientsidepage/HomePage'));
+const Scheduler = React.lazy(() => import('./Clientsidepage/Selectcalander'));
+const ClientsList = React.lazy(() => import('./Clientsidepage/Clientlist'));
+const DailySalesSummary = React.lazy(() => import('./Clientsidepage/Dailysalesss'));
+const SalesAppointments = React.lazy(() => import('./Clientsidepage/Appoint'));
+const SalesPayments = React.lazy(() => import('./Clientsidepage/Paymentclient'));
+const GiftCardsSold = React.lazy(() => import('./Clientsidepage/Giftcard'));
+const MembershipsSold = React.lazy(() => import('./Clientsidepage/Memberss'));
+const TeamMembers = React.lazy(() => import('./Clientsidepage/Teammembers'));
+const ScheduledShifts = React.lazy(() => import('./Clientsidepage/Sheduledshifts'));
+const TimeSheets = React.lazy(() => import('./Clientsidepage/TimeSheets'));
+const ServiceMenu = React.lazy(() => import('./Clientsidepage/ServiceMenu'));
+const Membership = React.lazy(() => import('./Clientsidepage/Membership'));
+const GiftCardPage = React.lazy(() => import('./Clientsidepage/GiftCardPage'));
+const Searchbar = React.lazy(() => import('./Clientsidepage/SearchBar'));
+const Dashboard = React.lazy(() => import('./Clientsidepage/Dashboard'));
 
+
+// Import the ReportsRoutes component
+import ReportsRoutes from "./routes/ReportsRoutes";
 
 function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<LazyLoader/>}>
       <Routes>
         {/* Unauthenticated Route */}
         <Route path="/login" element={<LoginPage />} />
         
-        {/* All authenticated routes are nested inside the main layout */}
-        <Route path="/" element={<DashboardLayout />}>
+        {/* All authenticated routes are nested inside the main layout and protected */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
 
           {/* Top-level pages */}
-          <Route index element={<DashboardPage />} />
+          <Route index element={<Scheduler />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="calendar" element={<Scheduler />} />
           <Route path="clients-list" element={<ClientsList />} />
           <Route path="search-bar" element={<Searchbar />} />
-          <Route path="report-analytics" element={<Reporting />} />
-
+           {/* Reports Routes - Use the ReportsRoutes component */}
+          <Route path="reports/*" element={<ReportsRoutes />} />
 
           {/* Sales Pages */}
           <Route path="sales" element={<DailySalesSummary />} />
@@ -57,11 +72,13 @@ function App() {
           {/* Catalog Pages */}
           <Route path="catalog" element={<ServiceMenu />} />
           <Route path="catalog/memberships" element={<MembershipsSold />} />
+          <Route path="catalog/gift-card" element={<GiftCardPage />} />
 
           {/* Fallback for any unknown route inside the layout */}
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

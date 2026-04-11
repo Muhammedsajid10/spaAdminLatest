@@ -22,6 +22,8 @@ export const sidebarConfig = {
     menuItems: [
       { label: 'Service Menu', path: '/catalog' },
       { label: 'Memberships', path: '/catalog/memberships' },
+      // { label: 'Memberships', path: '/catalog/memberships' },
+      { label: 'Gift Card', path: '/catalog/gift-card' },
     ],
   },
 };

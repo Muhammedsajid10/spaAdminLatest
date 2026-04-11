@@ -1,1010 +1,491 @@
-/* --- CORE STYLES & VARIABLES (Assumed global, consolidated once) --- */
+/* ========================================================================
+   SERVICE MENU - PREMIUM DESIGN SYSTEM
+   ======================================================================== */
+
 :root {
-  /* Primary Theme Colors (Professional Purple/Blue accent from reference image) */
-  --primary-color: #18131c; /* Deeper Purple */
-  --primary-light: #e6e6fa; /* Very light purple for subtle accents/active backgrounds (Lavender Blush) */
-  --primary-text-contrast: #ffffff; /* White text for primary buttons */
+  /* Colors */
+  --color-primary: #0f172a; /* Black/Dark Slate */
+  --color-primary-hover: #1e293b;
+  --color-secondary: #64748b;
+  --color-accent: black; /* Indigo */
+  --color-accent-light: #eef2ff;
+  --color-orange: #f97316; /* For category accent line */
   
-  /* Background Colors */
-  --bg-primary: #ffffff; /* Main white background */
-  --bg-secondary: #f7f9fa; /* Very light gray for subtle section backgrounds/hover */
-  --bg-hover: #f0f2f4; /* Slightly darker light gray for general hover */
+  --color-bg-page: #f8fafc;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #f1f5f9;
   
-  /* Text Colors */
-  --text-color-dark: #333; /* Darkest text for headings */
-  --text-color-medium: #555; /* Medium gray for descriptions */
-  --text-color-light: #888; /* Lighter gray for subtle text */
-  --text-color-accent: #6a0dad; /* For highlights like "Learn more" */
-
-  /* Border & Divider Colors */
-  --border-color: #e6e6e6; /* Light gray border */
-  --divider-color: #f0f0f0; /* Even lighter for internal dividers */
+  --color-text-main: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
   
-  /* Status Colors (Professional Theme) */
-  --status-success-bg: #d4edda; 
-  --status-success-text: #155724; 
-  --status-info-bg: #cfe2ff;
-  --status-info-text: #055160;
-  --status-warning-bg: #fff3cd; 
-  --status-warning-text: #856404; 
-  --status-error-bg: #f8d7da; 
-  --status-error-text: #721c24; 
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
 
-  /* Shadows (Subtle and professional - like reference image) */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06); /* Very subtle shadow */
-  --shadow-md: 0 2px 5px rgba(0, 0, 0, 0.08); /* Slightly more pronounced */
-  --shadow-lg: 0 5px 15px rgba(0, 0, 0, 0.1); /* For modals/dropdowns */
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 
-  /* Border Radii */
-  --radius-sm: 4px;
-  --radius-md: 6px; /* Slightly less rounded than before */
-  --radius-lg: 8px; /* Consistent with reference's more square elements */
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
 }
 
-/* Global Base Styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  line-height: 1.6;
-  color: var(--text-color-dark);
-  background-color: var(--bg-primary); /* Consistent with page background */
-  margin: 0;
-  padding: 0;
-  overflow: hidden; /* Crucial to prevent overall page scroll */
-}
-
-/* --- Service Menu Component Layout (MAIN SCROLLING LOGIC) --- */
+/* Global Reset & Base */
 .service-menu-container {
-  display: flex; /* Make it a flex container */
-  flex-direction: column; /* Stack children vertically */
-  height: 100vh; /* Ensure it takes full viewport height */
-  overflow: hidden; /* Contains all content, preventing main scrollbar */
-  background-color: var(--bg-primary);
-  padding: var(--spacing-lg); /* Overall padding for the component */
+  min-height: 100vh;
+  background: var(--color-bg-page);
+  padding: 32px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--color-text-main);
 }
 
-/* --- Header Section (FIXED) --- */
-.service-menu__header {
-  margin-bottom: var(--spacing-lg); /* Space below header */
-  border-bottom: 1px solid var(--divider-color); /* Subtle divider */
-  padding-bottom: var(--spacing-md); /* Padding below content to the divider */
-  flex-shrink: 0; /* Prevents header from shrinking, keeps it fixed */
+.service-menu-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
-.service-menu__header-content {
+/* --- Header Section --- */
+.service-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.service-menu-title-group h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.service-menu-subtitle {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.service-menu-subtitle a {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.service-menu-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.btn-secondary {
+  background: white;
+  border-color: var(--color-border);
+  color: var(--color-text-main);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+}
+
+.btn-primary {
+  background: black;
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+  background: black;
+  transform: translateY(-1px);
+}
+
+/* --- Controls Section --- */
+.service-menu-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 32px;
+  gap: 16px;
   flex-wrap: wrap;
-  gap: var(--spacing-md); /* Gap between title section and actions */
 }
 
-.service-menu__title-section {
-  flex-grow: 1;
+.controls-left {
+  display: flex;
+  gap: 16px;
+  flex: 1;
 }
 
-.service-menu__title {
-  font-size: 1.75rem; /* Matches reference title size */
+.search-wrapper {
+  position: relative;
+  width: 320px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  width: 18px;
+  height: 18px;
+}
+
+.search-input {
+  width: 29%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-filter {
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text-main);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.btn-manage-order {
+  margin-left: auto;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text-main);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* --- Main Content Layout --- */
+.service-menu-content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* Sidebar */
+.sidebar-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar-title {
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text-color-dark);
-  margin-bottom: var(--spacing-xs); /* Tighter spacing */
+  margin-bottom: 20px;
+  color: var(--color-text-main);
 }
 
-.service-menu__subtitle {
-  font-size: 0.9rem;
-  color: var(--text-color-medium);
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.service-menu__learn-more {
-  color: var(--text-color-accent); /* Accent color for links */
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  position: relative; /* For positioning delete button if needed */
+}
+
+.category-item:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-main);
+}
+
+.category-item.active {
+  background: #f3e8ff; /* Light purple */
+  color: #6b21a8; /* Dark purple */
+}
+
+.category-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.category-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* Hidden by default */
+  transition: all 0.2s;
+}
+
+.category-item:hover .category-delete-btn {
+  opacity: 1; /* Show on hover */
+}
+
+.category-delete-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.category-count {
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.category-item.active .category-count {
+  background: white;
+  color: #6b21a8;
+}
+
+.add-category-btn {
+  display: block;
+  margin-top: 16px;
+  color: var(--color-accent);
+  font-weight: 500;
+  font-size: 14px;
   text-decoration: none;
-  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
 }
-.service-menu__learn-more:hover {
+
+.add-category-btn:hover {
   text-decoration: underline;
 }
 
-.service-menu__header-actions {
+/* Services List */
+.services-section {
   display: flex;
-  gap: var(--spacing-sm); /* Space between buttons */
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 32px;
 }
 
-/* --- Buttons (Custom styles for Material UI Buttons - Matching Reference) --- */
-.MuiButton-root.service-menu__btn {
-  text-transform: none; /* No uppercase */
-  font-weight: 600;
-  border-radius: var(--radius-md); /* Consistent rounding */
-  padding: 6px 14px; /* Matches reference button height */
-  box-shadow: none; /* No default MUI shadow */
-  transition: all 0.15s ease-out; /* Fast, crisp transition */
+.category-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.MuiButton-root.service-menu__btn--primary {
-  background-color: var(--primary-color); /* Accent color for primary */
-  color: var(--primary-text-contrast);
-  border: 1px solid var(--primary-color);
-}
-.MuiButton-root.service-menu__btn--primary:hover {
-  background-color: var(--primary-color); /* No drastic change */
-  opacity: 0.9; /* Subtle opacity change */
-  box-shadow: var(--shadow-sm);
-}
-.MuiButton-root.service-menu__btn--primary:active {
-  transform: translateY(0); /* No press effect */
-}
-
-.MuiButton-root.service-menu__btn--secondary {
-  background-color: transparent;
-  color: var(--text-color-dark);
-  border: 1px solid var(--border-color);
-}
-.MuiButton-root.service-menu__btn--secondary:hover {
-  background-color: var(--bg-hover);
-  border-color: var(--border-color); /* Keep border subtle */
-  color: var(--text-color-dark);
-  box-shadow: none;
-}
-.MuiButton-root.service-menu__btn--secondary:active {
-  transform: translateY(0);
-}
-
-/* Dropdown style for buttons like "Options" and "Add" */
-.MuiButton-root.service-menu__btn--dropdown {
-  padding-right: 8px; /* More space for dropdown arrow */
-}
-.MuiButton-root.service-menu__btn--dropdown .MuiButton-endIcon {
-  margin-left: 4px; /* Tighter spacing for icon */
-  display: flex; /* Ensure icon centers */
-  align-items: center;
-}
-
-/* Styles for the Material-UI Menu component (dropdown list) */
-.MuiMenu-paper.service-menu__add-menu {
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-lg) !important; /* Prominent shadow for dropdown */
-  border: 1px solid var(--border-color) !important;
-  background-color: var(--bg-primary) !important;
-}
-.MuiMenuItem-root {
-  font-size: 0.9rem !important;
-  color: var(--text-color-dark) !important;
-  padding: 8px 12px !important;
-}
-.MuiMenuItem-root:hover {
-  background-color: var(--bg-secondary) !important;
-}
-/* Ensure icon within menu item is styled */
-.MuiMenuItem-root svg {
-  color: var(--text-color-medium);
-  transition: color 0.15s ease-out;
-}
-.MuiMenuItem-root:hover svg {
-  color: var(--primary-color);
-}
-
-
-/* Modal specific buttons */
-.service-menu__modal-actions .service-menu__btn {
-  min-width: 90px;
-}
-.service-menu__modal-actions .service-menu__btn--cancel {
-  background-color: transparent;
-  color: var(--text-color-medium);
-  border: 1px solid var(--border-color);
-}
-.service-menu__modal-actions .service-menu__btn--cancel:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-color-dark);
-  border-color: var(--border-color);
-}
-
-
-/* --- Alerts (Error & Success Messages) --- */
-.MuiAlert-root.service-menu__alert {
-  margin-bottom: var(--spacing-lg);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: 0.9rem;
-  font-weight: 500;
-  box-shadow: var(--shadow-sm);
-}
-.MuiAlert-root.service-menu__alert--error {
-  background-color: var(--status-error-bg);
-  color: var(--status-error-text);
-}
-.MuiAlert-root.service-menu__alert--success {
-  background-color: var(--status-success-bg);
-  color: var(--status-success-text);
-}
-.MuiAlert-icon {
-  font-size: 20px !important;
-}
-.MuiAlert-message {
-  margin-left: var(--spacing-sm) !important;
-}
-.MuiAlert-action {
-  margin-right: -8px !important;
-}
-
-
-/* --- Search and Filter Controls (FIXED) --- */
-.service-menu__controls {
+.category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-  flex-shrink: 0;
-  padding-left: var(--spacing-lg);
-  padding-right: var(--spacing-lg);
+  margin-bottom: 8px;
 }
 
-.service-menu__search-section {
-  flex-grow: 1;
-  max-width: 350px;
-}
-.service-menu__search-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.service-menu__search-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--text-color-light);
-  pointer-events: none;
-}
-.service-menu__search-input {
-  width: 100%;
-  padding: 8px 12px 8px 40px;
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: var(--text-color-dark);
-  background-color: var(--bg-primary);
-  transition: all 0.15s ease-out;
-}
-.service-menu__search-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(106, 13, 173, 0.1);
-}
-.service-menu__search-input::placeholder {
-  color: var(--text-color-light);
-}
-.service-menu__search-loading {
-  position: absolute;
-  right: 12px;
-  color: var(--primary-color) !important;
+.category-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0;
 }
 
-.service-menu__filter-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  flex-shrink: 0;
-}
-.service-menu__filter-actions .MuiButton-root {
+.btn-group-actions {
   padding: 6px 12px;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-}
-.service-menu__filter-actions .MuiButton-startIcon {
-  margin-right: 4px;
-}
-
-
-/* --- Main Content Area (CONTAINS SCROLLING SECTIONS) --- */
-.service-menu__content {
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
   display: flex;
-  flex-grow: 1;
-  gap: var(--spacing-lg);
-  min-height: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Service Card */
+.service-card {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  /* Center vertically */
+  position: relative;
   overflow: hidden;
+  transition: all 0.2s;
+  gap: 24px; /* Ensure gap between info and meta */
 }
 
-/* --- Categories Sidebar (SCROLLING) --- */
-.service-menu__sidebar {
-  width: 250px;
-  flex-shrink: 0;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
-  box-shadow: var(--shadow-sm);
-  
-  height: 100%;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--text-color-light) var(--bg-secondary);
-}
-.service-menu__sidebar::-webkit-scrollbar { width: 6px; }
-.service-menu__sidebar::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 3px; }
-.service-menu__sidebar::-webkit-scrollbar-thumb { background: var(--text-color-light); border-radius: 3px; }
-.service-menu__sidebar::-webkit-scrollbar-thumb:hover { background: var(--text-color-medium); }
-
-
-.service-menu__sidebar-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-color-dark);
-  margin-bottom: var(--spacing-md);
-}
-
-.service-menu__categories {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.service-menu__category-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: var(--radius-md);
-  transition: all 0.15s ease-out;
-  padding-right: 4px;
-  /* Add padding for the border */
-  padding-left: 0; /* Will be set dynamically by border */
-  /* --- NEW: Border for active category --- */
-  border-left: 0px solid transparent; /* Default transparent border */
-}
-/* Active category background color and border */
-.service-menu__category-wrapper--active {
-  background-color: var(--primary-light); 
-  border-left: 3px solid var(--primary-color); /* Professional left border */
-  padding-left: calc(var(--spacing-md) - 3px); /* Adjust padding to keep alignment after border */
-}
-
-.service-menu__category {
-  flex-grow: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: transparent;
-  border: none;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-color-dark);
-  border-radius: var(--radius-md);
-  transition: all 0.15s ease-out;
-  text-align: left;
-}
-.service-menu__category:hover {
-  background-color: var(--bg-secondary);
-  color: var(--text-color-dark);
-}
-.service-menu__category--active {
-  color: var(--primary-color);
-  font-weight: 600;
-  /* background-color handled by .service-menu__category-wrapper--active */
-}
-
-.service-menu__category-name {
-  flex-grow: 1;
-  margin-right: var(--spacing-sm);
-}
-
-.service-menu__category-count {
-  font-size: 0.8rem;
-  color: var(--text-color-light);
-  background-color: transparent;
-  padding: 2px 0;
-  border-radius: var(--radius-md);
-  font-weight: 500;
-}
-.service-menu__category--active .service-menu__category-count {
-  background-color: var(--primary-color);
-  color: var(--primary-text-contrast);
-  padding: 2px 8px;
-}
-
-.service-menu__category-delete-btn {
-  background: none;
-  border: none;
-  color: var(--text-color-light);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  transition: all 0.15s ease-out;
-  flex-shrink: 0;
-  margin-left: var(--spacing-xs);
-}
-.service-menu__category-delete-btn:hover {
-  background-color: var(--status-error-bg);
-  color: var(--status-error-text);
-}
-
-
-/* --- Services List (SCROLLING) --- */
-.service-menu__services-list {
-  flex-grow: 1;
-  display: flex; /* Changed to flex to stack category groups */
-  flex-direction: column;
-  gap: var(--spacing-md);
-  
-  height: 100%;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--text-color-light) var(--bg-secondary);
-}
-.service-menu__services-list::-webkit-scrollbar { width: 6px; }
-.service-menu__services-list::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 3px; }
-.service-menu__services-list::-webkit-scrollbar-thumb { background: var(--text-color-light); border-radius: 3px; }
-.service-menu__services-list::-webkit-scrollbar-thumb:hover { background: var(--text-color-medium); }
-
-/* Category Grouping Header (e.g., "Body Massage" with "Actions" button) */
-.service-menu__category-group {
-  /* No grid-column span here as parent is flex column now */
-  margin-bottom: var(--spacing-md); /* Space below the entire group */
-}
-.service-menu__category-group:last-child {
-  margin-bottom: 0;
-}
-.service-menu__category-group-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--divider-color);
-  padding-bottom: var(--spacing-sm);
-}
-.service-menu__category-group-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-color-dark);
-  margin: 0;
-}
-.service-menu__category-group-actions {
-  /* Inherits button styles */
-}
-
-/* Individual Service Card within a group */
-.service-menu__service-card {
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--spacing-md);
-  transition: all 0.15s ease-out;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: var(--spacing-sm); /* Space between cards in a group */
-}
-.service-menu__service-card:last-child {
-  margin-bottom: 0;
-}
-.service-menu__service-card:hover {
+.service-card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  border-color: var(--color-border-hover);
 }
 
-.service-menu__service-card-main-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-xs);
+/* Orange Accent Line */
+.category-group .service-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--color-orange);
+  /* border-top-left-radius: var(--radius-lg); */
+  /* border-bottom-left-radius: var(--radius-lg); */
 }
-.service-menu__service-card-name {
-  font-size: 1.05rem;
+
+.service-info {
+  flex: 1;
+  padding-left: 12px; /* Space for the accent line */
+  min-width: 0; /* Required for text truncation in flex child */
+}
+
+.service-name {
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text-color-dark);
-  margin: 0;
-}
-.service-menu__service-card-more-options {
-  background: none;
-  border: none;
-  color: var(--text-color-light);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  transition: all 0.15s ease-out;
-}
-.service-menu__service-card-more-options:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-color-medium);
+  color: var(--color-text-main);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.service-menu__service-card-description {
-  font-size: 0.85rem;
-  color: var(--text-color-medium);
-  margin-bottom: var(--spacing-md);
+.service-description {
+  font-size: 13px; /* Smaller text */
+  color: var(--color-text-muted);
+  margin-bottom: 0;
+  line-height: 1.4;
+  
+  /* Truncate to 1 line (or 2 if preferred, but user said "small level text and ...") */
+  white-space: nowrap; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-/* Service Options List (e.g., "Relaxing Massage 1h AED 410") */
-.service-menu__service-options-list {
+.service-meta {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-top: auto;
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--divider-color);
+  align-items: flex-end; /* Aligns content to the right */
+  justify-content: center;
+  gap: 8px; /* Space between duration and price */
+  min-width: 100px;
+  flex-shrink: 0;
+  text-align: right; /* Ensure text is right aligned */
 }
-.service-menu__service-option-item {
+
+.service-duration {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.service-price {
+  font-size: 16px; /* Slightly larger for emphasis */
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-top: auto; /* Pushes price to bottom if container has height */
+}
+
+.service-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
-.service-menu__option-details {
+
+.service-actions-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
   display: flex;
-  align-items: baseline;
-  gap: var(--spacing-sm);
-}
-.service-menu__option-name {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-color-dark);
-}
-.service-menu__option-name--discount {
-  font-weight: 500;
-  color: var(--status-success-text);
-}
-.service-menu__option-duration {
-  font-size: 0.85rem;
-  color: var(--text-color-light);
-}
-.service-menu__option-price {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-color-dark);
-  display: flex;
-  align-items: baseline;
-  gap: var(--spacing-xs);
-}
-.service-menu__option-price--discount {
-  color: var(--status-success-text);
-}
-.service-menu__original-price {
-  text-decoration: line-through;
-  color: var(--text-color-light);
-  font-size: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-
-.service-menu__no-results {
-  width: 100%; /* Take full width of parent */
-  text-align: center;
-  padding: 50px;
-  color: var(--text-color-light);
-  font-style: italic;
-  font-size: 1.1rem;
-  background-color: var(--bg-secondary);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-lg);
-  margin-top: 24px;
+.service-actions-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-main);
 }
 
-/* --- Modals (Material UI Dialogs) --- */
-.MuiDialog-paper {
-  border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-lg) !important;
-  background-color: var(--bg-primary) !important;
-  border: 1px solid var(--border-color) !important;
-}
-.MuiDialogTitle-root {
-  font-size: 1.4rem !important;
-  font-weight: 700 !important;
-  color: var(--text-color-dark) !important;
-  padding: var(--spacing-md) var(--spacing-lg) !important;
-  border-bottom: 1px solid var(--divider-color) !important;
-}
-.MuiDialogContent-root {
-  padding: var(--spacing-md) var(--spacing-lg) !important;
-}
-.MuiDialogContent-dividers {
-  border-top: none !important;
-  border-bottom: none !important;
-}
-.MuiDialogActions-root {
-  padding: var(--spacing-md) var(--spacing-lg) !important;
-  border-top: 1px solid var(--divider-color) !important;
+/* Responsive */
+@media (max-width: 1024px) {
+  .service-menu-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar-card {
+    display: none; /* Hide sidebar on mobile/tablet for now or make it collapsible */
+  }
 }
 
-/* Form inputs (Material UI TextField & Select) */
-.MuiFormControl-root.service-menu__form-input,
-.MuiFormControl-root.service-menu__form-control {
-  margin-top: var(--spacing-md) !important;
-  margin-bottom: var(--spacing-md) !important;
-}
-.MuiInputLabel-root {
-  font-size: 0.95rem !important;
-  color: var(--text-color-medium) !important;
-  font-weight: 500 !important;
-}
-.MuiInputBase-input {
-  font-size: 0.9rem !important;
-  color: var(--text-color-dark) !important;
-  padding: 10px 14px !important;
-}
-.MuiOutlinedInput-notchedOutline {
-  border-color: var(--border-color) !important;
-  border-radius: var(--radius-sm) !important;
-}
-.Mui-focused .MuiOutlinedInput-notchedOutline {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 2px rgba(106, 13, 173, 0.1) !important;
-}
-.Mui-error .MuiOutlinedInput-notchedOutline {
-  border-color: var(--status-error-text) !important;
-}
-.MuiInputBase-multiline {
-  padding: 10px 14px !important;
-}
-.MuiFormHelperText-root {
-  font-size: 0.8rem !important;
-  color: var(--text-color-light) !important;
-  margin-top: var(--spacing-xs) !important;
-}
-
-/* --- Responsive Design --- */
-
-/* Medium Screens (Tablets / Larger Phones Landscape) */
 @media (max-width: 768px) {
-  .service-menu-container {
-    padding: var(--spacing-md);
-  }
-  .service-menu__header-content {
+  .service-menu-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-sm);
+    gap: 16px;
   }
-  .service-menu__header-actions {
+  
+  .service-menu-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-wrapper {
     width: 100%;
-    justify-content: center;
-    gap: var(--spacing-sm);
   }
-  .MuiButton-root.service-menu__btn {
-    flex-grow: 1;
-    max-width: 180px;
-  }
-  .service-menu__controls {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 0;
-  }
-  .service-menu__search-section {
-    max-width: 100%;
-  }
-  .service-menu__content {
-    flex-direction: column;
-  }
-  .service-menu__sidebar {
-    width: 100%;
-    max-height: 250px;
-    margin-bottom: var(--spacing-md);
-  }
-  .service-menu__categories {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: var(--spacing-sm);
-  }
-  .service-menu__categories::-webkit-scrollbar { height: 6px; }
-  .service-menu__categories::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 3px; }
-  .service-menu__categories::-webkit-scrollbar-thumb { background: var(--text-color-light); border-radius: 3px; }
-  .service-menu__categories::-webkit-scrollbar-thumb:hover { background: var(--text-color-medium); }
-
-  .service-menu__category-wrapper {
-    flex-shrink: 0;
-    padding-right: 0;
-    align-items: center;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px 12px;
-  }
-  .service-menu__category {
-    padding: 0;
-    width: 100%;
-    text-align: center;
-    flex-direction: column;
-  }
-  .service-menu__category-name, .service-menu__category-count {
-    font-size: 0.85rem;
-    white-space: nowrap;
-  }
-  .service-menu__category-count { margin-top: 4px; }
-
-  .service-menu__category-delete-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    z-index: 1;
-    background-color: rgba(255,255,255,0.8);
-    box-shadow: var(--shadow-sm);
-  }
-  .service-menu__services-list {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
-}
-
-/* Small Screens (Typical Phones Portrait) */
-@media (max-width: 480px) {
-  .service-menu-container {
-    padding: var(--spacing-sm);
-  }
-  .service-menu__title {
-    font-size: 1.5rem;
-  }
-  .service-menu__subtitle {
-    font-size: 0.8rem;
-  }
-  .service-menu__header-actions {
-    gap: var(--spacing-sm); /* Use var for consistency */
-  }
-  .MuiButton-root.service-menu__btn {
-    padding: 4px 10px;
-    font-size: 0.85rem;
-  }
-  .service-menu__search-input {
-    padding: 8px 10px 8px 36px;
-    font-size: 0.85rem;
-  }
-  .service-menu__search-icon {
-    left: 10px;
-    font-size: 18px;
-  }
-  .service-menu__sidebar-title {
-    font-size: 1rem;
-    margin-bottom: var(--spacing-sm);
-  }
-  .service-menu__category {
-    font-size: 0.85rem;
-    padding: 6px 8px;
-  }
-  .service-menu__category-count {
-    font-size: 0.75rem;
-  }
-  .service-menu__service-card {
-    padding: var(--spacing-sm);
-  }
-  .service-menu__service-card-title {
-    font-size: 1rem;
-  }
-  .service-menu__action-icon-btn {
-    padding: 4px;
-  }
-  .service-menu__service-card-description,
-  .service-menu__detail-label,
-  .service-menu__detail-value {
-    font-size: 0.85rem;
-  }
-  .service-menu__detail-value--price {
-    font-size: 0.95rem;
-  }
-  .service-menu__original-price {
-    font-size: 0.75rem;
-  }
-  .service-menu__no-results {
-    padding: var(--spacing-lg); /* Use var for consistency */
-    font-size: 0.9rem;
-  }
-
-  /* Modal Overrides for small screens */
-  .MuiDialogTitle-root {
-    font-size: 1.15rem !important;
-    padding: var(--spacing-md) var(--spacing-lg) !important; /* Use vars for consistency */
-  }
-  .MuiDialogContent-root {
-    padding: var(--spacing-md) var(--spacing-lg) !important; /* Use vars for consistency */
-  }
-  .MuiDialogActions-root {
-    padding: var(--spacing-sm) var(--spacing-lg) !important; /* Use vars for consistency */
-  }
-  .MuiInputLabel-root {
-    font-size: 0.9rem !important;
-  }
-  .MuiInputBase-input,
-  .MuiInputBase-multiline {
-    font-size: 0.9rem !important;
-    padding: 10px 12px !important;
-  }
-  .service-menu__modal-actions .service-menu__btn {
-    padding: 10px 16px;
-    font-size: 0.9rem;
-  }
-}
-
-/* Very Small Screens (e.g., iPhone 5/SE, older Androids) */
-@media (max-width: 360px) {
-  .service-menu-container {
-    padding: var(--spacing-sm);
-  }
-  .service-menu__title {
-    font-size: 1.4rem;
-  }
-  .service-menu__subtitle {
-    font-size: 0.75rem;
-  }
-  .service-menu__header-actions {
-    gap: var(--spacing-xs); /* Use var for consistency */
-  }
-  .MuiButton-root.service-menu__btn {
-    padding: 4px 8px;
-    font-size: 0.8rem;
-  }
-  .service-menu__search-input {
-    padding: 6px 8px 6px 28px;
-    font-size: 0.75rem;
-  }
-  .service-menu__search-icon {
-    left: 8px;
-    font-size: 16px;
-  }
-  .service-menu__sidebar-title {
-    font-size: 0.9rem;
-  }
-  .service-menu__category {
-    font-size: 0.8rem;
-    padding: 5px 6px;
-  }
-  .service-menu__category-count {
-    font-size: 0.65rem;
-  }
-  .service-menu__service-card {
-    padding: var(--spacing-sm);
-  }
-  .service-menu__service-card-title {
-    font-size: 0.9rem;
-  }
-  .service-menu__action-icon-btn {
-    padding: 3px;
-    size: 14px;
-  }
-  .service-menu__service-card-description,
-  .service-menu__detail-label,
-  .service-menu__detail-value {
-    font-size: 0.75rem;
-  }
-  .service-menu__detail-value--price {
-    font-size: 0.85rem;
-  }
-  .service-menu__original-price {
-    font-size: 0.6rem;
-  }
-  .service-menu__no-results {
-    padding: var(--spacing-lg); /* Use var for consistency */
-    font-size: 0.85rem;
-  }
-
-  /* Modal Overrides for very small screens */
-  .MuiDialogTitle-root {
-    font-size: 1.1rem !important;
-    padding: var(--spacing-md) var(--spacing-md) !important; /* Use vars for consistency */
-  }
-  .MuiDialogContent-root {
-    padding: var(--spacing-md) var(--spacing-md) !important; /* Use vars for consistency */
-  }
-  .MuiDialogActions-root {
-    padding: var(--spacing-sm) var(--spacing-md) !important; /* Use vars for consistency */
-  }
-  .MuiInputLabel-root {
-    font-size: 0.8rem !important;
-  }
-  .MuiInputBase-input,
-  .MuiInputBase-multiline {
-    font-size: 0.8rem !important;
-    padding: 6px 8px !important;
-  }
-  .service-menu__modal-actions .service-menu__btn {
-    padding: 8px 10px;
-    font-size: 0.8rem;
-  }
-}
-
-/* Ultra-Small Screen Specific Styles (412px and below) */
-@media (max-width: 412px) {
-  .service-menu-container {
-    padding: var(--spacing-sm); 
-  }
-  .service-menu__title {
-    font-size: 1.3rem; 
-  }
-  .service-menu__subtitle {
-    font-size: 0.7rem; 
-  }
-  .service-menu__header-actions {
-    gap: var(--spacing-xs); 
-  }
-  .MuiButton-root.service-menu__btn {
-    padding: 3px 6px; 
-    font-size: 0.7rem; 
-  }
-
-  .service-menu__controls {
-    gap: var(--spacing-sm); /* Use var for consistency */
-  }
-  .service-menu__search-input {
-    padding: 5px 6px 5px 26px; 
-    font-size: 0.75rem; 
-  }
-  .service-menu__search-icon {
-    left: 5px;
-    font-size: 14px; 
-  }
-
-  .service-menu__sidebar {
-    padding: var(--spacing-sm); 
-  }
-  .service-menu__sidebar-title {
-    font-size: 0.85rem; 
-    margin-bottom: var(--spacing-sm);
-  }
-  .service-menu__category {
-    font-size: 0.75rem; 
-    padding: 4px 6px; 
-  }
-  .service-menu__category-count {
-    font-size: 0.6rem; 
-    padding: 1px 4px;
-  }
-  .service-menu__category-wrapper {
-    gap: 1px; 
-  }
-  .service-menu__category-delete-btn {
-    padding: 2px; 
-    size: 12px; 
-  }
-
-
-  .service-menu__services-list {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
-    gap: var(--spacing-sm); /* Use var for consistency */
-  }
-  .service-menu__service-card {
-    padding: var(--spacing-sm); 
-  }
-  .service-menu__service-card-title {
-    font-size: 0.85rem; 
-  }
-  .service-menu__action-icon-btn {
-    padding: 2px; 
-    size: 12px; 
-  }
-  .service-menu__service-card-description,
-  .service-menu__detail-label,
-  .service-menu__detail-value {
-    font-size: 0.7rem; 
-  }
-  .service-menu__detail-value--price {
-    font-size: 0.8rem; 
-  }
-  .service-menu__original-price {
-    font-size: 0.55rem; 
-  }
-  .service-menu__no-results {
-    padding: var(--spacing-md); /* Use var for consistency */
-    font-size: 0.8rem;
-  }
-
-  /* Modal Overrides for 412px and below */
-  .MuiDialogTitle-root {
-    font-size: 1rem !important;
-    padding: var(--spacing-sm) var(--spacing-md) !important; /* Use vars for consistency */
-  }
-  .MuiDialogContent-root {
-    padding: var(--spacing-sm) var(--spacing-md) !important; /* Use vars for consistency */
-  }
-  .MuiDialogActions-root {
-    padding: var(--spacing-xs) var(--spacing-md) !important; /* Use vars for consistency */
-  }
-  .MuiInputLabel-root {
-    font-size: 0.75rem !important;
-  }
-  .MuiInputBase-input,
-  .MuiInputBase-multiline {
-    font-size: 0.75rem !important;
-    padding: 5px 6px !important;
-  }
-  .service-menu__modal-actions .service-menu__btn {
-    padding: 5px 8px;
-    font-size: 0.75rem;
+  
+  .btn-manage-order {
+    margin-left: 0;
   }
 }

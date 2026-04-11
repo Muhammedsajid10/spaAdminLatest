@@ -16,13 +16,14 @@ import {FaChartLine} from 'react-icons/fa6'
 import "./MainSideBar.css";
 const MainSideBar = () => {
   const menuItems = [
-    { icon: <FiHome />, label: "Home", to: "/" },
-    { icon: <FiCalendar />, label: "Calendar", to: "/calendar" },
+    { icon: <FiHome />, label: "Dashboard", to: "/dashboard" },
+    { icon: <FiCalendar />, label: "Calendar", to: "/" },
+    
     { icon: <FiTag />, label: "Sale", to: "/sales" },
     { icon: <FiSmile />, label: "Clients", to: "/clients-list" },
     { icon: <FiUsers />, label: "Team", to: "/team" },
     { icon: <FiBook />, label: "Catalog", to: "/catalog" },
-    { icon: <FaChartLine />, label: "Report", to: "/report-analytics" },
+    { icon: <FaChartLine />, label: "Report", to: "/reports" },
   ];
 
   return (

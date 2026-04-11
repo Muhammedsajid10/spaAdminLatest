@@ -7,6 +7,9 @@ import spa from '../Images/WhatsApp Image 2025-07-21 at 13.52.40_0846e8b9.jpg'; 
 import { useNavigate } from 'react-router-dom';
 import api from '../Service/Api'; // Assuming your API instance
 import { CircularProgress } from '@mui/material'; // For loading indicator
+import Error500Page from '../states/ErrorPage';
+import NoDataState from '../states/NoData';
+import Loading from '../states/Loading';
 
 const Navbar = () => {
   const [showSearch, setShowSearch] = useState(false);
@@ -34,7 +37,8 @@ const Navbar = () => {
       // Fetch only upcoming or recent bookings relevant for a notification dropdown
       // Example: fetch last 10 bookings, or only unread ones, etc.
       // For simplicity, fetching all, then filtering. Adjust API endpoint as needed.
-      const res = await api.get("/bookings/admin/all"); 
+      // ✅ FIX: Add high limit to get all appointments for notifications
+      const res = await api.get("/bookings/admin/all?limit=10000"); 
       const bookings = res.data.data.bookings || [];
 
       // Process bookings to fit the existing appointment item structure
@@ -144,24 +148,20 @@ const Navbar = () => {
     if (loadingAppointments) {
       return (
         <div className="notification-status">
-          <CircularProgress size={20} color="primary" />
-          <p>Loading appointments...</p>
+         <Loading/>
         </div>
       );
     }
     if (appointmentsError) {
       return (
         <div className="notification-status notification-status--error">
-          <p>Error: {appointmentsError}</p>
-          <button onClick={fetchAppointments} className="notification-status__retry-btn">Retry</button>
+<Error500Page/>
         </div>
       );
     }
     if (appointments.length === 0) {
       return (
-        <div className="notification-status">
-          <p>No upcoming appointments.</p>
-        </div>
+      <NoDataState/>
       );
     }
 
@@ -238,9 +238,9 @@ const Navbar = () => {
                 <div className="appointments-container">
                   <div className="appointments-header">
                     <h1 className="appointments-title">Appointments</h1>
-                    <button className="more-button" aria-label="More options">
+                    {/* <button className="more-button" aria-label="More options">
                       <MoreVertical size={20} className="more-icon" />
-                    </button>
+                    </button> */}
                   </div>
                   {renderedAppointments} {/* Render memoized appointments */}
                 </div>

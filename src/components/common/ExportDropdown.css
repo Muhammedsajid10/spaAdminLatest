@@ -1,0 +1,154 @@
+/* ========== ExportDropdown – Business Professional ========== */
+.export-dropdown-unique {
+  position: relative;
+  display: inline-flex;
+  font-family: Inter, "SF Pro Text", Roboto, system-ui, -apple-system, Segoe UI, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Trigger: pill with black border + black text */
+.export-dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #fff;
+  color: #000;                     /* text black */
+  border: 1.5px solid #000;        /* border black */
+  border-radius: 999px;            /* circular pill */
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: box-shadow .15s ease, transform .15s ease, background-color .15s ease, color .15s ease;
+}
+
+.export-dropdown__trigger:hover:not(:disabled) {
+  box-shadow: 0 6px 18px rgba(0,0,0,.10);
+  transform: translateY(-1px);
+}
+
+.export-dropdown__trigger:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,0,0,.10);
+}
+
+.export-dropdown__trigger:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.export-dropdown__trigger:focus-visible {
+  outline: 2px solid #000;         /* black focus ring for accessibility */
+  outline-offset: 2px;
+}
+
+/* Menu: neat card */
+.export-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 220px;
+  background: #fff;
+  color: #000;                      /* ensure text black inside */
+  border: 1px solid #000;           /* subtle black border for brand consistency */
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.12);
+  padding: 8px;
+  z-index: 30;
+  animation: ed-fade-in .12s ease-out;
+}
+
+@keyframes ed-fade-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Options */
+.export-dropdown__option {
+  width: 100%;
+  display: flex;
+  text-align: left;
+  gap: 10px;
+  padding: 10px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color .12s ease, transform .12s ease;
+  color: #000;                      /* text black */
+}
+
+.export-dropdown__option:hover {
+  background: #f5f5f5;              /* soft gray hover; keeps black text */
+}
+
+.export-dropdown__option:active {
+  transform: translateY(0.5px);
+}
+
+.export-dropdown__option:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+/* Option content */
+.export-dropdown__option-content { display: flex; flex-direction: column; gap: 2px; }
+.export-dropdown__option-main { display: flex; align-items: center; gap: 10px; }
+
+.export-dropdown__option-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #000;          /* black circular icon container */
+  border-radius: 999px;
+  color: #000;
+  background: #fff;
+}
+
+.export-dropdown__option-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+}
+
+.export-dropdown__option-desc {
+  font-size: 12px;
+  color: #000;                      /* keep black as requested */
+  opacity: .7;                      /* slight hierarchy while staying black */
+}
+
+/* Loading overlay (optional, if you use it) */
+.export-dropdown__loading {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: rgba(255,255,255,.85);
+  border-radius: 12px;
+}
+
+.export-dropdown__spinner {
+  width: 18px; height: 18px;
+  border: 2px solid #000;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: ed-spin 1s linear infinite;
+}
+
+@keyframes ed-spin { to { transform: rotate(360deg); } }
+
+/* Mobile sheet behavior */
+@media (max-width: 768px) {
+  .export-dropdown__menu {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    border-radius: 16px 16px 0 0;
+    min-width: unset;
+    padding: 12px;
+    animation: ed-slide-up .18s ease-out;
+  }
+  @keyframes ed-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+}

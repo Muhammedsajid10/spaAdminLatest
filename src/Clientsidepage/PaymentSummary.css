@@ -366,18 +366,18 @@
 }
 
 .status-completed {
-  background: #d1fae5;
-  color: #065f46;
+  background: #00ff7b;
+  color: #000000;
 }
 
 .status-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: #ffcc00;
+  color: #000000;
 }
 
 .status-failed {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #f90000;
+  color: #000000;
 }
 
 .status-refunded {

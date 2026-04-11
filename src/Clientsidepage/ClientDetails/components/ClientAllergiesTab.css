@@ -1,0 +1,192 @@
+/* ClientAllergiesTab.css */
+
+.allergies-tab-container {
+  padding: 32px 40px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.allergies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.allergies-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.btn-add-allergy {
+  padding: 8px 20px;
+  border: 1px solid #e4e4e7;
+  border-radius: 24px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #18181b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-allergy:hover {
+  background: #f4f4f5;
+  border-color: #d4d4d8;
+}
+
+/* Content Area */
+.allergies-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  padding-bottom: 20px;
+}
+
+/* Empty State */
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  height: 100%;
+  min-height: 300px;
+}
+
+.empty-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  color: #6366f1;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.empty-description {
+  font-size: 14px;
+  color: #666;
+  max-width: 300px;
+}
+
+/* Allergies List */
+.allergies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Allergy Card */
+.allergy-card {
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.allergy-card:hover {
+  border-color: #d4d4d8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.allergy-main-content {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+}
+
+.allergy-icon-wrapper {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.allergy-severity-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+/* Colors for severity */
+.severity-mild { color: #22c55e; background-color: rgba(34, 197, 94, 0.1); }
+.severity-moderate { color: #f97316; background-color: rgba(249, 115, 22, 0.1); }
+.severity-severe { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+.severity-fatal { color: #111; background-color: rgba(0, 0, 0, 0.1); }
+
+.allergy-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.allergy-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.allergy-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+}
+
+.allergy-meta-row {
+  font-size: 14px;
+  color: #666;
+}
+
+.allergy-note-text {
+  font-size: 14px;
+  color: #333;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* Delete Button */
+.btn-delete-allergy {
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.btn-delete-allergy:hover {
+  background: #f4f4f5;
+  color: #ef4444;
+}

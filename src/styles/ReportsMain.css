@@ -1,0 +1,201 @@
+/* =============================
+   BASE LAYOUT
+============================= */
+.reports-container {
+    max-width: 1080px;
+    /* margin: 0 auto; */
+    /* padding: 48px 24px 80px; */
+    background-color: #ffffff;
+    font-family: "Inter", "SF Pro Display", "Segoe UI", Arial, sans-serif;
+    color: #000000;
+    margin-top: 20px;
+    margin-left: 41px;
+
+}
+
+/* =============================
+   HEADER
+============================= */
+.reports-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: #111;
+}
+
+.reports-header p {
+  font-size: 15px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* =============================
+   SEARCH BAR
+============================= */
+.reports-searchbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 24px;
+  margin-bottom: 32px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 10px 16px 10px 42px;
+  transition: all 0.2s ease;
+  max-width: 520px;
+}
+
+.reports-searchbar:hover {
+  border-color: #cfcfcf;
+}
+
+.reports-searchbar:focus-within {
+  border-color: #4a56e2;
+  box-shadow: 0 0 0 3px rgba(74, 86, 226, 0.1);
+}
+
+.reports-searchbar input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #222;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777;
+  width: 18px;
+  height: 18px;
+}
+
+/* =============================
+   TABS
+============================= */
+.reports-tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid #e5e5e5;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.reports-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: #555;
+  padding-bottom: 10px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  border-bottom: 2px solid transparent;
+  flex-shrink: 0;
+}
+
+.tab-btn.active {
+  color: #111;
+  font-weight: 600;
+  border-bottom-color: #111;
+}
+
+.tab-btn:hover {
+  color: #111;
+}
+
+/* =============================
+   REPORT CARD
+============================= */
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.report-card:hover {
+  border-color: #4a56e2;
+  box-shadow: 0 4px 12px rgba(74, 86, 226, 0.1);
+  transform: translateY(-2px);
+}
+
+.report-info h4 {
+  margin: 0 0 6px 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #111;
+}
+
+.report-info p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.report-tag {
+  background: #f5f0ff;
+  color: #6a5acd;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.no-results {
+  font-size: 14px;
+  color: #888;
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* =============================
+   RESPONSIVE DESIGN
+============================= */
+@media (max-width: 768px) {
+  .reports-container {
+    padding: 28px 16px 60px;
+  }
+
+  .reports-header h2 {
+    font-size: 20px;
+  }
+
+  .reports-searchbar {
+    max-width: 100%;
+  }
+
+  .tab-btn {
+    font-size: 14px;
+  }
+
+  .report-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .report-tag {
+    align-self: flex-end;
+  }
+}
