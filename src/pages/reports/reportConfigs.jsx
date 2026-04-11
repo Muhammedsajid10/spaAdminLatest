@@ -288,6 +288,17 @@ export const reportsConfig = {
       const res = await ReportsAPI.getClients();
       const rows = res?.data?.clients ?? [];
       return rows.filter((row) => {
+        // Exclude walk-in customers (created when isWalkIn toggle is used during booking)
+        // They are stored with firstName='Walk-in' and lastName='Customer'
+        const firstName = (row.firstName ?? '').trim().toLowerCase();
+        const fullName = (row.fullName ?? '').trim().toLowerCase();
+        const isWalkIn =
+          firstName === 'walk-in' ||
+          fullName === 'walk-in customer' ||
+          fullName.startsWith('walk-in');
+        if (isWalkIn) return false;
+
+        // Date range filter
         if (!dateRange?.start || !dateRange?.end) return true;
         const created = new Date(row.createdAt);
         return created >= new Date(dateRange.start) && created <= new Date(`${dateRange.end}T23:59:59`);
