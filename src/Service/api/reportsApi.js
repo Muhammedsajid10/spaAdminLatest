@@ -116,17 +116,13 @@ export class ReportsAPI {
     return response.data;
   }
 
-  static async getFinanceSummary({ all = true, startDate = null, endDate = null, ...params } = {}) {
-    const queryParams = {
-      all,
-      ...params
-    };
-    
-    if (startDate) queryParams.startDate = startDate;
-    if (endDate) queryParams.endDate = endDate;
+  static async getFinanceSummary({ startDate = null, endDate = null } = {}) {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate)   params.endDate   = endDate;
 
-    const response = await api.get('/admin/finance-summary?all=true', {
-      // params: queryParams,
+    const response = await api.get('/admin/finance-summary', {
+      params,
       headers: withAuth()
     });
     return response.data;

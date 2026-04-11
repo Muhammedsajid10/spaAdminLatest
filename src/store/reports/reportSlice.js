@@ -10,7 +10,7 @@ const getLocalDateString = (date) => {
 };
 
 const initialDateRange = {
-  start: getLocalDateString(Date.now() - 30 * 24 * 60 * 60 * 1000),
+  start: getLocalDateString(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
   end: getLocalDateString(Date.now())
 };
 

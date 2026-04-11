@@ -84,15 +84,13 @@ export const buildFinanceSummary = (rows = [], dateRange = null) => {
 
 export const fetchFinanceSummary = createAsyncThunk(
   'financeSummary/fetch',
-  async (_, { rejectWithValue }) => {
+  async ({ startDate = null, endDate = null } = {}, { rejectWithValue }) => {
     try {
-      const response = await ReportsAPI.getFinanceSummary({
-        all: true
-      });
+      const response = await ReportsAPI.getFinanceSummary({ startDate, endDate });
       
       const data = response?.data ?? [];
       
-      // Normalize all finance data and store in state
+      // Normalize all finance data returned by the backend (already date-filtered)
       const normalized = data.map(normalizeFinanceData);
       return normalized;
     } catch (error) {
