@@ -19,45 +19,31 @@ export const useAppointmentSummary = () => {
   // Fetch data only once when idle
   useEffect(() => {
     if (status === 'idle') {
-      console.log('Fetching appointment summary data...');
       dispatch(fetchAppointmentSummary());
     }
   }, [dispatch, status]);
 
   // Build summary with current date range and groupBy
   const data = useMemo(() => {
-    console.log('Recalculating summary with:', { 
-      bookingsCount: rawBookings.length, 
-      dateRange, 
-      groupBy,
-      status 
-    });
-    
     if (status !== 'succeeded') {
-      console.log('Status not succeeded, returning empty array');
       return [];
     }
-    
+
     const result = buildAppointmentSummary(rawBookings, dateRange, groupBy);
-    console.log('Built summary result:', result.length, 'rows');
     return result;
   }, [rawBookings, dateRange, groupBy, status]);
 
   const refresh = useCallback(() => {
-    console.log('Refreshing appointment summary...');
     dispatch(fetchAppointmentSummary());
   }, [dispatch]);
 
   const handleGroupByChange = useCallback((newGroupBy) => {
-    console.log('GroupBy change requested:', { from: groupBy, to: newGroupBy });
-    
     // Handle both string and object values from dropdown
     const value = typeof newGroupBy === 'string' 
       ? newGroupBy 
       : newGroupBy?.value;
-    
+
     if (value && value !== groupBy) {
-      console.log('Setting new groupBy:', value);
       setGroupBy(value);
     }
   }, [groupBy]);

@@ -65,10 +65,13 @@ const isInDateRange = (appointmentDate, dateRange) => {
   if (!appointmentDate) return false;
   
   const apptDate = new Date(appointmentDate);
-  const start = new Date(dateRange.start);
-  const end = new Date(`${dateRange.end}T23:59:59`);
+  if (Number.isNaN(apptDate.getTime())) return false;
+  const year = apptDate.getFullYear();
+  const month = String(apptDate.getMonth() + 1).padStart(2, '0');
+  const day = String(apptDate.getDate()).padStart(2, '0');
+  const localDateStr = `${year}-${month}-${day}`;
   
-  return !Number.isNaN(apptDate.getTime()) && apptDate >= start && apptDate <= end;
+  return localDateStr >= dateRange.start && localDateStr <= dateRange.end;
 };
 
 const calculateMetrics = (bookings, allBookingsInRange) => {
@@ -155,16 +158,8 @@ const calculateMetrics = (bookings, allBookingsInRange) => {
 // Add this enhanced logging to buildAppointmentSummary in appointmentSummarySlice.js
 
 export const buildAppointmentSummary = (rawBookings = [], dateRange = null, groupBy = 'team-member') => {
-  console.log('Building summary:', { 
-    totalBookings: rawBookings.length, 
-    dateRange, 
-    groupBy 
-  });
-  
   // Filter by date range
   const filteredBookings = rawBookings.filter(b => isInDateRange(b.appointmentDate, dateRange));
-
-  console.log('Filtered bookings:', filteredBookings.length);
 
   if (filteredBookings.length === 0) {
     console.warn('No bookings found in date range');
@@ -243,32 +238,20 @@ export const buildAppointmentSummary = (rawBookings = [], dateRange = null, grou
     }
   });
 
-  console.log('Groups created:', {
-    groupBy,
-    groupNames: Array.from(groups.keys()),
-    groupCount: groups.size
-  });
-
   // Calculate metrics per group
   const summaryRows = Array.from(groups.entries())
     .map(([label, bookings]) => {
-      const metrics = calculateMetrics(bookings, filteredBookings);
-      console.log(`Group "${label}":`, metrics);
-      return {
-        label,
-        type: groupBy,
-        ...metrics
-      };
-    })
+    const metrics = calculateMetrics(bookings, filteredBookings);
+    return {
+      label,
+      type: groupBy,
+      ...metrics
+    };
+  })
     .sort((a, b) => b.appointments - a.appointments);
 
   const result = [totalRow, ...summaryRows];
-  console.log('Final summary:', {
-    totalRows: result.length,
-    firstRow: result[0], 
-    sampleDataRow: result[1]
-  });
-  
+
   return result;
 };
 
@@ -276,21 +259,13 @@ export const fetchAppointmentSummary = createAsyncThunk(
   'appointmentSummary/fetch',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching appointment summary...');
       const response = await ReportsAPI.getAllBookings();
       const bookings = response?.data?.bookings ?? response?.bookings ?? [];
-      console.log('Fetched bookings:', bookings.length);
       if (bookings.length > 0) {
-        console.log('🔍 First Raw Booking:', JSON.stringify(bookings[0], null, 2));
-        if (bookings[0].services && bookings[0].services.length > 0) {
-             console.log('🔍 First Booking Service:', JSON.stringify(bookings[0].services[0], null, 2));
-        }
+        if (bookings[0].services && bookings[0].services.length > 0) {}
       }
       const normalized = bookings.map(normalizeBooking);
-      if (normalized.length > 0) {
-        console.log('🔍 First Normalized Booking:', JSON.stringify(normalized[0], null, 2));
-      }
-      console.log('Normalized bookings:', normalized.length);
+      if (normalized.length > 0) {}
       return normalized;
     } catch (error) {
       console.error('Error fetching appointments:', error);

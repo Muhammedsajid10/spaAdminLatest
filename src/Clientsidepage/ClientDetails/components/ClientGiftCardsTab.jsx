@@ -3,9 +3,6 @@ import { Gift } from 'lucide-react';
 import './ClientGiftCardsTab.css';
 
 const ClientGiftCardsTab = ({ client, giftCards = [] }) => {
-  console.log('🎁 GiftCards Tab - received giftCards:', giftCards);
-  console.log('🎁 GiftCards Tab - length:', giftCards?.length);
-  
   const formattedGiftCards = useMemo(() => {
     const formatted = giftCards.map(card => ({
       id: card._id,
@@ -20,7 +17,6 @@ const ClientGiftCardsTab = ({ client, giftCards = [] }) => {
         ? new Date(card.expiryDate).toLocaleDateString('en-GB')
         : ''
     }));
-    console.log('📋 Formatted gift cards:', formatted);
     return formatted;
   }, [giftCards]);
 

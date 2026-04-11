@@ -93,18 +93,6 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
       const allBookings = bookingsResponse.data.data.bookings || [];
       const employees = employeesResponse.data.data.employees || [];
 
-      console.log('📊 CALENDAR DATA RECEIVED:', {
-        totalBookings: allBookings.length,
-        totalEmployees: employees.length,
-        dateRange: `${startDateParam} to ${endDateParam}`,
-        sampleBooking: allBookings[0] ? {
-          id: allBookings[0]._id,
-          date: allBookings[0].appointmentDate,
-          client: allBookings[0].client,
-          services: allBookings[0].services?.length
-        } : 'No bookings'
-      });
-
       if (servicesResponse.data && servicesResponse.data.success) {
         // services are not currently stored in Redux in this minimal refactor
       }
@@ -170,14 +158,8 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
 
           if (!employeeId) {
             console.warn('❌ Could not find employee ID for booking:', booking._id, 'Employee data:', service.employee);
-            console.log('Available employees:', activeEmployees.map(emp => ({
-              id: emp._id,
-              name: `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim()
-            })));
             return;
           }
-
-          console.log('✅ Matched employee:', employeeId, 'for booking:', booking._id);
 
           if (!transformedAppointments[employeeId]) transformedAppointments[employeeId] = {};
 
@@ -284,15 +266,6 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
             timeSlot: timeSlot
           };
         });
-      });
-
-      console.log('✅ TRANSFORMED APPOINTMENTS:', {
-        totalEmployeesWithAppointments: Object.keys(transformedAppointments).length,
-        appointmentsByEmployee: Object.entries(transformedAppointments).map(([empId, slots]) => ({
-          employeeId: empId,
-          appointmentCount: Object.keys(slots).length,
-          sampleSlot: Object.keys(slots)[0]
-        }))
       });
 
       dispatch(setEmployees(transformedEmployees));

@@ -21,13 +21,6 @@ const StaffColumn = ({
   }
 
   const dateKey = localDateKey(currentDate);
-  
-  console.log(`📅 StaffColumn for ${employee.user?.firstName || 'Unknown'}:`, {
-    employeeId: employee._id || employee.id,
-    dateKey,
-    appointments,
-    appointmentKeys: Object.keys(appointments || {})
-  });
 
   const getAppointmentsForDate = () => {
     return Object.entries(appointments)
@@ -118,7 +111,6 @@ const StaffColumn = ({
           {getEmployeeName()}
         </div>
       </div>
-
       {/* Schedule with time slots */}
       <div className="staff-schedule">
         {timeSlots.map((time, index) => (
@@ -147,13 +139,6 @@ const StaffColumn = ({
             60, // timeSlotHeight - matches CSS
             30  // slotInterval
           );
-
-          console.log('📍 Positioning appointment:', {
-            time: apt.startTime || apt.time,
-            top: `${top}px`,
-            height: `${height}px`,
-            service: apt.serviceName
-          });
 
           return (
             <div

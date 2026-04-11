@@ -24,15 +24,19 @@ const arrayFromPayload = (payload) => {
 
 const filterByDateRange = (rows, range) => {
   if (!range?.start || !range?.end) return rows;
-  const start = new Date(range.start);
-  const end = new Date(`${range.end}T23:59:59`);
   return rows.filter((row) => {
     const dateFields = ['date', 'appointmentDate', 'createdAt', 'paymentDate'];
     for (const field of dateFields) {
       if (row[field]) {
         const d = new Date(row[field]);
-        if (!Number.isNaN(d.getTime()) && d >= start && d <= end) {
-          return true;
+        if (!Number.isNaN(d.getTime())) {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const localDateStr = `${year}-${month}-${day}`;
+          if (localDateStr >= range.start && localDateStr <= range.end) {
+            return true;
+          }
         }
       }
     }
@@ -80,33 +84,6 @@ const GenericReportPage = ({
   const setHookGroupBy = hookResult?.setGroupBy;
   const hookRefresh = hookResult?.refresh;
 
-  console.log('GenericReportPage render:', {
-    usingDataHook,
-    hookStatus,
-    hookGroupBy,
-    dataLength: hookData?.length,
-    showTypeFilter,
-    renderTime: new Date().toISOString()
-  });
-
-  console.log('🔍 GenericReportPage dropdown debug:', {
-    hookGroupBy,
-    selectedType,
-    dropdownValue: hookGroupBy ?? selectedType,
-    typeFilterOptions,
-    foundOption: typeFilterOptions?.find(opt => opt.value === (hookGroupBy ?? selectedType))
-  });
-
-  // Additional debugging for dropdown value
-  console.log('🎯 GenericReportPage detailed dropdown state:', {
-    usingDataHook,
-    hookGroupBy,
-    selectedType,
-    finalValue: hookGroupBy ?? selectedType,
-    typeFilterOptions: typeFilterOptions?.map(opt => ({ value: opt.value, label: opt.label })),
-    foundOptionLabel: typeFilterOptions?.find(opt => opt.value === (hookGroupBy ?? selectedType))?.label
-  });
-
   // Fetch data using old method if not using hook
   useEffect(() => {
     if (usingDataHook) return;
@@ -136,12 +113,6 @@ const GenericReportPage = ({
   // Update data when using hook
   useEffect(() => {
     if (!usingDataHook) return;
-
-    console.log('Hook data updated:', {
-      status: hookStatus,
-      dataLength: hookData?.length,
-      groupBy: hookGroupBy
-    });
 
     if (hookStatus === 'loading') {
       setLoading(true);
@@ -184,36 +155,29 @@ const GenericReportPage = ({
   }, [data, search, selectedType, typeFilterKey, typeFilterPredicate, showSearch, usingDataHook]);
 
   const handleTypeChange = useCallback((newValue) => {
-  console.log('🎯 GenericReportPage: Type dropdown changed:', newValue);
-  
-  // Extract string value from dropdown object or use as-is if string
-  const value = typeof newValue === 'string' ? newValue : newValue?.value;
-  console.log('🎯 GenericReportPage: Extracted value:', value);
-  
-  if (setHookGroupBy) {
-    console.log('🎯 GenericReportPage: Calling setHookGroupBy with:', value);
-    setHookGroupBy(value);
-  } else {
-    console.log('🎯 GenericReportPage: Using local selectedType state');
-    setSelectedType(value);
-  }
-}, [setHookGroupBy]);
+    // Extract string value from dropdown object or use as-is if string
+    const value = typeof newValue === 'string' ? newValue : newValue?.value;
+
+    if (setHookGroupBy) {
+      setHookGroupBy(value);
+    } else {
+      setSelectedType(value);
+    }
+  }, [setHookGroupBy]);
 
   // Update first column label dynamically based on groupBy
   const dynamicColumns = useMemo(() => {
     if (!showTypeFilter || !columns.length) return columns;
-    
+
     const currentGroupBy = hookGroupBy ?? selectedType;
-    console.log('Updating column labels for groupBy:', currentGroupBy);
-    
+
     const firstCol = { ...columns[0] };
     const selectedOption = typeFilterOptions.find(opt => opt.value === currentGroupBy);
-    
+
     if (selectedOption) {
       firstCol.label = selectedOption.label;
-      console.log('Updated first column label to:', selectedOption.label);
     }
-    
+
     return [firstCol, ...columns.slice(1)];
   }, [columns, hookGroupBy, selectedType, typeFilterOptions, showTypeFilter]);
 
@@ -230,8 +194,6 @@ const GenericReportPage = ({
   };
 
   const handleExport = async (format) => {
-    console.log(`Exporting ${filtered.length} rows as ${format}`);
-    
     const result = await exportReport(
       format, 
       filtered, 
@@ -239,7 +201,7 @@ const GenericReportPage = ({
       title, 
       title.toLowerCase().replace(/\s+/g, '_')
     );
-    
+
     if (!result.success) {
       Swal.fire({
         icon: 'error',
@@ -270,11 +232,6 @@ const GenericReportPage = ({
           value={(() => {
             const currentValue = hookGroupBy ?? selectedType;
             const foundOption = typeFilterOptions.find(opt => opt.value === currentValue);
-            console.log('🎪 DropDown value calculation:', {
-              currentValue,
-              foundOption,
-              typeFilterOptions: typeFilterOptions?.map(opt => ({ value: opt.value, label: opt.label }))
-            });
             return foundOption;
           })()}
           onChange={handleTypeChange}

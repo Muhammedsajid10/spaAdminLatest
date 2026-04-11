@@ -2,21 +2,15 @@ import React, { useMemo } from 'react';
 import { Info } from 'lucide-react';
 
 const ClientOverviewTab = ({ stats, giftCards, bookings = [] }) => {
-  console.log('🎁 Overview - giftCards prop:', giftCards);
-  console.log('🎁 Overview - giftCards length:', giftCards?.length);
-  console.log('📋 Overview - bookings prop:', bookings);
-  
   // Calculate total gift card balance from remainingValue
   const totalGiftCardBalance = useMemo(() => {
     if (!giftCards || !Array.isArray(giftCards)) {
-      console.log('⚠️ No gift cards or not an array');
       return 0;
     }
     const total = giftCards.reduce((total, card) => {
       const cardValue = parseFloat(card.remainingValue) || 0;
       return total + cardValue;
     }, 0);
-    console.log('💰 Total gift card balance:', total);
     return total;
   }, [giftCards]);
 

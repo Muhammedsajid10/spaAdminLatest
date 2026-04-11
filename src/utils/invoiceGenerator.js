@@ -3,12 +3,12 @@ import autoTable from 'jspdf-autotable';
 
 export const generateInvoicePDF = (transaction) => {
   const doc = new jsPDF();
-  
+
   // --- Header Section ---
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text("Allora Spa & Massage Centre Dubai", 105, 20, { align: "center" });
-  
+
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text("Allora Spa & Massage Centre Dubai, Concord Tower, 1913, Dubai, 00000, Dubai", 105, 26, { align: "center" });
@@ -19,7 +19,7 @@ export const generateInvoicePDF = (transaction) => {
   doc.setFont("helvetica", "bold");
   const invoiceNum = transaction.invoiceNumber || transaction.bookingId || 'N/A';
   doc.text(`Invoice ${invoiceNum}`, 105, 45, { align: "center" });
-  
+
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   const dateStr = transaction.date ? new Date(transaction.date).toLocaleString('en-GB', {
@@ -34,51 +34,31 @@ export const generateInvoicePDF = (transaction) => {
 
   doc.setFont("helvetica", "bold");
   doc.text(transaction.clientName || "Guest", 14, 74);
-  
+
   doc.setFont("helvetica", "normal");
   doc.text(transaction.clientPhone || "", 14, 80);
 
-  // --- Items Table ---
-  // Prepare data for the table
-  console.log('📄 Generating PDF for transaction:', {
-    hasServices: !!transaction.services,
-    servicesLength: transaction.services?.length,
-    employeeName: transaction.employeeName,
-    serviceName: transaction.serviceName,
-    fullTransaction: transaction
-  });
-  
   const items = [];
-  
+
   if (transaction.services && transaction.services.length > 0) {
     // We have full booking services data
     transaction.services.forEach((svc, idx) => {
       const service = svc.service || {};
       const employee = svc.employee || {};
       const serviceName = service.name || transaction.serviceName || "Service";
-      
-      console.log(`🔍 Service ${idx}:`, {
-        service: service,
-        employee: employee,
-        hasFirstName: !!employee.firstName,
-        hasLastName: !!employee.lastName,
-        hasUser: !!employee.user
-      });
-      
+
       // Employee data can be in employee.user (populated) or directly on employee
       const employeeUser = employee.user || employee;
       const employeeName = employeeUser.firstName && employeeUser.lastName
         ? `${employeeUser.firstName} ${employeeUser.lastName}`
         : (employeeUser.firstName || employeeUser.lastName || employee.firstName || employee.lastName || transaction.employeeName || '');
-      
-      console.log(`👤 Employee name result: "${employeeName}"`);
-      
+
       // Get the date for the service booking
       const serviceDate = svc.startTime || transaction.date || transaction.createdAt;
       const formattedDate = serviceDate ? new Date(serviceDate).toLocaleString('en-GB', {
         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       }) : '';
-      
+
       items.push({
         name: serviceName,
         description: `${formattedDate ? formattedDate + ' ' : ''}${employeeName ? 'with ' + employeeName : ''}`.trim(),
@@ -87,13 +67,11 @@ export const generateInvoicePDF = (transaction) => {
       });
     });
   } else {
-    // Fallback to transaction level data
-    console.log('⚠️ No services array, using transaction level data');
     const serviceDate = transaction.date || transaction.createdAt;
     const formattedDate = serviceDate ? new Date(serviceDate).toLocaleString('en-GB', {
       day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
     }) : '';
-    
+
     items.push({
       name: transaction.serviceName || "Service",
       description: `${formattedDate ? formattedDate + ' ' : ''}${transaction.employeeName ? 'with ' + transaction.employeeName : ''}`.trim() || transaction.description || "",
@@ -137,7 +115,7 @@ export const generateInvoicePDF = (transaction) => {
 
   // --- Totals Section ---
   let finalY = doc.lastAutoTable.finalY + 5;
-  
+
   doc.line(14, finalY, 196, finalY);
   finalY += 8;
 
@@ -157,31 +135,31 @@ export const generateInvoicePDF = (transaction) => {
   if (discountAmount > 0) {
     addRow(`Special discount`, `- AED ${discountAmount.toFixed(2)}`);
   }
-  
+
   finalY += 2;
   addRow("Subtotal", `AED ${totalAmount.toFixed(2)}`);
-  
+
   finalY += 4;
   doc.setFontSize(11);
   addRow("Total", `AED ${totalAmount.toFixed(2)}`, true);
-  
+
   finalY += 4;
   doc.line(14, finalY - 8, 196, finalY - 8); // Line above Total
   doc.line(14, finalY, 196, finalY); // Line below Total
-  
+
   finalY += 8;
   doc.setFontSize(10);
   const paymentMethod = transaction.paymentMethod || "Card";
   addRow(paymentMethod, `AED ${totalAmount.toFixed(2)}`);
-  
+
   doc.setFontSize(8);
   doc.setTextColor(100);
   doc.text(dateStr, 105, finalY + 5, { align: "center" });
-  
+
   finalY += 15;
   doc.setDrawColor(200);
   doc.line(14, finalY, 196, finalY);
-  
+
   finalY += 8;
   doc.setFontSize(11);
   doc.setTextColor(0);

@@ -219,7 +219,6 @@ export const StaffColumn = ({
                 finalAmount: block.appointment.totalAmount || block.servicePrice,
                 totalAmount: block.appointment.totalAmount || block.servicePrice
               };
-              console.log('🎯 Day View (StaffColumn) Booking Details with price:', details);
               setSelectedBookingForStatus(details);
               setShowBookingStatusModal(true);
             }}

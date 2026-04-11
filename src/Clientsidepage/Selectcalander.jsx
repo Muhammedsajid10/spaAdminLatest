@@ -136,14 +136,11 @@ const SelectCalendar = () => {
   const setIsAddingAdditionalService = (val) => dispatch({ type: 'bookingSession/setIsAddingAdditionalService', payload: val });
   const addAppointmentToSessionLocal = (apt) => dispatch(addAppointmentToSession(apt));
   const removeAppointmentFromSessionLocal = (id) => {
-    console.log('🗑️ Removing appointment with ID:', id);
-    console.log('Current multipleAppointments:', multipleAppointments.map(a => ({ id: a.id, service: a.service?.name })));
     dispatch(removeAppointmentFromSession(id));
 
     // If this is the last appointment being removed, show the service catalog
     const remainingAppointments = multipleAppointments.filter(apt => apt.id !== id);
     if (remainingAppointments.length === 0) {
-      console.log('📋 Last appointment removed, showing service catalog');
       setShowServiceCatalog(true);
     }
   };
@@ -463,16 +460,6 @@ const SelectCalendar = () => {
 
       if (data && data.data) {
         const booking = data.data.booking || data.data;
-        console.log('✅ Full booking details fetched:', {
-          bookingId: booking._id,
-          servicesCount: booking.services?.length,
-          services: booking.services?.map(s => ({
-            serviceName: s.serviceName,
-            originalPrice: s.originalPrice,
-            customPrice: s.customPrice,
-            priceDiscount: s.priceDiscount
-          }))
-        });
 
         // Update selectedBookingForStatus with enriched data while preserving calendar view fields
         setSelectedBookingForStatus(prev => {
@@ -540,7 +527,6 @@ const SelectCalendar = () => {
   // Fetch full booking details when modal opens
   useEffect(() => {
     if (showBookingStatusModal && selectedBookingForStatus?.bookingId) {
-      console.log('📖 Booking Status Modal opened, fetching full details for:', selectedBookingForStatus.bookingId);
       fetchFullBookingDetails(selectedBookingForStatus.bookingId);
     }
   }, [showBookingStatusModal, fetchFullBookingDetails]);
@@ -598,7 +584,6 @@ const SelectCalendar = () => {
     const dayKey = localDateKey(day || currentDate);
     const slotKey = `${dayKey}_${slotTime}`;
     const existingAppointment = appointments[employeeId]?.[slotKey];
-    console.log('Time slot clicked - Employee:', employeeId, 'Time:', slotTime, 'Day:', day);
 
     // CUTOFF CHECK: Block any booking starting at or after 23:30
     const [hours, minutes] = slotTime.split(':').map(Number);
@@ -606,7 +591,6 @@ const SelectCalendar = () => {
     const cutoffTimeInMinutes = 23 * 60 + 30; // 23:30
 
     if (slotTimeInMinutes >= cutoffTimeInMinutes) {
-      console.log('🚫 Booking blocked - Time slot at', slotTime, 'is past cutoff (23:30)');
       setUnavailableMessage('Bookings cannot start at or after 23:30 to prevent overflow into the next day. Please select an earlier time slot.');
       setShowUnavailablePopup(true);
       return;
@@ -628,7 +612,6 @@ const SelectCalendar = () => {
         price: servicePrice,
         finalAmount: servicePrice
       };
-      console.log('🎯 Day View (handleTimeSlotClick) Booking Details:', appointmentDetails);
       setSelectedBookingForStatus(appointmentDetails);
       setShowBookingStatusModal(true);
       return;
@@ -687,9 +670,6 @@ const SelectCalendar = () => {
   // ... (inside SelectCalendar component)
 
   const handleServiceSelect = (service) => {
-    console.log('🎯 SERVICE SELECTED:', service.name);
-    console.log('isAddingAdditionalService:', isAddingAdditionalService);
-    console.log('Current multipleAppointments count:', multipleAppointments.length);
     setBookingError(null);
 
     // NEW LOGIC: If user clicked a time slot (bookingDefaults set with time), auto-assign professional & chained time without further steps
@@ -785,15 +765,6 @@ const SelectCalendar = () => {
       const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
       const professionalId = professionalToSet.id || professionalToSet._id;
 
-      console.log('🎯 Week view flow: Service selected, professional pre-set:', {
-        professional: professionalToSet.name || professionalToSet.user?.firstName,
-        professionalId: professionalId,
-        service: service.name,
-        serviceId: service._id,
-        date: bookingDate,
-        employeesCount: employees.length
-      });
-
       // Find the actual employee object from employees array (important for helper functions)
       const actualEmployee = employees.find(emp =>
         emp.id === professionalId ||
@@ -801,13 +772,6 @@ const SelectCalendar = () => {
         emp.id === professionalToSet.id ||
         emp._id === professionalToSet._id
       );
-
-      console.log('🔍 Found actual employee:', {
-        found: !!actualEmployee,
-        employeeName: actualEmployee?.name,
-        hasWorkSchedule: !!actualEmployee?.workSchedule,
-        workSchedule: actualEmployee?.workSchedule
-      });
 
       if (!actualEmployee) {
         console.error('❌ Could not find employee in employees array!', {
@@ -829,11 +793,6 @@ const SelectCalendar = () => {
         appointments                          // appointments object
       );
 
-      console.log('✅ Generated time slots for week view booking:', {
-        count: timeSlots.length,
-        samples: timeSlots.slice(0, 3),
-        allSlots: timeSlots
-      });
       setAvailableTimeSlots(timeSlots);
 
       // Now move to step 3 with time slots already populated
@@ -900,13 +859,6 @@ const SelectCalendar = () => {
   };
 
   const handleBookingStatusUpdate = async (newStatus) => {
-    console.log('🔄 Status update initiated:', {
-      newStatus,
-      selectedBooking: selectedBookingForStatus,
-      bookingId: selectedBookingForStatus?.bookingId,
-      serviceEntryId: selectedBookingForStatus?.serviceEntryId
-    });
-
     if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
       setBookingStatusError('Invalid booking selected');
       return;
@@ -929,13 +881,6 @@ const SelectCalendar = () => {
         ? `${Base_url}/bookings/admin/${bookingId}/service/${serviceEntryId}/status`
         : `${Base_url}/bookings/admin/${bookingId}`; // fallback whole booking
 
-      console.log('🚀 API Request:', {
-        endpoint,
-        method: 'PATCH',
-        body: { status: newStatus },
-        hasToken: !!token
-      });
-
       const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: {
@@ -945,14 +890,7 @@ const SelectCalendar = () => {
         body: JSON.stringify({ status: newStatus })
       });
 
-      console.log('📡 API Response:', {
-        status: res.status,
-        statusText: res.statusText,
-        ok: res.ok
-      });
-
       const data = await res.json();
-      console.log('📄 Response Data:', data);
 
       if (!res.ok || data.success === false) {
         throw new Error(data.message || `Failed to update booking status (HTTP ${res.status})`);
@@ -974,7 +912,6 @@ const SelectCalendar = () => {
       };
 
       const actualBackendStatus = backendStatusMapping[newStatus] || newStatus;
-      console.log('📝 Status mapping:', newStatus, '→', actualBackendStatus);
 
       // Update only this slot locally with the backend status (Redux)
       try {
@@ -994,8 +931,6 @@ const SelectCalendar = () => {
         ...prev,
         status: actualBackendStatus
       }));
-
-      console.log('✅ Status update successful');
 
       // Close modal and refresh calendar after a brief delay to show the update
       setTimeout(() => {
@@ -1121,8 +1056,6 @@ const SelectCalendar = () => {
 
   // Month view day click handler for booking
   const handleMonthDayClick = (selectedDay) => {
-    console.log('🗓️ Month day clicked:', selectedDay.toLocaleDateString());
-
     // Store the selected day for booking
     setSelectedBookingDate(selectedDay);
 
@@ -1136,8 +1069,6 @@ const SelectCalendar = () => {
     // Open the booking modal
     setShowAddBookingModal(true);
     setShowServiceCatalog(true);
-
-    console.log('📅 Booking modal opened for date:', selectedDay.toLocaleDateString());
   };
 
   const goToToday = () => {
@@ -1429,7 +1360,6 @@ const SelectCalendar = () => {
 
 
   const filterOutBookedTimeSlots = (timeSlots, employeeId, date) => {
-    console.log('[DEBUG] filterOutBookedTimeSlots: employeeId', employeeId, 'appointments keys', Object.keys(appointments[employeeId] || {}));
     const dayKey = localDateKey(date);
     const employeeAppointments = appointments[employeeId] || {};
 
@@ -1480,8 +1410,6 @@ const SelectCalendar = () => {
       }
     });
 
-    // Now filter slots by overlap with any appointment ranges
-    console.log('[DEBUG] appointmentRanges', appointmentRanges);
     return timeSlots.filter(slot => {
       const slotStartTime = new Date(slot.startTime);
       const slotEndTime = new Date(slot.endTime);
@@ -1496,13 +1424,6 @@ const SelectCalendar = () => {
   };
 
   const fetchBookingTimeSlots = useCallback(async (employeeId, serviceId, date) => {
-    console.log('[DEBUG] fetchBookingTimeSlots: employeeId', employeeId);
-    console.log('[DEBUG] appointments keys', Object.keys(appointments[employeeId] || {}));
-    console.log('=== ENHANCED TIME SLOT FETCHING ===');
-    console.log('Employee ID:', employeeId);
-    console.log('Service ID:', serviceId);
-    console.log('Date:', date?.toDateString());
-
     setBookingLoading(true);
     setBookingError(null);
 
@@ -1534,9 +1455,6 @@ const SelectCalendar = () => {
       const service = availableServices.find(s => s._id === serviceId);
       const serviceDuration = service?.duration || 30;
 
-      console.log('📋 Employee shift hours:', shiftHours);
-      console.log('⏱️ Service duration:', serviceDuration);
-
       // Generate slots ONLY from employee's actual shift hours
       const shiftBasedSlots = generateTimeSlotsFromEmployeeShift(employee, date, serviceDuration, 30);
 
@@ -1546,8 +1464,6 @@ const SelectCalendar = () => {
         setBookingLoading(false);
         return;
       }
-
-      console.log('🔧 Generated shift-based slots:', shiftBasedSlots.length);
 
       // Filter out already booked time slots AND accumulated bookings from current session
       let availableSlots = filterOutBookedTimeSlots(shiftBasedSlots, employeeId, date);
@@ -1562,14 +1478,7 @@ const SelectCalendar = () => {
           const slotTime = `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
           return !isTimeSlotConflicting(slotTime, serviceDuration, employeeAccumulatedBookings);
         });
-        console.log('🚫 Filtered out accumulated bookings, remaining slots:', availableSlots.length);
       }
-
-      console.log('✅ Available slots after filtering:', availableSlots.length);
-      console.log('📅 Sample available times:', availableSlots.slice(0, 5).map(slot => {
-        const dt = new Date(slot.startTime);
-        return `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
-      }));
 
       if (availableSlots.length === 0) {
         setBookingError(`All time slots are already booked for ${employee.name} on ${date.toLocaleDateString()}. Please select a different date or professional.`);
@@ -1578,48 +1487,37 @@ const SelectCalendar = () => {
         setAvailableTimeSlots(availableSlots);
         setBookingError(null);
       }
-
     } catch (err) {
       console.error('Error in fetchBookingTimeSlots:', err);
       setBookingError(`Failed to fetch time slots: ${err.message}`);
       setAvailableTimeSlots([]);
     } finally {
       setBookingLoading(false);
-      console.log('=== TIME SLOT FETCHING COMPLETE ===');
     }
   }, [employees, availableServices, appointments, multipleAppointments]);
 
   // NEW: Function to get available professionals for a specific time slot
   const getAvailableProfessionalsForTimeSlot = useCallback((serviceId, timeSlot, date, currentProfessionalId = null) => {
     try {
-      console.log('🔍 Getting available professionals for:', { serviceId, timeSlot, date, currentProfessionalId });
-
       const service = availableServices.find(s => s._id === serviceId);
       const serviceDuration = service?.duration || 30;
-
-      console.log('📋 Service found:', service?.name, 'Duration:', serviceDuration);
 
       // Get all ACTIVE employees who have a shift on this date
       const employeesWithShift = employees.filter(emp => {
         // Check 1: Employee must be active
         const isActive = emp.isActive !== false;
         if (!isActive) {
-          console.log(`❌ ${emp.name} is not active`);
           return false;
         }
 
         // Check 2: Employee must have shift on this date
         const hasShift = hasShiftOnDate(emp, date);
         if (!hasShift) {
-          console.log(`❌ ${emp.name} has no shift on ${date.toDateString()}`);
           return false;
         }
 
-        console.log(`✅ ${emp.name} is active and has shift on ${date.toDateString()}`);
         return true;
       });
-
-      console.log('👥 Employees with shift on date:', employeesWithShift.length);
 
       // Filter to only those who don't have conflicts at this specific time slot
       const availableProfessionals = employeesWithShift.filter(emp => {
@@ -1643,7 +1541,6 @@ const SelectCalendar = () => {
         });
 
         if (hasTimeConflict) {
-          console.log(`❌ ${emp.name} has time conflict at ${timeSlot}`);
           return false;
         }
 
@@ -1661,15 +1558,12 @@ const SelectCalendar = () => {
         });
 
         if (hasSessionConflict) {
-          console.log(`❌ ${emp.name} has session conflict at ${timeSlot}`);
           return false;
         }
 
-        console.log(`✅ ${emp.name} is available at ${timeSlot}`);
         return true;
       });
 
-      console.log('✨ Final available professionals:', availableProfessionals.map(p => p.name));
       return availableProfessionals.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       console.error('Error getting available professionals:', error);
@@ -1694,13 +1588,8 @@ const SelectCalendar = () => {
       });
       const data = await res.json();
 
-      console.log('📋 Clients API response:', data);
-      console.log('📋 Number of clients fetched:', data.data?.clients?.length || 0);
-      console.log('📋 Total clients in database:', data.totalCount || 0);
-
       if (res.ok && data.success) {
         const clients = data.data?.clients || [];
-        console.log('✅ Setting existing clients:', clients.length);
         setExistingClients(clients);
       } else {
         console.error('Failed to fetch clients:', data.message);
@@ -1713,12 +1602,7 @@ const SelectCalendar = () => {
   }, []);
 
   const searchClients = useCallback((query) => {
-    console.log('🔍 Search triggered with query:', query);
-    console.log('🔍 Total existing clients:', existingClients.length);
-
     if (!query.trim()) {
-      // Show all clients when search is empty
-      console.log('🔍 Empty query - showing all clients:', existingClients.length);
       setClientSearchResults(existingClients);
       return;
     }
@@ -1734,8 +1618,6 @@ const SelectCalendar = () => {
         phone.includes(searchTerm);
     });
 
-    console.log('🔍 Filtered results:', filtered.length);
-    console.log('🔍 Sample filtered clients:', filtered.slice(0, 3).map(c => `${c.firstName} ${c.lastName}`));
     setClientSearchResults(filtered);
   }, [existingClients]);
 
@@ -2013,16 +1895,6 @@ const SelectCalendar = () => {
       });
     });
 
-    console.log('📊 Calendar Popup Debug:', {
-      tab: calendarPopupTab,
-      totalAppointments: appointmentsList.length,
-      appointmentStatuses: appointmentsList.map(app => ({
-        client: app.client,
-        status: app.status || 'no-status',
-        time: app.timeSlot
-      }))
-    });
-
     // 🔧 FIXED: Improved status filtering with proper mapping
     const filtered = appointmentsList.filter(app => {
       const status = (app.status || 'confirmed').toLowerCase();
@@ -2045,7 +1917,6 @@ const SelectCalendar = () => {
       return true; // Default: show all
     });
 
-    console.log(`📋 Filtered ${filtered.length} appointments for "${calendarPopupTab}" tab`);
     return filtered;
   };
 
@@ -2206,16 +2077,7 @@ const SelectCalendar = () => {
       return false;
     }
 
-    console.log('Adding appointment to session with date:', {
-      originalBookingDate: bookingDate,
-      bookingDateType: typeof bookingDate,
-      isDateObject: bookingDate instanceof Date,
-      finalAppointmentDate: appointmentDate,
-      formatDateLocalResult: bookingDate instanceof Date ? formatDateLocal(bookingDate) : 'N/A'
-    });
-    console.log('Full appointment:', appointment);
     const newAppointment = addAppointmentToSessionLocal(appointment);
-    console.log('New appointment added:', newAppointment);
 
     // Store current selections and appointment ID before clearing (for back navigation)
     setLastSelectedService(selectedService);
@@ -2238,8 +2100,6 @@ const SelectCalendar = () => {
 
   // Membership integration handlers
   const handleMembershipApplied = (membership, matchingService) => {
-    console.log('🎯 Admin applying membership:', membership, 'for service:', matchingService);
-
     setAppliedMembership(membership);
     setMembershipDiscountAmount(matchingService.price || 0);
 
@@ -2253,8 +2113,6 @@ const SelectCalendar = () => {
   };
 
   const handleMembershipRemoved = () => {
-    console.log('❌ Admin removing applied membership');
-
     setAppliedMembership(null);
     setMembershipDiscountAmount(0);
 
@@ -2345,17 +2203,8 @@ const SelectCalendar = () => {
       const availableValue = calculateGiftCardValue(selectedGiftCard);
       giftCardDiscount = Math.min(total - discountFromMembership, availableValue);
 
-      console.log('💰 calculateTotalWithGiftCard:', {
-        total,
-        discountFromMembership,
-        availableValue,
-        giftCardDiscount,
-        currentAppliedAmount: giftCardAppliedAmount
-      });
-
       // Update the applied amount for display if it changed
       if (giftCardAppliedAmount !== giftCardDiscount) {
-        console.log('🔄 Updating giftCardAppliedAmount from', giftCardAppliedAmount, 'to', giftCardDiscount);
         setGiftCardAppliedAmount(giftCardDiscount);
       }
     }
@@ -2370,7 +2219,6 @@ const SelectCalendar = () => {
 
   // Gift Card Selection Handlers
   const handleGiftCardSelect = (giftCard) => {
-    console.log('🎁 Selected gift card:', giftCard);
     setSelectedGiftCard(giftCard);
 
     // Auto-calculate the maximum redeemable amount
@@ -2380,12 +2228,9 @@ const SelectCalendar = () => {
 
     setRedeemGiftCardAmount(maxRedeemable);
     setGiftCardAppliedAmount(maxRedeemable);
-
-    console.log('Auto-applied gift card amount:', maxRedeemable);
   };
 
   const handleGiftCardRemove = () => {
-    console.log('❌ Removing applied gift card');
     setSelectedGiftCard(null);
     setRedeemGiftCardAmount(0);
     setGiftCardAppliedAmount(0);
@@ -2559,10 +2404,6 @@ const SelectCalendar = () => {
           throw new Error('Failed to create valid dates');
         }
 
-        console.log(`📅 Booking: ${apt.service.name} on ${dateStr} at ${timeStr}`);
-        console.log(`🕐 Created UTC datetime: ${appointmentDateTime.toISOString()}`);
-        console.log(`✅ Time will display correctly as: ${timeStr}`);
-
         // Get the price for this appointment (edited or original)
         const editedPrice = editedServicePrices[apt.id];
         const finalPrice = editedPrice !== undefined ? editedPrice : apt.service.price;
@@ -2598,28 +2439,8 @@ const SelectCalendar = () => {
       let finalAmount = paymentCalculation.remainingAmount;
       const paymentDetails = {};
 
-      console.log('💳 Payment Calculation:', {
-        originalTotalAmount,
-        customTotalDiscount,
-        totalAmount,
-        membershipDiscount: paymentCalculation.membershipDiscount,
-        giftCardDiscount: paymentCalculation.giftCardDiscount,
-        finalAmount,
-        selectedGiftCard: selectedGiftCard ? {
-          id: selectedGiftCard._id || selectedGiftCard.id,
-          code: selectedGiftCard.code || selectedGiftCard.giftCardCode,
-          availableValue: calculateGiftCardValue(selectedGiftCard)
-        } : null
-      });
-
       // Apply admin membership discount first
       if (appliedMembership && membershipDiscountAmount > 0) {
-        console.log(' Applying admin membership discount:', {
-          membership: appliedMembership.name,
-          discount: membershipDiscountAmount,
-          originalAmount: totalAmount
-        });
-
         paymentDetails.adminMembership = {
           membershipId: appliedMembership._id,
           discountAmount: membershipDiscountAmount,
@@ -2639,25 +2460,8 @@ const SelectCalendar = () => {
         const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
         const actualRedeemAmount = Math.min(availableValue, amountAfterMembership);
 
-        console.log('🎁 Gift Card Application Check:', {
-          giftCardId,
-          giftCardCode,
-          availableValue,
-          totalAmount,
-          membershipDiscountAmount,
-          amountAfterMembership,
-          actualRedeemAmount,
-          willApply: actualRedeemAmount > 0
-        });
-
         // Only apply if there's actually an amount to redeem
         if (actualRedeemAmount > 0) {
-          console.log('✅ Applying gift card to booking:', {
-            id: giftCardId,
-            code: giftCardCode,
-            redeemAmount: actualRedeemAmount
-          });
-
           paymentDetails.giftCard = {
             giftCardId: giftCardId,
             code: giftCardCode,
@@ -2666,18 +2470,8 @@ const SelectCalendar = () => {
 
           // Update finalAmount to reflect gift card redemption
           finalAmount = Math.max(0, amountAfterMembership - actualRedeemAmount);
-
-          console.log('💰 Updated finalAmount after gift card:', finalAmount);
-        } else {
-          console.log('⚠️ Gift card selected but no amount to redeem:', {
-            availableValue,
-            totalAmount,
-            membershipDiscount: membershipDiscountAmount
-          });
-        }
-      } else {
-        console.log('⚠️ No gift card selected');
-      }
+        } else {}
+      } else {}
 
       // Normalize payment methods to backend-accepted enums and attach details
       // Backend expects values like: 'cash', 'card', 'online', 'giftcard' (common)
@@ -2722,14 +2516,6 @@ const SelectCalendar = () => {
         discountedTotal: customTotalDiscount > 0 ? totalAmount : undefined // Total after custom discount, before other discounts
       };
 
-      console.log('📦 Multiple appointments booking payload:', JSON.stringify(bookingPayload, null, 2));
-      console.log('🎁 Gift card in payload:', {
-        giftCardCode: bookingPayload.giftCardCode,
-        paymentMethod: bookingPayload.paymentMethod,
-        hasGiftCardInPaymentDetails: !!bookingPayload.paymentDetails?.giftCard,
-        giftCardDetails: bookingPayload.paymentDetails?.giftCard
-      });
-
       const res = await fetch(`${Base_url}/bookings`, {
         method: 'POST',
         headers: {
@@ -2755,8 +2541,6 @@ const SelectCalendar = () => {
 
       setBookingSuccess(` ${multipleAppointments.length} service(s) booked successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
 
-      console.log('✅ Booking created successfully. Preparing to refresh gift cards...');
-
       // Clear the appointments session after successful booking
       setTimeout(() => {
         clearAppointmentSession();
@@ -2769,12 +2553,9 @@ const SelectCalendar = () => {
         setSelectedGiftCard(null);
         setRedeemGiftCardAmount(0);
 
-        console.log('🔄 Triggering gift card refresh after booking...');
-
         // Add additional delay to ensure backend DB has been fully updated
         setTimeout(() => {
           if (selectedExistingClient?._id) {
-            console.log('🎁 Fetching updated gift cards for client:', selectedExistingClient._id);
             loadBenefitsIfNeeded(true);
           }
         }, 500);
@@ -2784,7 +2565,6 @@ const SelectCalendar = () => {
       try {
         const adminMembershipInfo = paymentDetails?.adminMembership;
         if (appliedMembership && adminMembershipInfo && adminMembershipInfo.sessionDeduction) {
-          console.log('Updating local membership usage after booking:', appliedMembership._id);
           // Mutate local appliedMembership safely
           setAppliedMembership(prev => {
             if (!prev) return prev;
@@ -2795,7 +2575,7 @@ const SelectCalendar = () => {
           });
 
           // Update any availableMemberships list we have cached to reflect the deduction
-          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
+          setAvailableMemberships(list => list.map(m => m._id === applciedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
 
           // Also refresh memberships list from server in background to keep authoritative state
           // bump signal to force AdminMembershipChecker to refetch
@@ -2805,15 +2585,12 @@ const SelectCalendar = () => {
         console.warn('Failed to update local membership usage after booking:', e);
       }
 
-      // Refresh calendar data immediately to see the new booking
-      console.log('🔄 Refreshing calendar to show new booking...');
       fetchCalendarData();
 
       // Close modal after a short delay
       setTimeout(() => {
         closeBookingModal();
       }, 3000);
-
     } catch (err) {
       console.error('Booking creation error:', err);
       setBookingError(`Failed to create booking: ${err.message}`);
@@ -2823,7 +2600,6 @@ const SelectCalendar = () => {
   };
 
   const resetBookingForm = (clearSession = true) => {
-    console.log('🔄 RESETTING BOOKING FORM - clearSession:', clearSession);
     setBookingStep(1);
     setSelectedExistingClient(null);
     setSelectedService(null);
@@ -2846,11 +2622,8 @@ const SelectCalendar = () => {
 
     // Only clear appointments session if explicitly requested
     if (clearSession) {
-      console.log('🗑️ CLEARING APPOINTMENTS SESSION');
       clearAppointmentSession();
-    } else {
-      console.log('💾 PRESERVING APPOINTMENTS SESSION - Current appointments:', multipleAppointments.length);
-    }
+    } else {}
 
     // Reset gift card and membership states
     setAvailableGiftCards([]);
@@ -2944,10 +2717,7 @@ const SelectCalendar = () => {
 
   // Debug: Track when existing clients state changes
   useEffect(() => {
-    console.log('📊 Existing clients state updated:', existingClients.length, 'clients');
-    if (existingClients.length > 0) {
-      console.log('📊 Sample clients:', existingClients.slice(0, 3).map(c => `${c.firstName} ${c.lastName}`));
-    }
+    if (existingClients.length > 0) {}
   }, [existingClients]);
 
   // Auto-fetch gift cards useEffect moved after function definition
@@ -2956,7 +2726,6 @@ const SelectCalendar = () => {
   const loadBenefitsIfNeeded = useCallback(async (force = false) => {
     // Only proceed if we have a selected client
     if (!selectedExistingClient?._id && !force) {
-      console.log('No client selected, skipping benefits load');
       return;
     }
 
@@ -2978,8 +2747,6 @@ const SelectCalendar = () => {
       const gcRes = await fetch(`${Base_url}/giftcards/purchased`, { headers });
       const gcData = await gcRes.json();
 
-      console.log('Gift cards API response:', gcData); // Debug log
-
       if (!gcRes.ok) {
         throw new Error('Failed to fetch gift cards');
       }
@@ -2999,22 +2766,9 @@ const SelectCalendar = () => {
         // Only include active or partially used cards that still have value
         const isUsable = ['active', 'partially used'].includes(card.status?.toLowerCase());
 
-        // Debug logging for each card
-        console.log(`🎁 Gift card filter check for ${card.code}:`, {
-          status: card.status,
-          remainingValue: card.remainingValue,
-          isOwner,
-          isRecipient,
-          isExpired,
-          hasValue,
-          isUsable,
-          willInclude: (isOwner || isRecipient) && !isExpired && hasValue && isUsable
-        });
-
         return (isOwner || isRecipient) && !isExpired && hasValue && isUsable;
       });
 
-      console.log('Filtered gift cards:', ownedGiftCards); // Debug log
       setAvailableGiftCards(ownedGiftCards);
 
       // Clear selected gift card if it's no longer valid
@@ -3022,7 +2776,6 @@ const SelectCalendar = () => {
         setSelectedGiftCard(null);
         setGiftCardAppliedAmount(0);
       }
-
     } catch (error) {
       console.error('Error loading gift cards:', error);
       setBenefitsError(error.message);
@@ -3069,15 +2822,8 @@ const SelectCalendar = () => {
 
   // NEW: Auto-populate professionals when on step 2
   useEffect(() => {
-    console.log('🔍 Step 2 useEffect triggered:', {
-      bookingStep,
-      hasService: !!selectedService,
-      professionalsLength: availableProfessionals.length
-    });
-
     if (bookingStep === 2 && selectedService) {
       if (availableProfessionals.length === 0) {
-        console.log('🔄 Step 2 - Fetching professionals for service:', selectedService.name);
         const bookingDate = selectedBookingDate || currentDate;
         let professionals = getAvailableProfessionalsForService(
           selectedService._id,
@@ -3089,33 +2835,18 @@ const SelectCalendar = () => {
 
         // Fallback: use selectedProfessional if available
         if (professionals.length === 0 && selectedProfessional) {
-          console.log('⚠️ Using selectedProfessional as fallback');
           professionals = [selectedProfessional];
         }
 
-        console.log('✅ Auto-populated professionals on step 2:', professionals.length, professionals);
         setAvailableProfessionals(professionals);
-      } else {
-        console.log('ℹ️ Professionals already populated:', availableProfessionals.length);
-      }
-    } else {
-      console.log('⚠️ Step 2 requirements not met');
-    }
+      } else {}
+    } else {}
   }, [bookingStep, selectedService, availableProfessionals.length, selectedProfessional, selectedBookingDate, currentDate, employees, appointments, availableServices]);
 
   // NEW: Auto-populate time slots when on step 3
   useEffect(() => {
-    console.log('🔍 Step 3 useEffect triggered:', {
-      bookingStep,
-      hasService: !!selectedService,
-      hasProfessional: !!selectedProfessional,
-      professionalId: selectedProfessional?.id || selectedProfessional?._id,
-      timeSlotsLength: availableTimeSlots.length
-    });
-
     if (bookingStep === 3 && selectedService && selectedProfessional) {
       if (availableTimeSlots.length === 0) {
-        console.log('🔄 Step 3 - Fetching time slots for professional:', selectedProfessional.name || selectedProfessional.user?.firstName);
         const bookingDate = selectedBookingDate || currentDate;
         const timeSlots = getAvailableTimeSlotsForProfessional(
           selectedProfessional,     // employee object (not ID)
@@ -3124,14 +2855,9 @@ const SelectCalendar = () => {
           appointments             // appointments object
         );
 
-        console.log('✅ Auto-populated time slots on step 3:', timeSlots.length, timeSlots);
         setAvailableTimeSlots(timeSlots);
-      } else {
-        console.log('ℹ️ Time slots already populated:', availableTimeSlots.length);
-      }
-    } else {
-      console.log('⚠️ Step 3 requirements not met');
-    }
+      } else {}
+    } else {}
   }, [bookingStep, selectedService, selectedProfessional, availableTimeSlots.length, selectedBookingDate, currentDate, employees, appointments, availableServices]);
 
   // --- CURRENT TIME LINE LOGIC ---
@@ -3303,7 +3029,6 @@ const SelectCalendar = () => {
                                 price: servicePrice,
                                 finalAmount: servicePrice
                               };
-                              console.log('🎯 Month View Booking Details:', appointmentDetails);
                               setSelectedBookingForStatus(appointmentDetails);
                               setShowBookingStatusModal(true);
                             }
@@ -3391,7 +3116,6 @@ const SelectCalendar = () => {
             </div>
           </div>
         )}
-
         <div className="staff-grid-wrapper">
           {/* Sticky Headers Row - All staff headers in one fixed row */}
           {currentView === 'Day' && (
@@ -3518,7 +3242,6 @@ const SelectCalendar = () => {
                                   style={{ backgroundColor: app.color }}
                                   onClick={(e) => {
                                     e.stopPropagation(); // Prevent event bubbling
-                                    console.log('Week appointment clicked:', app);
 
                                     if (app.timeSlot && app.bookingId) {
                                       // Show booking status for existing appointment
@@ -3536,16 +3259,11 @@ const SelectCalendar = () => {
                                         price: servicePrice,
                                         finalAmount: servicePrice
                                       };
-                                      console.log('🎯 Week View Booking Details:', appointmentDetails);
                                       setSelectedBookingForStatus(appointmentDetails);
                                       setShowBookingStatusModal(true);
                                     } else if (app.timeSlot) {
-                                      // Fallback to regular time slot click
-                                      console.log('Fallback to time slot click');
                                       handleTimeSlotClick(employee.id, app.timeSlot, day);
                                     } else {
-                                      // No time slot info, show general appointment booking
-                                      console.log('No time slot, showing add appointment modal');
                                       const staff = employees.find(emp => emp.id === employee.id);
                                       if (staff) {
                                         setBookingDefaults({
@@ -3590,7 +3308,6 @@ const SelectCalendar = () => {
                                 className="week-add-appointment-btn"
                                 onClick={hasShift ? (e) => {
                                   e.stopPropagation(); // Prevent event bubbling
-                                  console.log('Add appointment clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
 
                                   // Show service selection for this employee and day
                                   const staff = employees.find(emp => emp.id === employee.id);
@@ -3614,11 +3331,6 @@ const SelectCalendar = () => {
                                     setIsNewAppointment(true);
                                     setShowAddBookingModal(true);
                                     setShowServiceCatalog(true); // Show service selection first
-                                    console.log('Opening booking modal with defaults:', {
-                                      professional: staff.name,
-                                      date: day.toLocaleDateString(),
-                                      isDirectEmployeeSelection: true
-                                    });
                                   }
                                 }
                                   : undefined}
@@ -3642,7 +3354,6 @@ const SelectCalendar = () => {
                               className="week-empty-cell clickable-slot"
                               onClick={hasShift ? (e) => {
                                 e.stopPropagation(); // Prevent event bubbling
-                                console.log('Week empty cell clicked for employee:', employee.name, 'on day:', day.toLocaleDateString());
 
                                 // Show service selection for this employee and day
                                 const staff = employees.find(emp => emp.id === employee.id);
@@ -3666,11 +3377,6 @@ const SelectCalendar = () => {
                                   setIsNewAppointment(true);
                                   setShowAddBookingModal(true);
                                   setShowServiceCatalog(true); // Show service selection first
-                                  console.log('Opening booking modal with defaults:', {
-                                    professional: staff.name,
-                                    date: day.toLocaleDateString(),
-                                    isDirectEmployeeSelection: true
-                                  });
                                 }
                               } : undefined}
                               style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
@@ -4149,7 +3855,6 @@ const SelectCalendar = () => {
           </button>
         </div>
       </div>
-
       {/* Main Scrollable Calendar Content */}
       <div className="scheduler-content" ref={schedulerContentRef}>
         {renderCalendarContent()}
@@ -4157,7 +3862,6 @@ const SelectCalendar = () => {
           <span className="current-time-marker">{currentTimeText}</span>
         </div>
       </div>
-
       {/* Modals */}
       {showUnavailablePopup && (
         <div className="service-selection-overlay" onClick={closeBookingModal}>
@@ -4170,7 +3874,6 @@ const SelectCalendar = () => {
           </div>
         </div>
       )}
-
       {/* Booking Status Modal */}
       {showBookingStatusModal && selectedBookingForStatus && (
         <div className="modern-booking-modal">
@@ -4435,7 +4138,6 @@ const SelectCalendar = () => {
           </div>
         </div>
       )}
-
       {showAddBookingModal && (
         <div className="modern-booking-modal">
           <div className="booking-modal-overlay booking-modal-fade-in" onClick={closeBookingModal}>
@@ -4473,17 +4175,16 @@ const SelectCalendar = () => {
               {/* Service Selection Step */}
               {bookingStep === 1 && (currentView !== 'Week' || bookingDefaults?.isDirectTimeSlotSelection || selectedBookingDate) && (
                 <>
-                  {console.log('🎯 RENDERING STEP 1 - Service Selection')}
-                  {console.log('isAddingAdditionalService:', isAddingAdditionalService)}
-                  {console.log('availableServices count:', availableServices.length)}
-                  {console.log('currentAppointmentIndex:', currentAppointmentIndex)}
+                  {}
+                  {}
+                  {}
+                  {}
                   <h3 className="services-section-title">Services</h3>
 
                   {/* SERVICE CARDS LIKE DESIGN */}
                   {(bookingDefaults?.professional || multipleAppointments.length > 0) && (
                     <div className="service-cards-stack">
                       {multipleAppointments.map((apt, idx) => {
-                        console.log('🎯 Rendering appointment card:', { id: apt.id, service: apt.service?.name, index: idx });
                         const start = apt.timeSlot;
                         const end = addMinutesToTime(apt.timeSlot, apt.duration);
                         return (
@@ -4674,7 +4375,6 @@ const SelectCalendar = () => {
                         const startTime = slot.startTime;
                         const [hours] = startTime.split(':').map(Number);
                         if (hours >= 23) {
-                          console.log('🚫 Blocking slot at', startTime, '- cutoff is 23:00');
                           return false;
                         }
 
@@ -4682,13 +4382,11 @@ const SelectCalendar = () => {
                       })
                       .map(slot => (
                         <button key={slot.startTime} className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} onClick={() => {
-                          console.log('🕐 TIME SLOT SELECTED:', slot);
                           // Set then immediately add to session (auto-add first service)
                           setSelectedTimeSlot(slot);
                           const added = handleAddToBookingSession(slot);
                           // Move to multi-service management (step 4) after auto-add
                           setBookingStep(4);
-                          console.log('📋 MOVING TO STEP 4 - SERVICES HUB (auto-added:', added, ')');
                         }}>
                           <div className="booking-modal-item-name">
                             {formatUTCToLocal(slot.startTime, { hour: '2-digit', minute: '2-digit', hour12: false })} - {formatUTCToLocal(slot.endTime, { hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -4701,7 +4399,6 @@ const SelectCalendar = () => {
                   </div>
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => {
-                      console.log('⬅️ Going back from step 3 to step 2');
                       // Restore the last selected service
                       if (lastSelectedService) setSelectedService(lastSelectedService);
                       // Clear time slot selection and professionals to force refresh
@@ -4718,7 +4415,7 @@ const SelectCalendar = () => {
               {/* Multiple Services Management Step */}
               {bookingStep === 4 && (
                 <>
-                  {console.log('🎯 RENDERING STEP 4 - Current multipleAppointments:', multipleAppointments)}
+                  {}
 
                   {/* Auto-add now happens on time selection; show hint if user wants to add more */}
                   {(!selectedService || !selectedProfessional || !selectedTimeSlot) && multipleAppointments.length === 0 && (
@@ -4735,7 +4432,7 @@ const SelectCalendar = () => {
                   {multipleAppointments.length > 0 && (
                     <div className="services-session-summary">
                       <h4> Services in Your Booking Session ({multipleAppointments.length})</h4>
-                      {console.log('🎯 RENDERING SERVICES SUMMARY:', multipleAppointments)}
+                      {}
                       <div className="services-list">
                         {multipleAppointments.map((apt, index) => (
                           <div key={apt.id} className="service-session-item">
@@ -4804,10 +4501,8 @@ const SelectCalendar = () => {
 
                   <div className="booking-modal-actions">
                     <button className="booking-modal-back" onClick={() => {
-                      console.log('⬅️ Going back from step 4 to step 3');
                       // Remove the last added appointment from session
                       if (lastAddedAppointmentId) {
-                        console.log('🗑️ Removing last appointment:', lastAddedAppointmentId);
                         removeAppointmentFromSessionLocal(lastAddedAppointmentId);
                         setLastAddedAppointmentId(null);
                       }
@@ -5079,14 +4774,12 @@ const SelectCalendar = () => {
                       // If booking came from grid/calendar time slot (bookingDefaults exists),
                       // skip professional/time selection and go directly back to service selection (step 1)
                       if (bookingDefaults?.professional && bookingDefaults?.time) {
-                        console.log('⬅️ Going back from step 5 to step 1 (grid booking mode)');
                         setBookingStep(1);
                         // DON'T clear booking defaults - keep professional & time info for grid booking flow
                         // setBookingDefaults(null); ❌ Removed - this was causing the flow to forget grid selection
                         // Show service catalog so user can select services
                         setShowServiceCatalog(true);
                       } else {
-                        console.log('⬅️ Going back from step 5 to step 4 (normal booking mode)');
                         setBookingStep(4);
                       }
                     }}>← Back to Services</button>
@@ -5542,16 +5235,12 @@ const SelectCalendar = () => {
           </div>
         </div>
       )}
-
       {/* More Appointments Dropdown */}
       <MoreAppointmentsDropdown visible={showMoreAppointments} appointments={selectedDayAppointments} dayDate={selectedDayDate} position={dropdownPosition} positionedAbove={dropdownPositionedAbove} onClose={closeMoreAppointmentsDropdown} />
-
       {/* Booking Tooltip */}
       {showBookingTooltip && tooltipData && (<BookingTooltip tooltipData={tooltipData} position={tooltipPosition} />)}
-
       {/* Time Hover Tooltip */}
       {showTimeHover && hoverTimeData && (<TimeHoverTooltip hoverTimeData={hoverTimeData} position={hoverTimePosition} />)}
-
       {/* Booking Date Picker Modal */}
       {showBookingDatePicker && (
         <div className="modern-booking-modal">

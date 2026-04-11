@@ -4,129 +4,88 @@ import {
   fetchSalesSummary,
   setFilterBy,
   clearSalesSummary,
-  selectSalesSummaryData,
-  selectSalesSummaryByService,
-  selectSalesSummaryByClient,
-  selectSalesSummaryByTeamMember,
-  selectSalesSummaryServices,
-  selectSalesSummaryClients,
-  selectSalesSummaryTeamMembers,
+  buildSalesSummary,
+  selectSalesSummaryRawBookings,
   selectSalesSummaryLoading,
+  selectSalesSummaryStatus,
   selectSalesSummaryError,
   selectSalesSummaryFilterBy,
   selectSalesSummaryLastFetched
 } from '../slices/salesSummarySlice';
+import { useReportDateRange } from '../../reports/hooks';
 
 export const useSalesSummary = ({ 
-  dateRange = null, 
-  filterBy = null,
   autoFetch = true 
 } = {}) => {
   const dispatch = useDispatch();
+  const [dateRange] = useReportDateRange();
   const [forceUpdate, setForceUpdate] = useState(0);
   
   // Selectors
-  const data = useSelector(selectSalesSummaryData);
-  const byService = useSelector(selectSalesSummaryByService);
-  const byClient = useSelector(selectSalesSummaryByClient);
-  const byTeamMember = useSelector(selectSalesSummaryByTeamMember);
-  const services = useSelector(selectSalesSummaryServices);
-  const clients = useSelector(selectSalesSummaryClients);
-  const teamMembers = useSelector(selectSalesSummaryTeamMembers);
+  const rawBookings = useSelector(selectSalesSummaryRawBookings);
+  const status = useSelector(selectSalesSummaryStatus);
   const loading = useSelector(selectSalesSummaryLoading);
   const error = useSelector(selectSalesSummaryError);
   const currentFilterBy = useSelector(selectSalesSummaryFilterBy);
   const lastFetched = useSelector(selectSalesSummaryLastFetched);
 
-  // Debug logging
-  console.log('🔍 Sales Summary Hook State:', {
-    currentFilterBy,
-    dataLength: data?.length || 0,
-    byServiceLength: byService?.length || 0,
-    byClientLength: byClient?.length || 0,
-    byTeamMemberLength: byTeamMember?.length || 0,
-    loading,
-    error,
-    lastFetched: !!lastFetched
-  });
-
-  console.log('🎪 Sales Summary Hook Return groupBy:', currentFilterBy);
-
   // Fetch data function
-  const fetchData = useCallback(async (options = {}) => {
-    const fetchOptions = {
-      dateRange: options.dateRange || dateRange,
-      filterBy: options.filterBy || filterBy || currentFilterBy || 'service',
-      ...options
-    };
-    
-    console.log('🔄 Sales Summary Hook: Fetching data with options:', fetchOptions);
-    
+  const fetchData = useCallback(async () => {
     try {
-      await dispatch(fetchSalesSummary(fetchOptions)).unwrap();
+      await dispatch(fetchSalesSummary()).unwrap();
     } catch (error) {
       console.error('❌ Sales Summary Hook: Fetch error:', error);
       throw error;
     }
-  }, [dispatch, dateRange, filterBy, currentFilterBy]);
-
-  // Change filter function
-  const changeFilter = useCallback((newFilterBy) => {
-    console.log('🔀 Sales Summary Hook: Changing filter from', currentFilterBy, 'to', newFilterBy);
-    console.log('📊 Available data counts:', {
-      services: byService?.length || 0,
-      clients: byClient?.length || 0,
-      teamMembers: byTeamMember?.length || 0
-    });
-    console.log('🔄 Before dispatch - current data length:', data?.length || 0);
-    dispatch(setFilterBy(newFilterBy));
-    setForceUpdate(prev => prev + 1); // Force re-render
-    console.log('✅ Dispatched setFilterBy with:', newFilterBy);
-  }, [dispatch, currentFilterBy, byService, byClient, byTeamMember, data]);
-
-  // Clear data function
-  const clearData = useCallback(() => {
-    console.log('🧹 Sales Summary Hook: Clearing data');
-    dispatch(clearSalesSummary());
   }, [dispatch]);
 
   // Auto-fetch effect
   useEffect(() => {
-    if (autoFetch && !loading && !lastFetched) {
-      console.log('🚀 Sales Summary Hook: Auto-fetching data on mount');
+    if (autoFetch && status === 'idle') {
       fetchData();
     }
-  }, [autoFetch, loading, lastFetched, fetchData]);
+  }, [autoFetch, status, fetchData]);
 
-  // Filter change effect
-  useEffect(() => {
-    if (filterBy && currentFilterBy !== filterBy && lastFetched) {
-      console.log('🔄 Sales Summary Hook: Filter changed, updating display');
-      changeFilter(filterBy);
+  // Build full summary
+  const summary = useMemo(() => {
+    if (status !== 'succeeded') return null;
+    return buildSalesSummary(rawBookings, dateRange);
+  }, [rawBookings, dateRange, status]);
+
+  // Extract necessary parts from summary
+  const byService = summary?.byService || [];
+  const byClient = summary?.byClient || [];
+  const byTeamMember = summary?.byTeamMember || [];
+  const services = summary?.services || [];
+  const clients = summary?.clients || [];
+  const teamMembers = summary?.teamMembers || [];
+
+  // Pick data based on filterBy
+  const data = useMemo(() => {
+    switch (currentFilterBy) {
+      case 'client': return byClient;
+      case 'team-member': return byTeamMember;
+      case 'service':
+      default: return byService;
     }
-  }, [filterBy, currentFilterBy, changeFilter, lastFetched]);
+  }, [currentFilterBy, byService, byClient, byTeamMember]);
+
+  // Change filter function
+  const changeFilter = useCallback((newFilterBy) => {
+    dispatch(setFilterBy(newFilterBy));
+    setForceUpdate(prev => prev + 1); // Force re-render
+  }, [dispatch, currentFilterBy, byService, byClient, byTeamMember, data]);
+
+  const clearData = useCallback(() => {
+    dispatch(clearSalesSummary());
+  }, [dispatch]);
 
   // Debug effect to track currentFilterBy changes
-  useEffect(() => {
-    console.log('🎯 Sales Summary Hook: currentFilterBy changed to:', currentFilterBy);
-    console.log('📋 Current data after filter change:', {
-      length: data?.length || 0,
-      firstItem: data?.[0],
-      filterBy: currentFilterBy
-    });
-  }, [currentFilterBy, data]);
+  useEffect(() => {}, [currentFilterBy, data]);
 
   // Debug effect to track all data arrays
   useEffect(() => {
-    if (lastFetched) {
-      console.log('📊 All data arrays updated:', {
-        services: byService?.length || 0,
-        clients: byClient?.length || 0, 
-        teamMembers: byTeamMember?.length || 0,
-        currentFilter: currentFilterBy,
-        mainDataLength: data?.length || 0
-      });
-    }
+    if (lastFetched) {}
   }, [byService, byClient, byTeamMember, currentFilterBy, data, lastFetched]);
 
   // Memoized filter options for dropdowns
@@ -236,8 +195,7 @@ export const useSalesSummary = ({
     }));
   }, [data]);
 
-  // Status for GenericReportPage compatibility
-  const status = loading ? 'loading' : error ? 'failed' : 'succeeded';
+  const statusVal = loading ? 'loading' : error ? 'failed' : 'succeeded';
 
   return {
     // Data
@@ -253,7 +211,7 @@ export const useSalesSummary = ({
     // State
     loading,
     error,
-    status, // Added for GenericReportPage compatibility
+    status: statusVal, // Added for GenericReportPage compatibility
     filterBy: currentFilterBy,
     lastFetched,
     
@@ -277,14 +235,6 @@ export const useSalesSummary = ({
     // Group by functionality for type filter
     groupBy: currentFilterBy,
     setGroupBy: useCallback((newValue) => {
-      console.log('🎪 Sales Summary Hook: setGroupBy called with:', newValue);
-      console.log('🔄 Current state before change:', { 
-        currentFilterBy, 
-        dataLength: data?.length || 0,
-        byServiceLength: byService?.length || 0,
-        byClientLength: byClient?.length || 0,
-        byTeamMemberLength: byTeamMember?.length || 0
-      });
       changeFilter(newValue);
     }, [changeFilter, currentFilterBy, data, byService, byClient, byTeamMember])
   };

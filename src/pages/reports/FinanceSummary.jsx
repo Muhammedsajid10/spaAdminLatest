@@ -94,8 +94,6 @@ const FinanceSummary = () => {
   };
 
   const handleExport = async (format) => {
-    console.log(`Exporting Finance Summary as ${format}`);
-    
     const result = await exportFinanceReport(
       format,
       financeData,
@@ -103,7 +101,7 @@ const FinanceSummary = () => {
       tableStructure,
       'finance_summary'
     );
-    
+
     if (!result.success) {
       Swal.fire({
         icon: 'error',

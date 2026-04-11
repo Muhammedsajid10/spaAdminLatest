@@ -89,7 +89,6 @@ const Graphs = () => {
       // Check if cache is still valid
       if (cacheRef.current.salesData && cacheRef.current.appointmentData &&
         (now - cacheRef.current.cachedAt) < CACHE_DURATION) {
-        console.log('📦 Using cached graphs data');
         setSalesData(cacheRef.current.salesData);
         setAppointmentData(cacheRef.current.appointmentData);
         setLoading(false);
@@ -221,12 +220,6 @@ const Graphs = () => {
 
         setLoading(false);
       } catch (err) {
-        console.log("❌ Backend API failed for graphs");
-        console.log(
-          "Error details:",
-          err.response?.status,
-          err.response?.data?.message || err.message
-        );
         setError("Could not load sales/appointments analytics. Please try again.");
         setSalesData({
           totalRevenue: 0,
@@ -325,22 +318,16 @@ const UpcomingAppointmentsGraph = () => {
         // Fetch all appointments
         const response = await api.get(`/bookings/admin/all?limit=10000`);
         const bookings = response.data?.data?.bookings || [];
-        
+
         // Get today's date at start of day
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        
+
         // Get date 7 days from now (end of the 7th day)
         const next7DaysEnd = new Date(today);
         next7DaysEnd.setDate(today.getDate() + 7);
         next7DaysEnd.setHours(23, 59, 59, 999);
-        
-        console.log('📅 Filtering appointments for next 7 days:', {
-          today: today.toISOString(),
-          next7DaysEnd: next7DaysEnd.toISOString(),
-          totalBookings: bookings.length
-        });
-        
+
         // Filter and format bookings for next 7 days (including today)
         const upcomingBookings = bookings
           .filter(b => {
@@ -357,9 +344,7 @@ const UpcomingAppointmentsGraph = () => {
               month: "short"
             })
           }));
-        
-        console.log('✅ Filtered upcoming appointments:', upcomingBookings.length);
-        
+
         setAppointments(upcomingBookings);
         setLoading(false);
       } catch (err) {
@@ -521,12 +506,6 @@ const AppointmentsRedesign = () => {
         );
         setLoading(false);
       } catch (err) {
-        console.log("❌ Appointments API failed");
-        console.log(
-          "Error details:",
-          err.response?.status,
-          err.response?.data?.message || err.message
-        );
         setError("Could not load appointments. Please try again.");
         setAppointments([]); // no mock
         setLoading(false);
@@ -781,7 +760,7 @@ const TopStats = () => {
         const bookingRes = await api.get("/admin/analytics/bookings");
         const employeeRes = await api.get("/admin/analytics/employees");
         const allEmployeesRes = await api.get("/employees?limit=10000");
-        
+
         // Get all bookings to calculate monthly revenue per employee
         const allBookingsRes = await api.get("/bookings/admin/all?limit=10000");
         const allBookings = allBookingsRes.data?.data?.bookings || [];
@@ -800,20 +779,15 @@ const TopStats = () => {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth(); // 0-11
-        
+
         const thisMonthStart = new Date(currentYear, currentMonth, 1);
         const thisMonthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
         const lastMonthStart = new Date(currentYear, currentMonth - 1, 1);
         const lastMonthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59);
-        
-        console.log('📅 Date ranges:', {
-          thisMonth: `${thisMonthStart.toISOString()} - ${thisMonthEnd.toISOString()}`,
-          lastMonth: `${lastMonthStart.toISOString()} - ${lastMonthEnd.toISOString()}`
-        });
 
         // Prepare top team members - show ALL employees with their monthly performance
         const allEmployees = allEmployeesRes.data?.data?.employees || [];
-        
+
         const allEmployeesWithPerformance = allEmployees.map(emp => {
           const empId = emp._id.toString();
           
@@ -827,47 +801,31 @@ const TopStats = () => {
                      booking.services?.some(s => s.employee?._id?.toString() === empId || s.employee?.toString() === empId);
             })
             .reduce((sum, booking) => {
-              const employeeServices = booking.services.filter(s => 
-                s.employee?._id?.toString() === empId || s.employee?.toString() === empId
-              );
-              
-              console.log('💰 Revenue Calculation Debug:', {
-                bookingId: booking._id || booking.bookingNumber,
-                totalAmount: booking.totalAmount,
-                finalAmount: booking.finalAmount,
-                discountAmount: booking.discountAmount,
-                discountedTotal: booking.discountedTotal,
-                customDiscount: booking.customDiscount,
-                calculatedDiscount: booking.totalAmount - booking.finalAmount,
-                employeeServicesCount: employeeServices.length,
-                totalServicesInBooking: booking.services.length
-              });
-              
-              // Calculate the actual revenue for this booking
-              if (employeeServices.length > 0) {
-                let finalBookingAmount;
-                
-                // Use finalAmount directly as it should contain the actual amount paid
-                // If finalAmount is less than totalAmount, it means there was a discount
-                if (booking.finalAmount !== undefined) {
-                  finalBookingAmount = booking.finalAmount;
-                  console.log('✅ Using finalAmount (actual amount paid):', finalBookingAmount);
-                } else {
-                  // Fallback to original prices
-                  console.log('ℹ️ No finalAmount, using original service prices');
-                  return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
-                }
-                
-                // Distribute the final amount proportionally among employee's services
-                const totalServicesInBooking = booking.services.length;
-                const employeeServicesCount = employeeServices.length;
-                const employeeShare = (finalBookingAmount / totalServicesInBooking) * employeeServicesCount;
-                console.log('💵 Employee share:', employeeShare);
-                return sum + employeeShare;
+            const employeeServices = booking.services.filter(s => 
+              s.employee?._id?.toString() === empId || s.employee?.toString() === empId
+            );
+
+            // Calculate the actual revenue for this booking
+            if (employeeServices.length > 0) {
+              let finalBookingAmount;
+
+              // Use finalAmount directly as it should contain the actual amount paid
+              // If finalAmount is less than totalAmount, it means there was a discount
+              if (booking.finalAmount !== undefined) {
+                finalBookingAmount = booking.finalAmount;
+              } else {
+                return sum + employeeServices.reduce((svcSum, svc) => svcSum + (svc.price || 0), 0);
               }
-              
-              return sum;
-            }, 0);
+
+              // Distribute the final amount proportionally among employee's services
+              const totalServicesInBooking = booking.services.length;
+              const employeeServicesCount = employeeServices.length;
+              const employeeShare = (finalBookingAmount / totalServicesInBooking) * employeeServicesCount;
+              return sum + employeeShare;
+            }
+
+            return sum;
+          }, 0);
           
           // Calculate last month's revenue
           const lastMonthRevenue = allBookings
@@ -902,12 +860,12 @@ const TopStats = () => {
             lastMonthRevenue
           };
         });
-        
+
         // Sort by this month's revenue descending
         const sortedEmployees = allEmployeesWithPerformance.sort(
           (a, b) => (b.thisMonthRevenue || 0) - (a.thisMonthRevenue || 0)
         );
-        
+
         setTopTeamMembers(
           sortedEmployees.map((e) => ({
             name: e.employeeName,
@@ -915,17 +873,9 @@ const TopStats = () => {
             lastMonth: `AED ${(e.lastMonthRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
           }))
         );
-        
-        console.log('✅ Top Team Members Set:', sortedEmployees.length);
 
         setLoading(false);
       } catch (err) {
-        console.log("❌ Stats API failed");
-        console.log(
-          "Error details:",
-          err.response?.status,
-          err.response?.data?.message || err.message
-        );
         setError("Could not load top services/team stats.");
         setTopServices([]);
         setTopTeamMembers([]);

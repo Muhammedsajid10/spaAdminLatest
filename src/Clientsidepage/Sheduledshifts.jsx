@@ -354,7 +354,6 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
       });
 
       setWeeklySchedule(mergedSchedule);
-      console.log('Initialized schedule for employee:', employee.name, mergedSchedule);
     }
   }, [employee]);
 
@@ -419,9 +418,7 @@ const EmployeeEditModal = ({ isOpen, onClose, employee, onSave }) => {
     setError(null);
 
     try {
-      console.log('Saving schedule for employee:', employee.id, weeklySchedule);
       await onSave(employee.id, weeklySchedule);
-      console.log('Schedule saved successfully');
       onClose();
     } catch (err) {
       console.error('Error saving schedule:', err);
@@ -1044,8 +1041,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         const targetDate = dateParam || currentDate;
         const weekStartDate = formatDateForAPI(getWeekStartDate(targetDate));
 
-        console.log(`📅 Fetching employees for week starting: ${weekStartDate} (silent=${silent})`);
-
         const response = await fetch(`${Base_url}/employees?weekStartDate=${weekStartDate}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1061,15 +1056,10 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         const data = await response.json();
         const employees = data.data.employees || [];
 
-        console.log('📋 Raw employee data from backend:', employees);
-
         // Only include employees who are active (top-level emp.isActive boolean)
         const activeEmployees = employees.filter(emp => emp.isActive !== false);
-        console.log(`🔄 Processing ${activeEmployees.length} active employees out of ${employees.length} fetched`);
 
         const transformedMembers = activeEmployees.map(emp => {
-          console.log('🔄 Processing employee:', emp.user?.firstName, 'workSchedule:', emp.workSchedule);
-
           return {
             id: emp._id,
             name: emp.user?.firstName && emp.user?.lastName
@@ -1161,21 +1151,15 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       const dayName = getDayName(day);
       const schedule = member.workSchedule[dayName];
 
-      console.log(`Shift click for ${member.name} on ${dayName}:`, schedule); // Debug log
-
       // Get current shift - prioritize the full shifts string if available
       let currentShift = '';
       if (schedule && schedule.isWorking) {
         if (schedule.shifts) {
           currentShift = schedule.shifts; // Multiple shifts format
-          console.log('Using shifts field:', currentShift); // Debug log
         } else if (schedule.startTime && schedule.endTime) {
           currentShift = `${schedule.startTime} - ${schedule.endTime}`; // Single shift fallback
-          console.log('Using startTime/endTime fallback:', currentShift); // Debug log
         }
       }
-
-      console.log('Final currentShift value:', currentShift); // Debug log
 
       setEditingShift({
         memberId,
@@ -1188,8 +1172,8 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         dayName
       });
       setShiftEditorError(null); // Clear any previous error in editor
-  setShowShiftEditor(true);
-  // Removed immediate fetch here to prevent overwriting soon-to-be edited local state.
+      setShowShiftEditor(true);
+      // Removed immediate fetch here to prevent overwriting soon-to-be edited local state.
     }, [teamMembers]); // Dependency on teamMembers to ensure it's always up-to-date
 
     const handleSaveShift = async (modalShifts) => {
@@ -1273,12 +1257,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
           }
         } : m));
 
-        console.log('📤 Sending PATCH request to backend:');
-        console.log(`  URL: ${Base_url}/employees/${editingShift.memberId}`);
-        console.log(`  Method: PATCH`);
-        console.log(`  Headers: Authorization: Bearer ${token ? '[TOKEN PRESENT]' : '[NO TOKEN]'}`);
-        console.log(`  Body:`, JSON.stringify(updateData, null, 2));
-
         const response = await fetch(`${Base_url}/employees/${editingShift.memberId}`, {
           method: 'PATCH',
           headers: {
@@ -1287,10 +1265,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
           },
           body: JSON.stringify(updateData)
         });
-
-        console.log('📥 PATCH Response received:');
-        console.log(`  Status: ${response.status} ${response.statusText}`);
-        console.log(`  OK: ${response.ok}`);
 
         if (!response.ok) {
           // rollback optimistic change
@@ -1301,57 +1275,48 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         }
 
         const responseData = await response.json();
-        console.log('✅ PATCH Success Response:', responseData);
 
         // Log the saved employee data from backend response
         if (responseData.data && responseData.data.employee) {
           const savedEmployee = responseData.data.employee;
-          console.log('💾 Backend saved employee data:');
-          console.log(`  Employee ID: ${savedEmployee._id}`);
-          console.log(`  Work Schedule:`, savedEmployee.workSchedule);
-          console.log(`  ${editingShift.dayName} schedule:`, savedEmployee.workSchedule[editingShift.dayName]);
-          console.log(`  Shifts field in backend:`, savedEmployee.workSchedule[editingShift.dayName]?.shifts);
         }
 
-              // Prefer using backend returned employee to keep data consistent with server
-  if (responseData.data && responseData.data.employee) {
-          const savedEmployee = responseData.data.employee;
-          setTeamMembers(prev => prev.map(m => m.id === (savedEmployee._id || savedEmployee.id) ? {
-            ...m,
-            // merge fresh workSchedule returned by backend (preserve other fields)
-            workSchedule: savedEmployee.workSchedule || m.workSchedule
-          } : m));
-        } else {
-          // fallback to local update if backend didn't return employee object
-          setTeamMembers(prevMembers => prevMembers.map(member =>
-            member.id === editingShift.memberId
-             ? {
-                ...member,
-                workSchedule: {
-                  ...member.workSchedule,
-                  [editingShift.dayName]: {
-                    ...updateData.workSchedule[editingShift.dayName],
-                    shifts: shiftString,
-                    isWorking: true
-                  }
-                }
+        // Prefer using backend returned employee to keep data consistent with server
+        if (responseData.data && responseData.data.employee) {
+                const savedEmployee = responseData.data.employee;
+                setTeamMembers(prev => prev.map(m => m.id === (savedEmployee._id || savedEmployee.id) ? {
+                  ...m,
+                  // merge fresh workSchedule returned by backend (preserve other fields)
+                  workSchedule: savedEmployee.workSchedule || m.workSchedule
+                } : m));
+              } else {
+                // fallback to local update if backend didn't return employee object
+                setTeamMembers(prevMembers => prevMembers.map(member =>
+                  member.id === editingShift.memberId
+                   ? {
+                      ...member,
+                      workSchedule: {
+                        ...member.workSchedule,
+                        [editingShift.dayName]: {
+                          ...updateData.workSchedule[editingShift.dayName],
+                          shifts: shiftString,
+                          isWorking: true
+                        }
+                      }
+                    }
+                    : member
+            ));
               }
-              : member
-      ));
-        }
 
-         
+
 
         // Close modal immediately since state is updated
         setShowShiftEditor(false);
 
         // Silent refetch to sync with latest server state (user requested fresh data after save)
         setTimeout(() => {
-          console.log('🔄 Performing silent refetch to confirm saved shift...');
           fetchEmployees(currentDate, { silent: true });
         }, 300);
-
-        console.log('🎉 Shift saved successfully! Optimistic UI updated and silent refetch scheduled.');
       } catch (err) {
         console.error('❌ Save shift error:', err);
         setShiftEditorError(err.message); // Set error for modal
@@ -1409,7 +1374,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
               }
               : member
           );
-          console.log('Local state updated after shift delete:', updatedMembers.find(m => m.id === editingShift.memberId)?.workSchedule); // Debug log
           return updatedMembers;
         });
         setShowShiftEditor(false);
@@ -1434,7 +1398,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
     };
 
     const saveEmployeeSchedule = async (employeeId, newSchedule) => {
-      console.log('Updating employee schedule:', employeeId, newSchedule);
       const token = localStorage.getItem('token');
 
       // Enrich each working day with the unified shift fields used elsewhere
@@ -1491,8 +1454,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         throw new Error(errorData.message || 'Failed to update employee schedule');
       }
 
-      console.log('API update successful, updating local state & scheduling silent refetch...');
-
       // Update local state immediately for responsive UI
       setTeamMembers(prevMembers => prevMembers.map(member =>
         member.id === employeeId
@@ -1503,7 +1464,6 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       // Silent refetch to ensure backend persistence (slight delay allows server to finalize write)
       setTimeout(() => {
         if (typeof fetchEmployees === 'function') {
-          console.log('🔄 Silent refetch after regular schedule save');
           fetchEmployees(currentDate, { silent: true });
         }
       }, 300);
@@ -1608,31 +1568,18 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
       const dayName = getDayName(day);
       const schedule = member.workSchedule[dayName];
 
-      console.log(`🔍 getShiftDisplay for ${member.name} on ${dayName}:`, {
-        schedule: schedule,
-        hasShifts: !!schedule?.shifts,
-        shiftsValue: schedule?.shifts,
-        hasMultipleShifts: !!schedule?.multipleShifts,
-        multipleShiftsValue: schedule?.multipleShifts,
-        hasStartEnd: !!(schedule?.startTime && schedule?.endTime),
-        isWorking: schedule?.isWorking
-      });
-
       if (schedule && schedule.isWorking) {
         // Try multiple field names for shifts (in case backend uses different field)
         const shiftsField = schedule.shifts || schedule.multipleShifts || schedule.shiftsData;
 
         if (shiftsField) {
-          console.log(`✅ Found shifts field: "${shiftsField}"`);
           if (typeof shiftsField === 'string') {
             // String format: "09:00 - 13:00, 14:00 - 18:00" => ["09:00 - 13:00", "14:00 - 18:00"]
             const shiftsArray = shiftsField.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            console.log(`📋 Parsed shifts array:`, shiftsArray);
             return shiftsArray;
           } else if (Array.isArray(shiftsField)) {
             // Array format: [{startTime: "09:00", endTime: "13:00"}, ...]
             const shiftsArray = shiftsField.map(shift => `${shift.startTime} - ${shift.endTime}`);
-            console.log(`📋 Converted array to strings:`, shiftsArray);
             return shiftsArray;
           }
         }
@@ -1640,12 +1587,10 @@ const CalendarRangePicker = ({ isOpen, onClose, initialRange = { start: null, en
         // Fallback to single shift
         if (schedule.startTime && schedule.endTime) {
           const fallbackShift = `${schedule.startTime} - ${schedule.endTime}`;
-          console.log(`🔄 Using fallback shift: ${fallbackShift}`);
           return [fallbackShift];
         }
       }
 
-      console.log('❌ No shifts found, returning empty array');
       return [];
     };
 

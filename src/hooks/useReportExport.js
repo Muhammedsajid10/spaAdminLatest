@@ -33,7 +33,6 @@ export const useReportExport = (showToast = false) => {
       );
 
       if (result.success) {
-        console.log(`✅ ${title} export successful:`, result.message);
         toast?.showSuccess?.(`${title} exported successfully as ${format.toUpperCase()}`);
         return { success: true, message: result.message };
       } else {
@@ -68,7 +67,6 @@ export const useReportExport = (showToast = false) => {
       );
 
       if (result.success) {
-        console.log(`✅ Finance Summary export successful:`, result.message);
         toast?.showSuccess?.(`Finance Summary exported successfully as ${format.toUpperCase()}`);
         return { success: true, message: result.message };
       } else {

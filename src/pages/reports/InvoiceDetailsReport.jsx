@@ -52,25 +52,18 @@ const InvoiceDetailsReport = () => {
         const booking = t.booking || {};
         const services = booking.services || [];
         const firstService = services[0] || {};
-        
-        console.log('📊 Processing transaction:', {
-          transactionId: t._id,
-          hasBooking: !!booking,
-          servicesCount: services.length,
-          firstService: firstService
-        });
-        
+
         // Get client details from booking or user
         const client = booking.client || t.user || {};
         const clientName = client.firstName && client.lastName 
           ? `${client.firstName} ${client.lastName}`
           : (client.firstName || client.lastName || t.user?.firstName || 'Walk-in Customer');
         const clientPhone = client.phone || t.user?.phone || '';
-        
+
         // Get service details
         const service = firstService.service || {};
         const serviceName = service.name || 'Service';
-        
+
         // Get employee/professional details
         const employee = firstService.employee || {};
         // Employee data can be in employee.user (populated) or directly on employee
@@ -78,18 +71,10 @@ const InvoiceDetailsReport = () => {
         const employeeName = employeeUser.firstName && employeeUser.lastName
           ? `${employeeUser.firstName} ${employeeUser.lastName}`
           : (employeeUser.firstName || employeeUser.lastName || employee.firstName || employee.lastName || '');
-        
-        console.log('👤 Extracted employee data:', {
-          employee: employee,
-          employeeUser: employeeUser,
-          employeeName: employeeName,
-          hasFirstName: !!employeeUser.firstName,
-          hasLastName: !!employeeUser.lastName
-        });
-        
+
         // Get proper date from booking or transaction
         const transactionDate = booking.appointmentDate || t.createdAt || new Date();
-        
+
         return {
           ...t,
           // Ensure fields map correctly for the report and PDF

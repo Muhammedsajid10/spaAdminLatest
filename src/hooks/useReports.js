@@ -73,10 +73,7 @@ export const useReports = (reportType) => {
     fetchData();
   }, [reportType]);
 
-  const exportData = (format) => {
-    console.log(`Exporting ${reportType} data as ${format}`);
-    // Implement actual export logic here
-  };
+  const exportData = (format) => {};
 
   return { data, loading, error, exportData };
 };

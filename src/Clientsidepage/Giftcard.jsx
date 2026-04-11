@@ -282,20 +282,11 @@ const Giftcards = () => {
       if (selectedTemplate && selectedTemplate.__isLegacyMissingValue) {
         throw new Error('Selected template is missing value/price. Please recreate it.');
       }
-      console.log('🧪 Submitting gift card purchase', {
-        payload,
-        selectedTemplateSimplified: selectedTemplate ? {
-          id: selectedTemplate._id,
-          value: selectedTemplate.value,
-          price: selectedTemplate.price,
-          legacyFlag: selectedTemplate.__isLegacyMissingValue
-        } : null
-      });
       const res = await api.post('/giftcards/purchase', payload);
       const newCard = res.data?.data?.giftCard;
       const emailSent = res.data?.data?.emailSent;
       const recipientEmail = res.data?.data?.recipientEmail;
-      
+
       if (newCard) {
         setGiftCards(prev => {
           const value = newCard.value ?? 0;

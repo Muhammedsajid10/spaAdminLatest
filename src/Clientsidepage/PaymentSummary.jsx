@@ -23,7 +23,6 @@ const PaymentSummary = () => {
   const fetchPaymentData = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching payment data...');
 
       // Get current date for the cash movement summary (required parameter)
       const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
@@ -33,27 +32,17 @@ const PaymentSummary = () => {
 
       // Fetch all payments with pagination
       const paymentsResponse = await api.get(`/payments/admin/all?page=${currentPage}&limit=${paymentsPerPage}`);
-            setCashMovementData(paymentsResponse.data.data || {});
-
-      console.log('✅ Payment data fetched successfully!', {
-        cashMovement: cashMovementResponse.data,
-        payments: paymentsResponse.data
-      });
+      setCashMovementData(paymentsResponse.data.data || {});
 
       setAllPayments(paymentsResponse.data.data?.payments || []);
       setTotalPayments(paymentsResponse.data.total || 0);
 
       setError(null);
     } catch (err) {
-      console.log('❌ Payment API failed, using mock data');
-      if (err.message === 'MOCK_DATA_MODE' || localStorage.getItem('useMockData') === 'true') {
-        console.log('🔧 Mock data mode activated for payments');
-      } else {
-        console.log('Error details:', err.response?.status, err.response?.data?.message || err.message);
-      }
-      
+      if (err.message === 'MOCK_DATA_MODE' || localStorage.getItem('useMockData') === 'true') {} else {}
+
       // Set mock payment data
-   
+
       setTotalPayments(25);
       setError(null); // Don't show error to user, just use mock data
     } finally {

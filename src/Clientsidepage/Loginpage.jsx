@@ -26,9 +26,8 @@ const LoginPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('🔄 Attempting real login with backend...');
         setIsLoading(true);
-        
+
         try {
             const response = await fetch(`${Base_url}/auth/login`, {
                 method: 'POST',
@@ -44,12 +43,10 @@ const LoginPage = () => {
             const data = await response.json();
             
             if (data.success) {
-                console.log('✅ Login successful!');
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.data.user));
                 navigate('/'); // Navigate to root (which is now calendar)
             } else {
-                console.log('❌ Login failed:', data.message);
                 Swal.fire({
                     icon: 'error',
                     title: 'Login Failed',
@@ -58,7 +55,6 @@ const LoginPage = () => {
                 });
             }
         } catch (error) {
-            console.log('❌ Login error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Login Error',

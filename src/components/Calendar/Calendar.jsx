@@ -34,13 +34,7 @@ import api from '../../Service/Api';
  * Orchestrates the entire calendar system
  */
 const Calendar = () => {
-  console.log('🎯 Calendar component START');
-  
   const dispatch = useDispatch();
-  console.log('✅ useDispatch initialized');
-
-  // Custom hooks
-  console.log('🔧 About to call useCalendarState...');
   const {
     currentDate,
     currentView,
@@ -56,10 +50,7 @@ const Calendar = () => {
     setCurrentView,
     goToSpecificDate
   } = useCalendarState();
-  
-  console.log('✅ useCalendarState completed, currentDate:', currentDate);
 
-  console.log('🔧 About to call useBookingFlow...');
   const {
     showBookingModal,
     bookingModalStep,
@@ -87,11 +78,7 @@ const Calendar = () => {
   const toggleWeekCellExpansion = (cellKey) => {
     setExpandedWeekCell(prev => (prev === cellKey ? null : cellKey));
   };
-  
-  console.log('✅ useBookingFlow completed');
 
-  // Membership integration hook
-  console.log('🔧 About to call useMembershipIntegration...');
   const {
     appliedMembership,
     membershipDiscountAmount,
@@ -107,10 +94,6 @@ const Calendar = () => {
     getMembershipDiscount,
     hasMembershipApplied
   } = useMembershipIntegration();
-  console.log('✅ useMembershipIntegration completed');
-
-  // Gift card integration hook
-  console.log('🔧 About to call useGiftCardIntegration...');
   const {
     selectedGiftCard,
     redeemGiftCardAmount,
@@ -133,44 +116,35 @@ const Calendar = () => {
     getGiftCardDiscount,
     hasGiftCardApplied
   } = useGiftCardIntegration();
-  console.log('✅ useGiftCardIntegration completed');
-
-  console.log('🔧 About to call useAppointments...');
   // Only call useAppointments if currentDate is initialized
   const {
     appointments,
     getEmployeeAppointments,
     hasConflict
   } = useAppointments(currentDate || new Date());
-  
-  console.log('✅ useAppointments completed, appointments:', appointments);
 
-  // Redux state - Memoized selectors to prevent unnecessary rerenders
-  console.log('🔧 About to read Redux state...');
   const employees = useSelector(state => state.employees?.list || [], (left, right) => {
     if (!Array.isArray(left) || !Array.isArray(right)) return left === right;
     return left.length === right.length && left.every((val, idx) => val === right[idx]);
   });
-  
+
   const loading = useSelector(state => state.employees?.loading || false);
   const error = useSelector(state => state.employees?.error || null);
-  
+
   const services = useSelector(state => state.services?.list || [], (left, right) => {
     if (!Array.isArray(left) || !Array.isArray(right)) return left === right;
     return left.length === right.length && left.every((val, idx) => val === right[idx]);
   });
-  
+
   const clients = useSelector(state => state.clients?.list || [], (left, right) => {
     if (!Array.isArray(left) || !Array.isArray(right)) return left === right;
     return left.length === right.length && left.every((val, idx) => val === right[idx]);
   });
 
-  console.log('📊 Redux data - services:', services.length, 'clients:', clients.length, 'employees:', employees.length);
-
   // Convert nested appointments structure to flat array for booking modal
   const flatAppointments = useMemo(() => {
     if (!appointments || typeof appointments !== 'object') return [];
-    
+
     const result = [];
     Object.entries(appointments).forEach(([employeeId, employeeAppts]) => {
       if (!employeeAppts || typeof employeeAppts !== 'object') return;
@@ -191,8 +165,7 @@ const Calendar = () => {
         });
       });
     });
-    
-    console.log('📊 Converted appointments to flat array:', result.length, 'appointments');
+
     return result;
   }, [appointments]);
 
@@ -207,14 +180,11 @@ const Calendar = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        console.log('🔄 Fetching employees...');
         dispatch(setEmployeesLoading(true));
         const response = await ReportsAPI.getEmployees();
-        console.log('✅ Employees fetched:', response);
-        
+
         // Extract employees array from nested response structure
         const employeesData = response?.data?.employees || response?.employees || response?.data || [];
-        console.log('📦 Extracted employees:', employeesData);
         dispatch(setEmployees(employeesData));
       } catch (err) {
         console.error('❌ Error fetching employees:', err);
@@ -239,34 +209,21 @@ const Calendar = () => {
 
   // Fetch services on component mount
   useEffect(() => {
-    console.log('🔄 Checking services... current count:', services.length);
     if (services.length === 0) {
-      console.log('🔄 Fetching services...');
       dispatch(fetchServicesThunk());
     }
   }, [dispatch, services.length]);
 
   // Fetch clients on component mount
   useEffect(() => {
-    console.log('🔄 CLIENT FETCH CHECK');
-    console.log('🔄 Current clients in Redux:', clients);
-    console.log('🔄 Clients count:', clients.length);
-    console.log('🔄 Clients is array?:', Array.isArray(clients));
-    
     if (clients.length === 0) {
-      console.log('🔄 Fetching clients from API...');
       dispatch(fetchClientsThunk())
         .unwrap()
-        .then((result) => {
-          console.log('✅ Clients fetched successfully:', result);
-          console.log('✅ Clients count:', result?.length);
-        })
+        .then((result) => {})
         .catch((error) => {
           console.error('❌ Error fetching clients:', error);
         });
-    } else {
-      console.log('✅ Clients already loaded:', clients.length);
-    }
+    } else {}
   }, [dispatch, clients.length]);
 
   // Helper function to calculate total session price
@@ -291,16 +248,12 @@ const Calendar = () => {
     // Only clear session if we're starting a fresh booking (not adding to existing session)
     // Don't clear if we already have appointments in the session
     if (multipleAppointments.length === 0) {
-      console.log('🆕 Starting fresh booking - clearing session');
       dispatch(clearSession());
-    } else {
-      console.log('➡️ Continuing existing session with', multipleAppointments.length, 'appointments');
-    }
+    } else {}
     
     // If time and employee are provided (grid selection), store as bookingDefaults
     // This is used to detect grid booking mode and chain times for multiple services
     if (options.time && options.employee) {
-      console.log('🎯 Grid booking detected - storing bookingDefaults');
       setBookingDefaults({
         professional: options.employee,
         time: options.time,
@@ -375,8 +328,6 @@ const Calendar = () => {
   // OLD CALENDAR APPROACH: Add appointment to session with proper conflict detection
   // This function is called directly from time selection click handler
   const handleAddToBookingSession = useCallback((overrideSlot = null) => {
-    console.log('📝 ========== ADD TO BOOKING SESSION ==========');
-    
     const slotToUse = overrideSlot || selectedTimeSlotForBooking;
 
     // Validate required fields
@@ -458,29 +409,13 @@ const Calendar = () => {
       addedAt: new Date().toISOString()
     };
 
-    console.log('✅ Adding appointment to session with date:', {
-      originalBookingDate: bookingDate,
-      bookingDateType: typeof bookingDate,
-      isDateObject: bookingDate instanceof Date,
-      finalAppointmentDate: appointmentDate,
-      formatDateLocalResult: bookingDate instanceof Date ? formatDateLocal(bookingDate) : 'N/A'
-    });
-    console.log('✅ Full appointment:', appointment);
-    console.log('📊 Current session size BEFORE:', multipleAppointments.length);
-    
     const newAppointment = addAppointmentToSessionLocal(appointment);
-    console.log('✅ New appointment added:', newAppointment);
-    console.log('📊 Session size AFTER:', multipleAppointments.length + 1);
 
     // Clear the current selection to show empty "Ready to Add" section
     selectService(null);
     selectProfessional(null);
     selectTimeSlot(null);
 
-    // Show success message
-    console.log(`✅ "${serviceName}" added to booking session! Total services: ${multipleAppointments.length + 1}`);
-    
-    console.log('📝 ========== ADD COMPLETE ==========');
     return true;
   }, [
     selectedServiceForBooking,
@@ -507,36 +442,22 @@ const Calendar = () => {
     const { timeSlotParam, service: payloadService } = normalizedPayload;
     const effectiveService = payloadService || selectedServiceForBooking;
 
-    console.log(`🔄 HANDLE NEXT STEP - Current step: ${bookingModalStep}`);
-    console.log('📊 payload:', normalizedPayload);
-    console.log('📊 bookingDefaults:', bookingDefaults);
-    console.log('📊 multipleAppointments:', multipleAppointments.length);
-    console.log('📊 selectedServiceForBooking:', selectedServiceForBooking);
-    console.log('📊 effectiveService:', effectiveService);
-    console.log('📊 selectedProfessionalForBooking:', selectedProfessionalForBooking);
-    console.log('📊 selectedTimeSlotForBooking:', selectedTimeSlotForBooking);
-    
     // Check if we're in GRID BOOKING MODE (bookingDefaults set with professional and time)
     const isGridBooking = bookingDefaults?.professional && bookingDefaults?.time;
-    
+
     // ==============================================
     // GRID BOOKING MODE: Same professional, chained times
     // ==============================================
     if (isGridBooking) {
-      console.log('🎯 GRID BOOKING MODE');
-      
       // If at step 1 with NO service selected but HAVE appointments
       // User clicked "Proceed to Client Selection"
       if (bookingModalStep === 1 && !selectedServiceForBooking && multipleAppointments.length > 0) {
-        console.log('🛒 Proceeding to client selection - skipping to step 4');
         goToStep(4);
         return;
       }
-      
+
       // If at step 1 with service selected - ADD to session and STAY at step 1
       if (bookingModalStep === 1 && effectiveService) {
-        console.log('➕ Adding service to session in grid mode');
-        
         const serviceToAdd = effectiveService || selectedServiceForBooking;
         if (!serviceToAdd) {
           console.warn('⚠️ No service data available');
@@ -545,25 +466,23 @@ const Calendar = () => {
 
         const prof = bookingDefaults.professional;
         const bookingDate = bookingDefaults.date || selectedDateForBooking || currentDate;
-        
+
         // Calculate start time: first service uses clicked time, subsequent chain from last end time
         let startTime;
         if (multipleAppointments.length === 0) {
           startTime = bookingDefaults.time;
-          console.log('⏰ First service - using clicked time:', startTime);
         } else {
           const lastAppointment = multipleAppointments[multipleAppointments.length - 1];
           startTime = addMinutesToTime(lastAppointment.timeSlot, lastAppointment.duration);
-          console.log('⏰ Chaining from last service - new start time:', startTime);
         }
-        
+
         const durationToUse = serviceToAdd.duration || 30;
         const endTime = addMinutesToTime(startTime, durationToUse);
-        
+
         // CONFLICT CHECK: Check if this time conflicts with existing appointments
         const professionalId = prof?._id || prof?.id;
         const hasConflictWithExisting = hasConflict(professionalId, bookingDate, startTime, durationToUse);
-        
+
         if (hasConflictWithExisting) {
           console.error('❌ Conflict detected with existing bookings');
           Swal.fire({
@@ -575,12 +494,12 @@ const Calendar = () => {
           selectService(null); // Clear selection
           return; // Don't add to session
         }
-        
+
         // BOOKING CUTOFF VALIDATION: Prevent bookings past 23:00
         const startTimeMinutes = timeToMinutes(startTime);
         const endTimeMinutes = startTimeMinutes + durationToUse;
         const MAX_END_TIME_MINUTES = 23 * 60; // 23:00
-        
+
         if (endTimeMinutes > MAX_END_TIME_MINUTES) {
           const maxBookingTimeMinutes = MAX_END_TIME_MINUTES - durationToUse;
           const maxBookingHours = Math.floor(maxBookingTimeMinutes / 60);
@@ -597,12 +516,12 @@ const Calendar = () => {
           selectService(null);
           return;
         }
-        
+
         // Format date as string
         const dateString = bookingDate instanceof Date 
           ? bookingDate.toISOString().split('T')[0]
           : bookingDate;
-        
+
         // Create appointment
         const appointmentData = {
           id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -627,159 +546,121 @@ const Calendar = () => {
           professional: prof,
           addedAt: new Date().toISOString()
         };
-        
-        console.log('✅ Adding appointment to session:', appointmentData);
+
         addAppointmentToSessionLocal(appointmentData);
-        
+
         // Update bookingDefaults time for next service
         setBookingDefaults({
           ...bookingDefaults,
           time: endTime
         });
-        
+
         // Clear service selection
         selectService(null);
-        
-        // STAY at step 1 to allow adding more services
-        console.log('✅ Service added, staying at step 1 for more services');
+
         return; // Don't call goToNextStep()
       }
     }
-    
+
     // ==============================================
     // MANUAL BOOKING MODE: Different professionals, different times
     // ==============================================
     if (!isGridBooking) {
-      console.log('📝 MANUAL BOOKING MODE');
-      console.log('📝 Current step:', bookingModalStep);
-      
       // Step 1: Service selected → Go to step 2 (Professional selection)
       if (bookingModalStep === 1 && effectiveService) {
-        console.log('✅ Service selected, going to professional selection');
         goToNextStep();
         return;
       }
-      
+
       // Step 2: Professional selected → Go to step 3 (Time selection)
       if (bookingModalStep === 2 && selectedProfessionalForBooking) {
-        console.log('✅ Professional selected, going to time selection');
         goToNextStep();
         return;
       }
-      
+
       // Step 3: Time selected → Add to session, show "Add Another Service" option
       if (bookingModalStep === 3) {
-        console.log('📝 Time selected - adding appointment to session');
-        
         const slotToAdd = timeSlotParam || selectedTimeSlotForBooking;
-        console.log('📝 Using time slot:', slotToAdd);
-        
+
         const added = handleAddToBookingSession(slotToAdd);
-        
+
         if (!added) {
-          console.log('❌ Failed to add appointment');
           return;
         }
-        
-        console.log('✅ Appointment added successfully');
-        console.log('📊 Total appointments now:', multipleAppointments.length + 1);
-        
+
         // After adding, stay at step 3 to show "Add Another Service" or "Proceed to Client"
         // Don't advance automatically
         return;
       }
-      
+
       // If user clicks "Proceed to Client Selection" after adding services
       if (bookingModalStep === 3 && multipleAppointments.length > 0 && !selectedServiceForBooking) {
-        console.log('🛒 Proceeding to client selection');
         goToStep(4);
         return;
       }
     }
-    
+
     // Default: Just advance to next step
     goToNextStep();
   };
 
   // Enhanced previous step handler with proper state cleanup
   const handlePreviousStep = () => {
-    console.log(`⬅️ Going back from step ${bookingModalStep}`);
-    
     const isGridBooking = bookingDefaults?.professional && bookingDefaults?.time;
-    
+
     // From step 5 (confirmation) → step 4 (client) - Just go back
     if (bookingModalStep === 5) {
-      console.log('✅ Back to client selection');
       goToPreviousStep();
       return;
     }
-    
+
     // From step 4 (client) → step 1 (service list) - Keep all appointments
     if (bookingModalStep === 4) {
       if (isGridBooking) {
-        console.log('⬅️ Grid mode: Back to service selection (step 1)');
-        console.log('✅ Keeping all', multipleAppointments.length, 'appointments');
         goToStep(1);
       } else {
-        // Manual mode: Back to step 3 to show "Add Another Service"
-        console.log('⬅️ Manual mode: Back to step 3');
-        console.log('✅ Keeping all', multipleAppointments.length, 'appointments');
         goToStep(3);
       }
       return;
     }
-    
+
     // From step 3 (time) → step 2 (professional) - Just go back, keep professional selected
     if (bookingModalStep === 3) {
-      console.log('⬅️ Going back to professional selection (keeping professional selected)');
       // Clear time slot but KEEP professional selected so list shows
       selectTimeSlot(null);
       goToPreviousStep();
       return;
     }
-    
+
     // From step 2 (professional) → step 1 (service) - Just go back, keep service selected
     if (bookingModalStep === 2) {
-      console.log('⬅️ Going back to service selection (keeping service selected)');
       // Clear professional but KEEP service selected so list shows
       selectProfessional(null);
       goToPreviousStep();
       return;
     }
-    
+
     // Default
     goToPreviousStep();
   };
 
   // Handler for adding another service
   const handleAddAnotherService = () => {
-    console.log('➕ ========== ADD ANOTHER SERVICE CLICKED ==========');
-    console.log('📊 Current appointments:', multipleAppointments.length);
-    
     const isGridBooking = bookingDefaults?.professional && bookingDefaults?.time;
-    
+
     if (isGridBooking) {
-      // GRID MODE: Just clear service selection, stay at step 1
-      console.log('🔗 Grid mode - staying at step 1');
       selectService(null);
       // Already at step 1, just cleared selection
     } else {
-      // MANUAL MODE: Go back to step 1 for new service selection
-      console.log('📝 Manual mode - going to step 1');
       selectService(null);
       selectProfessional(null);
       selectTimeSlot(null);
       goToStep(1);
     }
-    
-    console.log('➕ ========== READY FOR NEXT SERVICE ==========');
   };
 
   // Handler to proceed to client selection after adding all services
   const handleProceedToClientSelection = () => {
-    console.log('🛒 ========== PROCEED TO CLIENT SELECTION ==========');
-    console.log('📊 Total appointments:', multipleAppointments.length);
-    
     if (multipleAppointments.length === 0) {
       Swal.fire({
         icon: 'info',
@@ -789,8 +670,7 @@ const Calendar = () => {
       });
       return;
     }
-    
-    console.log('✅ Going to step 4 (client selection)');
+
     goToStep(4);
   };
 
@@ -799,26 +679,15 @@ const Calendar = () => {
     const employeeAppts = getEmployeeAppointments(employee._id || employee.id, date);
     const isSlotBooked = employeeAppts.some(apt => apt.time === time);
     
-    if (isSlotBooked) {
-      console.log('⚠️ Time slot already booked');
-      // You can show a message or just return
-      // For now, still allow opening the modal but user will see conflict
-    }
+    if (isSlotBooked) {}
     
     handleOpenBooking({ date, time, employee });
   };
 
-  const handleAppointmentClick = (appointment) => {
-    console.log('Appointment clicked:', appointment);
-  };
+  const handleAppointmentClick = (appointment) => {};
 
   const handleConfirmBooking = async (bookingData) => {
     try {
-      console.log('🎯 Confirming booking with data:', bookingData);
-      console.log('📋 Session appointments:', multipleAppointments);
-      console.log('📊 Session appointments count:', multipleAppointments.length);
-      console.log('📊 Session appointments details:', JSON.stringify(multipleAppointments, null, 2));
-      
       // Use session appointments if available, otherwise use individual selections
       const appointmentsToBook = multipleAppointments.length > 0 
         ? multipleAppointments 
@@ -830,9 +699,6 @@ const Calendar = () => {
             client: selectedClientForBooking
           }];
 
-      console.log('📝 Appointments to book:', appointmentsToBook.length);
-      console.log('📝 Detailed appointments:', JSON.stringify(appointmentsToBook, null, 2));
-
       // Check for conflicts before creating bookings
       // Only check against existing appointments in DB, not session appointments
       for (const apt of appointmentsToBook) {
@@ -841,17 +707,9 @@ const Calendar = () => {
         const aptDate = apt.date || selectedDateForBooking;
         const aptDuration = apt.duration || apt.service?.duration || 30;
 
-        console.log('🔍 Checking conflict for:', {
-          professionalId,
-          time: aptTime,
-          date: aptDate,
-          duration: aptDuration
-        });
-
         // Get employee appointments from DB (not including session)
         const employeeAppts = getEmployeeAppointments(professionalId, aptDate);
-        console.log('📊 Existing appointments for employee:', employeeAppts);
-        
+
         const hasTimeConflict = hasConflict(
           professionalId,
           aptDate,
@@ -870,8 +728,6 @@ const Calendar = () => {
           return;
         }
       }
-      
-      console.log('✅ No conflicts detected, proceeding with booking...');
 
       // Prepare client data
       const clientPayload = selectedClientForBooking?._id 
@@ -884,18 +740,8 @@ const Calendar = () => {
             phone: selectedClientForBooking?.phone || null
           };
 
-      // Validate all appointments have required fields
-      console.log('🔍 Validating appointments before API call...');
       for (let i = 0; i < appointmentsToBook.length; i++) {
         const apt = appointmentsToBook[i];
-        console.log(`📝 Appointment ${i + 1}:`, {
-          hasService: !!(apt.serviceId || apt.service?._id || apt.service?.id),
-          hasEmployee: !!(apt.professionalId || apt.professional?._id || apt.professional?.id),
-          hasTime: !!(apt.time || apt.timeSlot),
-          hasDate: !!(apt.date || selectedDateForBooking),
-          duration: apt.duration || apt.service?.duration,
-          price: apt.customPrice || apt.price || apt.service?.price
-        });
 
         if (!(apt.serviceId || apt.service?._id || apt.service?.id)) {
           console.error(`❌ Appointment ${i + 1} missing service:`, apt);
@@ -910,7 +756,6 @@ const Calendar = () => {
           throw new Error(`Appointment ${i + 1} is missing time slot`);
         }
       }
-      console.log('✅ All appointments validated successfully');
 
       // Prepare booking payload with all services
       const bookingPayload = {
@@ -921,9 +766,7 @@ const Calendar = () => {
           // This ensures the appointment appears on the correct date regardless of server timezone
           const timeStr = apt.time || apt.timeSlot;
           const aptDate = apt.date || selectedDateForBooking;
-          
-          console.log('⏰ Processing appointment for API - timeStr:', timeStr, 'apt.time:', apt.time, 'apt.timeSlot:', apt.timeSlot);
-          
+
           // Get date string in YYYY-MM-DD format
           let dateStr;
           if (typeof aptDate === 'string' && aptDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -935,31 +778,27 @@ const Calendar = () => {
             const day = String(dateObj.getDate()).padStart(2, '0');
             dateStr = `${year}-${month}-${day}`;
           }
-          
+
           // Validate inputs
           if (!dateStr || !timeStr) {
             console.error('❌ Invalid appointment data:', { dateStr, timeStr });
             throw new Error(`Invalid appointment: date=${dateStr}, time=${timeStr}`);
           }
-          
+
           // Create UTC datetime directly using the date string and time
           // This prevents any local timezone interference
           const [hours, minutes] = timeStr.split(':').map(Number);
           const appointmentDateTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`);
-          
+
           const endTime = new Date(appointmentDateTime);
           endTime.setUTCMinutes(endTime.getUTCMinutes() + (apt.duration || apt.service?.duration || 30));
-          
+
           // Validate that the dates were created successfully
           if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {
             console.error('❌ Invalid date created');
             throw new Error('Failed to create valid dates');
           }
-          
-          console.log(`📅 Booking: ${apt.serviceName || apt.service?.name} on ${dateStr} at ${timeStr}`);
-          console.log(`🕐 Created UTC datetime: ${appointmentDateTime.toISOString()}`);
-          console.log(`✅ Time will display correctly as: ${timeStr}`);
-          
+
           return {
             service: apt.serviceId || apt.service?._id || apt.service?.id,
             employee: apt.professionalId || apt.professional?._id || apt.professional?.id,
@@ -974,11 +813,6 @@ const Calendar = () => {
         selectionMode: 'admin'
       };
 
-      // Call API to create booking
-      console.log('🚀 Sending booking payload:', JSON.stringify(bookingPayload, null, 2));
-      console.log('💳 Payment method:', bookingPayload.paymentMethod);
-      console.log('📝 Notes:', bookingPayload.notes);
-      
       const response = await api.post('/bookings', bookingPayload, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -986,33 +820,27 @@ const Calendar = () => {
         }
       });
 
-      console.log('✅ Booking created successfully:', response.data);
-
       // Clear session appointments after successful booking
       dispatch(clearSession());
-      
-      // Refresh appointments from server to show new bookings
-      console.log('🔄 Refreshing calendar data for date:', currentDate);
+
       await dispatch(fetchCalendarThunk({ currentDate, currentView }));
-      console.log('✅ Calendar data refreshed - appointments should now be visible');
-      
+
       // Close modal and reset selections
       closeBookingModal();
       setBookingDefaults(null); // Clear grid booking context
-      
+
       // Show success message with booking details
       const appointmentCount = appointmentsToBook.length;
       const successMsg = appointmentCount > 1 
         ? `Successfully booked ${appointmentCount} appointments!` 
         : 'Booking created successfully!';
-      
+
       Swal.fire({
         icon: 'success',
         title: 'Booking Confirmed',
         text: successMsg,
         confirmButtonColor: '#1f2937'
       });
-      
     } catch (err) {
       console.error('❌ Booking failed:', err);
       console.error('❌ Error stack:', err.stack);
@@ -1316,11 +1144,8 @@ const Calendar = () => {
     );
   };
 
-  console.log('📊 State check - currentDate:', currentDate, 'loading:', loading, 'employees:', employees.length);
-
   // Safety check: Don't render if currentDate is not initialized
   if (!currentDate) {
-    console.log('⚠️ Returning early - no currentDate');
     return (
       <div className="calendar-container">
         <div className="loading-spinner-container">
@@ -1360,7 +1185,6 @@ const Calendar = () => {
 
   // Render empty state
   if (!employees || employees.length === 0) {
-    console.log('⚠️ Returning early - no employees');
     return (
       <div className="calendar-container">
         <div className="empty-state">
@@ -1370,11 +1194,6 @@ const Calendar = () => {
       </div>
     );
   }
-
-  console.log('🎨 About to render main Calendar JSX with CalendarHeader and CalendarGrid');
-  console.log('   - currentDate:', currentDate);
-  console.log('   - employees count:', employees.length);
-  console.log('   - timeSlots count:', timeSlots.length);
 
   return (
     <div className="calendar-container">

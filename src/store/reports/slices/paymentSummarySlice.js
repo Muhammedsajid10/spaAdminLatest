@@ -30,13 +30,15 @@ export const buildPaymentSummary = (rows = [], dateRange = null) => {
   // Filter by date range first if provided
   let filteredRows = rows;
   if (dateRange?.start && dateRange?.end) {
-    const start = new Date(dateRange.start);
-    const end = new Date(`${dateRange.end}T23:59:59`);
-    
     filteredRows = rows.filter((item) => {
       if (!item?.paymentDate) return false;
-      const ts = new Date(item.paymentDate);
-      return !Number.isNaN(ts.getTime()) && ts >= start && ts <= end;
+      const d = new Date(item.paymentDate);
+      if (Number.isNaN(d.getTime())) return false;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const localDateStr = `${year}-${month}-${day}`;
+      return localDateStr >= dateRange.start && localDateStr <= dateRange.end;
     });
   }
 

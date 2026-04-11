@@ -56,7 +56,7 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
     try {
       // Create a temporary booking ID for membership purchase
       const tempBookingId = `membership-purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Create payment intent through existing payment API
       const paymentPayload = {
         bookingId: tempBookingId,
@@ -70,8 +70,6 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
           clientId: selectedClient?._id || assignForm.clientId
         }
       };
-
-      console.log('🔄 Creating payment intent for membership...', paymentPayload);
 
       // Helper: try a list of possible endpoints with optional payload tweaks
       const tryCreatePayment = async (payload) => {
@@ -142,7 +140,7 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
       };
 
       const paymentResponse = await tryCreatePayment(paymentPayload);
-      
+
       if (!paymentResponse?.data?.success) {
         throw new Error(paymentResponse?.data?.message || 'Failed to create payment intent');
       }
@@ -150,14 +148,12 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
       // If server already created the membership and returned it, treat as success
       const maybeMembership = paymentResponse.data.data?.membership || paymentResponse.data?.membership;
       if (maybeMembership) {
-        console.log('✅ Server returned completed membership; skipping client-side Stripe confirm');
-        
         const successData = {
           membership: maybeMembership,
           message: paymentResponse.data.message,
           emailSent: paymentResponse.data.emailSent
         };
-        
+
         onSuccess(successData);
         return;
       }
@@ -166,7 +162,6 @@ const MembershipPaymentForm = ({ assignForm, templates = [], clients = [], onSuc
       if (!clientSecret) {
         throw new Error('Missing clientSecret from payment-intent creation response');
       }
-      console.log('✅ Payment intent created, client secret received');
 
       // Confirm payment with Stripe
       const cardElement = elements.getElement(CardElement);
@@ -284,7 +279,6 @@ const Membership = () => {
       // Purchased memberships
       const purchasedRes = await api.get('/memberships/purchased');
       let purchased = purchasedRes.data.data.memberships || [];
-      console.log('DEBUG purchased memberships raw:', purchased);
       // If some memberships lack populated client, attempt to fetch individually (lightweight enrichment)
       const unenriched = purchased.filter(m => m.client && (typeof m.client === 'string' || (m.client && !m.client.firstName)) );
       if (unenriched.length) {
@@ -572,7 +566,6 @@ const Membership = () => {
           </div>
         </div>
       )}
-      
       <div className="mem-max-width">
         <div className="mem-header">
           <div className="mem-header-content">
@@ -867,10 +860,8 @@ const Membership = () => {
                         // Show success notification with email confirmation
                         if (emailSent) {
                           setSuccessMessage('✅ Membership assigned successfully! Confirmation email sent to the client.');
-                          console.log('✅ Membership assigned and email notification sent!');
                         } else {
                           setSuccessMessage('✅ Membership assigned successfully!');
-                          console.log('✅ Membership assigned successfully!');
                         }
                         
                         // Auto-hide success message after 5 seconds

@@ -143,11 +143,6 @@ const AdminMembershipChecker = ({
   };
 
   const filterEligibleMemberships = () => {
-    console.log('🔍 Filtering eligible memberships:', {
-      totalMemberships: clientMemberships.length,
-      selectedServices: selectedServices.map(s => ({ id: s?._id, name: s?.name }))
-    });
-
     // Find memberships that match any of the selected services
     const eligible = clientMemberships.filter(membership => {
       // Support multiple services per membership
@@ -192,27 +187,13 @@ const AdminMembershipChecker = ({
       const status = (membership?.status || '').toString();
       const isNotExpired = !(membership?.isExpired) && (['Active','active','Partially Used','partially used'].includes(status));
 
-      console.log(`   Membership "${membership.name}":`, {
-        membershipServiceIds,
-        membershipServiceNames,
-        matchesService,
-        hasRemainingSessions,
-        remainingSessions,
-        isNotExpired,
-        status,
-        isEligible: matchesService && hasRemainingSessions && isNotExpired
-      });
-
       return matchesService && hasRemainingSessions && isNotExpired;
     });
 
-    console.log('✅ Eligible memberships filtered:', eligible.length, 'out of', clientMemberships.length);
     setEligibleMemberships(eligible);
   };
 
   const handleApplyMembership = (membership) => {
-    console.log('🎯 Admin applying membership for client:', membership);
-
     // Gather all possible service IDs and names from the membership
     let membershipServiceIds = [];
     let membershipServiceNames = [];
@@ -243,7 +224,6 @@ const AdminMembershipChecker = ({
   };
 
   const handleRemoveMembership = () => {
-    console.log('❌ Admin removing applied membership');
     onMembershipRemoved();
   };
 

@@ -38,12 +38,9 @@ export const normalizeWorkingHoursData = (attendance, employeesMap = new Map()) 
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(attendance.employee);
     if (isObjectId && employeesMap.has(attendance.employee)) {
       employeeName = employeesMap.get(attendance.employee);
-      console.log(`🔄 Normalized: "${originalEmployee}" → "${employeeName}"`);
     } else {
       employeeName = attendance.employee;
-      if (isObjectId) {
-        console.log(`⚠️ Unresolved ID: "${originalEmployee}" → kept as "${employeeName}"`);
-      }
+      if (isObjectId) {}
     }
   } else if (attendance.employee?.name || attendance.employee?.fullName) {
     employeeName = attendance.employee.name || attendance.employee.fullName;
@@ -89,13 +86,15 @@ export const buildWorkingHoursData = (rows = [], dateRange = null) => {
   // Filter by date range if provided
   let filteredRows = rows;
   if (dateRange?.start && dateRange?.end) {
-    const start = new Date(dateRange.start);
-    const end = new Date(`${dateRange.end}T23:59:59`);
-    
     filteredRows = rows.filter((item) => {
       if (!item?.date) return false;
-      const ts = new Date(item.date);
-      return !Number.isNaN(ts.getTime()) && ts >= start && ts <= end;
+      const d = new Date(item.date);
+      if (Number.isNaN(d.getTime())) return false;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const localDateStr = `${year}-${month}-${day}`;
+      return localDateStr >= dateRange.start && localDateStr <= dateRange.end;
     });
   }
 
@@ -119,13 +118,10 @@ export const fetchWorkingHoursActivity = createAsyncThunk(
         ReportsAPI.getWorkingHoursActivity({ all: true }),
         ReportsAPI.getEmployees()
       ]);
-      
+
       const attendanceData = attendanceResponse?.data ?? [];
       const employees = employeesResponse?.data?.employees ?? [];
-      
-      console.log('🔍 Employee Data Debug:');
-      console.log('Total employees fetched:', employees.length);
-      
+
       // Create a map of employee ID to full name
       const employeesMap = new Map();
       employees.forEach(emp => {
@@ -133,15 +129,13 @@ export const fetchWorkingHoursActivity = createAsyncThunk(
           const id = emp._id || emp.id;
           const name = emp.user?.fullName || `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim() || emp.user?.firstName || 'Unknown';
           employeesMap.set(id, name);
-          console.log(`✅ Employee Mapped: ${id} → "${name}"`);
         }
       });
-      
-      console.log('\n📊 Attendance Employee ID Analysis:');
+
       const attendanceEmployeeIds = new Set();
       const matchedIds = new Set();
       const unmatchedIds = new Set();
-      
+
       attendanceData.forEach(attendance => {
         const employeeId = attendance.employee;
         attendanceEmployeeIds.add(employeeId);
@@ -150,27 +144,17 @@ export const fetchWorkingHoursActivity = createAsyncThunk(
           // This is an ObjectId
           if (employeesMap.has(employeeId)) {
             matchedIds.add(employeeId);
-            console.log(`✅ MATCHED: ${employeeId} → "${employeesMap.get(employeeId)}"`);
           } else {
             unmatchedIds.add(employeeId);
-            console.log(`❌ UNMATCHED ID: ${employeeId}`);
           }
-        } else {
-          // This is likely already a name
-          console.log(`📝 Already a name: "${employeeId}"`);
-        }
+        } else {}
       });
-      
-      console.log(`\n📈 Summary:`);
-      console.log(`Total unique employee references in attendance: ${attendanceEmployeeIds.size}`);
-      console.log(`Matched IDs: ${matchedIds.size}`);
-      console.log(`Unmatched IDs: ${unmatchedIds.size}`);
-      
+
       // Normalize all attendance data with employee name resolution
       const normalized = attendanceData.map(attendance => 
         normalizeWorkingHoursData(attendance, employeesMap)
       );
-      
+
       return normalized;
     } catch (error) {
       const message =

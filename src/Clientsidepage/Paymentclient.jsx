@@ -60,7 +60,6 @@ const PaymentClient = () => {
       const page = 1;
       const limit = 10000; // High limit to get all records
       const res = await api.get(`/payments/admin/all?page=${page}&limit=${limit}`);
-      console.log("Payments (admin/all) API result:", res.data);
 
       const paymentsData = res.data?.data?.payments || [];
       const mapped = paymentsData.map((p) => ({
@@ -78,11 +77,7 @@ const PaymentClient = () => {
       }));
 
       setPayments(mapped);
-      console.log(`✅ Loaded ${mapped.length} payments from completed bookings`);
-      if (mapped.length === 0) {
-        console.log('💡 No payments shown because no bookings have status "completed"');
-        console.log('💡 To see payments: Create booking → Mark status as "completed"');
-      }
+      if (mapped.length === 0) {}
     } catch (err) {
       console.error("Failed to fetch payments:", err);
       setError(err.response?.data?.message || err.message || "Failed to load payments");

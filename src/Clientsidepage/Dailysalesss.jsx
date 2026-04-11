@@ -50,23 +50,20 @@ const DailySales = () => {
       setError(null);
       try {
         const dateStr = formatApiDate(currentDate);
-        console.log('📅 Fetching data for date:', dateStr);
-        
+
         let cashMovementRes, transactionRes;
-        
+
         try {
           // Fetch cash movement data
           cashMovementRes = await api.get(`/admin/cash-movement-summary?date=${dateStr}`);
-          console.log('✅ Cash movement response:', cashMovementRes.data);
         } catch (cashErr) {
           console.warn('Cash movement API failed:', cashErr);
           cashMovementRes = { data: { data: {} } };
         }
-        
+
         try {
           // Fetch daily transaction summary
           transactionRes = await api.get(`/admin/daily-transaction-summary?date=${dateStr}`);
-          console.log('✅ Transaction summary response:', transactionRes.data);
         } catch (transactionErr) {
           console.warn('Transaction summary API failed:', transactionErr);
           transactionRes = { data: { data: {} } };
@@ -74,7 +71,7 @@ const DailySales = () => {
 
         // Process cash movement summary
         const cashMovementData = cashMovementRes.data?.data || {};
-        
+
         const paymentTypes = ['card', 'cash', 'digital_wallet', 'giftcard', 'membership'];
         const paymentTypeLabels = {
           'card': 'Card',
@@ -83,7 +80,7 @@ const DailySales = () => {
           'giftcard': 'Gift Card Redeemed',
           'membership': 'Membership Redeemed'
         };
-        
+
         const processedCashMovement = paymentTypes.map(type => {
           const typeData = cashMovementData[type] || {};
           const paymentsCollected = typeData.paymentsCollected || 0;
@@ -105,7 +102,7 @@ const DailySales = () => {
 
         // Process transaction summary
         const transactionSummaryData = transactionRes.data?.data || {};
-        
+
         const processedTransactions = [
           {
             itemType: 'Services',
@@ -133,11 +130,6 @@ const DailySales = () => {
           }
         ];
 
-        console.log('✅ Data processing completed:', {
-          transactionsSummary: processedTransactions,
-          cashMovementSummary: processedCashMovement
-        });
-
         setTransactionSummary(processedTransactions);
         setCashMovementSummary(processedCashMovement);
       } catch (err) {
@@ -163,13 +155,7 @@ const DailySales = () => {
   );
 
   // Debug logs for data state (only log once when data changes)
-  useEffect(() => {
-    console.log('🔄 Data State Updated:');
-    console.log('Transaction Summary:', transactionSummary);
-    console.log('Has Transaction Data:', hasTransactionData);
-    console.log('Cash Movement Summary:', cashMovementSummary);
-    console.log('Has Cash Movement Data:', hasCashMovementData);
-  }, [transactionSummary, cashMovementSummary, hasTransactionData, hasCashMovementData]);
+  useEffect(() => {}, [transactionSummary, cashMovementSummary, hasTransactionData, hasCashMovementData]);
 
   const formatDate = (date) => {
     return date.toLocaleDateString("en-GB", {
@@ -369,7 +355,6 @@ const DailySales = () => {
           </div>
         </div>
       </div>
-
       <div className="ds-date-section" ref={calendarRef}>
         <div className="ds-date-controls">
           <div className="ds-today-btn" onClick={() => { setCurrentDate(new Date()); setShowCalendar(false); }}>
@@ -400,7 +385,6 @@ const DailySales = () => {
           </div>
         )}
       </div>
-
       <div className="ds-tables">
         <div className="ds-table-card">
           <h2 className="ds-table-title">
@@ -422,7 +406,6 @@ const DailySales = () => {
                 </thead>
                 <tbody>
                   {transactionSummary.map((item, index) => {
-                    console.log(`🎯 Rendering transaction row ${index}:`, item);
                     return (
                       <tr key={index}>
                         <td>{item.itemType}</td>

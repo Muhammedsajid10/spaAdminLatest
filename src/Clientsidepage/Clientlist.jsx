@@ -480,8 +480,6 @@ const ClientDirectory = () => {
         password: "defaultPassword123", // You might want to generate a secure password or prompt for it
       });
 
-      console.log("Client created successfully:", response.data); // Log success
-
       setShowModal(false); // Close modal on success
       showNotification('Client created successfully!', 'success');
       fetchClients(); // Refresh the list

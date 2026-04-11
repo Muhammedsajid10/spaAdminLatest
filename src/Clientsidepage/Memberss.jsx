@@ -242,9 +242,6 @@ const CreateMembershipModal = ({ isOpen, onClose, onSuccess }) => {
         isTemplate: true
       };
 
-      console.log('📤 Sending payload:', JSON.stringify(payload, null, 2));
-      console.log('📤 Selected service details:', formData.selectedService);
-
       const res = await saveOrUpdateMembership(payload); // uses module-level helper
 
       if (res?.data?.success) {

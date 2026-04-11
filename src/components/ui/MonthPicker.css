@@ -1,150 +1,132 @@
 /* =========================================
-   Month Picker – Business Professional
+   Month Picker – Modern White Aesthetic
 ========================================= */
 
-/* CSS Custom Properties */
 :root {
   --mp-color-bg: #ffffff;
-  --mp-color-surface: #ffffff;
-  --mp-color-border: #0000001a; /* light border */
-  --mp-color-border-strong: #000000;
-  --mp-color-text: #000000;
-  --mp-color-accent: #000000; /* black focus outline */
-  --mp-color-selected: #000000; /* black circle when selected */
+  --mp-color-surface: #fcfcfc;
+  --mp-color-border: #e5e7eb;
+  --mp-color-border-hover: #d1d5db;
+  --mp-color-text: #111827;
+  --mp-color-muted: #6b7280;
+  --mp-color-accent: #2563eb; 
+  --mp-color-selected: #2563eb;
+  --mp-color-in-range: #eff6ff;
+  --mp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --mp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --mp-shadow-lg: 0 12px 32px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  --mp-radius-lg: 16px;
+  --mp-radius-md: 10px;
+  --mp-radius-sm: 8px;
+  --mp-transition: 0.2s ease;
+  --mp-font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
-
 
 /* ===== MAIN CONTAINER ===== */
 .month-picker {
   position: relative;
   display: inline-flex;
+  font-family: var(--mp-font-family);
 }
 
 /* ===== TRIGGER BUTTON ===== */
 .month-picker__trigger {
-      display: inline-flex
-;
-    align-items: center;
-    gap: 12px;
-    min-width: 240px;
-    padding: 12px 20px;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    background: #ffffff;
-    color: #000000;
-    font-family: var(--mp-font-family);
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.4;
-    border-color: #000000;
-    /* box-shadow: var(--mp-shadow-sm); */
-    /* transition: transform var(--mp-transition), box-shadow var(--mp-transition);
-  /* box-shadow: var(--mp-shadow-sm); */
-  /* transition: transform var(--mp-transition), box-shadow var(--mp-transition); */
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 250px;
+  padding: 10px 16px;
+  border-radius: var(--mp-radius-md);
+  border: 1px solid var(--mp-color-border);
+  background: var(--mp-color-bg);
+  color: var(--mp-color-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--mp-shadow-sm);
+  transition: all var(--mp-transition);
 }
 
 .month-picker__trigger svg {
   width: 18px;
   height: 18px;
   color: var(--mp-color-muted);
-  flex-shrink: 0;
 }
 
 .month-picker__trigger:hover:not(:disabled) {
-  /* transform: translateY(-1px);
-  box-shadow: var(--mp-shadow-md); */
+  border-color: var(--mp-color-border-hover);
+  background: #fdfdfd;
 }
 
 .month-picker__trigger:focus-visible {
-  outline: 2px solid var(--mp-color-accent);
-  outline-offset: 3px;
+  outline: none;
+  border-color: var(--mp-color-accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 /* ===== DROPDOWN CONTAINER ===== */
 .month-picker__dropdown {
   position: absolute;
-  top: calc(100% + 12px);
-  /* right: 0; */
-  min-width: 540px;
-  border-radius: 12px;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 640px;
+  border-radius: var(--mp-radius-lg);
   background: var(--mp-color-bg);
   border: 1px solid var(--mp-color-border);
   box-shadow: var(--mp-shadow-lg);
-  font-family: var(--mp-font-family);
   overflow: hidden;
-  animation: mp-dropdown-in 0.22s ease forwards;
-  z-index: 20;
+  animation: mp-dropdown-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 50;
+  transform-origin: top left;
 }
 
 @keyframes mp-dropdown-in {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-8px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 /* ===== PRESETS SECTION ===== */
 .month-picker__presets {
   display: flex;
-  gap: 10px;
-  padding: 12px 20px;
+  gap: 8px;
+  padding: 16px 24px;
   background: var(--mp-color-surface);
   border-bottom: 1px solid var(--mp-color-border);
 }
 
-.month-picker__presets-title {
-  font-size: var(--mp-font-size-sm);
-  font-weight: var(--mp-font-weight-semibold);
-  color: var(--mp-text-primary);
-  margin: 0 0 var(--mp-spacing-md) 0;
-}
-
 .month-picker__preset {
   flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid transparent;
+  padding: 8px 12px;
+  border-radius: var(--mp-radius-sm);
+  border: 1px solid var(--mp-color-border);
   background: #ffffff;
-  color: var(--mp-color-muted);
+  color: var(--mp-color-text);
   font-size: 13px;
-  font-weight: 600;
-  text-align: left;
+  font-weight: 500;
+  text-align: center;
   cursor: pointer;
-  transition: border var(--mp-transition), box-shadow var(--mp-transition), color var(--mp-transition);
+  transition: all var(--mp-transition);
 }
 
 .month-picker__preset:hover {
-  border-color: var(--mp-color-border-strong);
-  color: var(--mp-color-text);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
-}
-
-.month-picker__preset:last-child {
-  margin-bottom: 0;
+  border-color: var(--mp-color-border-hover);
+  background: #f9fafb;
 }
 
 /* ===== CALENDAR CONTAINER ===== */
 .month-picker__calendar {
-  display: flex;
-  gap: 24px;
-  padding: 18px 22px;
-}
-.month-picker__day--preview::before {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: 10px;
-  background: rgba(59, 130, 246, 0.1);
+  padding: 24px;
 }
 
 .month-picker__calendars {
   display: flex;
-  gap: 24px;
-  width: 100%;
+  gap: 32px;
 }
 
 .month-picker__calendar-single {
@@ -156,7 +138,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .month-picker__month-year {
@@ -165,292 +147,151 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--mp-color-text);
-}
-
-.month-picker__nav-btn,
-.month-picker__nav-spacer {
-  width: 32px;
-  height: 32px;
+  letter-spacing: -0.01em;
 }
 
 .month-picker__nav-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--mp-color-muted);
-  transition: background var(--mp-transition), border var(--mp-transition), color var(--mp-transition);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--mp-radius-sm);
+  border: 1px solid var(--mp-color-border);
+  background: #ffffff;
+  color: var(--mp-color-text);
+  cursor: pointer;
+  transition: all var(--mp-transition);
+  box-shadow: var(--mp-shadow-sm);
+}
+
+.month-picker__nav-spacer {
+  width: 32px;
 }
 
 .month-picker__nav-btn:hover {
-  background: #f2f4f7;
-  border-color: var(--mp-color-border-strong);
-  color: var(--mp-color-text);
-}
-
-.month-picker__nav-btn:focus-visible {
-  outline: 2px solid var(--mp-color-accent);
-  outline-offset: 2px;
-}
-
-/* ===== DUAL CALENDAR LAYOUT ===== */
-.month-picker__calendars {
-  display: flex;
-  gap: 24px;
-  width: 100%;
-}
-
-.month-picker__calendar-single {
-  flex: 1;
+  background: #f9fafb;
+  border-color: var(--mp-color-border-hover);
 }
 
 /* ===== WEEKDAYS HEADER ===== */
 .month-picker__weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 36px);
-  gap: 3px;
-  margin-bottom: 4px;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--mp-color-muted);
-  text-align: center;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
 .month-picker__weekday {
-  padding: var(--mp-spacing-sm);
   text-align: center;
-  font-size: var(--mp-font-size-xs);
-  font-weight: var(--mp-font-weight-medium);
-  color: var(--mp-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mp-color-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 /* ===== DAYS GRID ===== */
 .month-picker__days {
   display: grid;
-  grid-template-columns: repeat(7, 36px);
-  gap: 3px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px 0;
 }
 
 .month-picker__day {
   position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  font-size: 13px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   font-weight: 500;
   color: var(--mp-color-text);
   background: transparent;
   border: none;
   cursor: default;
-  transition: color var(--mp-transition);
+  z-index: 1;
+  padding: 0;
 }
 
 .month-picker__day--clickable {
   cursor: pointer;
+  border-radius: var(--mp-radius-sm);
+  transition: background-color 0.15s ease;
 }
 
 .month-picker__day--clickable:hover {
-  color: var(--mp-color-text);
-}
-
-.month-picker__day--clickable::before {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: 10px;
-  background: transparent;
-  transition: background var(--mp-transition);
-  z-index: -1;
-}
-
-.month-picker__day--clickable:hover::before {
   background: #f3f4f6;
+  border-radius: var(--mp-radius-sm);
 }
 
-/* Selected day styles */
+/* Range background connection */
+.month-picker__day--in-range {
+  background: var(--mp-color-in-range);
+  border-radius: 0;
+}
+.month-picker__day--in-range:hover {
+  background: #e0e7ff;
+  border-radius: 0;
+}
+
+/* Selected markers */
 .month-picker__day--selected {
   color: #ffffff;
+  background: var(--mp-color-selected);
+  border-radius: var(--mp-radius-sm); /* Keep corners rounded on start/end */
   font-weight: 600;
 }
-
-.month-picker__day--selected::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: var(--mp-color-selected);
-  z-index: -1;
-  transition: transform var(--mp-transition);
+.month-picker__day--selected:hover {
+  background: #1d4ed8;
 }
 
-.month-picker__day--selected:hover::after {
-  transform: scale(1.03);
+/* Overrides to make the range aesthetic connect properly */
+.month-picker__day--range-start {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
-
-/* Range styles */
-.month-picker__day--in-range {
-  color: var(--mp-color-text);
+.month-picker__day--range-end {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
-
-.month-picker__day--in-range::before {
-  content: '';
-  position: absolute;
-  top: 6px;
-  bottom: 6px;
-  left: 0;
-  right: 0;
-  border-radius: 10px;
-  background: var(--mp-color-in-range);
-  z-index: -1;
-}
-
-.month-picker__day--range-start::before,
-.month-picker__day--range-end::before {
-  background: var(--mp-color-in-range);
-}
-
-.month-picker__day--range-start::after {
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
-}
-
-.month-picker__day--range-end::after {
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
-}
-
-.month-picker__day--range-start.month-picker__day--range-end::after {
-  border-radius: 999px;
+.month-picker__day--single {
+  border-radius: var(--mp-radius-sm);
 }
 
 .month-picker__day--disabled {
-  cursor: default;
-  color: #d2d6dc;
+  color: #d1d5db;
 }
 
-/* ===== DATE INPUTS ===== */
-.month-picker__inputs {
-  display: flex;
-  gap: var(--mp-spacing-lg);
-  padding: var(--mp-spacing-lg);
-  border-top: 1px solid var(--mp-border);
-  background: var(--mp-surface);
-}
-
-.month-picker__input-group {
-  flex: 1;
-}
-
-.month-picker__input-label {
-  display: block;
-  font-size: var(--mp-font-size-xs);
-  font-weight: var(--mp-font-weight-medium);
-  color: var(--mp-text-secondary);
-  margin-bottom: var(--mp-spacing-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.month-picker__input {
-  width: 100%;
-  padding: var(--mp-spacing-sm) var(--mp-spacing-md);
-  border: 1px solid var(--mp-border);
-  border-radius: var(--mp-radius-sm);
-  font-size: var(--mp-font-size-sm);
-  color: var(--mp-text-primary);
-  background: var(--mp-background);
-  transition: var(--mp-transition-fast);
-}
-
-.month-picker__input:focus {
-  outline: none;
-  border-color: var(--mp-accent);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* ===== ACTION BUTTONS ===== */
+/* ===== ACTION BUTTONS BOX ===== */
 .month-picker__actions {
   display: flex;
   justify-content: flex-end;
-  align-items: center;
   gap: 12px;
-  padding: 14px 20px 20px;
+  padding: 16px 24px;
   border-top: 1px solid var(--mp-color-border);
-  background: var(--mp-color-bg);
+  background: var(--mp-color-surface);
 }
 
-.month-picker__action-btn {
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  font-size: 14px;
-  font-weight: 600;
+/* Overriding Button component styles from outside if they are too dark */
+.month-picker__actions button {
   font-family: var(--mp-font-family);
-  cursor: pointer;
-  transition: transform var(--mp-transition), box-shadow var(--mp-transition), background var(--mp-transition), color var(--mp-transition);
+  border-radius: var(--mp-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all var(--mp-transition);
 }
 
-.month-picker__action-btn--cancel {
-  background: #f3f4f6;
-  color: var(--mp-color-text);
-}
-
-.month-picker__action-btn--cancel:hover {
-  background: #e5e7eb;
-  transform: translateY(-1px);
-}
-
-.month-picker__action-btn--apply {
-  background: var(--mp-color-selected);
-  color: #ffffff;
-}
-
-.month-picker__action-btn--apply:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
+/* RESPONSIVE DESIGN */
 @media (max-width: 768px) {
   .month-picker__dropdown {
-    min-width: min(100vw - 24px, 520px);
+    min-width: calc(100vw - 32px);
+    left: 16px;
+    right: 16px;
   }
-
-  .month-picker__calendar {
-    padding: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .month-picker__dropdown {
-    min-width: min(100vw - 16px, 440px);
-  }
-}
-
-/* ===== DARK MODE SUPPORT ===== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --mp-color-bg: #111827;
-    --mp-color-surface: #1f2937;
-    --mp-color-text: #f3f4f6;
-    --mp-color-muted: #9ca3af;
-    --mp-color-border: #2d3646;
-    --mp-color-border-strong: #3f4a5f;
-    --mp-color-in-range: rgba(255, 255, 255, 0.08);
-    --mp-shadow-lg: 0 28px 56px rgba(0, 0, 0, 0.34);
-    --mp-shadow-md: 0 18px 32px rgba(0, 0, 0, 0.3);
-    --mp-shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.28);
-  }
-
-  .month-picker__preset {
-    background: #161f2a;
-  }
-
-  .month-picker__action-btn--cancel {
-    background: #1f2937;
+  .month-picker__calendars {
+    flex-direction: column;
+    gap: 24px;
   }
 }

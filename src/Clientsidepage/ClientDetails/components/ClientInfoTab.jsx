@@ -7,14 +7,6 @@ const ClientInfoTab = ({ client, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({});
 
-  console.log('📋 ClientInfoTab received:', {
-    clientProp: client,
-    firstName: client?.firstName,
-    lastName: client?.lastName,
-    email: client?.email,
-    phone: client?.phone
-  });
-
   // Safety check - if client is null/undefined, show loading or error
   if (!client) {
     return (
@@ -154,21 +146,11 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           </div>
         )}
       </div>
-
       {/* Profile Section */}
       <div className="client-info-section">
         <h3 className="section-title">Profile</h3>
         <div className="info-grid">
-          {console.log('🔍 Rendering fields:', {
-            firstName: client.firstName,
-            lastName: client.lastName,
-            email: client.email,
-            phone: client.phone,
-            dateOfBirth: client.dateOfBirth,
-            gender: client.gender,
-            pronouns: client.pronouns,
-            createdAt: client.createdAt
-          })}
+          {}
           {renderField('First name', 'firstName', client.firstName)}
           {renderField('Last name', 'lastName', client.lastName)}
           {renderField('Email', 'email', client.email, 'text')}
@@ -182,7 +164,6 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           </div>
         </div>
       </div>
-
       {/* Additional Info Section */}
       {/* <div className="client-info-section">
         <h3 className="section-title">Additional info</h3>
@@ -196,7 +177,6 @@ const ClientInfoTab = ({ client, onUpdate }) => {
           {renderField('Additional phone', 'additionalPhone', client.additionalPhone, 'tel')}
         </div>
       </div> */}
-
       {/* Addresses Section */}
       {/* <div className="client-info-section">
         <h3 className="section-title">Addresses</h3>

@@ -87,27 +87,22 @@ const ServiceMenu = () => {
   // Fetch categories from the API for dropdown
   const fetchAvailableCategories = async () => {
     try {
-      console.log('📋 Fetching available categories for dropdown...');
-      
       // Try multiple endpoints to find categories
       const endpoints = [
         '/services/categories',
         '/categories/categories',
         '/categories'
       ];
-      
+
       let categoriesLoaded = false;
-      
+
       for (const endpoint of endpoints) {
         try {
-          console.log(`🔍 Trying endpoint: ${endpoint}`);
           const response = await api.get(endpoint);
-          console.log(`✅ Response from ${endpoint}:`, response.data);
-          
+
           if (response.data.success && response.data.data) {
             const categories = response.data.data.categories || response.data.data || [];
             if (Array.isArray(categories) && categories.length > 0) {
-              console.log('📊 Available categories loaded:', categories.length, categories);
               setAvailableCategories(categories);
               categoriesLoaded = true;
               break;
@@ -118,7 +113,7 @@ const ServiceMenu = () => {
           continue;
         }
       }
-      
+
       if (!categoriesLoaded) {
         console.warn('⚠️ No categories found from any endpoint');
         setAvailableCategories([]);
@@ -843,8 +838,6 @@ const ServiceMenu = () => {
   };
 
   const handleAddServiceFromMenu = () => {
-    console.log('🔍 Opening Add Service Modal');
-    console.log('📊 Available categories at modal open:', availableCategories.length, availableCategories);
     setShowAddModal(true);
     handleAddMenuClose(); // Close dropdown
   };

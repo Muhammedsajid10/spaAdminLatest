@@ -48,20 +48,8 @@ const useClientDetails = (clientId) => {
         clientService.getClientNotes(clientId) // Notes data
       ]);
 
-      console.log('📦 Hook received data:', {
-        clientData,
-        statsData,
-        bookingsData,
-        salesData,
-        giftCardsData,
-        reviewsData,
-        membershipsData,
-        allergiesData,
-        notesData
-      });
-
       setClient(clientData);
-      
+
       // Process stats data from backend
       let processedStats = {
         totalSpent: 0,
@@ -224,7 +212,7 @@ const useClientDetails = (clientId) => {
       } else {
         setNotes([]);
       }
-      
+
       // Create lookup maps for services and employees
       const svcMap = {};
       if (Array.isArray(servicesData)) {
@@ -232,30 +220,16 @@ const useClientDetails = (clientId) => {
           if (svc._id) svcMap[svc._id] = svc;
         });
       }
-      
+
       const empMap = {};
       if (Array.isArray(employeesData)) {
         employeesData.forEach(emp => {
           if (emp._id) empMap[emp._id] = emp;
         });
       }
-      
+
       setServicesMap(svcMap);
       setEmployeesMap(empMap);
-      
-      console.log('✅ Hook state updated:', {
-        client: clientData,
-        bookings: bookingsData?.length,
-        sales: salesData?.length,
-        giftCards: giftCardsData?.length,
-        reviews: reviewsData?.length,
-        memberships: membershipsData?.length,
-        servicesMapSize: Object.keys(svcMap).length,
-        employeesMapSize: Object.keys(empMap).length,
-        allergies: allergiesData?.length,
-        notes: notesData?.length,
-        stats: processedStats
-      });
     } catch (err) {
       setError(err.message || 'Failed to fetch client details');
       console.error(err);

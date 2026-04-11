@@ -3,19 +3,11 @@ import { Star, Calendar, User, Briefcase } from 'lucide-react';
 import './ClientReviewsTab.css';
 
 const ClientReviewsTab = ({ client, reviews = [] }) => {
-  // Debug: Log the reviews data structure
-  console.log('📊 Reviews data:', reviews);
-  
   const formattedReviews = useMemo(() => {
     return reviews.map(review => {
-      // Debug: Log each review to see its structure
-      console.log('🔍 Individual review:', review);
-      console.log('Employee data:', review.employee);
-      console.log('Booking data:', review.booking);
-      
       // Extract employee name from various possible structures
       let employeeName = 'Unknown';
-      
+
       // Try different paths to find employee name
       if (review.employeeName && review.employeeName !== 'Unknown') {
         employeeName = review.employeeName;
@@ -45,8 +37,6 @@ const ClientReviewsTab = ({ client, reviews = [] }) => {
       } else if (review.staff?.name) {
         employeeName = review.staff.name;
       }
-      
-      console.log('✅ Extracted employee name:', employeeName);
 
       // Extract service name
       const serviceName = 
@@ -57,7 +47,7 @@ const ClientReviewsTab = ({ client, reviews = [] }) => {
       // Format appointment date and time
       const appointmentDate = review.booking?.appointmentDate || review.booking?.createdAt;
       const appointmentTime = review.booking?.appointmentTime || review.booking?.startTime;
-      
+
       let formattedDateTime = '';
       if (appointmentDate) {
         const date = new Date(appointmentDate);

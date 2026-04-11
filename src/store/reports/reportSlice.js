@@ -1,9 +1,17 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { ReportsAPI } from '../../Service/api/reportsApi';
 
+const getLocalDateString = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const initialDateRange = {
-  start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  end: new Date().toISOString().split('T')[0]
+  start: getLocalDateString(Date.now() - 30 * 24 * 60 * 60 * 1000),
+  end: getLocalDateString(Date.now())
 };
 
 export const fetchReportClients = createAsyncThunk(

@@ -328,15 +328,12 @@ const Appoint = () => {
     const fetchAllAppointments = async () => {
       try {
         setIsLoadingAll(true);
-        console.log('📥 Fetching appointments with pagination...');
-        
+
         // ✅ PERFORMANCE FIX: Use reasonable limit instead of 5000
         // Backend now handles pagination efficiently with skip/limit
         const res = await api.get('/bookings/admin/all?page=1&limit=100');
         const allBookings = res?.data?.data?.bookings || [];
-        
-        console.log(`📊 Loaded ${allBookings.length} appointments (page 1)`);
-        
+
         // Map the bookings to formatted appointments
         const mapped = allBookings.map((booking) => {
           const teamMembers = (booking.services || [])
@@ -388,7 +385,7 @@ const Appoint = () => {
             status: booking?.status || "-",
           };
         });
-        
+
         setAllAppointments(mapped);
       } catch (err) {
         console.error('Failed to fetch all appointments:', err);
@@ -421,7 +418,6 @@ const Appoint = () => {
       
       if (!hasFilters && !isPaginated && cacheRef.current.appointmentsData && cacheRef.current.paginationData &&
           (now - cacheRef.current.cachedAt) < CACHE_DURATION) {
-        console.log('📦 Using cached appointments data (TTL: 5 min)');
         setAppointments(cacheRef.current.appointmentsData);
         // ✅ FIX: Also restore pagination data from cache
         setTotalRecords(cacheRef.current.paginationData.total);
@@ -435,24 +431,19 @@ const Appoint = () => {
         const params = new URLSearchParams();
         params.append('page', currentPage);
         params.append('limit', pageSize);
-        
+
         // Optional: add date filter if selected
         if (selectedDate) {
           params.append('startDate', selectedDate);
           params.append('endDate', selectedDate);
         }
-        
-        console.log(`📥 Fetching appointments: page=${currentPage}, limit=${pageSize}`);
-        
+
         // ✅ API call with pagination params ONLY (search done on frontend)
         const res = await api.get(`/bookings/admin/all?${params.toString()}`);
-        
+
         // ✅ NEW: Extract paginated response
         const bookings = res?.data?.data?.bookings || [];
         const pagination = res?.data?.data?.pagination || {};
-        
-        console.log(`📊 Received ${bookings.length} of ${pagination.total} total appointments`);
-        console.log(`📄 Page ${pagination.page} of ${pagination.pages}`);
 
         const mapped = bookings.map((booking) => {
           // Build team member names
@@ -515,13 +506,11 @@ const Appoint = () => {
         });
 
         setAppointments(mapped);
-        
+
         // ✅ NEW: Update pagination state from backend response
         setTotalRecords(pagination.total);
         setTotalPages(pagination.pages);
-        
-        console.log(`✅ Pagination updated: total=${pagination.total}, pages=${pagination.pages}`);
-        
+
         // ✅ FIX: Update cache with BOTH appointments AND pagination data
         cacheRef.current = {
           appointmentsData: mapped,
@@ -531,7 +520,7 @@ const Appoint = () => {
           },
           cachedAt: Date.now()
         };
-        
+
         setLoading(false);
       } catch (err) {
         setError(err?.message || "Failed to load appointments");
@@ -600,7 +589,6 @@ const Appoint = () => {
       return av === bv ? 0 : av > bv ? dir : -dir;
     });
 
-    console.log(`🔍 Filtered: ${list.length} results from ${allAppointments.length} total`);
     return list;
   }, [allAppointments, searchTerm, selectedDate, activeFilters, sortField, sortDirection]);
 
@@ -616,7 +604,6 @@ const Appoint = () => {
     const totalPagesCount = Math.ceil(totalCount / pageSize);
     setTotalRecords(totalCount);
     setTotalPages(totalPagesCount);
-    console.log(`📊 Pagination: ${totalCount} results, ${totalPagesCount} pages`);
   }, [filteredAppointments.length, pageSize]);
 
   // ✅ Reset to page 1 when filters/search change

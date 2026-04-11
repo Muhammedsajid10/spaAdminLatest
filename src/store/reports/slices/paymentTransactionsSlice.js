@@ -40,6 +40,22 @@ const normalizePaymentTransaction = (payment) => {
   };
 };
 
+export const buildPaymentTransactionsData = (items = [], dateRange = null) => {
+  if (!dateRange?.start || !dateRange?.end) return items;
+  
+  return items.filter((item) => {
+    const tsStr = item.paymentDate || item.saleDate;
+    if (!tsStr) return false;
+    const ts = new Date(tsStr);
+    if (Number.isNaN(ts.getTime())) return false;
+    const year = ts.getFullYear();
+    const month = String(ts.getMonth() + 1).padStart(2, '0');
+    const day = String(ts.getDate()).padStart(2, '0');
+    const localDateStr = `${year}-${month}-${day}`;
+    return localDateStr >= dateRange.start && localDateStr <= dateRange.end;
+  });
+};
+
 export const fetchPaymentTransactions = createAsyncThunk(
   'paymentTransactions/fetchAll',
   async (_, { rejectWithValue }) => {
@@ -48,10 +64,7 @@ export const fetchPaymentTransactions = createAsyncThunk(
         limit: 15000
       });
       const payments = response?.data?.payments ?? [];
-      console.log('💰 Raw Payment Transactions Response:', response);
-      if (payments.length > 0) {
-        console.log('💰 First Payment Object:', payments[0]);
-      }
+      if (payments.length > 0) {}
       return payments.map(normalizePaymentTransaction);
     } catch (error) {
       const message =

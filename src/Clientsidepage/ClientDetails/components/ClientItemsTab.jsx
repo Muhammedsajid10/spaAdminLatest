@@ -5,21 +5,11 @@ import './ClientItemsTab.css';
 const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap = {} }) => {
   const [activeSubTab, setActiveSubTab] = useState('memberships');
 
-  // Debug: Log received data
-  console.log('📊 ClientItemsTab received:', { 
-    bookingsCount: bookings.length, 
-    membershipsCount: memberships.length,
-    servicesMapSize: Object.keys(servicesMap).length,
-    bookings,
-    memberships 
-  });
-
   // Format bookings data for display
   const formattedServices = useMemo(() => {
-    console.log('🔄 Formatting bookings:', bookings);
     return bookings.map(booking => {
       const firstService = booking.services?.[0];
-      
+
       // Lookup service name using servicesMap
       let serviceName = 'Service';
       if (firstService?.service) {
@@ -31,13 +21,13 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap =
           serviceName = firstService.service.name;
         }
       }
-      
+
       const employeeName = firstService?.employee?.user 
         ? `${firstService.employee.user.firstName || ''} ${firstService.employee.user.lastName || ''}`.trim()
         : (firstService?.employee?.firstName && firstService?.employee?.lastName 
           ? `${firstService.employee.firstName} ${firstService.employee.lastName}`.trim()
           : '');
-      
+
       const date = booking.appointmentDate 
         ? new Date(booking.appointmentDate).toLocaleDateString('en-GB', {
             weekday: 'short',
@@ -57,7 +47,6 @@ const ClientItemsTab = ({ client, bookings = [], memberships = [], servicesMap =
         status: booking.status
       };
 
-      console.log('✅ Formatted service:', formatted);
       return formatted;
     });
   }, [bookings, servicesMap]);

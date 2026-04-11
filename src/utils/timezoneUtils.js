@@ -166,14 +166,6 @@ export const getCurrentTimeIST = () => {
  */
 export const debugTimezone = (label, dateTime) => {
   if (!dateTime) return;
-  
+
   const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
-  
-  console.log(`🕐 ${label}:`, {
-    original: dateTime,
-    iso: date.toISOString(),
-    utcTime: extractUTCTime(date).timeString,
-    istDisplay: formatTimeForDisplay(date),
-    localDisplay: date.toLocaleTimeString()
-  });
 };

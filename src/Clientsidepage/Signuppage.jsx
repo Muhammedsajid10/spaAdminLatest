@@ -33,7 +33,6 @@ const SignInPage = () => {
     
     try {
       const response = await api.post("/auth/signup", formData);
-      console.log('Signup successful:', response.data);
       // Handle successful signup - redirect to login or dashboard
       Swal.fire({
         icon: 'success',
