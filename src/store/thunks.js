@@ -268,6 +268,11 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
         });
       });
 
+      console.log('📅 --- CALENDAR API FETCH SUCCESS ---');
+      console.log(`🔍 Fetched ${allBookings.length} raw bookings from API:`, allBookings);
+      console.log('⚙️ Processed (Transformed) Appointments for Calendar:', transformedAppointments);
+      console.log('-------------------------------------------');
+
       dispatch(setEmployees(transformedEmployees));
       dispatch(setTimeSlots(generateTimeSlots('00:00', '23:30', 30)));
       dispatch(setAppointments(transformedAppointments));

@@ -435,6 +435,26 @@ const SelectCalendar = () => {
   const [bookingStatusError, setBookingStatusError] = useState(null);
   const [fullBookingDetailsLoading, setFullBookingDetailsLoading] = useState(false);
 
+  // Fetch gift card details by ID
+  const fetchGiftCardDetailsById = useCallback(async (giftCardId) => {
+    if (!giftCardId) return null;
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const response = await fetch(`${Base_url}/giftcards/${giftCardId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data?.data?.giftCard || data?.data || null;
+    } catch (err) {
+      console.warn('Error fetching gift card details:', err);
+      return null;
+    }
+  }, [Base_url]);
+
   // Fetch full booking details with all service information including custom pricing
   const fetchFullBookingDetails = useCallback(async (bookingId) => {
     if (!bookingId) return;
@@ -460,6 +480,19 @@ const SelectCalendar = () => {
 
       if (data && data.data) {
         const booking = data.data.booking || data.data;
+
+        console.log('📝 Full Booking Data Fetched:', {
+          booking,
+          paymentDetails: booking.paymentDetails,
+          giftCardId: booking.paymentDetails?.giftCardId
+        });
+
+        // Fetch gift card details if giftCardId exists in paymentDetails
+        let giftCardDetails = null;
+        if (booking.paymentDetails?.giftCardId) {
+          giftCardDetails = await fetchGiftCardDetailsById(booking.paymentDetails.giftCardId);
+          console.log('🎁 Gift Card Details:', giftCardDetails);
+        }
 
         // Update selectedBookingForStatus with enriched data while preserving calendar view fields
         setSelectedBookingForStatus(prev => {
@@ -512,7 +545,9 @@ const SelectCalendar = () => {
             client: clientName,
             service: targetService.serviceName || targetService.service?.name || prev?.service,
             // Keep original MongoDB object for reference if needed
-            _fullBookingData: booking
+            _fullBookingData: booking,
+            // Store gift card details
+            _giftCardData: giftCardDetails
           };
         });
       }
@@ -522,7 +557,7 @@ const SelectCalendar = () => {
     } finally {
       setFullBookingDetailsLoading(false);
     }
-  }, [Base_url]);
+  }, [Base_url, fetchGiftCardDetailsById]);
 
   // Fetch full booking details when modal opens
   useEffect(() => {
@@ -657,7 +692,7 @@ const SelectCalendar = () => {
         ...staff
       },
       time: slotTime,
-      date: bookingDate,
+      date: bookingDate instanceof Date ? formatDateLocal(bookingDate) : bookingDate,
       isDirectTimeSlotSelection: true // Flag to indicate this was a direct time slot click
     });
 
@@ -742,7 +777,7 @@ const SelectCalendar = () => {
         service,
         professional: professionalObj,
         timeSlot: startTime,
-        date: bookingDate,
+        date: bookingDate instanceof Date ? formatDateLocal(bookingDate) : bookingDate,
         duration: service.duration,
         price: service.price,
         originalPrice: service.price, // Store original price for discount calculation
@@ -2516,6 +2551,19 @@ const SelectCalendar = () => {
         discountedTotal: customTotalDiscount !== 0 ? totalAmount : undefined // Total after custom discount/charge, before other discounts
       };
 
+      console.log('--- 🚀 FINAL BOOKING CREATION TRIGGERED ---');
+      console.log('📦 Booking Payload Data:', JSON.stringify(bookingPayload, null, 2));
+      console.log('💳 Payment Adjustments (Redeemed):', JSON.stringify({
+        paymentMethod: effectivePaymentMethod,
+        finalAmount: finalAmount,
+        originalTotal: originalTotalAmount,
+        customDiscount: customTotalDiscount,
+        paymentDetails: paymentDetails,
+        appliedGiftCard: selectedGiftCard ? { code: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber, amount: paymentDetails?.giftCard?.redeemAmount } : 'None',
+        appliedMembership: appliedMembership ? { id: appliedMembership?._id, amount: paymentDetails?.adminMembership?.discountAmount } : 'None'
+      }, null, 2));
+      console.log('-------------------------------------------');
+
       const res = await fetch(`${Base_url}/bookings`, {
         method: 'POST',
         headers: {
@@ -2692,13 +2740,9 @@ const SelectCalendar = () => {
 
 
   // --- API CALL FUNCTION (moved to Redux thunk) ---
-  const fetchCalendarData = () => {
-    dispatch(fetchCalendarThunk({ currentDate, currentView }));
-  };
-
   useEffect(() => {
-    fetchCalendarData();
-  }, [currentDate, currentView]);
+    dispatch(fetchCalendarThunk({ currentDate, currentView }));
+  }, [currentDate, currentView, dispatch]);
 
   // Load services on component mount for price lookups
   useEffect(() => {
@@ -2725,7 +2769,7 @@ const SelectCalendar = () => {
   // Load client gift cards when entering payment step
   const loadBenefitsIfNeeded = useCallback(async (force = false) => {
     // Only proceed if we have a selected client
-    if (!selectedExistingClient?._id && !force) {
+    if (!selectedExistingClient?._id) {
       return;
     }
 
@@ -4019,9 +4063,24 @@ const SelectCalendar = () => {
 
                           const globalDiscount = Number(selectedBookingForStatus.customDiscount || selectedBookingForStatus.customTotalDiscount || 0);
 
-                          const fullData = selectedBookingForStatus._fullBookingData || {};
+                          const fullData = selectedBookingForStatus._fullBookingData || selectedBookingForStatus || {};
                           const paymentDetails = fullData.paymentDetails || {};
-                          const giftCardInfo = paymentDetails.giftCard || null;
+                          const giftCardData = selectedBookingForStatus._giftCardData;
+                          const giftCardId = paymentDetails.giftCardId;
+                          
+                          // DEBUG: Log payment details to console
+                          console.log('💳 Payment Details Debug:', {
+                            fullData,
+                            paymentDetails,
+                            giftCardId,
+                            giftCardData,
+                            totalSavings,
+                            bookingFinalTotal
+                          });
+                          
+                          // Gift card redemption = any reduction from original to final (when giftCardId exists)
+                          const giftCardRedemptionAmount = (giftCardId && totalSavings > 0) ? totalSavings : 0;
+
                           const membershipInfo = paymentDetails.adminMembership || null;
 
                           return (
@@ -4047,6 +4106,33 @@ const SelectCalendar = () => {
 
                               <div className="breakdown-total-separator"></div>
 
+                              {/* All Services Total */}
+                              {allServices.length > 1 && (
+                                <div className="breakdown-row all-services-total">
+                                  <span className="final-label-small">Subtotal ({allServices.length} services)</span>
+                                  <span className="final-value-normal">AED {bookingTotalOrigValue.toFixed(2)}</span>
+                                </div>
+                              )}
+
+                              {/* Gift Card Redemption */}
+                              {giftCardRedemptionAmount > 0 && (
+                                <div className="breakdown-row gift-card-row">
+                                  <span className="final-label-small">
+                                    🎁 Gift Card Redeemed
+                                    {giftCardData?.code && <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '4px' }}>({giftCardData.code})</span>}
+                                  </span>
+                                  <span className="final-value-disc" style={{ color: '#10b981' }}>-AED {giftCardRedemptionAmount.toFixed(2)}</span>
+                                </div>
+                              )}
+
+                              {/* Membership Discount */}
+                              {membershipInfo && (
+                                <div className="breakdown-row membership-row">
+                                  <span className="final-label-small">👤 Membership Discount ({membershipInfo.name || 'Member'})</span>
+                                  <span className="final-value-disc" style={{ color: '#8b5cf6' }}>-AED {membershipInfo.discount?.toFixed(2) || '0.00'}</span>
+                                </div>
+                              )}
+
                               {globalDiscount !== 0 && (
                                 <div className={`breakdown-row ${globalDiscount > 0 ? 'discount-global' : 'extra-charge-global'}`}>
                                   <span className="final-label-small">{globalDiscount > 0 ? 'Extra Booking Discount' : 'Extra Charge'}</span>
@@ -4054,13 +4140,12 @@ const SelectCalendar = () => {
                                 </div>
                               )}
 
-                              {totalSavings > globalDiscount && (
+                              {totalSavings > giftCardRedemptionAmount && (
                                 <div className="breakdown-row discount-info-row">
-                                  <span className="final-label-small">Applied Service Discounts</span>
-                                  <span className="final-value-disc">-AED {(totalSavings - globalDiscount).toFixed(2)}</span>
+                                  <span className="final-label-small">Other Service Discounts</span>
+                                  <span className="final-value-disc">-AED {(totalSavings - giftCardRedemptionAmount).toFixed(2)}</span>
                                 </div>
                               )}
-
 
                               <div className="breakdown-final-row">
                                 <div className="final-label-group">
