@@ -2512,8 +2512,8 @@ const SelectCalendar = () => {
         notes: bookingForm.notes || '',
         giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
         bookingSource: 'admin',
-        customDiscount: customTotalDiscount > 0 ? customTotalDiscount : undefined,
-        discountedTotal: customTotalDiscount > 0 ? totalAmount : undefined // Total after custom discount, before other discounts
+        customDiscount: customTotalDiscount !== 0 ? customTotalDiscount : undefined,
+        discountedTotal: customTotalDiscount !== 0 ? totalAmount : undefined // Total after custom discount/charge, before other discounts
       };
 
       const res = await fetch(`${Base_url}/bookings`, {
@@ -4040,10 +4040,10 @@ const SelectCalendar = () => {
 
                               <div className="breakdown-total-separator"></div>
 
-                              {globalDiscount > 0 && (
-                                <div className="breakdown-row discount-global">
-                                  <span className="final-label-small">Extra Booking Discount</span>
-                                  <span className="final-value-disc">-AED {globalDiscount.toFixed(2)}</span>
+                              {globalDiscount !== 0 && (
+                                <div className={`breakdown-row ${globalDiscount > 0 ? 'discount-global' : 'extra-charge-global'}`}>
+                                  <span className="final-label-small">{globalDiscount > 0 ? 'Extra Booking Discount' : 'Extra Charge'}</span>
+                                  <span className="final-value-disc" style={globalDiscount < 0 ? { color: '#eab308' } : {}}>{globalDiscount > 0 ? '-AED' : '+AED'} {Math.abs(globalDiscount).toFixed(2)}</span>
                                 </div>
                               )}
 
@@ -5018,18 +5018,20 @@ const SelectCalendar = () => {
                                 <button className="edit-price-btn-modern" onClick={startEditingTotalPrice} title="Edit Total Price">
                                   <Edit2 size={14} />
                                 </button>
-                                {customTotalDiscount > 0 && (
-                                  <button className="clear-discount-btn-modern" onClick={clearCustomDiscount} title="Remove Discount">
+                                {customTotalDiscount !== 0 && (
+                                  <button className="clear-discount-btn-modern" onClick={clearCustomDiscount} title="Remove Adjustment">
                                     <X size={12} />
                                   </button>
                                 )}
                               </div>
                             )}
 
-                            {customTotalDiscount > 0 && !editingTotalPrice && (
+                            {customTotalDiscount !== 0 && !editingTotalPrice && (
                               <div className="original-price-subtext">
                                 <span className="original">AED {(multipleAppointments.reduce((sum, a) => sum + (a.service?.price || 0), 0)).toFixed(2)}</span>
-                                <span className="discount-tag">-{customTotalDiscount.toFixed(2)} off</span>
+                                <span className={customTotalDiscount > 0 ? "discount-tag" : "extra-charge-tag"} style={customTotalDiscount < 0 ? { backgroundColor: '#fef08a', color: '#854d0e', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' } : {}}>
+                                  {customTotalDiscount > 0 ? `-${customTotalDiscount.toFixed(2)} off` : `+${Math.abs(customTotalDiscount).toFixed(2)} extra`}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -5164,10 +5166,10 @@ const SelectCalendar = () => {
                           </div>
                         )}
 
-                        {customTotalDiscount > 0 && (
-                          <div className="breakdown-row discount">
-                            <span className="breakdown-label">Manual Discount</span>
-                            <span className="breakdown-value">-AED {customTotalDiscount.toFixed(2)}</span>
+                        {customTotalDiscount !== 0 && (
+                          <div className={`breakdown-row ${customTotalDiscount > 0 ? 'discount' : 'extra-charge'}`}>
+                            <span className="breakdown-label">{customTotalDiscount > 0 ? 'Manual Discount' : 'Extra Charge'}</span>
+                            <span className="breakdown-value" style={customTotalDiscount < 0 ? { color: '#854d0e', fontWeight: '500' } : {}}>{customTotalDiscount > 0 ? '-AED' : '+AED'} {Math.abs(customTotalDiscount).toFixed(2)}</span>
                           </div>
                         )}
 
