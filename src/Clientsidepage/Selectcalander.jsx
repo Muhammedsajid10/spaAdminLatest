@@ -2470,8 +2470,8 @@ const SelectCalendar = () => {
 
           // Update finalAmount to reflect gift card redemption
           finalAmount = Math.max(0, amountAfterMembership - actualRedeemAmount);
-        } else {}
-      } else {}
+        } else { }
+      } else { }
 
       // Normalize payment methods to backend-accepted enums and attach details
       // Backend expects values like: 'cash', 'card', 'online', 'giftcard' (common)
@@ -2623,7 +2623,7 @@ const SelectCalendar = () => {
     // Only clear appointments session if explicitly requested
     if (clearSession) {
       clearAppointmentSession();
-    } else {}
+    } else { }
 
     // Reset gift card and membership states
     setAvailableGiftCards([]);
@@ -2717,7 +2717,7 @@ const SelectCalendar = () => {
 
   // Debug: Track when existing clients state changes
   useEffect(() => {
-    if (existingClients.length > 0) {}
+    if (existingClients.length > 0) { }
   }, [existingClients]);
 
   // Auto-fetch gift cards useEffect moved after function definition
@@ -2839,8 +2839,8 @@ const SelectCalendar = () => {
         }
 
         setAvailableProfessionals(professionals);
-      } else {}
-    } else {}
+      } else { }
+    } else { }
   }, [bookingStep, selectedService, availableProfessionals.length, selectedProfessional, selectedBookingDate, currentDate, employees, appointments, availableServices]);
 
   // NEW: Auto-populate time slots when on step 3
@@ -2856,8 +2856,8 @@ const SelectCalendar = () => {
         );
 
         setAvailableTimeSlots(timeSlots);
-      } else {}
-    } else {}
+      } else { }
+    } else { }
   }, [bookingStep, selectedService, selectedProfessional, availableTimeSlots.length, selectedBookingDate, currentDate, employees, appointments, availableServices]);
 
   // --- CURRENT TIME LINE LOGIC ---
@@ -4019,17 +4019,24 @@ const SelectCalendar = () => {
 
                           const globalDiscount = Number(selectedBookingForStatus.customDiscount || selectedBookingForStatus.customTotalDiscount || 0);
 
+                          const fullData = selectedBookingForStatus._fullBookingData || {};
+                          const paymentDetails = fullData.paymentDetails || {};
+                          const giftCardInfo = paymentDetails.giftCard || null;
+                          const membershipInfo = paymentDetails.adminMembership || null;
+
                           return (
                             <>
                               <div className="breakdown-service-item">
                                 <div className="svc-info">
                                   <span className="svc-name-small">{currentSvc.serviceName || currentSvc.service?.name || selectedBookingForStatus.service}</span>
                                   <div className="svc-pricing-line">
-                                    {svcDiscount > 0 ? (
+                                    {svcDiscount !== 0 ? (
                                       <>
                                         <span className="orig-price-strike">AED {svcOrigPrice.toFixed(2)}</span>
                                         <span className="final-price-bold">AED {svcPrice.toFixed(2)}</span>
-                                        <span className="disc-tag-small">(-AED {svcDiscount.toFixed(2)})</span>
+                                        <span className="disc-tag-small" style={svcDiscount < 0 ? { backgroundColor: '#fef08a', color: '#854d0e', padding: '2px 4px', borderRadius: '4px', marginLeft: '6px' } : {}}>
+                                          {svcDiscount > 0 ? `(-AED ${svcDiscount.toFixed(2)})` : `(+AED ${Math.abs(svcDiscount).toFixed(2)})`}
+                                        </span>
                                       </>
                                     ) : (
                                       <span className="final-price-normal">AED {svcPrice.toFixed(2)}</span>
@@ -4053,6 +4060,7 @@ const SelectCalendar = () => {
                                   <span className="final-value-disc">-AED {(totalSavings - globalDiscount).toFixed(2)}</span>
                                 </div>
                               )}
+
 
                               <div className="breakdown-final-row">
                                 <div className="final-label-group">
@@ -4175,53 +4183,56 @@ const SelectCalendar = () => {
               {/* Service Selection Step */}
               {bookingStep === 1 && (currentView !== 'Week' || bookingDefaults?.isDirectTimeSlotSelection || selectedBookingDate) && (
                 <>
-                  {}
-                  {}
-                  {}
-                  {}
+                  { }
+                  { }
+                  { }
+                  { }
                   <h3 className="services-section-title">Services</h3>
 
                   {/* SERVICE CARDS LIKE DESIGN */}
                   {(bookingDefaults?.professional || multipleAppointments.length > 0) && (
-                    <div className="service-cards-stack">
-                      {multipleAppointments.map((apt, idx) => {
-                        const start = apt.timeSlot;
-                        const end = addMinutesToTime(apt.timeSlot, apt.duration);
-                        return (
-                          <div key={apt.id} className="service-card-mini">
-                            <div className="service-card-left-bar" />
-                            <div className="service-card-body">
-                              <div className="service-card-row1">
-                                <span className="svc-name">{apt.service.name}</span>
-                                <span className="svc-price">AED {apt.price}</span>
+                    <>
+                      <div className="service-cards-stack">
+                        {multipleAppointments.map((apt, idx) => {
+                          const start = apt.timeSlot;
+                          const end = addMinutesToTime(apt.timeSlot, apt.duration);
+                          return (
+                            <div key={apt.id} className="service-card-mini">
+                              <div className="service-card-left-bar" />
+                              <div className="service-card-body">
+                                <div className="service-card-row1">
+                                  <span className="svc-name">{apt.service.name}</span>
+                                  <span className="svc-price">AED {apt.price}</span>
+                                </div>
+                                <div className="service-card-row2">
+                                  <span className="svc-time">{start}</span>
+                                  <span className="svc-dot">•</span>
+                                  <span className="svc-duration">{Math.round(apt.duration / 60) || 1}h{apt.duration % 60 ? ` ${apt.duration % 60}m` : ''}</span>
+                                  <span className="svc-dot">•</span>
+                                  <span className="svc-prof">{apt.professional.user?.firstName || apt.professional.name}</span>
+                                </div>
                               </div>
-                              <div className="service-card-row2">
-                                <span className="svc-time">{start}</span>
-                                <span className="svc-dot">•</span>
-                                <span className="svc-duration">{Math.round(apt.duration / 60) || 1}h{apt.duration % 60 ? ` ${apt.duration % 60}m` : ''}</span>
-                                <span className="svc-dot">•</span>
-                                <span className="svc-prof">{apt.professional.user?.firstName || apt.professional.name}</span>
-                              </div>
-                            </div>
-                            <div className="service-card-actions">
+                              <div className="service-card-actions">
 
-                              <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSessionLocal(apt.id)}>
-                                🗑️
-                              </button>
+                                <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSessionLocal(apt.id)}>
+                                  🗑️
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
 
                       <button
                         type="button"
                         className="add-service-inline-btn"
                         onClick={() => { setShowServiceCatalog(true); setTimeout(() => document.querySelector('.service-catalog-grid')?.scrollIntoView({ behavior: 'smooth' }), 50); }}
                         title="Add another service"
+                        style={{ marginBottom: '16px' }}
                       >
                         Add service
                       </button>
-                    </div>
+                    </>
                   )}
 
                   {/* Service catalog list for selection */}
@@ -4415,7 +4426,7 @@ const SelectCalendar = () => {
               {/* Multiple Services Management Step */}
               {bookingStep === 4 && (
                 <>
-                  {}
+                  { }
 
                   {/* Auto-add now happens on time selection; show hint if user wants to add more */}
                   {(!selectedService || !selectedProfessional || !selectedTimeSlot) && multipleAppointments.length === 0 && (
@@ -4432,7 +4443,7 @@ const SelectCalendar = () => {
                   {multipleAppointments.length > 0 && (
                     <div className="services-session-summary">
                       <h4> Services in Your Booking Session ({multipleAppointments.length})</h4>
-                      {}
+                      { }
                       <div className="services-list">
                         {multipleAppointments.map((apt, index) => (
                           <div key={apt.id} className="service-session-item">
@@ -4941,7 +4952,12 @@ const SelectCalendar = () => {
                                           <span className="original-price">AED {apt.service.price.toFixed(2)}</span>
                                           <span className="price-arrow">→</span>
                                           <span className="edited-price">AED {editedServicePrices[apt.id].toFixed(2)}</span>
-                                          <span className="discount-badge">-AED {(apt.service.price - editedServicePrices[apt.id]).toFixed(2)}</span>
+                                          <span className={apt.service.price > editedServicePrices[apt.id] ? "discount-badge" : "discount-badge"} style={apt.service.price < editedServicePrices[apt.id] ? { backgroundColor: '#fef08a', color: '#854d0e', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' } : {}}>
+                                            {apt.service.price > editedServicePrices[apt.id]
+                                              ? `-AED ${(apt.service.price - editedServicePrices[apt.id]).toFixed(2)}`
+                                              : `+AED ${(editedServicePrices[apt.id] - apt.service.price).toFixed(2)}`
+                                            }
+                                          </span>
                                         </div>
                                       ) : (
                                         <span className="service-price">AED {apt.service.price.toFixed(2)}</span>

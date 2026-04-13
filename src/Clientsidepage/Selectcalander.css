@@ -3095,6 +3095,22 @@
   flex-direction: column;
   gap: 10px;
   margin-bottom: 16px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.service-cards-stack::-webkit-scrollbar {
+  width: 6px;
+}
+
+.service-cards-stack::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.service-cards-stack::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 20px;
 }
 
 .service-card-mini {
@@ -3107,6 +3123,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   transition: border-color .2s, box-shadow .2s;
+  flex-shrink: 0;
 }
 
 .service-card-mini:hover {
@@ -3211,6 +3228,7 @@
   border-radius: 12px;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   justify-content: center;
   gap: 6px;
   cursor: pointer;
