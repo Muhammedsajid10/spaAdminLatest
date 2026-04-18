@@ -1,16 +1,20 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { 
   setAppliedMembership, setMembershipDiscountAmount, setBookingStatus,
-  setSelectedService, setSelectedProfessional, setSelectedTimeSlot, setAvailableProfessionals, setAvailableTimeSlots,
+  setSelectedService, setSelectedProfessional, setSelectedTimeSlot, 
+  setAvailableServices, setAvailableProfessionals, setAvailableTimeSlots,
   setSelectedClient, setIsAddingNewClient, setClientSearchResults, setClientSearchQuery, setClientInfo,
-  setSelectedDate, setStep as setBookingStep
+  setSelectedDate, setStep as setBookingStep,
+  setAvailableMemberships, setAvailableGiftCards, setBenefitsStatus
 } from './adminBookingSlice';
 import { addAppointmentToSession } from './bookingSessionSlice';
 import { 
   getAvailableProfessionalsWithAccumulatedBookings,
+  getAvailableTimeSlotsWithAccumulatedBookings,
   detectProfessionalConflict,
   formatDateLocal
 } from '../Clientsidepage/helpers/selectCalendarHelpers';
+import { hasShiftOnDate } from '../calendar';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
 
@@ -91,9 +95,10 @@ export const selectProfessionalThunk = createAsyncThunk(
  */
 export const searchClientsThunk = createAsyncThunk(
   'adminBooking/searchClients',
-  async (query, { dispatch }) => {
+  async (query, { dispatch, getState }) => {
     if (!query || query.length < 2) {
-      dispatch(setClientSearchResults([]));
+      const state = getState();
+      dispatch(setClientSearchResults(state.adminBooking.client.existingList || []));
       return;
     }
 
@@ -150,18 +155,36 @@ export const loadClientBenefitsThunk = createAsyncThunk(
   async (clientId, { dispatch }) => {
     if (!clientId) return;
     
+    dispatch(setBenefitsStatus({ loading: true, error: null }));
     try {
       const token = localStorage.getItem('token');
+      
+      // 1. Fetch Client Memberships (from current benefits endpoint)
       const res = await api.get(`${Base_url}/admin/clients/${clientId}/benefits`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (res.data && res.data.success) {
-        // Handle benefit loading here if needed or return to component
-        return res.data.data;
+        dispatch(setAvailableMemberships(res.data.data?.memberships || []));
       }
+
+      // 2. Fetch Available Gift Cards (This was previously done in SelectCalendar local state)
+      const gcRes = await api.get(`${Base_url}/giftcards/purchased`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (gcRes.data && gcRes.data.success) {
+        const giftCards = gcRes.data.data?.giftCards || [];
+        // Optional: Perform specific filtering here or in component
+        // Current SelectCalendar logic filters by clientId or recipient name match
+        dispatch(setAvailableGiftCards(giftCards));
+      }
+
     } catch (err) {
       console.error('Load benefits error:', err);
+      dispatch(setBenefitsStatus({ error: err.message }));
+    } finally {
+      dispatch(setBenefitsStatus({ loading: false }));
     }
   }
 );
@@ -498,3 +521,132 @@ export const fetchManagementBookingDetailsThunk = createAsyncThunk(
     }
   }
 );
+
+/**
+ * Fetch initial list of services
+ */
+export const fetchBookingServicesThunk = createAsyncThunk(
+  'adminBooking/fetchServices',
+  async (_, { dispatch }) => {
+    dispatch(setBookingStatus({ loading: true, error: null }));
+    try {
+      const res = await api.get(`${Base_url}/bookings/services`);
+      if (res.data && res.data.success) {
+        dispatch(setAvailableServices(res.data.data?.services || []));
+      } else {
+        throw new Error(res.data?.message || 'Failed to fetch services');
+      }
+    } catch (err) {
+      dispatch(setBookingStatus({ error: err.message }));
+      throw err;
+    } finally {
+      dispatch(setBookingStatus({ loading: false }));
+    }
+  }
+);
+
+/**
+ * Fetch available professionals
+ */
+export const fetchBookingProfessionalsThunk = createAsyncThunk(
+  'adminBooking/fetchProfessionals',
+  async ({ serviceId, date }, { dispatch, getState }) => {
+    dispatch(setBookingStatus({ loading: true, error: null }));
+    try {
+      const res = await api.get(`${Base_url}/employees`);
+      if (res.data && res.data.success) {
+        const allProfessionals = res.data.data?.employees || [];
+        
+        // Filter logic moved from component
+        const state = getState();
+        const selectedService = state.adminBooking.selection.service;
+        const appointments = state.appointments.byEmployee;
+        const multipleAppointments = state.bookingSession.multipleAppointments;
+
+        const professionalsWithShifts = allProfessionals.filter(prof => {
+          const isActive = prof.isActive !== false;
+          const employeeForShiftCheck = {
+            name: `${prof.user?.firstName} ${prof.user?.lastName}`,
+            workSchedule: prof.workSchedule || {}
+          };
+
+          const hasShift = hasShiftOnDate(employeeForShiftCheck, date);
+
+          if (isActive && hasShift && selectedService) {
+            const availableSlots = getAvailableTimeSlotsWithAccumulatedBookings(
+              { _id: prof._id, ...employeeForShiftCheck },
+              date,
+              selectedService.duration,
+              appointments,
+              multipleAppointments
+            );
+            return availableSlots.length > 0;
+          }
+          return isActive && hasShift;
+        });
+
+        dispatch(setAvailableProfessionals(professionalsWithShifts));
+        return professionalsWithShifts;
+      } else {
+        throw new Error(res.data?.message || 'Failed to fetch professionals');
+      }
+    } catch (err) {
+      dispatch(setBookingStatus({ error: err.message }));
+      throw err;
+    } finally {
+      dispatch(setBookingStatus({ loading: false }));
+    }
+  }
+);
+
+/**
+ * Fetch existing clients (initial load)
+ */
+export const fetchExistingClientsThunk = createAsyncThunk(
+  'adminBooking/fetchClients',
+  async (_, { dispatch }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.get(`${Base_url}/admin/clients?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && res.data.success) {
+        const clients = res.data.data.clients || [];
+        dispatch(setExistingClients(clients));
+        dispatch(setClientSearchResults(clients));
+      }
+    } catch (err) {
+      console.error('Fetch clients error:', err);
+    }
+  }
+);
+
+/**
+ * Confirm/Create new booking
+ */
+export const confirmBookingThunk = createAsyncThunk(
+  'adminBooking/confirmBooking',
+  async (bookingData, { dispatch }) => {
+    dispatch(setBookingStatus({ loading: true, error: null }));
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.post(`${Base_url}/bookings`, bookingData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data && res.data.success) {
+        dispatch(setBookingStatus({ success: true }));
+        return res.data;
+      } else {
+        throw new Error(res.data?.message || 'Booking confirmation failed');
+      }
+    } catch (err) {
+      dispatch(setBookingStatus({ error: err.message }));
+      throw err;
+    } finally {
+      dispatch(setBookingStatus({ loading: false }));
+    }
+  }
+);
+
+

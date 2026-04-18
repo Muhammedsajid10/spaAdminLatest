@@ -72,7 +72,14 @@ import CalendarHeader from '../calendar/components/CalendarHeader.jsx';
 import { adminBookingActions } from '../store/adminBookingSlice';
 import { calendarActions, setCurrentDateISO, setCurrentView } from '../store/calendarSlice';
 import { bookingSessionActions } from '../store/bookingSessionSlice';
-import { fetchManagementBookingDetailsThunk } from '../store/adminBookingThunks';
+import { 
+  fetchManagementBookingDetailsThunk,
+  fetchBookingServicesThunk,
+  fetchBookingProfessionalsThunk,
+  fetchExistingClientsThunk,
+  searchClientsThunk,
+  loadClientBenefitsThunk
+} from '../store/adminBookingThunks';
 import { fetchCalendarThunk } from '../store/calendarThunks';
 
 // --- API ENDPOINTS ---
@@ -247,7 +254,6 @@ const SelectCalendar = () => {
   const [hoverTimeData, setHoverTimeData] = useState(null);
   const [hoverTimePosition, setHoverTimePosition] = useState({ top: 0, left: 0 });
   const [fullBookingDetailsLoading, setFullBookingDetailsLoading] = useState(false);
-  const [existingClients, setExistingClients] = useState([]);
   const [showClientSearch, setShowClientSearch] = useState(false);
   const [bookingForm, setBookingForm] = useState({ notes: '' });
 
@@ -686,29 +692,8 @@ const SelectCalendar = () => {
 
   // --- ENHANCED BOOKING FLOW FUNCTIONS ---
   const fetchBookingServices = useCallback(async () => {
-    setBookingLoading(true);
-    setBookingError(null);
-    try {
-      // console.log('Fetching services from:', `${Base_url}/bookings/services`);
-      const res = await fetch(`${Base_url}/bookings/services`);
-      const data = await res.json();
-
-      // console.log('Services API response:', data);
-
-      if (res.ok && data.success) {
-        setAvailableServices(data.data?.services || []);
-      } else {
-        throw new Error(data.message || 'Failed to fetch services');
-      }
-    } catch (err) {
-      console.error('Error fetching services:', err);
-      setBookingError('Failed to fetch services: ' + err.message);
-      // Fallback to mock data
-      setAvailableServices(MOCK_SERVICES_DATA);
-    } finally {
-      setBookingLoading(false);
-    }
-  }, []);
+    dispatch(fetchBookingServicesThunk());
+  }, [dispatch]);
 
   // TEMPORARY DEBUG FUNCTION - Add this to help diagnose the issue
   const debugProfessionalData = (prof, date) => {
@@ -742,94 +727,8 @@ const SelectCalendar = () => {
   };
 
   const fetchBookingProfessionals = useCallback(async (serviceId, date) => {
-    // console.log('=== FETCHING PROFESSIONALS ===');
-    // console.log('Service ID:', serviceId);
-    // console.log('Date:', date?.toDateString());
-
-    setBookingLoading(true);
-    setBookingError(null);
-
-    try {
-      const dateStr = date.toISOString().slice(0, 10);
-      const url = `${EMPLOYEES_API_URL}`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      // console.log('API Response:', data);
-
-      if (res.ok && data.success) {
-        const allProfessionals = data.data?.employees || [];
-        // console.log('Total professionals from API:', allProfessionals.length);
-
-        // Filter professionals with shifts on this date and available time slots
-        const professionalsWithShifts = allProfessionals.filter(prof => {
-          const isActive = prof.isActive !== false;
-
-          // Create employee object for shift checking
-          const employeeForShiftCheck = {
-            name: `${prof.user?.firstName} ${prof.user?.lastName}`,
-            workSchedule: prof.workSchedule || {}
-          };
-
-          const hasShift = hasShiftOnDate(employeeForShiftCheck, date);
-
-          // Check if professional has available slots considering accumulated bookings
-          if (isActive && hasShift && selectedService) {
-            const availableSlots = getAvailableTimeSlotsWithAccumulatedBookings(
-              { _id: prof._id, ...employeeForShiftCheck },
-              date,
-              selectedService.duration,
-              appointments,
-              multipleAppointments
-            );
-            return availableSlots.length > 0;
-          }
-
-          // console.log(`Professional ${prof.user?.firstName}: Active=${isActive}, HasShift=${hasShift}`);
-
-          return isActive && hasShift;
-        });
-
-        // console.log('Professionals with shifts:', professionalsWithShifts.length);
-
-        if (professionalsWithShifts.length === 0) {
-          setBookingError(`No professionals have shifts scheduled for ${date.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric'
-          })}. Please select a different date.`);
-        }
-
-        setAvailableProfessionals(professionalsWithShifts);
-
-      } else {
-        throw new Error(data.message || 'Failed to fetch professionals');
-      }
-    } catch (err) {
-      console.error('Error fetching professionals:', err);
-      setBookingError('Failed to fetch professionals: ' + err.message);
-
-      // Fallback to local employees with shifts
-      const localProfessionalsWithShifts = employees
-        .filter(emp => emp.isActive !== false && hasShiftOnDate(emp, date))
-        .map(emp => ({
-          _id: emp.id,
-          user: {
-            firstName: emp.name.split(' ')[0],
-            lastName: emp.name.split(' ').slice(1).join(' ') || '',
-            isActive: emp.isActive !== false
-          },
-          position: emp.position,
-          workSchedule: emp.workSchedule || {}
-        }));
-
-      // console.log('Fallback professionals with shifts:', localProfessionalsWithShifts.length);
-      setAvailableProfessionals(localProfessionalsWithShifts);
-    } finally {
-      setBookingLoading(false);
-      // console.log('=== FETCH PROFESSIONALS COMPLETE ===');
-    }
-  }, [employees, selectedService, appointments, multipleAppointments]);
+    dispatch(fetchBookingProfessionalsThunk({ serviceId, date }));
+  }, [dispatch]);
 
 
 
@@ -1047,59 +946,15 @@ const SelectCalendar = () => {
 
   // Optimized client fetching: don't fetch 10,000 clients at once
   const fetchExistingClients = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('No token found, using mock clients');
-        setExistingClients(MOCK_CLIENTS_DATA);
-        return;
-      }
-
-      // Fetch only first 20 clients initially
-      const res = await fetch(`${Base_url}/admin/clients?limit=20`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        const clients = data.data?.clients || [];
-        setExistingClients(clients);
-        setClientSearchResults(clients); // Initialize search results
-      } else {
-        console.error('Failed to fetch clients:', data.message);
-        setExistingClients(MOCK_CLIENTS_DATA);
-      }
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-      setExistingClients(MOCK_CLIENTS_DATA);
-    }
-  }, []);
+    dispatch(fetchExistingClientsThunk());
+  }, [dispatch]);
 
   // Server-side search with debounce
   const clientSearchTimeoutRef = useRef(null);
 
   const searchClients = useCallback(async (query) => {
-    if (!query.trim()) {
-      setClientSearchResults(existingClients);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const url = `${Base_url}/admin/clients?search=${encodeURIComponent(query)}&limit=20`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setClientSearchResults(data.data.clients || []);
-      }
-    } catch (err) {
-      console.error('Error searching clients on server:', err);
-    }
-  }, [existingClients]);
+    dispatch(searchClientsThunk(query));
+  }, [dispatch]);
 
   const handleClientSearchChange = (e) => {
     const query = e.target.value;
@@ -1536,66 +1391,9 @@ const SelectCalendar = () => {
 
   // Load client gift cards when entering payment step
   const loadBenefitsIfNeeded = useCallback(async (force = false) => {
-    // Only proceed if we have a selected client
-    if (!selectedExistingClient?._id && !force) {
-      return;
-    }
-
-    setBenefitsLoading(true);
-    setBenefitsError(null);
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      // Fetch gift cards
-      const gcRes = await fetch(`${Base_url}/giftcards/purchased`, { headers });
-      const gcData = await gcRes.json();
-
-      if (!gcRes.ok) {
-        throw new Error('Failed to fetch gift cards');
-      }
-
-      // Filter gift cards for the current client
-      const clientId = selectedExistingClient._id;
-      const ownedGiftCards = (gcData.data?.giftCards || []).filter(card => {
-        // Check ownership
-        const isOwner = card.purchasedBy?._id === clientId;
-        const isRecipient = card.recipientName?.toLowerCase?.()
-          .includes(selectedExistingClient.firstName?.toLowerCase() || '');
-
-        // Check validity
-        const now = new Date();
-        const isExpired = card.expiryDate && new Date(card.expiryDate) < now;
-        const hasValue = card.remainingValue > 0;
-        // Only include active or partially used cards that still have value
-        const isUsable = ['active', 'partially used'].includes(card.status?.toLowerCase());
-
-        return (isOwner || isRecipient) && !isExpired && hasValue && isUsable;
-      });
-
-      setAvailableGiftCards(ownedGiftCards);
-
-      // Clear selected gift card if it's no longer valid
-      if (selectedGiftCard?._id && !ownedGiftCards.some(gc => gc._id === selectedGiftCard._id)) {
-        setSelectedGiftCard(null);
-        setGiftCardAppliedAmount(0);
-      }
-    } catch (error) {
-      console.error('Error loading gift cards:', error);
-      setBenefitsError(error.message);
-      setAvailableGiftCards([]);
-    } finally {
-      setBenefitsLoading(false);
-    }
-  }, [selectedExistingClient, selectedGiftCard]);
+    if (!selectedExistingClient?._id) return;
+    dispatch(loadClientBenefitsThunk(selectedExistingClient._id));
+  }, [dispatch, selectedExistingClient]);
 
   // Add useEffect to trigger benefits load when needed
   useEffect(() => {

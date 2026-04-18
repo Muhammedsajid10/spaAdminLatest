@@ -11,6 +11,7 @@ const initialState = {
     selected: null,
     searchQuery: '',
     searchResults: [],
+    existingList: [], // Store default/initial client list
     isAddingNew: false,
     info: { name: '', email: '', phone: '' }
   },
@@ -100,7 +101,12 @@ const adminBookingSlice = createSlice({
       state.client.isAddingNew = false;
     },
     setClientSearchQuery(state, action) { state.client.searchQuery = action.payload; },
-    setClientSearchResults(state, action) { state.client.searchResults = action.payload; },
+    setClientSearchResults(state, action) {
+      state.client.searchResults = action.payload;
+    },
+    setExistingClients(state, action) {
+      state.client.existingList = action.payload;
+    },
     setIsAddingNewClient(state, action) { state.client.isAddingNew = action.payload; },
     setClientInfo(state, action) { state.client.info = { ...state.client.info, ...action.payload }; },
     
@@ -206,7 +212,7 @@ const adminBookingSlice = createSlice({
 
 export const {
   setStep, setModalOpen, setIsWalkIn,
-  setSelectedClient, setClientSearchQuery, setClientSearchResults, setIsAddingNewClient, setClientInfo,
+  setSelectedClient, setClientSearchQuery, setClientSearchResults, setExistingClients, setIsAddingNewClient, setClientInfo,
   setSelectedService, setSelectedProfessional, setSelectedDate, setSelectedTimeSlot, setBookingDefaults,
   setAvailableServices, setAvailableProfessionals, setAvailableTimeSlots,
   setPaymentMethod, setCustomTotalDiscount, setMembershipDiscountAmount, setEditedServicePrice,
