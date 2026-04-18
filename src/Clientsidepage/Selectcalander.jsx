@@ -63,8 +63,10 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
+import BookingWizardModal from '../calendar/components/BookingWizard/BookingWizardModal.jsx';
 import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction, updateAppointment } from '../store/bookingSessionSlice';
 import { fetchCalendarThunk, fetchServicesThunk } from '../store/thunks';
+import * as adminBookingActions from '../store/adminBookingSlice';
 
 // --- API ENDPOINTS ---
 const BOOKING_API_URL = `${Base_url}/bookings`;
@@ -72,7 +74,9 @@ const SERVICES_API_URL = `${Base_url}/services`;
 const EMPLOYEES_API_URL = `${Base_url}/employees`;
 const CLIENTS_API_URL = `${Base_url}/clients`;
 const SelectCalendar = () => {
-  // Date / picker state consolidated
+  const dispatch = useDispatch();
+
+  // 1. Date / picker state (Consolidated in a specialized hook)
   const {
     currentDate, datePickerView, showDatePicker, datePickerCurrentMonth, datePickerSelectedDate,
     setCurrentDate, setDatePickerView, setShowDatePicker, setDatePickerCurrentMonth,
@@ -83,193 +87,157 @@ const SelectCalendar = () => {
     handleDatePickerDateSelect
   } = useDatePickerState(new Date());
 
-  // Booking session (multi services) moved to Redux
+  // 2. Booking Session Data (Already in Redux)
   const multipleAppointments = useSelector(state => state.bookingSession.multipleAppointments);
   const currentAppointmentIndex = useSelector(state => state.bookingSession.currentAppointmentIndex);
   const showServiceCatalog = useSelector(state => state.bookingSession.showServiceCatalog);
   const isAddingAdditionalService = useSelector(state => state.bookingSession.isAddingAdditionalService);
-  const dispatch = useDispatch();
 
-  // Price editing states - MUST be declared before getTotalSessionPrice
+  // 3. Admin Booking Workflow State (New Redux Slice)
+  const bookingStep = useSelector(state => state.adminBooking.step);
+  const showAddBookingModal = useSelector(state => state.adminBooking.showModal);
+  const isWalkIn = useSelector(state => state.adminBooking.isWalkIn);
+  
+  // Client selection & search
+  const selectedExistingClient = useSelector(state => state.adminBooking.client.selected);
+  const clientSearchQuery = useSelector(state => state.adminBooking.client.searchQuery);
+  const clientSearchResults = useSelector(state => state.adminBooking.client.searchResults);
+  const isAddingNewClient = useSelector(state => state.adminBooking.client.isAddingNew);
+  const clientInfo = useSelector(state => state.adminBooking.client.info);
+  
+  // Selection
+  const selectedService = useSelector(state => state.adminBooking.selection.service);
+  const selectedProfessional = useSelector(state => state.adminBooking.selection.professional);
+  const selectedTimeSlot = useSelector(state => state.adminBooking.selection.timeSlot);
+  const selectedBookingDate = useSelector(state => state.adminBooking.selection.date);
+  const bookingDefaults = useSelector(state => state.adminBooking.navigation.defaults);
+  
+  // Derived / Available Lists
+  const availableServices = useSelector(state => state.adminBooking.available.services);
+  const availableProfessionals = useSelector(state => state.adminBooking.available.professionals);
+  const availableTimeSlots = useSelector(state => state.adminBooking.available.timeSlots);
+  
+  // Persistence / Navigation
+  const lastSelectedService = useSelector(state => state.adminBooking.navigation.lastService);
+  const lastSelectedProfessional = useSelector(state => state.adminBooking.navigation.lastProfessional);
+  
+  // Payment & Pricing
+  const paymentMethod = useSelector(state => state.adminBooking.payment.method);
+  const customTotalDiscount = useSelector(state => state.adminBooking.payment.customTotalDiscount);
+  const membershipDiscountAmount = useSelector(state => state.adminBooking.payment.membershipDiscountAmount);
+  const editedServicePrices = useSelector(state => state.adminBooking.payment.editedServicePrices);
+  const bookingPreview = useSelector(state => state.adminBooking.payment.preview);
+  const bookingPreviewLoading = useSelector(state => state.adminBooking.payment.previewLoading);
+  const bookingPreviewError = useSelector(state => state.adminBooking.payment.previewError);
+  
+  // Benefits
+  const appliedMembership = useSelector(state => state.adminBooking.benefits.appliedMembership);
+  const selectedGiftCard = useSelector(state => state.adminBooking.benefits.appliedGiftCard);
+  const availableMemberships = useSelector(state => state.adminBooking.benefits.availableMemberships);
+  const availableGiftCards = useSelector(state => state.adminBooking.benefits.availableGiftCards);
+  
+  // Status
+  const bookingLoading = useSelector(state => state.adminBooking.status.loading);
+  const bookingError = useSelector(state => state.adminBooking.status.error);
+  const bookingSuccess = useSelector(state => state.adminBooking.status.success);
+
+  // Redux Dispatch Mappings (Migration of local setters)
+  const setBookingStep = (val) => dispatch(adminBookingActions.setStep(val));
+  const setShowAddBookingModal = (val) => dispatch(adminBookingActions.setModalOpen(val));
+  const setIsWalkIn = (val) => dispatch(adminBookingActions.setIsWalkIn(val));
+  const setSelectedExistingClient = (val) => dispatch(adminBookingActions.setSelectedClient(val));
+  const setClientSearchQuery = (val) => dispatch(adminBookingActions.setClientSearchQuery(val));
+  const setClientSearchResults = (val) => dispatch(adminBookingActions.setClientSearchResults(val));
+  const setIsAddingNewClient = (val) => dispatch(adminBookingActions.setIsAddingNewClient(val));
+  const setClientInfo = (val) => dispatch(adminBookingActions.setClientInfo(val));
+  
+  const setSelectedService = (val) => dispatch(adminBookingActions.setSelectedService(val));
+  const setSelectedProfessional = (val) => dispatch(adminBookingActions.setSelectedProfessional(val));
+  const setSelectedTimeSlot = (val) => dispatch(adminBookingActions.setSelectedTimeSlot(val));
+  const setSelectedBookingDate = (val) => dispatch(adminBookingActions.setSelectedDate(val));
+  const setBookingDefaults = (val) => dispatch(adminBookingActions.setBookingDefaults(val));
+  
+  const setAvailableServices = (val) => dispatch(adminBookingActions.setAvailableServices(val));
+  const setAvailableProfessionals = (val) => dispatch(adminBookingActions.setAvailableProfessionals(val));
+  const setAvailableTimeSlots = (val) => dispatch(adminBookingActions.setAvailableTimeSlots(val));
+  
+  const setPaymentMethod = (val) => dispatch(adminBookingActions.setPaymentMethod(val));
+  const setCustomTotalDiscount = (val) => dispatch(adminBookingActions.setCustomTotalDiscount(val));
+  const setMembershipDiscountAmount = (val) => dispatch(adminBookingActions.setMembershipDiscountAmount(val));
+  const setEditedServicePrices = (val) => {
+    // Adapter for multiple edited prices
+    Object.entries(val).forEach(([id, price]) => {
+      dispatch(adminBookingActions.setEditedServicePrice({ id, price }));
+    });
+  };
+  
+  const setBookingPreview = (val) => dispatch(adminBookingActions.setBookingPreview(val));
+  const setBookingPreviewLoading = (val) => dispatch(adminBookingActions.setBookingPreviewLoading(val));
+  const setBookingPreviewError = (val) => dispatch(adminBookingActions.setBookingPreviewError(val));
+  
+  const setAppliedMembership = (val) => dispatch(adminBookingActions.setAppliedMembership(val));
+  const setSelectedGiftCard = (val) => dispatch(adminBookingActions.setAppliedGiftCard(val));
+  const setAvailableMemberships = (val) => dispatch(adminBookingActions.setAvailableMemberships(val));
+  const setAvailableGiftCards = (val) => dispatch(adminBookingActions.setAvailableGiftCards(val));
+  
+  const setBookingLoading = (val) => dispatch(adminBookingActions.setBookingStatus({ loading: val }));
+  const setBookingError = (val) => dispatch(adminBookingActions.setBookingStatus({ error: val }));
+  const setBookingSuccess = (val) => dispatch(adminBookingActions.setBookingStatus({ success: val }));
+
+  // Helper local states for UI-only transient information
   const [editingTotalPrice, setEditingTotalPrice] = useState(false);
   const [tempTotalPrice, setTempTotalPrice] = useState('');
-  const [customTotalDiscount, setCustomTotalDiscount] = useState(0);
+  const [editingServicePrices, setEditingServicePrices] = useState({}); // UI only editing mode
+  const [membershipRefreshSignal, setMembershipRefreshSignal] = useState(0);
+  const [unavailableMessage, setUnavailableMessage] = useState('');
+  const [showUnavailablePopup, setShowUnavailablePopup] = useState(false);
+  const [isNewAppointment, setIsNewAppointment] = useState(false);
+  const [showClientSearch, setShowClientSearch] = useState(false);
+  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
+  const [availableProfessionalsForTimeSlot, setAvailableProfessionalsForTimeSlot] = useState([]);
+  const [showBookingDatePicker, setShowBookingDatePicker] = useState(false);
+  const [cardDetails, setCardDetails] = useState({ number: '', name: '', expiry: '', cvv: '' });
+  const [upiId, setUpiId] = useState('');
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [showAppointmentSummary, setShowAppointmentSummary] = useState(false);
+  const [giftCardError, setGiftCardError] = useState('');
+  const [giftCardLoading, setGiftCardLoading] = useState(false);
+  const [giftCardAppliedAmount, setGiftCardAppliedAmount] = useState(0);
+  const [benefitsLoading, setBenefitsLoading] = useState(false);
+  const [benefitsError, setBenefitsError] = useState(null);
+  
+  const [showMoreAppointments, setShowMoreAppointments] = useState(false);
+  const [selectedDayAppointments, setSelectedDayAppointments] = useState([]);
+  const [selectedDayDate, setSelectedDayDate] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [dropdownPositionedAbove, setDropdownPositionedAbove] = useState(false);
+  const [showBookingTooltip, setShowBookingTooltip] = useState(false);
+  const [tooltipData, setTooltipData] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [showTeamPopup, setShowTeamPopup] = useState(false);
+  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
+  const [teamFilter, setTeamFilter] = useState('all');
+  const [selectedEmployees, setSelectedEmployees] = useState(new Set());
+  const [calendarPopupTab, setCalendarPopupTab] = useState('confirmed');
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
+  const [teamViewMode, setTeamViewMode] = useState('list');
+  const [showTimeHover, setShowTimeHover] = useState(false);
+  const [hoverTimeData, setHoverTimeData] = useState(null);
+  const [hoverTimePosition, setHoverTimePosition] = useState({ top: 0, left: 0 });
+  const [showBookingStatusModal, setShowBookingStatusModal] = useState(false);
+  const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
+  const [bookingStatusLoading, setBookingStatusLoading] = useState(false);
+  const [bookingStatusError, setBookingStatusError] = useState(null);
+  const [fullBookingDetailsLoading, setFullBookingDetailsLoading] = useState(false);
+  const [currentView, setCurrentView] = useState('Day');
+  const [bookingForm, setBookingForm] = useState({ notes: '' });
 
-  // Individual service price editing states
-  const [editingServicePrices, setEditingServicePrices] = useState({}); // { [appointmentId]: { editing: boolean, value: '150' } }
-  const [editedServicePrices, setEditedServicePrices] = useState({}); // { [appointmentId]: 150 } - stores the final edited prices
-
-  // Refs for scroll synchronization between headers and grid
+  // Refs
   const staffHeadersRef = useRef(null);
   const staffGridRef = useRef(null);
+  const schedulerContentRef = useRef(null);
 
-  // Scroll synchronization effect
-  useEffect(() => {
-    const headersEl = staffHeadersRef.current;
-    const gridEl = staffGridRef.current;
-
-    if (!headersEl || !gridEl) return;
-
-    const syncHeaderScroll = () => {
-      if (headersEl && gridEl) {
-        headersEl.scrollLeft = gridEl.scrollLeft;
-      }
-    };
-
-    const syncGridScroll = () => {
-      if (headersEl && gridEl) {
-        gridEl.scrollLeft = headersEl.scrollLeft;
-      }
-    };
-
-    gridEl.addEventListener('scroll', syncHeaderScroll);
-    headersEl.addEventListener('scroll', syncGridScroll);
-
-    return () => {
-      gridEl.removeEventListener('scroll', syncHeaderScroll);
-      headersEl.removeEventListener('scroll', syncGridScroll);
-    };
-  }, []);
-
-  const setCurrentAppointmentIndex = (idx) => { /* UI-only; kept local for now */ dispatch({ type: 'bookingSession/setCurrentAppointmentIndex', payload: idx }); };
-  const setShowServiceCatalog = (val) => dispatch(setShowServiceCatalogAction(val));
-  const setIsAddingAdditionalService = (val) => dispatch({ type: 'bookingSession/setIsAddingAdditionalService', payload: val });
-  const addAppointmentToSessionLocal = (apt) => dispatch(addAppointmentToSession(apt));
-  const removeAppointmentFromSessionLocal = (id) => {
-    dispatch(removeAppointmentFromSession(id));
-
-    // If this is the last appointment being removed, show the service catalog
-    const remainingAppointments = multipleAppointments.filter(apt => apt.id !== id);
-    if (remainingAppointments.length === 0) {
-      setShowServiceCatalog(true);
-    }
-  };
-  const clearSessionLocal = () => dispatch(clearSessionAction());
-
-  // Total price editing functions
-  const startEditingTotalPrice = () => {
-    const currentTotal = getTotalSessionPrice();
-    setTempTotalPrice(currentTotal.toString());
-    setEditingTotalPrice(true);
-  };
-
-  const cancelEditingTotalPrice = () => {
-    setEditingTotalPrice(false);
-    setTempTotalPrice('');
-  };
-
-  const saveEditedTotalPrice = () => {
-    const originalTotal = multipleAppointments.reduce((sum, a) => {
-      const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
-      return sum + Number(price || 0);
-    }, 0);
-
-    const newTotal = parseFloat(tempTotalPrice);
-    if (!isNaN(newTotal) && newTotal >= 0) {
-      const discount = originalTotal - newTotal;
-      setCustomTotalDiscount(discount);
-      setEditingTotalPrice(false);
-      setTempTotalPrice('');
-    }
-  };
-
-  const clearCustomDiscount = () => {
-    setCustomTotalDiscount(0);
-  };
-
-  // Individual service price editing functions
-  const startEditingServicePrice = (appointmentId, currentPrice) => {
-    setEditingServicePrices(prev => ({
-      ...prev,
-      [appointmentId]: { editing: true, value: currentPrice.toString() }
-    }));
-  };
-
-  const cancelEditingServicePrice = (appointmentId) => {
-    setEditingServicePrices(prev => {
-      const updated = { ...prev };
-      delete updated[appointmentId];
-      return updated;
-    });
-  };
-
-  const saveEditedServicePrice = (appointmentId) => {
-    const editState = editingServicePrices[appointmentId];
-    if (!editState) return;
-
-    const newPrice = parseFloat(editState.value);
-    if (!isNaN(newPrice) && newPrice >= 0) {
-      setEditedServicePrices(prev => ({
-        ...prev,
-        [appointmentId]: newPrice
-      }));
-      cancelEditingServicePrice(appointmentId);
-    }
-  };
-
-  const clearServicePriceEdit = (appointmentId) => {
-    setEditedServicePrices(prev => {
-      const updated = { ...prev };
-      delete updated[appointmentId];
-      return updated;
-    });
-  };
-
-  // Week and Month navigation functions for date picker
-  const goToDatePickerPreviousWeek = useCallback(() => {
-    const newDate = new Date(datePickerCurrentMonth);
-    newDate.setDate(newDate.getDate() - 7);
-    setDatePickerCurrentMonth(newDate);
-  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
-
-  const goToDatePickerNextWeek = useCallback(() => {
-    const newDate = new Date(datePickerCurrentMonth);
-    newDate.setDate(newDate.getDate() + 7);
-    setDatePickerCurrentMonth(newDate);
-  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
-
-  const goToDatePickerPreviousYear = useCallback(() => {
-    const newDate = new Date(datePickerCurrentMonth);
-    newDate.setFullYear(newDate.getFullYear() - 1);
-    setDatePickerCurrentMonth(newDate);
-  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
-
-  const goToDatePickerNextYear = useCallback(() => {
-    const newDate = new Date(datePickerCurrentMonth);
-    newDate.setFullYear(newDate.getFullYear() + 1);
-    setDatePickerCurrentMonth(newDate);
-  }, [datePickerCurrentMonth, setDatePickerCurrentMonth]);
-
-  // Week selection handler
-  const handleWeekSelect = useCallback((weekStartDate) => {
-    setCurrentDate(weekStartDate);
-    setDatePickerSelectedDate(weekStartDate);
-    setShowDatePicker(false);
-  }, [setCurrentDate, setDatePickerSelectedDate, setShowDatePicker]);
-
-  // Month selection handler
-  const handleMonthSelect = useCallback((month, year) => {
-    const selectedDate = new Date(year, month, 1);
-    setCurrentDate(selectedDate);
-    setDatePickerSelectedDate(selectedDate);
-    setShowDatePicker(false);
-  }, [setCurrentDate, setDatePickerSelectedDate, setShowDatePicker]);
-
-  // Calculate total session price from Redux booking session
-  const getSessionSubtotal = useCallback(() => {
-    if (!Array.isArray(multipleAppointments)) return 0;
-    return multipleAppointments.reduce((sum, a) => {
-      const editedPrice = editedServicePrices[a.id];
-      const price = editedPrice !== undefined ? editedPrice : (a && (a.price ?? a.service?.price ?? 0)) || 0;
-      return sum + Number(price || 0);
-    }, 0);
-  }, [multipleAppointments, editedServicePrices]);
-
-  const getTotalSessionPrice = useCallback(() => {
-    return Math.max(0, getSessionSubtotal() - customTotalDiscount);
-  }, [getSessionSubtotal, customTotalDiscount]);
-
-  // Core scheduler state (moved to Redux)
+  // Core scheduler state (Existing Redux)
   const employees = useSelector(state => state.employees.list);
   const employeesLoading = useSelector(state => state.employees.loading);
   const employeesError = useSelector(state => state.employees.error);
@@ -278,165 +246,6 @@ const SelectCalendar = () => {
   const error = useSelector(state => state.calendar.error);
   const selectedStaff = useSelector(state => state.calendar.selectedStaff);
   const appointments = useSelector(state => state.appointments.byEmployee);
-  const [currentView, setCurrentView] = useState('Day');
-
-  // Enhanced Booking Flow States
-  const [availableServices, setAvailableServices] = useState([]);
-  const [bookingStep, setBookingStep] = useState(1);
-  const [showAddBookingModal, setShowAddBookingModal] = useState(false);
-  const [showUnavailablePopup, setShowUnavailablePopup] = useState(false);
-  const [unavailableMessage, setUnavailableMessage] = useState('');
-  const [isNewAppointment, setIsNewAppointment] = useState(false);
-  // const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
-  // Client Search States
-  const [existingClients, setExistingClients] = useState([]);
-  const [clientSearchQuery, setClientSearchQuery] = useState('');
-  const [clientSearchResults, setClientSearchResults] = useState([]);
-  const [selectedExistingClient, setSelectedExistingClient] = useState(null);
-  const [showClientSearch, setShowClientSearch] = useState(false);
-  const [isAddingNewClient, setIsAddingNewClient] = useState(false);
-
-  // Booking Selection States
-  const [availableProfessionals, setAvailableProfessionals] = useState([]);
-  const [selectedService, setSelectedService] = useState(null);
-  const [selectedProfessional, setSelectedProfessional] = useState(null);
-  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
-  const [bookingDefaults, setBookingDefaults] = useState(null);
-
-  // Store last selected values for navigation back
-  const [lastSelectedService, setLastSelectedService] = useState(null);
-  const [lastSelectedProfessional, setLastSelectedProfessional] = useState(null);
-  const [lastAddedAppointmentId, setLastAddedAppointmentId] = useState(null);
-
-  // Form States
-  const [clientInfo, setClientInfo] = useState({ name: '', email: '', phone: '' });
-  const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingError, setBookingError] = useState(null);
-  const [bookingSuccess, setBookingSuccess] = useState(null);
-  const [bookingPreview, setBookingPreview] = useState(null);
-  const [bookingPreviewLoading, setBookingPreviewLoading] = useState(false);
-  const [bookingPreviewError, setBookingPreviewError] = useState(null);
-
-  // Signal to force membership checker to refetch from server
-  const [membershipRefreshSignal, setMembershipRefreshSignal] = useState(0);
-
-  // Employee Change Feature States
-  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
-  const [availableProfessionalsForTimeSlot, setAvailableProfessionalsForTimeSlot] = useState([]);
-
-  // Date selection for booking modal (especially for week view)
-  const [selectedBookingDate, setSelectedBookingDate] = useState(null);
-  const [showBookingDatePicker, setShowBookingDatePicker] = useState(false);
-
-  // Payment detail & redemption states
-  const [cardDetails, setCardDetails] = useState({ number: '', name: '', expiry: '', cvv: '' });
-  const [upiId, setUpiId] = useState('');
-  const [availableGiftCards, setAvailableGiftCards] = useState([]); // [{_id, code, remainingValue}]
-  const [availableMemberships, setAvailableMemberships] = useState([]); // [{_id, name, status, expiresAt}]
-
-  // Membership integration states
-  const [appliedMembership, setAppliedMembership] = useState(null);
-  const [membershipDiscountAmount, setMembershipDiscountAmount] = useState(0);
-  const [selectedGiftCard, setSelectedGiftCard] = useState(null);
-  const [selectedMembership, setSelectedMembership] = useState(null);
-  const [redeemGiftCardAmount, setRedeemGiftCardAmount] = useState(0);
-  const [benefitsLoading, setBenefitsLoading] = useState(false);
-  const [benefitsError, setBenefitsError] = useState(null);
-
-  // Session UI extras
-  const [giftCardCode, setGiftCardCode] = useState('');
-  const [showAppointmentSummary, setShowAppointmentSummary] = useState(false);
-
-  // Enhanced Gift Card Flow States
-  const [giftCardError, setGiftCardError] = useState('');
-  const [giftCardLoading, setGiftCardLoading] = useState(false);
-  const [giftCardAppliedAmount, setGiftCardAppliedAmount] = useState(0);
-  const [isWalkIn, setIsWalkIn] = useState(false);
-
-  // Month View More Appointments States
-  const [showMoreAppointments, setShowMoreAppointments] = useState(false);
-  const [selectedDayAppointments, setSelectedDayAppointments] = useState([]);
-  const [selectedDayDate, setSelectedDayDate] = useState(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
-  const [dropdownPositionedAbove, setDropdownPositionedAbove] = useState(false);
-
-  // Booking Hover Tooltip States
-  const [showBookingTooltip, setShowBookingTooltip] = useState(false);
-  const [tooltipData, setTooltipData] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const [showTeamPopup, setShowTeamPopup] = useState(false);
-  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
-  const [teamFilter, setTeamFilter] = useState('all'); // 'all' or 'scheduled'
-  const [selectedEmployees, setSelectedEmployees] = useState(new Set());
-  const [calendarPopupTab, setCalendarPopupTab] = useState('confirmed');
-  // Add these state variables with your existing useState declarations:
-
-  const [teamSearchQuery, setTeamSearchQuery] = useState('');
-  const [teamViewMode, setTeamViewMode] = useState('list'); // 'list' or 'grid'
-
-  // Add this helper function:
-  const getFilteredAndSearchedEmployees = () => {
-    // First filter out "Allora Spa Dubai" staff
-    let filtered = employees.filter(emp =>
-      emp.name !== 'Allora Spa Dubai' &&
-      emp.name?.toLowerCase() !== 'allora spa dubai'
-    );
-
-    // Apply team filter
-    if (teamFilter === 'scheduled') {
-      filtered = filtered.filter(emp => hasShiftOnDate(emp, currentDate));
-    } else if (teamFilter === 'active') {
-      filtered = filtered.filter(emp => emp.isActive !== false);
-    } else if (teamFilter === 'inactive') {
-      filtered = filtered.filter(emp => emp.isActive === false);
-    }
-
-    // Apply search query
-    if (teamSearchQuery.trim()) {
-      const query = teamSearchQuery.toLowerCase().trim();
-      filtered = filtered.filter(emp =>
-        emp.name.toLowerCase().includes(query) ||
-        emp.position.toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  };
-
-  // Add this helper function:
-  const getEmployeeAppointmentCount = (employeeId) => {
-    const empAppointments = appointments[employeeId] || {};
-    const today = localDateKey(currentDate);
-
-    return Object.keys(empAppointments).filter(key =>
-      key.startsWith(today)
-    ).length;
-  };
-
-  // Time Slot Hover States
-  const [showTimeHover, setShowTimeHover] = useState(false);
-  const [hoverTimeData, setHoverTimeData] = useState(null);
-  const [hoverTimePosition, setHoverTimePosition] = useState({ top: 0, left: 0 });
-
-  const [bookingForm, setBookingForm] = useState({
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-    paymentMethod: 'cash',
-    notes: '',
-    giftCardCode: '',
-  });
-
-  const schedulerContentRef = useRef(null);
-
-  // Booking Status Management States
-  const [showBookingStatusModal, setShowBookingStatusModal] = useState(false);
-  const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
-  const [bookingStatusLoading, setBookingStatusLoading] = useState(false);
-  const [bookingStatusError, setBookingStatusError] = useState(null);
-  const [fullBookingDetailsLoading, setFullBookingDetailsLoading] = useState(false);
 
   // Fetch full booking details with all service information including custom pricing
   const fetchFullBookingDetails = useCallback(async (bookingId) => {

@@ -188,3 +188,38 @@ export const fetchBookingTimeSlotsThunk = createAsyncThunk('timeslots/fetch', as
     return rejectWithValue(err.message || String(err));
   }
 });
+export const fetchBookingPreviewThunk = createAsyncThunk('adminBooking/fetchPreview', async (payload, { dispatch, rejectWithValue }) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Authentication required.');
+
+    const res = await api.post(`${Base_url}/bookings/admin/preview`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.data && res.data.success) {
+      return res.data.data;
+    }
+    throw new Error(res.data.message || 'Preview failed');
+  } catch (err) {
+    return rejectWithValue(err.message || String(err));
+  }
+});
+
+export const createBookingThunk = createAsyncThunk('adminBooking/create', async (payload, { dispatch, rejectWithValue }) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Authentication required.');
+
+    const res = await api.post(`${Base_url}/bookings`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.data && res.data.success) {
+      return res.data.data;
+    }
+    throw new Error(res.data.message || 'Booking creation failed');
+  } catch (err) {
+    return rejectWithValue(err.message || String(err));
+  }
+});

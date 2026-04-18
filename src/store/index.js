@@ -38,6 +38,7 @@ import appointmentSummaryReducer from './reports/slices/appointmentSummarySlice'
 import financeSummaryReducer from './reports/slices/financeSummarySlice';
 import workingHoursReducer from './reports/slices/workingHoursSlice';
 import salesSummaryReducer from './reports/slices/salesSummarySlice';
+import adminBookingReducer from './adminBookingSlice';
 
 export const store = configureStore({
   reducer: {
@@ -54,7 +55,7 @@ export const store = configureStore({
     financeSummary: financeSummaryReducer,
     workingHours: workingHoursReducer,
     salesSummary: salesSummaryReducer,
-    //  filters: filtersReducer,
+    adminBooking: adminBookingReducer,
     // ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) =>
