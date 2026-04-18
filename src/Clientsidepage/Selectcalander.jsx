@@ -2193,77 +2193,29 @@ const SelectCalendar = () => {
     setGiftCardError('');
   };
 
-  const calculateGiftCardValue = (giftCard) => {
-    // Handle different possible response structures from new API
-    if (giftCard?.remainingValue !== undefined) {
-      return giftCard.remainingValue;
-    }
-    if (giftCard?.value && giftCard?.usedAmount !== undefined) {
-      return Math.max(0, giftCard.value - giftCard.usedAmount);
-    }
-    if (giftCard?.amount) {
-      return giftCard.amount;
-    }
-    if (giftCard?.balance) {
-      return giftCard.balance;
-    }
-    return 0;
-  };
 
-  const calculateTotalWithGiftCard = () => {
-    const total = getTotalSessionPrice();
-    const discountFromMembership = membershipDiscountAmount || 0;
-
-    let giftCardDiscount = 0;
-    if (selectedGiftCard) {
-      const availableValue = calculateGiftCardValue(selectedGiftCard);
-      giftCardDiscount = Math.min(total - discountFromMembership, availableValue);
-
-      // Update the applied amount for display if it changed
-      if (giftCardAppliedAmount !== giftCardDiscount) {
-        setGiftCardAppliedAmount(giftCardDiscount);
-      }
-    }
-
-    return {
-      subtotal: total,
-      membershipDiscount: discountFromMembership,
-      giftCardDiscount: giftCardDiscount,
-      remainingAmount: Math.max(0, total - discountFromMembership - giftCardDiscount)
-    };
-  };
 
   const bookingPaymentSummary = bookingPreview?.pricing ? {
     subtotal: Number(bookingPreview.pricing.subtotal || 0),
     membershipDiscount: Number(bookingPreview.pricing.membershipDiscount || 0),
     giftCardDiscount: Number(bookingPreview.pricing.giftCardAmount || 0),
     manualDiscount: Number(bookingPreview.pricing.manualDiscount || 0),
-    remainingAmount: Number(bookingPreview.pricing.finalAmount || 0)
+    remainingAmount: Number(bookingPreview.pricing.finalAmount || 0),
+    isAuthoritative: true
   } : {
     subtotal: getSessionSubtotal(),
-    membershipDiscount: membershipDiscountAmount || 0,
-    giftCardDiscount: calculateTotalWithGiftCard().giftCardDiscount,
+    membershipDiscount: 0,
+    giftCardDiscount: 0,
     manualDiscount: customTotalDiscount || 0,
-    remainingAmount: calculateTotalWithGiftCard().remainingAmount
+    remainingAmount: Math.max(0, getSessionSubtotal() - (customTotalDiscount || 0)),
+    isAuthoritative: false
   };
 
   const buildBookingDraftPayload = useCallback(({ usePreviewValues = false } = {}) => {
     if (multipleAppointments.length === 0) {
       throw new Error('No appointments in session. Please add at least one service.');
     }
-
-    const MAX_END_TIME_MINUTES = 23 * 60 + 30;
-    for (const apt of multipleAppointments) {
-      const [hours, minutes] = apt.timeSlot.split(':').map(Number);
-      const endTimeInMinutes = (hours * 60) + minutes + apt.service.duration;
-      if (endTimeInMinutes > MAX_END_TIME_MINUTES) {
-        const endHours = Math.floor(endTimeInMinutes / 60);
-        const endMinutes = endTimeInMinutes % 60;
-        throw new Error(
-          `Cannot confirm booking: "${apt.service.name}" scheduled at ${apt.timeSlot} would end at ${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}, which exceeds the maximum allowed time of 23:30.`
-        );
-      }
-    }
+    // Business validation (cutoff, overlaps) now handled centrally by backend preview
 
     let clientData;
     if (selectedExistingClient) {
@@ -2334,10 +2286,9 @@ const SelectCalendar = () => {
     }, 0);
 
     const paymentDetails = { clientId: selectedExistingClient?._id };
-    if (appliedMembership && membershipDiscountAmount > 0) {
+    if (appliedMembership) {
       paymentDetails.adminMembership = {
         membershipId: appliedMembership._id,
-        discountAmount: membershipDiscountAmount,
         membershipName: appliedMembership.name,
         sessionDeduction: true,
         remainingSessionsBefore: appliedMembership.remainingSessions
@@ -2345,31 +2296,22 @@ const SelectCalendar = () => {
     }
 
     if (selectedGiftCard) {
-      const availableValue = calculateGiftCardValue(selectedGiftCard);
-      const amountAfterMembership = sessionTotal - (membershipDiscountAmount || 0);
-      const actualRedeemAmount = Math.min(availableValue, amountAfterMembership);
-      if (actualRedeemAmount > 0) {
-        paymentDetails.giftCard = {
-          giftCardId: selectedGiftCard._id || selectedGiftCard.id,
-          code: selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber,
-          redeemAmount: actualRedeemAmount
-        };
-      }
+      paymentDetails.giftCard = {
+        giftCardId: selectedGiftCard._id || selectedGiftCard.id,
+        code: selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber
+      };
     }
 
     const paymentMethodMapping = { upi: 'online' };
-    const fallbackFinalAmount = Math.max(
-      0,
-      sessionTotal - (membershipDiscountAmount || 0) - (paymentDetails.giftCard?.redeemAmount || 0)
-    );
-
-    const authoritativePaymentDetails = usePreviewValues && bookingPreview?.normalizedPaymentDetails
+    const authoritativePaymentDetails = (usePreviewValues && bookingPreview?.normalizedPaymentDetails)
       ? bookingPreview.normalizedPaymentDetails
       : paymentDetails;
-    const authoritativeFinalAmount = usePreviewValues && bookingPreview?.pricing
+
+    const authoritativeFinalAmount = (usePreviewValues && bookingPreview?.pricing)
       ? Number(bookingPreview.pricing.finalAmount || 0)
-      : fallbackFinalAmount;
-    const authoritativeManualDiscount = usePreviewValues && bookingPreview?.pricing
+      : (getSessionSubtotal() - (customTotalDiscount || 0));
+
+    const authoritativeManualDiscount = (usePreviewValues && bookingPreview?.pricing)
       ? Number(bookingPreview.pricing.manualDiscount || 0)
       : customTotalDiscount;
 
@@ -2520,331 +2462,6 @@ const SelectCalendar = () => {
       throw error;
     } finally {
       setGiftCardLoading(false);
-    }
-  };
-
-  const handleCreateBooking = async () => {
-    setBookingLoading(true);
-    setBookingError(null);
-    setBookingSuccess(null);
-
-    try {
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        setBookingError('Authentication required. Please log in again.');
-        setBookingLoading(false);
-        return;
-      }
-
-      // Check if we have appointments to book
-      if (multipleAppointments.length === 0) {
-        setBookingError('No appointments in session. Please add at least one service.');
-        setBookingLoading(false);
-        return;
-      }
-
-      // Validate that no appointment ends after 23:30 (to prevent overflow into next day)
-      const MAX_END_TIME_MINUTES = 23 * 60 + 30; // 23:30
-      for (const apt of multipleAppointments) {
-        const [hours, minutes] = apt.timeSlot.split(':').map(Number);
-        const startTimeInMinutes = hours * 60 + minutes;
-        const endTimeInMinutes = startTimeInMinutes + apt.service.duration;
-
-        if (endTimeInMinutes > MAX_END_TIME_MINUTES) {
-          const endHours = Math.floor(endTimeInMinutes / 60);
-          const endMinutes = endTimeInMinutes % 60;
-          const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-
-          setBookingError(
-            `Cannot confirm booking: "${apt.service.name}" scheduled at ${apt.timeSlot} would end at ${endTimeStr}, ` +
-            `which exceeds the maximum allowed time of 23:30. Please adjust the appointment time or choose a shorter service.`
-          );
-          setBookingLoading(false);
-          return;
-        }
-      }
-
-      let clientData;
-
-      if (selectedExistingClient) {
-        clientData = {
-          firstName: selectedExistingClient.firstName,
-          lastName: selectedExistingClient.lastName,
-          email: selectedExistingClient.email,
-          phone: selectedExistingClient.phone
-        };
-      } else {
-        const nameString = clientInfo.name ? clientInfo.name.trim() : '';
-        if (!isWalkIn) {
-          if (!nameString) {
-            setBookingError('Client name is required.');
-            setBookingLoading(false);
-            return;
-          }
-        }
-
-        const [firstName, ...rest] = nameString.split(' ');
-        const lastName = rest.join(' ') || '';
-        clientData = {
-          firstName: firstName || 'Walk-in',
-          lastName: lastName || 'Customer',
-          email: clientInfo.email ? clientInfo.email.trim() : '',
-          phone: clientInfo.phone ? clientInfo.phone.trim() : ''
-        };
-      }
-
-      // Email and phone are now optional - booking can proceed without them
-
-      // Create services array from multiple appointments
-      const services = multipleAppointments.map(apt => {
-        // Ensure we have a valid date object
-        let appointmentDate;
-        if (apt.date instanceof Date) {
-          appointmentDate = new Date(apt.date);
-        } else if (typeof apt.date === 'string') {
-          appointmentDate = new Date(apt.date);
-        } else {
-          // Fallback to current date if date is invalid
-          console.warn('Invalid date in appointment, using current date:', apt.date);
-          appointmentDate = new Date();
-        }
-
-        // Ensure the date is valid
-        if (isNaN(appointmentDate.getTime())) {
-          console.error('Invalid date created from:', apt.date);
-          appointmentDate = new Date(); // Fallback to current date
-        }
-
-        // const [hours, minutes] = apt.timeSlot.split(':');
-
-        // TIMEZONE FIX: Create UTC datetime that represents the exact date/time user selected
-        // This ensures the appointment appears on the correct date regardless of server timezone
-
-        let dateStr;
-        if (typeof apt.date === 'string' && apt.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          dateStr = apt.date;
-        } else {
-          const year = appointmentDate.getFullYear();
-          const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
-          const day = String(appointmentDate.getDate()).padStart(2, '0');
-          dateStr = `${year}-${month}-${day}`;
-        }
-
-        const timeStr = apt.timeSlot;
-
-        // Validate inputs
-        if (!dateStr || !timeStr) {
-          console.error('Ã¢ÂÅ’ Invalid appointment data:', { dateStr, timeStr });
-          throw new Error(`Invalid appointment: date=${dateStr}, time=${timeStr}`);
-        }
-
-        // Create UTC datetime directly using the date string and time
-        // This prevents any local timezone interference
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        const appointmentDateTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`);
-
-        const endTime = new Date(appointmentDateTime);
-        endTime.setUTCMinutes(endTime.getUTCMinutes() + apt.service.duration);
-
-        // Validate that the dates were created successfully
-        if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {
-          console.error('Ã¢ÂÅ’ Invalid date created');
-          throw new Error('Failed to create valid dates');
-        }
-
-        // Get the price for this appointment (edited or original)
-        const editedPrice = editedServicePrices[apt.id];
-        const finalPrice = editedPrice !== undefined ? editedPrice : apt.service.price;
-        const originalPrice = apt.service.price;
-
-        const serviceData = {
-          service: apt.service._id,
-          employee: apt.professional._id || apt.professional.id,
-          duration: apt.service.duration,
-          price: finalPrice, // Use edited price if available
-          originalPrice: originalPrice, // Store original price for reference
-          startTime: appointmentDateTime.toISOString(),
-          endTime: endTime.toISOString(),
-        };
-
-        // Add custom discount info if price was edited
-        if (editedPrice !== undefined) {
-          serviceData.customPrice = editedPrice;
-          serviceData.priceDiscount = originalPrice - editedPrice;
-        }
-
-        return serviceData;
-      });
-
-      // Calculate totals & apply payment adjustments using the new gift card flow
-      const totalDuration = multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0);
-      const totalAmount = getTotalSessionPrice(); // This already includes customTotalDiscount
-      const originalTotalAmount = multipleAppointments.reduce((sum, a) => {
-        const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
-        return sum + Number(price || 0);
-      }, 0); // Original total without custom discount
-      const paymentCalculation = calculateTotalWithGiftCard();
-      let finalAmount = paymentCalculation.remainingAmount;
-      const paymentDetails = { clientId: selectedExistingClient?._id };
-
-      // Apply admin membership discount first
-      if (appliedMembership && membershipDiscountAmount > 0) {
-        paymentDetails.adminMembership = {
-          membershipId: appliedMembership._id,
-          discountAmount: membershipDiscountAmount,
-          membershipName: appliedMembership.name,
-          sessionDeduction: true,
-          remainingSessionsBefore: appliedMembership.remainingSessions
-        };
-      }
-
-      // Apply gift card if one was selected
-      if (selectedGiftCard) {
-        const giftCardId = selectedGiftCard._id || selectedGiftCard.id;
-        const giftCardCode = selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber;
-        const availableValue = calculateGiftCardValue(selectedGiftCard);
-
-        // Calculate the actual amount to redeem at booking time
-        const amountAfterMembership = totalAmount - (membershipDiscountAmount || 0);
-        const actualRedeemAmount = Math.min(availableValue, amountAfterMembership);
-
-        // Only apply if there's actually an amount to redeem
-        if (actualRedeemAmount > 0) {
-          paymentDetails.giftCard = {
-            giftCardId: giftCardId,
-            code: giftCardCode,
-            redeemAmount: actualRedeemAmount
-          };
-
-          // Update finalAmount to reflect gift card redemption
-          finalAmount = Math.max(0, amountAfterMembership - actualRedeemAmount);
-        } else {}
-      } else {}
-
-      // Normalize payment methods to backend-accepted enums and attach details
-      // Backend expects values like: 'cash', 'card', 'online', 'giftcard' (common)
-      const paymentMethodMapping = {
-        upi: 'online', // UPI is an online payment type on many backends
-      };
-
-      // Attach payment details for remaining amount (if any)
-      // Card and UPI details are optional - payment method selection is sufficient
-      if (finalAmount > 0) {
-        if (paymentMethod === 'card') {
-          // Card payment selected - no additional details required
-          paymentDetails.paymentType = 'card';
-        } else if (paymentMethod === 'upi' || paymentMethod === 'online') {
-          // UPI/Online payment selected - no additional details required
-          paymentDetails.paymentType = 'upi';
-        }
-      }
-
-      // Determine the effective payment method for the booking (normalize unknown aliases)
-      let effectivePaymentMethod;
-      if (finalAmount === 0 && selectedGiftCard) {
-        effectivePaymentMethod = 'giftcard';
-      } else {
-        effectivePaymentMethod = paymentMethodMapping[paymentMethod] || paymentMethod || 'cash';
-      }
-
-      // Create the booking payload for multiple services
-      const bookingPayload = {
-        services,
-        appointmentDate: services[0].startTime,
-        totalDuration,
-        totalAmount: originalTotalAmount, // Send original total
-        finalAmount, // This includes all discounts (custom, membership, gift card)
-        paymentMethod: effectivePaymentMethod,
-        paymentDetails,
-        client: clientData,
-        notes: bookingForm.notes || '',
-        giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
-        bookingSource: 'admin',
-        customDiscount: customTotalDiscount > 0 ? customTotalDiscount : undefined,
-        discountedTotal: customTotalDiscount > 0 ? totalAmount : undefined // Total after custom discount, before other discounts
-      };
-
-      const res = await fetch(`${Base_url}/bookings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(bookingPayload),
-      });
-
-      const responseData = await res.json();
-
-      if (!res.ok) {
-        throw new Error(responseData.message || `HTTP ${res.status}: ${res.statusText}`);
-      }
-
-      if (!responseData.success) {
-        throw new Error(responseData.message || 'Booking creation failed');
-      }
-
-      const clientName = selectedExistingClient
-        ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-        : clientData.firstName;
-
-      setBookingSuccess(` ${multipleAppointments.length} service(s) booked successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
-
-      // Clear the appointments session after successful booking
-      setTimeout(() => {
-        clearAppointmentSession();
-        // Clear new gift card states
-        setGiftCardAppliedAmount(0);
-        setGiftCardCode('');
-        setGiftCardError('');
-        // Force refresh of gift cards so redeemed gift card disappears
-        setAvailableGiftCards([]);
-        setSelectedGiftCard(null);
-        setRedeemGiftCardAmount(0);
-
-        // Add additional delay to ensure backend DB has been fully updated
-        setTimeout(() => {
-          if (selectedExistingClient?._id) {
-            loadBenefitsIfNeeded(true);
-          }
-        }, 500);
-      }, 1500);
-
-      // If booking used an admin-applied membership, update local membership counters so UI shows reduced remaining sessions
-      try {
-        const adminMembershipInfo = paymentDetails?.adminMembership;
-        if (appliedMembership && adminMembershipInfo && adminMembershipInfo.sessionDeduction) {
-          // Mutate local appliedMembership safely
-          setAppliedMembership(prev => {
-            if (!prev) return prev;
-            const used = (prev.usedSessions || 0) + 1;
-            const remaining = (typeof prev.remainingSessions === 'number') ? Math.max(0, prev.remainingSessions - 1) : (typeof prev.numberOfSessions === 'number' ? Math.max(0, prev.numberOfSessions - used) : null);
-            const updated = { ...prev, usedSessions: used, remainingSessions: remaining };
-            return updated;
-          });
-
-          // Update any availableMemberships list we have cached to reflect the deduction
-          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
-
-          // Also refresh memberships list from server in background to keep authoritative state
-          // bump signal to force AdminMembershipChecker to refetch
-          setTimeout(() => setMembershipRefreshSignal(s => s + 1), 800);
-        }
-      } catch (e) {
-        console.warn('Failed to update local membership usage after booking:', e);
-      }
-
-      fetchCalendarData();
-
-      // Close modal after a short delay
-      setTimeout(() => {
-        closeBookingModal();
-      }, 3000);
-    } catch (err) {
-      console.error('Booking creation error:', err);
-      setBookingError(`Failed to create booking: ${err.message}`);
-    } finally {
-      setBookingLoading(false);
     }
   };
 
