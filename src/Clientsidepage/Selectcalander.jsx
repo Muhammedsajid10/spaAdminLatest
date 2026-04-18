@@ -1,76 +1,31 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import Swal from 'sweetalert2';
 import Loading from '../states/Loading.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { useDatePickerState, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
-import { StaffColumn } from '../calendar/components/StaffColumn';
 import DayView from '../calendar/components/DayView.jsx';
 import WeekView from '../calendar/components/WeekView.jsx';
 import MonthView from '../calendar/components/MonthView.jsx';
-import ClientSummary from '../calendar/components/ClientInformation.jsx';
-import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
-import { MdDelete } from "react-icons/md";
 import {
-  formatUTCToLocal,
-  generateTimeSlots,
   formatTime,
-  getRandomColor,
-  getRandomAppointmentColor,
-  calculateAppointmentHeight,
   generateTimeSlotsFromEmployeeShift,
-  getValidTimeSlotsForProfessional,
   getAvailableProfessionalsForService,
   getAccumulatedBookings,
   addMinutesToTime,
   isTimeSlotConflicting,
   timeToMinutes,
   detectProfessionalConflict,
-  getAvailableTimeSlotsWithAccumulatedBookings,
-  getAvailableProfessionalsWithAccumulatedBookings,
   getAvailableTimeSlotsForProfessional,
-  getDatePickerCalendarDays,
-  getWeeksInMonth,
-  getMonthsInYear
+  getDatePickerCalendarDays
 } from './helpers/selectCalendarHelpers';
-import axios from 'axios';
-import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
 import './Selectcalander.css';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Users,
-  CalendarDays,
-  Plus,
-  Calendar,
-  RotateCcw,
-  User,
-  Check,
-  X,
-  Edit2,
-  Clock,
-  CreditCard,
-  Banknote,
-  Smartphone,
-  Hash,
-  FileText,
-  Timer,
-  Gift,
-  Crown,
-  Trash2,
-  Mail,
-  Phone,
-  Tag,
-  Landmark
-} from "lucide-react";
-import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
 import BookingWizardModal from '../calendar/components/BookingWizard/BookingWizardModal.jsx';
 import BookingStatusModal from '../calendar/components/BookingStatusModal.jsx';
 import CalendarHeader from '../calendar/components/CalendarHeader.jsx';
 import { adminBookingActions } from '../store/adminBookingSlice';
-import { calendarActions, setCurrentDateISO, setCurrentView } from '../store/calendarSlice';
+import { calendarActions, setCurrentDateISO } from '../store/calendarSlice';
 import { bookingSessionActions } from '../store/bookingSessionSlice';
 import { 
   fetchManagementBookingDetailsThunk,
@@ -115,15 +70,10 @@ const SelectCalendar = () => {
   } = useSelector(state => state.calendar);
   
   const currentDate = useMemo(() => new Date(currentDateISO), [currentDateISO]);
-  const datePickerView = datePicker.view;
   const showDatePicker = datePicker.show;
-  const datePickerCurrentMonth = new Date(datePicker.currentMonthISO);
-  const datePickerSelectedDate = new Date(datePicker.selectedDateISO);
 
-  const setDatePickerView = (val) => dispatch(calendarActions.setDatePickerView(val));
   const setShowDatePicker = (val) => dispatch(calendarActions.setDatePickerShow(val));
   const setCurrentDate = (date) => dispatch(setCurrentDateISO(date.toISOString()));
-  const setCurrentView = (val) => dispatch(adminBookingActions.setCurrentView(val));
 
   // 2. Booking Session Data (Already in Redux)
   const multipleAppointments = useSelector(state => state.bookingSession.multipleAppointments);
@@ -155,9 +105,6 @@ const SelectCalendar = () => {
   const availableProfessionals = useSelector(state => state.adminBooking.available.professionals);
   const availableTimeSlots = useSelector(state => state.adminBooking.available.timeSlots);
   
-  // Persistence / Navigation
-  const lastSelectedService = useSelector(state => state.adminBooking.navigation.lastService);
-  const lastSelectedProfessional = useSelector(state => state.adminBooking.navigation.lastProfessional);
   
   // Payment & Pricing
   const paymentMethod = useSelector(state => state.adminBooking.payment.method);
@@ -165,8 +112,6 @@ const SelectCalendar = () => {
   const membershipDiscountAmount = useSelector(state => state.adminBooking.payment.membershipDiscountAmount);
   const editedServicePrices = useSelector(state => state.adminBooking.payment.editedServicePrices);
   const bookingPreview = useSelector(state => state.adminBooking.payment.preview);
-  const bookingPreviewLoading = useSelector(state => state.adminBooking.payment.previewLoading);
-  const bookingPreviewError = useSelector(state => state.adminBooking.payment.previewError);
   
   // Benefits
   const appliedMembership = useSelector(state => state.adminBooking.benefits.appliedMembership);
@@ -174,11 +119,6 @@ const SelectCalendar = () => {
   const availableMemberships = useSelector(state => state.adminBooking.benefits.availableMemberships);
   const availableGiftCards = useSelector(state => state.adminBooking.benefits.availableGiftCards);
   
-  // Status
-  const bookingLoading = useSelector(state => state.adminBooking.status.loading);
-  const bookingError = useSelector(state => state.adminBooking.status.error);
-  const bookingSuccess = useSelector(state => state.adminBooking.status.success);
-
   // Redux Dispatch Mappings (Migration of local setters)
   const setBookingStep = (val) => dispatch(adminBookingActions.setStep(val));
   const setShowAddBookingModal = (val) => dispatch(adminBookingActions.setModalOpen(val));
@@ -210,7 +150,6 @@ const SelectCalendar = () => {
   };
   
   const setBookingPreview = (val) => dispatch(adminBookingActions.setBookingPreview(val));
-  const setBookingPreviewLoading = (val) => dispatch(adminBookingActions.setBookingPreviewLoading(val));
   const setBookingPreviewError = (val) => dispatch(adminBookingActions.setBookingPreviewError(val));
   
   const setAppliedMembership = (val) => dispatch(adminBookingActions.setAppliedMembership(val));
@@ -253,7 +192,6 @@ const SelectCalendar = () => {
   const [showTimeHover, setShowTimeHover] = useState(false);
   const [hoverTimeData, setHoverTimeData] = useState(null);
   const [hoverTimePosition, setHoverTimePosition] = useState({ top: 0, left: 0 });
-  const [fullBookingDetailsLoading, setFullBookingDetailsLoading] = useState(false);
   const [showClientSearch, setShowClientSearch] = useState(false);
   const [bookingForm, setBookingForm] = useState({ notes: '' });
 
@@ -1139,11 +1077,6 @@ const SelectCalendar = () => {
     setHoverTimeData(null);
   };
 
-  const formatTooltipTime = (timeString) => {
-    if (!timeString) return 'Time TBD';
-    const [hours, minutes] = timeString.split(':');
-    return `${hours}:${minutes}`;
-  };
 
   // Close dropdown when clicking outside or on escape key
   useEffect(() => {
