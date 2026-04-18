@@ -48,9 +48,16 @@ const bookingSessionSlice = createSlice({
     },
     setShowServiceCatalog(state, action) {
       state.showServiceCatalog = action.payload;
+    },
+    setCurrentAppointmentIndex(state, action) {
+      state.currentAppointmentIndex = action.payload;
+    },
+    setIsAddingAdditionalService(state, action) {
+      state.isAddingAdditionalService = action.payload;
     }
   }
 });
 
 export const { setMultipleAppointments, addAppointmentToSession, removeAppointmentFromSession, clearSession, updateAppointmentPrice, updateAppointment, setShowServiceCatalog } = bookingSessionSlice.actions;
+export const bookingSessionActions = bookingSessionSlice.actions;
 export default bookingSessionSlice.reducer;

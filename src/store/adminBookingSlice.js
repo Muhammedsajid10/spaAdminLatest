@@ -38,7 +38,9 @@ const initialState = {
     editedServicePrices: {}, // { appointmentId: price }
     preview: null,
     previewLoading: false,
-    previewError: null
+    previewError: null,
+    editingTotalPrice: false,
+    tempTotalPrice: ''
   },
   
   benefits: {
@@ -47,7 +49,11 @@ const initialState = {
     availableMemberships: [],
     availableGiftCards: [],
     loading: false,
-    error: null
+    error: null,
+    redeemGiftCardAmount: 0,
+    giftCardCode: '',
+    giftCardError: '',
+    giftCardLoading: false
   },
   
   // Global Booking Status
@@ -63,6 +69,14 @@ const initialState = {
     lastProfessional: null,
     lastAddedId: null,
     defaults: null
+  },
+
+  // Management of existing bookings
+  management: {
+    showStatusModal: false,
+    selectedBooking: null,
+    loading: false,
+    error: null
   }
 };
 
@@ -129,6 +143,22 @@ const adminBookingSlice = createSlice({
     setAppliedGiftCard(state, action) { state.benefits.appliedGiftCard = action.payload; },
     setAvailableMemberships(state, action) { state.benefits.availableMemberships = action.payload; },
     setAvailableGiftCards(state, action) { state.benefits.availableGiftCards = action.payload; },
+    setBenefitsStatus(state, action) {
+      const { loading, error } = action.payload;
+      if (loading !== undefined) state.benefits.loading = loading;
+      if (error !== undefined) state.benefits.error = error;
+    },
+    setAppliedGiftCardAmount(state, action) {
+      if (state.benefits.appliedGiftCard) {
+        state.benefits.appliedGiftCard.appliedAmount = action.payload;
+      }
+    },
+    setRedeemGiftCardAmount(state, action) { state.benefits.redeemGiftCardAmount = action.payload; },
+    setGiftCardCode(state, action) { state.benefits.giftCardCode = action.payload; },
+    setGiftCardError(state, action) { state.benefits.giftCardError = action.payload; },
+    setGiftCardLoading(state, action) { state.benefits.giftCardLoading = action.payload; },
+    setEditingTotalPrice(state, action) { state.payment.editingTotalPrice = action.payload; },
+    setTempTotalPrice(state, action) { state.payment.tempTotalPrice = action.payload; },
     
     // Global Status
     setBookingStatus(state, action) {
@@ -138,6 +168,15 @@ const adminBookingSlice = createSlice({
       if (success !== undefined) state.status.success = success;
     },
     
+    // Management
+    setManagementStatusModal(state, action) { state.management.showStatusModal = action.payload; },
+    setSelectedManagementBooking(state, action) { state.management.selectedBooking = action.payload; },
+    setManagementStatus(state, action) {
+      const { loading, error } = action.payload;
+      if (loading !== undefined) state.management.loading = loading;
+      if (error !== undefined) state.management.error = error;
+    },
+    
     // Reset
     resetBookingState(state) {
       Object.assign(state, {
@@ -145,6 +184,23 @@ const adminBookingSlice = createSlice({
         available: { ...initialState.available, services: state.available.services } // keep services cached
       });
     }
+  },
+  extraReducers: (builder) => {
+    // Management Fetch Details
+    builder.addCase('adminBooking/fetchManagementDetails/fulfilled', (state, action) => {
+      const booking = action.payload;
+      if (state.management.selectedBooking) {
+        // Enrich existing selection with full record
+        state.management.selectedBooking = {
+          ...state.management.selectedBooking,
+          ...booking,
+          // Explicitly map nested data if needed
+          services: booking.services || [],
+          client: booking.client,
+          totalAmount: booking.totalAmount || booking.finalAmount || 0
+        };
+      }
+    });
   }
 });
 
@@ -156,7 +212,9 @@ export const {
   setPaymentMethod, setCustomTotalDiscount, setMembershipDiscountAmount, setEditedServicePrice,
   setBookingPreview, setBookingPreviewLoading, setBookingPreviewError,
   setAppliedMembership, setAppliedGiftCard, setAvailableMemberships, setAvailableGiftCards,
-  setBookingStatus, resetBookingState
+  setBookingStatus, resetBookingState,
+  setManagementStatusModal, setSelectedManagementBooking, setManagementStatus
 } = adminBookingSlice.actions;
 
+export const adminBookingActions = adminBookingSlice.actions;
 export default adminBookingSlice.reducer;

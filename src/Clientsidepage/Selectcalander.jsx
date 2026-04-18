@@ -67,28 +67,56 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import Error500Page from '../states/ErrorPage';
 import NoDataState from '../states/NoData';
 import BookingWizardModal from '../calendar/components/BookingWizard/BookingWizardModal.jsx';
-import { addAppointmentToSession, removeAppointmentFromSession, clearSession as clearSessionAction, setShowServiceCatalog as setShowServiceCatalogAction, updateAppointment } from '../store/bookingSessionSlice';
-import { fetchCalendarThunk, fetchServicesThunk } from '../store/thunks';
-import * as adminBookingActions from '../store/adminBookingSlice';
+import BookingStatusModal from '../calendar/components/BookingStatusModal.jsx';
+import CalendarHeader from '../calendar/components/CalendarHeader.jsx';
+import { adminBookingActions } from '../store/adminBookingSlice';
+import { calendarActions, setCurrentDateISO, setCurrentView } from '../store/calendarSlice';
+import { bookingSessionActions } from '../store/bookingSessionSlice';
+import { fetchManagementBookingDetailsThunk } from '../store/adminBookingThunks';
+import { fetchCalendarThunk } from '../store/calendarThunks';
 
 // --- API ENDPOINTS ---
 const BOOKING_API_URL = `${Base_url}/bookings`;
 const SERVICES_API_URL = `${Base_url}/services`;
 const EMPLOYEES_API_URL = `${Base_url}/employees`;
 const CLIENTS_API_URL = `${Base_url}/clients`;
+
+const MOCK_CLIENTS_DATA = [
+  { _id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', phone: '1234567890' },
+  { _id: '2', firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com', phone: '0987654321' }
+];
+
+const MOCK_SERVICES_DATA = [
+  { _id: 's1', name: 'Massage', duration: 60, price: 100 },
+  { _id: 's2', name: 'Facial', duration: 45, price: 80 }
+];
+
+const MOCK_EMPLOYEES_DATA = [
+  { id: 'e1', name: 'Alice', color: '#ff0000' },
+  { id: 'e2', name: 'Bob', color: '#00ff00' }
+];
+
 const SelectCalendar = () => {
   const dispatch = useDispatch();
 
-  // 1. Date / picker state (Consolidated in a specialized hook)
-  const {
-    currentDate, datePickerView, showDatePicker, datePickerCurrentMonth, datePickerSelectedDate,
-    setCurrentDate, setDatePickerView, setShowDatePicker, setDatePickerCurrentMonth,
-    setDatePickerSelectedDate,
-    goToDatePickerPreviousMonth,
-    goToDatePickerNextMonth,
-    goToDatePickerToday,
-    handleDatePickerDateSelect
-  } = useDatePickerState(new Date());
+  // 1. Calendar State (Date & View from Redux)
+  const { 
+    currentDateISO, 
+    currentView, 
+    datePicker, 
+    filters 
+  } = useSelector(state => state.calendar);
+  
+  const currentDate = useMemo(() => new Date(currentDateISO), [currentDateISO]);
+  const datePickerView = datePicker.view;
+  const showDatePicker = datePicker.show;
+  const datePickerCurrentMonth = new Date(datePicker.currentMonthISO);
+  const datePickerSelectedDate = new Date(datePicker.selectedDateISO);
+
+  const setDatePickerView = (val) => dispatch(calendarActions.setDatePickerView(val));
+  const setShowDatePicker = (val) => dispatch(calendarActions.setDatePickerShow(val));
+  const setCurrentDate = (date) => dispatch(setCurrentDateISO(date.toISOString()));
+  const setCurrentView = (val) => dispatch(adminBookingActions.setCurrentView(val));
 
   // 2. Booking Session Data (Already in Redux)
   const multipleAppointments = useSelector(state => state.bookingSession.multipleAppointments);
@@ -186,53 +214,41 @@ const SelectCalendar = () => {
   const setBookingLoading = (val) => dispatch(adminBookingActions.setBookingStatus({ loading: val }));
   const setBookingError = (val) => dispatch(adminBookingActions.setBookingStatus({ error: val }));
   const setBookingSuccess = (val) => dispatch(adminBookingActions.setBookingStatus({ success: val }));
-
-  // Helper local states for UI-only transient information
-  const [editingTotalPrice, setEditingTotalPrice] = useState(false);
-  const [tempTotalPrice, setTempTotalPrice] = useState('');
-  const [editingServicePrices, setEditingServicePrices] = useState({}); // UI only editing mode
-  const [membershipRefreshSignal, setMembershipRefreshSignal] = useState(0);
-  const [unavailableMessage, setUnavailableMessage] = useState('');
-  const [showUnavailablePopup, setShowUnavailablePopup] = useState(false);
-  const [isNewAppointment, setIsNewAppointment] = useState(false);
-  const [showClientSearch, setShowClientSearch] = useState(false);
-  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
-  const [availableProfessionalsForTimeSlot, setAvailableProfessionalsForTimeSlot] = useState([]);
-  const [showBookingDatePicker, setShowBookingDatePicker] = useState(false);
-  const [cardDetails, setCardDetails] = useState({ number: '', name: '', expiry: '', cvv: '' });
-  const [upiId, setUpiId] = useState('');
-  const [giftCardCode, setGiftCardCode] = useState('');
-  const [showAppointmentSummary, setShowAppointmentSummary] = useState(false);
-  const [giftCardError, setGiftCardError] = useState('');
-  const [giftCardLoading, setGiftCardLoading] = useState(false);
-  const [giftCardAppliedAmount, setGiftCardAppliedAmount] = useState(0);
-  const [benefitsLoading, setBenefitsLoading] = useState(false);
-  const [benefitsError, setBenefitsError] = useState(null);
   
+  const setIsNewAppointment = (val) => dispatch(adminBookingActions.setIsNewAppointment(val));
+  const setShowServiceCatalog = (val) => dispatch(bookingSessionActions.setShowServiceCatalog(val));
+  const setIsAddingAdditionalService = (val) => dispatch(bookingSessionActions.setIsAddingAdditionalService(val));
+  const setCurrentAppointmentIndex = (val) => dispatch(bookingSessionActions.setCurrentAppointmentIndex(val));
+
+  const setBenefitsLoading = (val) => dispatch(adminBookingActions.setBenefitsStatus({ loading: val }));
+  const setBenefitsError = (val) => dispatch(adminBookingActions.setBenefitsStatus({ error: val }));
+  const setGiftCardAppliedAmount = (val) => dispatch(adminBookingActions.setAppliedGiftCardAmount(val));
+  const setRedeemGiftCardAmount = (val) => dispatch(adminBookingActions.setRedeemGiftCardAmount(val));
+  const setGiftCardCode = (val) => dispatch(adminBookingActions.setGiftCardCode(val));
+  const setGiftCardError = (val) => dispatch(adminBookingActions.setGiftCardError(val));
+  const setGiftCardLoading = (val) => dispatch(adminBookingActions.setGiftCardLoading(val));
+  const setEditingTotalPrice = (val) => dispatch(adminBookingActions.setEditingTotalPrice(val));
+  const setTempTotalPrice = (val) => dispatch(adminBookingActions.setTempTotalPrice(val));
+
+  const [showUnavailablePopup, setShowUnavailablePopup] = useState(false);
+  const [unavailableMessage, setUnavailableMessage] = useState('');
+  const [showBookingDatePicker, setShowBookingDatePicker] = useState(false);
   const [showMoreAppointments, setShowMoreAppointments] = useState(false);
   const [selectedDayAppointments, setSelectedDayAppointments] = useState([]);
   const [selectedDayDate, setSelectedDayDate] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [dropdownPositionedAbove, setDropdownPositionedAbove] = useState(false);
+
   const [showBookingTooltip, setShowBookingTooltip] = useState(false);
   const [tooltipData, setTooltipData] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const [showTeamPopup, setShowTeamPopup] = useState(false);
-  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
-  const [teamFilter, setTeamFilter] = useState('all');
-  const [selectedEmployees, setSelectedEmployees] = useState(new Set());
-  const [calendarPopupTab, setCalendarPopupTab] = useState('confirmed');
-  const [teamSearchQuery, setTeamSearchQuery] = useState('');
-  const [teamViewMode, setTeamViewMode] = useState('list');
+
   const [showTimeHover, setShowTimeHover] = useState(false);
   const [hoverTimeData, setHoverTimeData] = useState(null);
   const [hoverTimePosition, setHoverTimePosition] = useState({ top: 0, left: 0 });
-  const [showBookingStatusModal, setShowBookingStatusModal] = useState(false);
-  const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
-  const [bookingStatusLoading, setBookingStatusLoading] = useState(false);
-  const [bookingStatusError, setBookingStatusError] = useState(null);
   const [fullBookingDetailsLoading, setFullBookingDetailsLoading] = useState(false);
-  const [currentView, setCurrentView] = useState('Day');
+  const [existingClients, setExistingClients] = useState([]);
+  const [showClientSearch, setShowClientSearch] = useState(false);
   const [bookingForm, setBookingForm] = useState({ notes: '' });
 
   // Refs
@@ -250,151 +266,6 @@ const SelectCalendar = () => {
   const selectedStaff = useSelector(state => state.calendar.selectedStaff);
   const appointments = useSelector(state => state.appointments.byEmployee);
 
-  // Fetch full booking details with all service information including custom pricing
-  const fetchFullBookingDetails = useCallback(async (bookingId) => {
-    if (!bookingId) return;
-
-    try {
-      setFullBookingDetailsLoading(true);
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-      // Use admin endpoint to fetch full booking details
-      const response = await fetch(`${Base_url}/bookings/admin/${bookingId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        console.warn('Failed to fetch full booking details:', response.status);
-        return;
-      }
-
-      const data = await response.json();
-
-      if (data && data.data) {
-        const booking = data.data.booking || data.data;
-
-        // Update selectedBookingForStatus with enriched data while preserving calendar view fields
-        setSelectedBookingForStatus(prev => {
-          // Extract client name from populated client object or keep existing value
-          let clientName = prev?.client;
-          if (booking.client) {
-            if (typeof booking.client === 'string') {
-              clientName = booking.client;
-            } else if (booking.client.fullName) {
-              clientName = booking.client.fullName;
-            } else if (booking.client.firstName || booking.client.lastName) {
-              clientName = `${booking.client.firstName || ''} ${booking.client.lastName || ''}`.trim();
-            } else {
-              clientName = booking.client;
-            }
-          }
-
-          // Keep the full list of services for the breakdown
-          const allServices = booking.services || [];
-
-          // Identify the specific service clicked for the header (optional, if needed)
-          let targetService = prev;
-          if (prev?.serviceEntryId && allServices.length > 0) {
-            const found = allServices.find(s => String(s._id) === String(prev.serviceEntryId));
-            if (found) targetService = found;
-          }
-
-          // Total amount should be the actual booking total
-          const actualTotalAmount = booking.totalAmount || booking.finalAmount || booking.finalPrice || 0;
-
-          return {
-            ...prev,
-            // Enrich with ALL services for the breakdown view
-            services: allServices.map(s => {
-              // Be very robust with price detection
-              const svcPrice = s.price ?? s.servicePrice ?? s.finalPrice ?? s.customPrice ?? s.originalPrice ?? 0;
-              const svcOrigPrice = s.originalPrice ?? s.price ?? svcPrice;
-
-              return {
-                ...s,
-                // Ensure price is what we want to show as the "current regular" price
-                price: svcPrice,
-                originalPrice: svcOrigPrice,
-                customPrice: s.customPrice // preserved
-              };
-            }),
-            totalAmount: actualTotalAmount,
-            finalAmount: actualTotalAmount,
-            // Use the extracted strings for display
-            client: clientName,
-            service: targetService.serviceName || targetService.service?.name || prev?.service,
-            // Keep original MongoDB object for reference if needed
-            _fullBookingData: booking
-          };
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching full booking details:', err);
-      // Don't show error to user - just log it
-    } finally {
-      setFullBookingDetailsLoading(false);
-    }
-  }, [Base_url]);
-
-  // Fetch full booking details when modal opens
-  useEffect(() => {
-    if (showBookingStatusModal && selectedBookingForStatus?.bookingId) {
-      fetchFullBookingDetails(selectedBookingForStatus.bookingId);
-    }
-  }, [showBookingStatusModal, fetchFullBookingDetails]);
-
-  // --- HELPER FUNCTIONS ---
-  // const handleTimeSlotClick = (employeeId, slotTime, day) => {
-  //   const dayKey = (day || currentDate).toISOString().split('T')[0];
-  //   const slotKey = `${dayKey}_${slotTime}`;
-  //   const existingAppointment = appointments[employeeId]?.[slotKey];
-
-  //   if (existingAppointment) {
-  //     // Show booking status modal for existing appointment
-  //     const employee = employees.find(emp => emp.id === employeeId);
-  //     const appointmentDetails = {
-  //       ...existingAppointment,
-  //       employeeId,
-  //       employeeName: employee?.name,
-  //       slotTime,
-  //       date: dayKey,
-  //       slotKey
-  //     };
-  //     setSelectedBookingForStatus(appointmentDetails);
-  //     setShowBookingStatusModal(true);
-  //     return;
-  //   }
-
-  //   // Continue with new booking flow for empty slots
-  //   const employee = employees.find(emp => emp.id === employeeId);
-
-  //   // Check if employee has a shift on this day
-  //   if (!hasShiftOnDate(employee, day || currentDate)) {
-  //     setUnavailableMessage(`${employee?.name || 'Employee'} has no shift scheduled on this day`);
-  //     setShowUnavailablePopup(true);
-  //     return;
-  //   }
-
-  //   const unavailableReason = isTimeSlotUnavailable(employeeId, slotTime);
-  //   if (unavailableReason && unavailableReason !== "No shift scheduled") {
-  //     setUnavailableMessage(`This time slot is unavailable: ${unavailableReason}`);
-  //     setShowUnavailablePopup(true);
-  //     return;
-  //   }
-
-  //   // Store the clicked employee and time slot as defaults for pre-selection
-  //   const staff = employees.find(emp => emp.id === employeeId);
-  //   setBookingDefaults({
-  //     professional: { _id: staff.id, user: { firstName: staff.name.split(' ')[0], lastName: staff.name.split(' ')[1] || '' } },
-  //     time: slotTime,
-  //     staffId: staff.id
-  //   });
-  //   setIsNewAppointment(true);
-  //   setShowAddBookingModal(true);
-  // };
   const handleTimeSlotClick = (employeeId, slotTime, day) => {
     const dayKey = localDateKey(day || currentDate);
     const slotKey = `${dayKey}_${slotTime}`;
@@ -412,23 +283,18 @@ const SelectCalendar = () => {
     }
 
     if (existingAppointment) {
-      // Show booking status modal for existing appointment
       const employee = employees.find(emp => emp.id === employeeId);
-      const foundService = availableServices.find(s => s._id === existingAppointment.serviceEntryId || s.id === existingAppointment.serviceEntryId || s.name === existingAppointment.service);
-      const servicePrice = foundService?.price || 0;
       const appointmentDetails = {
         ...existingAppointment,
         employeeId,
         employeeName: employee?.name,
         slotTime,
         date: dayKey,
-        slotKey,
-        // Include price information for display in booking modal
-        price: servicePrice,
-        finalAmount: servicePrice
+        slotKey
       };
-      setSelectedBookingForStatus(appointmentDetails);
-      setShowBookingStatusModal(true);
+      dispatch(adminBookingActions.setSelectedManagementBooking(appointmentDetails));
+      dispatch(adminBookingActions.setManagementStatusModal(true));
+      dispatch(fetchManagementBookingDetailsThunk(existingAppointment.bookingId));
       return;
     }
 
@@ -481,8 +347,6 @@ const SelectCalendar = () => {
     setIsNewAppointment(true);
     setShowAddBookingModal(true);
   };
-
-  // ... (inside SelectCalendar component)
 
   const handleServiceSelect = (service) => {
     setBookingError(null);
@@ -564,7 +428,7 @@ const SelectCalendar = () => {
         startTime,
         endTime
       };
-      addAppointmentToSessionLocal(newAppointment);
+      dispatch(bookingSessionActions.addAppointmentToSession(newAppointment));
       // Persist selected professional for potential later use
       setSelectedProfessional(professionalObj);
       setSelectedService(null); // We store service in appointment card instead
@@ -589,7 +453,7 @@ const SelectCalendar = () => {
       );
 
       if (!actualEmployee) {
-        console.error('Ã¢ÂÅ’ Could not find employee in employees array!', {
+        console.error('Ã¢Â Å’ Could not find employee in employees array!', {
           searchingFor: professionalId,
           availableIds: employees.map(e => ({ id: e.id, _id: e._id, name: e.name }))
         });
@@ -655,7 +519,7 @@ const SelectCalendar = () => {
     setShowBookingDatePicker(false);
 
     // Clear multiple appointments session when closing modal
-    dispatch(clearSessionAction());
+    dispatch(bookingSessionActions.clearSession());
 
     setBookingForm({
       clientName: '',
@@ -668,190 +532,10 @@ const SelectCalendar = () => {
   };
 
   const closeBookingStatusModal = () => {
-    setShowBookingStatusModal(false);
-    setSelectedBookingForStatus(null);
-    setBookingStatusError(null);
+    dispatch(adminBookingActions.setManagementStatusModal(false));
   };
 
-  const handleBookingStatusUpdate = async (newStatus) => {
-    if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
-      setBookingStatusError('Invalid booking selected');
-      return;
-    }
 
-    setBookingStatusLoading(true);
-    setBookingStatusError(null);
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const bookingId = selectedBookingForStatus.bookingId;
-      const serviceEntryId = selectedBookingForStatus.serviceEntryId; // sub-document id
-
-      // Use per-service status endpoint if serviceEntryId present
-      const endpoint = serviceEntryId
-        ? `${Base_url}/bookings/admin/${bookingId}/service/${serviceEntryId}/status`
-        : `${Base_url}/bookings/admin/${bookingId}`; // fallback whole booking
-
-      const res = await fetch(endpoint, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || data.success === false) {
-        throw new Error(data.message || `Failed to update booking status (HTTP ${res.status})`);
-      }
-
-      // BACKEND STATUS MAPPING: Service-level vs Booking-level status handling
-      // Service level uses: scheduled, confirmed, arrived, in-progress, completed, cancelled, no-show
-      // Booking level uses: booked, confirmed, arrived, started, in-progress, completed, cancelled, no-show
-      // When we send 'confirmed' it stays as 'confirmed' at both levels
-      const backendStatusMapping = {
-        'booked': 'booked',           // Maps to booking-level 'booked'
-        'confirmed': 'confirmed',     // Maps to booking-level 'confirmed'  
-        'arrived': 'arrived',         // Maps to booking-level 'arrived'
-        'started': 'started',         // Maps to booking-level 'started'
-        'in-progress': 'started',     // Maps to booking-level 'started'
-        'completed': 'completed',     // Maps to booking-level 'completed'
-        'cancelled': 'cancelled',     // Maps to booking-level 'cancelled'
-        'no-show': 'no-show'          // Maps to booking-level 'no-show'
-      };
-
-      const actualBackendStatus = backendStatusMapping[newStatus] || newStatus;
-
-      // Update only this slot locally with the backend status (Redux)
-      try {
-        const empId = selectedBookingForStatus.employeeId;
-        const slotKey = selectedBookingForStatus.slotKey;
-        const updated = { ...appointments };
-        if (updated[empId] && updated[empId][slotKey]) {
-          updated[empId] = { ...updated[empId], [slotKey]: { ...updated[empId][slotKey], status: actualBackendStatus } };
-          dispatch(setAppointments(updated));
-        }
-      } catch (e) {
-        console.warn('Failed to update appointment in redux store', e);
-      }
-
-      // Update the selected booking status for immediate UI feedback
-      setSelectedBookingForStatus(prev => ({
-        ...prev,
-        status: actualBackendStatus
-      }));
-
-      // Close modal and refresh calendar after a brief delay to show the update
-      setTimeout(() => {
-        closeBookingStatusModal();
-        fetchCalendarData();
-      }, 500);
-    } catch (err) {
-      console.error('Ã¢ÂÅ’ Status update error:', err);
-      setBookingStatusError(err.message);
-    } finally {
-      setBookingStatusLoading(false);
-    }
-  };
-
-  const handleDeleteBooking = async () => {
-    if (!selectedBookingForStatus || !selectedBookingForStatus.bookingId) {
-      setBookingStatusError('Invalid booking selected');
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: 'Delete Booking?',
-      text: `Are you sure you want to delete this booking for ${selectedBookingForStatus.client}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, delete it',
-      cancelButtonText: 'Cancel'
-    });
-
-    if (!result.isConfirmed) {
-      return;
-    }
-
-    setBookingStatusLoading(true);
-    setBookingStatusError(null);
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-      const id = selectedBookingForStatus.bookingId;
-      const serviceEntryId = selectedBookingForStatus.serviceEntryId;
-      // Decide endpoint: if serviceEntryId then per-service delete, else whole booking
-      const primaryUrl = serviceEntryId
-        ? `${Base_url}/bookings/admin/${id}/service/${serviceEntryId}`
-        : `${Base_url}/bookings/${id}`;
-      const altUrl = serviceEntryId
-        ? `${Base_url}/bookings/admin/${id}/service/${serviceEntryId}`
-        : `${Base_url}/bookings/admin/${id}`; // fallback (legacy)
-
-      // Optimistic removal: adjust Redux store copy
-      try {
-        const updated = { ...appointments };
-        if (serviceEntryId) {
-          const empId = selectedBookingForStatus.employeeId;
-          const slotKey = selectedBookingForStatus.slotKey;
-          if (updated[empId]) {
-            const empSlots = { ...updated[empId] };
-            delete empSlots[slotKey];
-            if (Object.keys(empSlots).length === 0) delete updated[empId]; else updated[empId] = empSlots;
-          }
-        } else {
-          // Remove every slot referencing bookingId
-          Object.keys(updated).forEach(empId => {
-            const empSlots = updated[empId];
-            const newEmp = { ...empSlots };
-            let changed = false;
-            Object.keys(newEmp).forEach(k => {
-              if (newEmp[k]?.bookingId === id) { delete newEmp[k]; changed = true; }
-            });
-            if (changed) {
-              if (Object.keys(newEmp).length === 0) delete updated[empId]; else updated[empId] = newEmp;
-            }
-          });
-        }
-        dispatch(setAppointments(updated));
-      } catch (e) {
-        console.warn('Failed to optimistic remove appointment in redux store', e);
-      }
-
-      let res = await fetch(primaryUrl, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 404) {
-        // Try alternate admin path
-        res = await fetch(altUrl, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      }
-      let data = {};
-      try { data = await res.json(); } catch (_) { }
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to delete booking');
-      }
-
-      closeBookingStatusModal();
-      // Refresh to sync any related derived state
-      fetchCalendarData();
-    } catch (err) {
-      console.error('Delete booking error:', err);
-      setBookingStatusError(err.message);
-      // If optimistic removal happened but server failed, trigger refetch to restore
-      fetchCalendarData();
-    } finally {
-      setBookingStatusLoading(false);
-    }
-  };
 
   const handleAddAppointment = () => {
     setBookingDefaults(null);
@@ -973,20 +657,19 @@ const SelectCalendar = () => {
 
   const getUnavailabilityMessage = (professionalName, conflict) => {
     if (conflict.type === 'exact_time') {
-      return `Ã¢ÂÅ’ ${professionalName} is already booked for "${conflict.conflictingService}" at ${conflict.conflictingTime}. Please select a different time slot.`;
+      return `Ã¢Â Å’ ${professionalName} is already booked for "${conflict.conflictingService}" at ${conflict.conflictingTime}. Please select a different time slot.`;
     } else if (conflict.type === 'time_overlap') {
       const endTime = addMinutesToTime(conflict.conflictingTime, conflict.conflictingDuration);
-      return `Ã¢ÂÅ’ ${professionalName} is busy with "${conflict.conflictingService}" from ${conflict.conflictingTime} to ${endTime}. Please select a different time slot.`;
+      return `Ã¢Â Å’ ${professionalName} is busy with "${conflict.conflictingService}" from ${conflict.conflictingTime} to ${endTime}. Please select a different time slot.`;
     }
     return ` ${professionalName} is not available at this time.`;
   };
 
-  // (Removed local add/remove/total functions Ã¢â‚¬â€ replaced by hook implementations)
+  // (Removed local add/remove/total functions Ã¢â‚¬â€  replaced by hook implementations)
 
   const clearAppointmentSession = () => {
-    clearSessionLocal();
+    dispatch(bookingSessionActions.clearSession());
     setGiftCardCode('');
-    setShowAppointmentSummary(false);
   };
 
   const startAdditionalService = () => {
@@ -1007,15 +690,6 @@ const SelectCalendar = () => {
     setBookingError(null);
     try {
       // console.log('Fetching services from:', `${Base_url}/bookings/services`);
-      // Try to load services via thunk-backed API first
-      try {
-        const services = await dispatch(fetchServicesThunk()).unwrap();
-        setAvailableServices(services || MOCK_SERVICES_DATA);
-        setBookingLoading(false);
-        return;
-      } catch (err) {
-        console.warn('fetchServicesThunk failed, falling back to direct fetch', err);
-      }
       const res = await fetch(`${Base_url}/bookings/services`);
       const data = await res.json();
 
@@ -1078,21 +752,6 @@ const SelectCalendar = () => {
     try {
       const dateStr = date.toISOString().slice(0, 10);
       const url = `${EMPLOYEES_API_URL}`;
-      // console.log('API URL:', url);
-
-      // Try to fetch professionals via thunk (but fallback to local fetch)
-      try {
-        const profs = await dispatch(fetchProfessionalsThunk({ date })).unwrap();
-        // map to expected structure
-        const allProfessionals = profs || [];
-        // proceed with same logic using allProfessionals
-        const data = { success: true, data: { employees: allProfessionals } };
-        // fallthrough to existing handling below by setting res-like data
-        // eslint-disable-next-line no-unused-vars
-        // const res = { ok: true };
-      } catch (err) {
-        console.warn('fetchProfessionalsThunk failed, falling back to direct fetch', err);
-      }
       const res = await fetch(url);
       const data = await res.json();
 
@@ -1633,14 +1292,17 @@ const SelectCalendar = () => {
 
   // Close dropdown when clicking outside or on escape key
   useEffect(() => {
-    if (employees.length > 0 && selectedEmployees.size === 0) {
+    if (employees.length > 0 && filters.selectedEmployeeIds.length === 0) {
       // By default, select all employees
-      setSelectedEmployees(new Set(employees.map(emp => emp.id)));
+      dispatch(calendarActions.setEmployeeSelection(employees.map(emp => emp.id)));
     }
   }, [employees]);
   // NEW: Filter employees based on team selection and selected employees
 
   const getFilteredEmployees = () => {
+    const selectedEmployeesSet = new Set(filters.selectedEmployeeIds);
+    const teamFilter = filters.teamFilter;
+
     // First filter out "Allora Spa Dubai" staff
     let filteredByName = employees.filter(emp =>
       emp.name !== 'Allora Spa Dubai' &&
@@ -1650,7 +1312,6 @@ const SelectCalendar = () => {
     let filteredByTeam = filteredByName;
 
     if (teamFilter === 'scheduled') {
-      // Only show employees who have shifts today
       filteredByTeam = filteredByName.filter(emp => hasShiftOnDate(emp, currentDate));
     } else if (teamFilter === 'active') {
       filteredByTeam = filteredByName.filter(emp => emp.isActive !== false);
@@ -1659,94 +1320,9 @@ const SelectCalendar = () => {
     }
 
     // Then filter by selected employees
-    return filteredByTeam.filter(emp => selectedEmployees.has(emp.id));
-  };
-  // NEW: Team management functions
-  const handleEmployeeToggle = (employeeId) => {
-    const newSelected = new Set(selectedEmployees);
-    if (newSelected.has(employeeId)) {
-      newSelected.delete(employeeId);
-      // Ensure at least one employee remains selected
-      if (newSelected.size === 0) {
-        const firstEmployee = employees[0];
-        if (firstEmployee) {
-          newSelected.add(firstEmployee.id);
-        }
-      }
-    } else {
-      newSelected.add(employeeId);
-    }
-    setSelectedEmployees(newSelected);
+    return filteredByTeam.filter(emp => selectedEmployeesSet.size === 0 || selectedEmployeesSet.has(emp.id));
   };
 
-  const handleClearSelection = () => {
-    // Keep only the first employee selected
-    const firstEmployee = employees[0];
-    if (firstEmployee) {
-      setSelectedEmployees(new Set([firstEmployee.id]));
-    }
-  };
-  const handleTeamFilterChange = (filter) => {
-    setTeamFilter(filter);
-    if (filter === 'scheduled') {
-      // When switching to scheduled team, select all employees with shifts
-      const employeesWithShifts = employees.filter(emp => hasShiftOnDate(emp, currentDate));
-      setSelectedEmployees(new Set(employeesWithShifts.map(emp => emp.id)));
-    } else if (filter === 'all') {
-      // When switching to all team, select all employees
-      setSelectedEmployees(new Set(employees.map(emp => emp.id)));
-    } else if (filter === 'active' || filter === 'inactive') {
-      // Select all matching active/inactive employees
-      const matched = employees.filter(emp => filter === 'active' ? emp.isActive !== false : emp.isActive === false);
-      setSelectedEmployees(new Set(matched.map(emp => emp.id)));
-    }
-  };
-  // NEW: Get appointments for calendar popup
-  const getAppointmentsForDateRange = () => {
-    const { startDate, endDate } = getDisplayDateRange();
-    const appointmentsList = [];
-
-    Object.entries(appointments).forEach(([employeeId, empAppointments]) => {
-      const employee = employees.find(emp => emp.id === employeeId);
-      if (!employee) return;
-
-      Object.entries(empAppointments).forEach(([slotKey, appointment]) => {
-        const appointmentDate = new Date(appointment.date || slotKey.split('_')[0]);
-        if (appointmentDate >= startDate && appointmentDate <= endDate) {
-          appointmentsList.push({
-            ...appointment,
-            employeeName: employee.name,
-            appointmentDate,
-            timeSlot: slotKey.split('_')[1] || appointment.startTime
-          });
-        }
-      });
-    });
-
-    // Ã°Å¸â€Â§ FIXED: Improved status filtering with proper mapping
-    const filtered = appointmentsList.filter(app => {
-      const status = (app.status || 'confirmed').toLowerCase();
-
-      if (calendarPopupTab === 'confirmed') {
-        // Include: confirmed, booked, scheduled, or no status (default)
-        return ['confirmed', 'booked', 'scheduled'].includes(status) || !app.status;
-      }
-
-      if (calendarPopupTab === 'started') {
-        // Include: started, in-progress, arrived
-        return ['started', 'in-progress', 'arrived'].includes(status);
-      }
-
-      if (calendarPopupTab === 'completed') {
-        // Include: completed
-        return status === 'completed';
-      }
-
-      return true; // Default: show all
-    });
-
-    return filtered;
-  };
 
   // NEW: Refresh calendar to current time
   const handleRefreshToNow = () => {
@@ -1831,537 +1407,8 @@ const SelectCalendar = () => {
     }
   }, [showAddBookingModal]);
 
-  const handleAddToBookingSession = (overrideSlot = null) => {
-    const slotToUse = overrideSlot || selectedTimeSlot;
-
-    // Validate required fields
-    if (!selectedService || !selectedProfessional || !slotToUse) {
-      setBookingError('Please complete all booking steps: Service, Professional, and Time selection.');
-      return false;
-    }
-
-    // Extract time slot preserving the user's selected local time (not UTC)
-    const timeSlot = (() => {
-      if (slotToUse?.label) return slotToUse.label; // preferred if provided by slot generator
-      if (slotToUse?.startTime) {
-        const dt = new Date(slotToUse.startTime);
-        // Use local hours/minutes to reflect the user's intended selection
-        return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
-      }
-      return slotToUse.time || slotToUse;
-    })();
-
-    // Use the correct booking date - priority: bookingDefaults.date > selectedBookingDate > currentDate
-    const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
-
-    // Use unified conflict detection for both session and persisted appointments
-    const professionalId = selectedProfessional._id;
-    const dateKey = bookingDate instanceof Date ? formatDateLocal(bookingDate) : bookingDate;
-    const conflictObj = detectProfessionalConflict(
-      professionalId,
-      bookingDate,
-      timeSlot,
-      selectedService.duration,
-      appointments,
-      multipleAppointments
-    );
-    if (conflictObj) {
-      const professionalName = selectedProfessional.user?.firstName || selectedProfessional.name;
-      setBookingError(`Time conflict: ${professionalName} already has a booking at this time. Please select a different slot.`);
-      return false;
-    }
-
-    // Store service name for success message before clearing
-    const serviceName = selectedService.name;
-
-    // Ensure date is stored in a consistent format (YYYY-MM-DD string)
-    const appointmentDate = bookingDate instanceof Date
-      ? formatDateLocal(bookingDate)
-      : bookingDate;
-
-    // Add current appointment to session, using strict duration and time format
-    const appointment = {
-      id: `${professionalId}_${appointmentDate}_${timeSlot}_${Date.now()}`, // Generate unique ID
-      service: selectedService,
-      professional: selectedProfessional,
-      timeSlot: timeSlot,
-      date: appointmentDate, // Store as consistent YYYY-MM-DD string
-      duration: selectedService.duration, // ensure duration is present for conflict check
-      price: selectedService.price,
-      originalPrice: selectedService.price // Store original price for discount calculation
-    };
-
-    // Double-check for session conflict before adding
-    const sessionConflict = detectProfessionalConflict(
-      selectedProfessional._id,
-      bookingDate,
-      timeSlot,
-      selectedService.duration,
-      appointments,
-      [...multipleAppointments, appointment] // include the new appointment for strict check
-    );
-    if (sessionConflict) {
-      setBookingError('Time conflict: This professional already has a booking at this time. Please select a different slot.');
-      return false;
-    }
-
-    const newAppointment = addAppointmentToSessionLocal(appointment);
-
-    // Store current selections and appointment ID before clearing (for back navigation)
-    setLastSelectedService(selectedService);
-    setLastSelectedProfessional(selectedProfessional);
-    setLastAddedAppointmentId(appointment.id);
-
-    // Clear the current selection to show empty "Ready to Add" section
-    setSelectedService(null);
-    setSelectedProfessional(null);
-    setSelectedTimeSlot(null);
-    setAvailableProfessionals([]);
-    setAvailableTimeSlots([]);
-    setBookingError(null);
-
-    // Show success message and auto-focus on the session summary
-    setBookingSuccess(` "${serviceName}" added to booking session! Total services: ${multipleAppointments.length + 1}`);
-    setTimeout(() => setBookingSuccess(null), 4000);
-    return true;
-  };
-
-  // Membership integration handlers
-  const handleMembershipApplied = (membership) => {
-    setAppliedMembership(membership);
-    // Discount will be updated via preview
-
-    // Show success feedback
-    Swal.fire({
-      icon: 'success',
-      title: 'Membership Applied',
-      text: `Membership "${membership.name}" applied! The service "${matchingService.name}" will be FREE for this client.`,
-      confirmButtonColor: '#1f2937'
-    });
-  };
-
-  const handleMembershipRemoved = () => {
-    setAppliedMembership(null);
-    setMembershipDiscountAmount(0);
-
-    // Show feedback
-    Swal.fire({
-      icon: 'info',
-      title: 'Membership Removed',
-      text: 'Regular pricing restored.',
-      confirmButtonColor: '#1f2937'
-    });
-  };
-
-  // Gift Card Functions - Updated to use new API
-  const fetchGiftCardsForClient = async (clientId) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    const response = await fetch(`${Base_url}/giftcards/purchased`, { headers });
-
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch gift cards');
-    }
-
-    return data;
-  };
-
-  const getGiftCardDetails = async (giftCardCode) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    const response = await fetch(`${Base_url}/giftcards/validate/${giftCardCode}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Invalid gift card code');
-    }
-
-    return data;
-  };
-
-  const removeAppliedGiftCard = () => {
-    setSelectedGiftCard(null);
-    setGiftCardAppliedAmount(0);
-    setGiftCardError('');
-  };
-
-
-
-  const bookingPaymentSummary = bookingPreview?.pricing ? {
-    subtotal: Number(bookingPreview.pricing.subtotal || 0),
-    membershipDiscount: Number(bookingPreview.pricing.membershipDiscount || 0),
-    giftCardDiscount: Number(bookingPreview.pricing.giftCardAmount || 0),
-    manualDiscount: Number(bookingPreview.pricing.manualDiscount || 0),
-    remainingAmount: Number(bookingPreview.pricing.finalAmount || 0),
-    isAuthoritative: true
-  } : {
-    subtotal: getSessionSubtotal(),
-    membershipDiscount: 0,
-    giftCardDiscount: 0,
-    manualDiscount: customTotalDiscount || 0,
-    remainingAmount: Math.max(0, getSessionSubtotal() - (customTotalDiscount || 0)),
-    isAuthoritative: false
-  };
-
-  const buildBookingDraftPayload = useCallback(({ usePreviewValues = false } = {}) => {
-    if (multipleAppointments.length === 0) {
-      throw new Error('No appointments in session. Please add at least one service.');
-    }
-    // Business validation (cutoff, overlaps) now handled centrally by backend preview
-
-    let clientData;
-    if (selectedExistingClient) {
-      clientData = {
-        firstName: selectedExistingClient.firstName,
-        lastName: selectedExistingClient.lastName,
-        email: selectedExistingClient.email,
-        phone: selectedExistingClient.phone
-      };
-    } else {
-      const nameString = clientInfo.name ? clientInfo.name.trim() : '';
-      if (!isWalkIn && !nameString) {
-        throw new Error('Client name is required.');
-      }
-
-      const [firstName, ...rest] = nameString.split(' ');
-      clientData = {
-        firstName: firstName || 'Walk-in',
-        lastName: rest.join(' ') || 'Customer',
-        email: clientInfo.email ? clientInfo.email.trim() : '',
-        phone: clientInfo.phone ? clientInfo.phone.trim() : ''
-      };
-    }
-
-    const services = multipleAppointments.map(apt => {
-      let appointmentDate = apt.date instanceof Date || typeof apt.date === 'string' ? new Date(apt.date) : new Date();
-      if (isNaN(appointmentDate.getTime())) {
-        appointmentDate = new Date();
-      }
-
-      const dateStr = typeof apt.date === 'string' && apt.date.match(/^\d{4}-\d{2}-\d{2}$/)
-        ? apt.date
-        : `${appointmentDate.getFullYear()}-${String(appointmentDate.getMonth() + 1).padStart(2, '0')}-${String(appointmentDate.getDate()).padStart(2, '0')}`;
-      const [hours, minutes] = apt.timeSlot.split(':').map(Number);
-      const appointmentDateTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`);
-      const endTime = new Date(appointmentDateTime);
-      endTime.setUTCMinutes(endTime.getUTCMinutes() + apt.service.duration);
-
-      if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {
-        throw new Error('Failed to create valid dates');
-      }
-
-      const editedPrice = editedServicePrices[apt.id];
-      const finalPrice = editedPrice !== undefined ? editedPrice : apt.service.price;
-      const serviceData = {
-        service: apt.service._id,
-        employee: apt.professional._id || apt.professional.id,
-        duration: apt.service.duration,
-        price: finalPrice,
-        originalPrice: apt.service.price,
-        startTime: appointmentDateTime.toISOString(),
-        endTime: endTime.toISOString(),
-      };
-
-      if (editedPrice !== undefined) {
-        serviceData.customPrice = editedPrice;
-        serviceData.priceDiscount = apt.service.price - editedPrice;
-      }
-
-      return serviceData;
-    });
-
-    const totalDuration = multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0);
-    const sessionTotal = getTotalSessionPrice();
-    const originalTotalAmount = multipleAppointments.reduce((sum, a) => {
-      const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
-      return sum + Number(price || 0);
-    }, 0);
-
-    const paymentDetails = { clientId: selectedExistingClient?._id };
-    if (appliedMembership) {
-      paymentDetails.adminMembership = {
-        membershipId: appliedMembership._id,
-        membershipName: appliedMembership.name,
-        sessionDeduction: true,
-        remainingSessionsBefore: appliedMembership.remainingSessions
-      };
-    }
-
-    if (selectedGiftCard) {
-      paymentDetails.giftCard = {
-        giftCardId: selectedGiftCard._id || selectedGiftCard.id,
-        code: selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber
-      };
-    }
-
-    const paymentMethodMapping = { upi: 'online' };
-    const authoritativePaymentDetails = (usePreviewValues && bookingPreview?.normalizedPaymentDetails)
-      ? bookingPreview.normalizedPaymentDetails
-      : paymentDetails;
-
-    const authoritativeFinalAmount = (usePreviewValues && bookingPreview?.pricing)
-      ? Number(bookingPreview.pricing.finalAmount || 0)
-      : (getSessionSubtotal() - (customTotalDiscount || 0));
-
-    const authoritativeManualDiscount = (usePreviewValues && bookingPreview?.pricing)
-      ? Number(bookingPreview.pricing.manualDiscount || 0)
-      : customTotalDiscount;
-
-    return {
-      services,
-      appointmentDate: services[0].startTime,
-      totalDuration,
-      totalAmount: originalTotalAmount,
-      finalAmount: authoritativeFinalAmount,
-      paymentMethod: authoritativeFinalAmount === 0 && authoritativePaymentDetails?.giftCard
-        ? 'giftcard'
-        : (paymentMethodMapping[paymentMethod] || paymentMethod || 'cash'),
-      paymentDetails: authoritativePaymentDetails,
-      client: clientData,
-      notes: bookingForm.notes || '',
-      giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
-      bookingSource: 'admin',
-      customDiscount: authoritativeManualDiscount > 0 ? authoritativeManualDiscount : undefined,
-      discountedTotal: authoritativeManualDiscount > 0 ? Math.max(0, sessionTotal - authoritativeManualDiscount) : undefined
-    };
-  }, [
-    appliedMembership,
-    bookingForm.notes,
-    bookingPreview,
-    clientInfo.email,
-    clientInfo.name,
-    clientInfo.phone,
-    customTotalDiscount,
-    editedServicePrices,
-    getTotalSessionPrice,
-    isWalkIn,
-    membershipDiscountAmount,
-    multipleAppointments,
-    paymentMethod,
-    selectedExistingClient,
-    selectedGiftCard
-  ]);
-
-  const fetchBookingPreview = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication required.');
-    }
-
-    const response = await fetch(`${Base_url}/bookings/admin/preview`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(buildBookingDraftPayload()),
-    });
-
-    const responseData = await response.json();
-    if (!response.ok || !responseData.success) {
-      throw new Error(responseData.message || 'Unable to preview booking');
-    }
-
-    return responseData.data;
-  }, [buildBookingDraftPayload]);
-
-  useEffect(() => {
-    const canPreview = bookingStep === 6 && multipleAppointments.length > 0 && (selectedExistingClient || isWalkIn || clientInfo.name?.trim());
-    if (!canPreview) {
-      setBookingPreview(null);
-      setBookingPreviewError(null);
-      return;
-    }
-
-    let cancelled = false;
-    setBookingPreviewLoading(true);
-    setBookingPreviewError(null);
-
-    fetchBookingPreview()
-      .then(data => {
-        if (cancelled) return;
-        setBookingPreview(data);
-        setMembershipDiscountAmount(Number(data?.pricing?.membershipDiscount || 0));
-        setGiftCardAppliedAmount(Number(data?.pricing?.giftCardAmount || 0));
-      })
-      .catch(error => {
-        if (cancelled) return;
-        setBookingPreview(null);
-        setBookingPreviewError(error.message);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setBookingPreviewLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [bookingStep, clientInfo.name, fetchBookingPreview, isWalkIn, multipleAppointments.length, selectedExistingClient]);
-
-  // Gift Card Selection Handlers
-  const handleGiftCardSelect = (giftCard) => {
-    setSelectedGiftCard(giftCard);
-
-    // Auto-calculate the maximum redeemable amount
-    const totalAmount = getTotalSessionPrice();
-    const availableValue = calculateGiftCardValue(giftCard);
-    const maxRedeemable = Math.min(availableValue, totalAmount);
-
-    setRedeemGiftCardAmount(maxRedeemable);
-    setGiftCardAppliedAmount(maxRedeemable);
-  };
-
-  const handleGiftCardRemove = () => {
-    setSelectedGiftCard(null);
-    setRedeemGiftCardAmount(0);
-    setGiftCardAppliedAmount(0);
-  };
-
-  const validateGiftCardCode = async (code) => {
-    if (!code || !code.trim()) {
-      throw new Error('Gift card code is required');
-    }
-
-    try {
-      setGiftCardLoading(true);
-      setGiftCardError('');
-
-      const response = await getGiftCardDetails(code.trim());
-      const giftCard = response.giftCard;
-
-      if (!giftCard) {
-        throw new Error('Invalid gift card code');
-      }
-
-      // Validate gift card status and value
-      if (giftCard.status !== 'active') {
-        throw new Error('Gift card is not active');
-      }
-
-      if (giftCard.remainingValue <= 0) {
-        throw new Error('Gift card has no remaining value');
-      }
-
-      if (giftCard.expiresAt && new Date(giftCard.expiresAt) <= new Date()) {
-        throw new Error('Gift card has expired');
-      }
-
-      return giftCard;
-    } catch (error) {
-      setGiftCardError(error.message);
-      throw error;
-    } finally {
-      setGiftCardLoading(false);
-    }
-  };
-
-  const handleCreateBookingWithPreview = async () => {
-    setBookingLoading(true);
-    setBookingError(null);
-    setBookingSuccess(null);
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setBookingError('Authentication required. Please log in again.');
-        setBookingLoading(false);
-        return;
-      }
-
-      if (bookingPreviewError) {
-        throw new Error(bookingPreviewError);
-      }
-
-      const bookingPayload = buildBookingDraftPayload({ usePreviewValues: true });
-      const res = await fetch(`${Base_url}/bookings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(bookingPayload),
-      });
-
-      const responseData = await res.json();
-      if (!res.ok) {
-        throw new Error(responseData.message || `HTTP ${res.status}: ${res.statusText}`);
-      }
-      if (!responseData.success) {
-        throw new Error(responseData.message || 'Booking creation failed');
-      }
-
-      const clientName = selectedExistingClient
-        ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
-        : bookingPayload.client.firstName;
-
-      setBookingSuccess(` ${multipleAppointments.length} service(s) booked successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
-
-      setTimeout(() => {
-        clearAppointmentSession();
-        setGiftCardAppliedAmount(0);
-        setGiftCardCode('');
-        setGiftCardError('');
-        setAvailableGiftCards([]);
-        setSelectedGiftCard(null);
-        setRedeemGiftCardAmount(0);
-
-        setTimeout(() => {
-          if (selectedExistingClient?._id) {
-            loadBenefitsIfNeeded(true);
-          }
-        }, 500);
-      }, 1500);
-
-      try {
-        const adminMembershipInfo = bookingPayload.paymentDetails?.adminMembership;
-        if (appliedMembership && adminMembershipInfo && adminMembershipInfo.sessionDeduction) {
-          setAppliedMembership(prev => {
-            if (!prev) return prev;
-            const used = (prev.usedSessions || 0) + 1;
-            const remaining = (typeof prev.remainingSessions === 'number') ? Math.max(0, prev.remainingSessions - 1) : (typeof prev.numberOfSessions === 'number' ? Math.max(0, prev.numberOfSessions - used) : null);
-            return { ...prev, usedSessions: used, remainingSessions: remaining };
-          });
-
-          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
-          setTimeout(() => setMembershipRefreshSignal(s => s + 1), 800);
-        }
-      } catch (e) {
-        console.warn('Failed to update local membership usage after booking:', e);
-      }
-
-      fetchCalendarData();
-      setTimeout(() => {
-        closeBookingModal();
-      }, 3000);
-    } catch (err) {
-      console.error('Booking creation error:', err);
-      setBookingError(`Failed to create booking: ${err.message}`);
-    } finally {
-      setBookingLoading(false);
-    }
-  };
+  // Booking preview handling logic removed from UI, now handled by Redux thunks
+  
 
   const resetBookingForm = (clearSession = true) => {
     setBookingStep(1);
@@ -2402,7 +1449,6 @@ const SelectCalendar = () => {
 
     // Reset membership states
     setAvailableMemberships([]);
-    setSelectedMembership(null);
     setAppliedMembership(null);
     setMembershipDiscountAmount(0);
 
@@ -2558,73 +1604,8 @@ const SelectCalendar = () => {
     }
   }, [bookingStep, selectedExistingClient, loadBenefitsIfNeeded]);
 
-  // Auto-selection effects for booking modal (when defaults are available)
-  useEffect(() => {
-    if (bookingStep === 2 && bookingDefaults?.staffId && availableProfessionals.length > 0) {
-      const defaultProf = availableProfessionals.find(p => p._id === bookingDefaults.staffId);
-      if (defaultProf) {
-        setSelectedProfessional(defaultProf);
-        setBookingStep(3);
-        const bookingDate = bookingDefaults?.date || selectedBookingDate || currentDate;
-        fetchBookingTimeSlots(defaultProf._id, selectedService._id, bookingDate);
-      }
-    }
-  }, [bookingStep, bookingDefaults, availableProfessionals, selectedService, selectedBookingDate, currentDate, fetchBookingTimeSlots]);
-
-  useEffect(() => {
-    if (bookingStep === 3 && bookingDefaults?.time && availableTimeSlots.length > 0) {
-      const [hour, minute] = bookingDefaults.time.split(':').map(Number);
-      const defaultSlot = availableTimeSlots.find(slot => {
-        const d = new Date(slot.startTime);
-        return slot.available && d.getUTCHours() === hour && d.getUTCMinutes() === minute;
-      });
-      if (defaultSlot) {
-        setSelectedTimeSlot(defaultSlot);
-        setBookingStep(4);
-        setBookingDefaults(null); // Clear defaults after use
-      }
-    }
-  }, [bookingStep, bookingDefaults, availableTimeSlots]);
-
-  // NEW: Auto-populate professionals when on step 2
-  useEffect(() => {
-    if (bookingStep === 2 && selectedService) {
-      if (availableProfessionals.length === 0) {
-        const bookingDate = selectedBookingDate || currentDate;
-        let professionals = getAvailableProfessionalsForService(
-          selectedService._id,
-          bookingDate,
-          employees,
-          appointments,
-          availableServices
-        );
-
-        // Fallback: use selectedProfessional if available
-        if (professionals.length === 0 && selectedProfessional) {
-          professionals = [selectedProfessional];
-        }
-
-        setAvailableProfessionals(professionals);
-      } else {}
-    } else {}
-  }, [bookingStep, selectedService, availableProfessionals.length, selectedProfessional, selectedBookingDate, currentDate, employees, appointments, availableServices]);
-
-  // NEW: Auto-populate time slots when on step 3
-  useEffect(() => {
-    if (bookingStep === 3 && selectedService && selectedProfessional) {
-      if (availableTimeSlots.length === 0) {
-        const bookingDate = selectedBookingDate || currentDate;
-        const timeSlots = getAvailableTimeSlotsForProfessional(
-          selectedProfessional,     // employee object (not ID)
-          bookingDate,             // date
-          selectedService.duration, // service duration in minutes
-          appointments             // appointments object
-        );
-
-        setAvailableTimeSlots(timeSlots);
-      } else {}
-    } else {}
-  }, [bookingStep, selectedService, selectedProfessional, availableTimeSlots.length, selectedBookingDate, currentDate, employees, appointments, availableServices]);
+  // Auto-selection logic for booking modal has been moved to Redux thunks
+  
 
   // --- CURRENT TIME LINE LOGIC ---
   const [currentTimeLineTop, setCurrentTimeLineTop] = useState(0);
@@ -2671,7 +1652,6 @@ const SelectCalendar = () => {
     return () => clearInterval(headerTimeTimer);
   }, []);
 
-  const displayEmployees = getFilteredEmployees();
 
   // Merge persisted appointments with current session appointments
   const mergedAppointments = useMemo(() => {
@@ -2724,12 +1704,59 @@ const SelectCalendar = () => {
 
 
 
+  const getFilteredAndSearchedEmployees = () => {
+    let filtered = employees;
+    if (filters.teamFilter === 'scheduled') {
+      filtered = employees.filter(emp => hasShiftOnDate(emp, currentDate));
+    }
+    return filtered;
+  };
+
+  const getAppointmentsForDateRange = () => {
+    const status = (filters.calendarPopupTab || 'confirmed').toLowerCase();
+    let startDate, endDate;
+
+    if (currentView === 'Day') {
+      startDate = new Date(currentDate);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(currentDate);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (currentView === 'Week') {
+      startDate = new Date(calendarDays[0]);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(calendarDays[6]);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59);
+    }
+
+    const result = [];
+    Object.keys(appointments).forEach(empId => {
+      const empSlots = appointments[empId];
+      Object.keys(empSlots).forEach(slotKey => {
+        const apt = empSlots[slotKey];
+        if (apt.status?.toLowerCase() === status) {
+          const aptDate = new Date(apt.date);
+          if (aptDate >= startDate && aptDate <= endDate) {
+            result.push(apt);
+          }
+        }
+      });
+    });
+
+    return result;
+  };
+
+  const displayEmployees = useMemo(() => getFilteredEmployees(), [employees, filters.teamFilter, filters.selectedEmployeeIds, currentDate]);
+
   const renderCalendarContent = () => {
     if (loading) {
       return (
         <div className="content-loading-overlay">
           <div className="loading-message">
-            <Loading />          </div>
+            <Loading />
+          </div>
         </div>
       );
     }
@@ -2761,8 +1788,6 @@ const SelectCalendar = () => {
           formatTime={formatTime}
           handleMonthDayClick={handleMonthDayClick}
           availableServices={availableServices}
-          setSelectedBookingForStatus={setSelectedBookingForStatus}
-          setShowBookingStatusModal={setShowBookingStatusModal}
           showBookingTooltipHandler={showBookingTooltipHandler}
           hideBookingTooltip={hideBookingTooltip}
           handleShowMoreAppointments={handleShowMoreAppointments}
@@ -2789,9 +1814,6 @@ const SelectCalendar = () => {
             hideBookingTooltip={hideBookingTooltip}
             showTimeHoverHandler={showTimeHoverHandler}
             hideTimeHover={hideTimeHover}
-            setSelectedBookingForStatus={setSelectedBookingForStatus}
-            setShowBookingStatusModal={setShowBookingStatusModal}
-            availableServices={availableServices}
           />
         ) : (
           <WeekView
@@ -2805,8 +1827,6 @@ const SelectCalendar = () => {
             handleTimeSlotClick={handleTimeSlotClick}
             showBookingTooltipHandler={showBookingTooltipHandler}
             hideBookingTooltip={hideBookingTooltip}
-            setSelectedBookingForStatus={setSelectedBookingForStatus}
-            setShowBookingStatusModal={setShowBookingStatusModal}
             employees={employees}
             setBookingDefaults={setBookingDefaults}
             setSelectedBookingDate={setSelectedBookingDate}
@@ -2819,458 +1839,20 @@ const SelectCalendar = () => {
       </div>
     );
   };
-  };
 
   return (
-    <div className="scheduler-root">
-      {/* REDESIGNED Application-level Header */}
-      <div className="scheduler-header-redesigned">
-        {/* Left Side Controls */}
-        <div className="header-left-controls">
-          {/* Today Button - Only show in Day view */}
-          {currentView === 'Day' && (
-            <button
-              className="header-btn today-btn"
-              onClick={goToToday}
-            >
-              Today
-            </button>
-          )}
-
-          {/* Date Navigation */}
-          <div className="date-navigation">
-            <button className="nav-arrow-btn" onClick={goToPrevious}>
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              className="date-display-button"
-              onClick={() => {
-                setDatePickerCurrentMonth(currentDate);
-                setDatePickerSelectedDate(currentDate);
-
-                // Set picker view based on current calendar view
-                if (currentView === 'Week') {
-                  setDatePickerView('week');
-                } else if (currentView === 'Month') {
-                  setDatePickerView('month');
-                } else {
-                  setDatePickerView('date');
-                }
-
-                setShowDatePicker(!showDatePicker);
-              }}
-            >
-              <span className="date-display-text">
-                {currentView === 'Day' && currentDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-                {currentView === 'Week' && calendarDays.length > 0 &&
-                  `${calendarDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${calendarDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                }
-                {currentView === 'Month' && currentDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long'
-                })}
-              </span>
-              <CalendarIcon size={14} className="date-picker-icon" />
-            </button>
-            <button className="nav-arrow-btn" onClick={goToNext}>
-              <ChevronRight size={16} />
-            </button>
-
-
-
-            {/* Date Picker Popup */}
-            {showDatePicker && (
-              <>
-                <div className="date-picker-backdrop" onClick={() => setShowDatePicker(false)} />
-                <div className="date-picker-container">
-
-                  {/* DATE VIEW (Day View) */}
-                  {datePickerView === 'date' && (
-                    <>
-                      <div className="date-picker-header">
-                        <button
-                          className="date-picker-nav-btn"
-                          onClick={goToDatePickerPreviousMonth}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <div className="date-picker-month-year">
-                          {datePickerCurrentMonth.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long'
-                          })}
-                        </div>
-                        <button
-                          className="date-picker-nav-btn"
-                          onClick={goToDatePickerNextMonth}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-
-                      <div className="date-picker-weekdays">
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                          <div key={day} className="date-picker-weekday">
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="date-picker-days">
-                        {getDatePickerCalendarDays(datePickerCurrentMonth).map((dayObj, index) => {
-                          const isToday = dayObj.date.toDateString() === new Date().toDateString();
-                          const isSelected = dayObj.date.toDateString() === datePickerSelectedDate.toDateString();
-                          const isCurrentView = dayObj.date.toDateString() === currentDate.toDateString();
-
-                          return (
-                            <button
-                              key={index}
-                              className={`date-picker-day ${!dayObj.isCurrentMonth ? 'other-month' : ''
-                                } ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''
-                                } ${isCurrentView ? 'current-view' : ''}`}
-                              onClick={() => handleDatePickerDateSelect(dayObj.date)}
-                            >
-                              {dayObj.date.getDate()}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="date-picker-footer">
-                        <button
-                          className="date-picker-today-btn"
-                          onClick={goToDatePickerToday}
-                        >
-                          Today
-                        </button>
-                        <button
-                          className="date-picker-close-btn"
-                          onClick={() => setShowDatePicker(false)}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  {/* WEEK VIEW (Week Picker) */}
-                  {datePickerView === 'week' && (
-                    <>
-                      <div className="date-picker-header">
-                        <button
-                          className="date-picker-nav-btn"
-                          onClick={goToDatePickerPreviousMonth}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <div className="date-picker-month-year">
-                          {datePickerCurrentMonth.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long'
-                          })} - Week Selection
-                        </div>
-                        <button
-                          className="date-picker-nav-btn"
-                          onClick={goToDatePickerNextMonth}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-
-                      <div className="date-picker-weeks">
-                        {getWeeksInMonth(datePickerCurrentMonth).map((week, index) => {
-                          const isCurrentWeek = week.isCurrentWeek;
-                          const isSelectedWeek = week.startDate.toDateString() === currentDate.toDateString() ||
-                            (currentDate >= week.startDate && currentDate <= week.endDate);
-
-                          return (
-                            <button
-                              key={index}
-                              className={`date-picker-week ${isCurrentWeek ? 'current-week' : ''} ${isSelectedWeek ? 'selected-week' : ''}`}
-                              onClick={() => handleWeekSelect(week.startDate)}
-                            >
-                              <div className="week-info">
-                                <span className="week-number">Week {week.weekNumber}</span>
-                                <span className="week-range">
-                                  {week.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -
-                                  {week.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="date-picker-footer">
-                        <button
-                          className="date-picker-today-btn"
-                          onClick={goToDatePickerToday}
-                        >
-                          This Week
-                        </button>
-                        <button
-                          className="date-picker-close-btn"
-                          onClick={() => setShowDatePicker(false)}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  {/* MONTH VIEW (Month Picker) */}
-                  {datePickerView === 'month' && (
-                    <>
-                      <div className="date-picker-header">
-                        <button
-                          className="date-picker-nav-btn"
-                          onClick={goToDatePickerPreviousYear}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <div className="date-picker-month-year">
-                          {datePickerCurrentMonth.getFullYear()} - Month Selection
-                        </div>
-                        <button
-                          className="date-picker-nav-btn"
-                          onClick={goToDatePickerNextYear}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-
-                      <div className="date-picker-months">
-                        {getMonthsInYear(datePickerCurrentMonth.getFullYear()).map((monthObj) => {
-                          const isCurrentMonth = monthObj.current;
-                          const isSelectedMonth = currentDate.getFullYear() === monthObj.year &&
-                            currentDate.getMonth() + 1 === monthObj.month;
-
-                          return (
-                            <button
-                              key={monthObj.month}
-                              className={`date-picker-month ${isCurrentMonth ? 'current-month' : ''} ${isSelectedMonth ? 'selected-month' : ''}`}
-                              onClick={() => handleMonthSelect(monthObj.month - 1, monthObj.year)}
-                            >
-                              <div className="month-info">
-                                <span className="month-name">{monthObj.label}</span>
-                                <span className="month-year">{monthObj.year}</span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="date-picker-footer">
-                        <button
-                          className="date-picker-today-btn"
-                          onClick={goToDatePickerToday}
-                        >
-                          This Month
-                        </button>
-                        <button
-                          className="date-picker-close-btn"
-                          onClick={() => setShowDatePicker(false)}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Team Icon with Popup */}
-          <div className="team-control-container">
-            <button
-              className="header-btn team-icon-btn"
-              onClick={() => setShowTeamPopup(!showTeamPopup)}
-            >
-              <Users size={16} />
-            </button>
-
-            {showTeamPopup && (
-              <>
-                <div className="popup-backdrop" onClick={() => setShowTeamPopup(false)} />
-                <div className="team-popup-enhanced">
-                  {/* Header with Multiple team members title */}
-
-
-                  {/* Team filter options */}
-                  <div className="team-filter-options">
-                    <button
-                      className={`team-filter-option ${teamFilter === 'scheduled' ? 'active' : ''}`}
-                      onClick={() => handleTeamFilterChange('scheduled')}
-                    >
-                      <Users size={18} />
-                      <span>Scheduled team</span>
-                    </button>
-                    <button
-                      className={`team-filter-option ${teamFilter === 'all' ? 'active' : ''}`}
-                      onClick={() => handleTeamFilterChange('all')}
-                    >
-                      <Users size={18} />
-                      <span>All team</span>
-                    </button>
-                  </div>
-
-                  {/* Team members section */}
-                  <div className="team-members-container">
-                    <div className="team-members-header-section">
-                      <h3 className="team-members-title">Team members</h3>
-                      <button className="clear-all-link" onClick={handleClearSelection}>
-                        Clear all
-                      </button>
-                    </div>
-
-
-                    <div className="team-members-list-simple">
-                      {getFilteredAndSearchedEmployees().map(employee => {
-                        const isSelected = selectedEmployees.has(employee.id);
-                        const hasShift = hasShiftOnDate(employee, currentDate);
-
-                        return (
-                          <div
-                            key={employee.id}
-                            className={`team-member-item ${isSelected ? 'selected' : ''}`}
-                            onClick={() => handleEmployeeToggle(employee.id)}
-                          >
-                            <div className="member-checkbox-left">
-                              <div className={`checkbox-square ${isSelected ? 'checked' : ''}`}>
-                                {isSelected && (
-                                  <Check size={14} strokeWidth={3} />
-                                )}
-                              </div>
-                            </div>
-
-                            <div
-                              className="member-avatar-circle"
-                              style={{ backgroundColor: employee.avatarColor }}
-                            >
-                              {employee.avatar ?
-                                <img src={employee.avatar} alt={employee.name} className="avatar-image" /> :
-                                employee.name.substring(0, 2).toUpperCase()
-                              }
-                            </div>
-
-                            <span className="member-name-text">{employee.name}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {getFilteredAndSearchedEmployees().length === 0 && (
-                      <div className="empty-state-simple">
-                        <p>No team members found</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Right Side Controls */}
-        <div className="header-right-controls">
-          {/* Calendar Icon with Popup */}
-          <div className="calendar-control-container">
-            <button
-              className="header-btn calendar-icon-btn"
-              onClick={() => setShowCalendarPopup(!showCalendarPopup)}
-            >
-              <Calendar size={16} />
-            </button>
-
-            {showCalendarPopup && (
-              <>
-                <div className="popup-backdrop" onClick={() => setShowCalendarPopup(false)} />
-                <div className="calendar-popup">
-                  <div className="calendar-popup-tabs">
-                    <button
-                      className={`popup-tab ${calendarPopupTab === 'confirmed' ? 'active' : ''}`}
-                      onClick={() => setCalendarPopupTab('confirmed')}
-                    >
-                      Confirmed
-                    </button>
-                    <button
-                      className={`popup-tab ${calendarPopupTab === 'started' ? 'active' : ''}`}
-                      onClick={() => setCalendarPopupTab('started')}
-                    >
-                      Started
-                    </button>
-                    <button
-                      className={`popup-tab ${calendarPopupTab === 'completed' ? 'active' : ''}`}
-                      onClick={() => setCalendarPopupTab('completed')}
-                    >
-                      Completed
-                    </button>
-                  </div>
-
-                  <div className="calendar-popup-content">
-                    {getAppointmentsForDateRange().length > 0 ? (
-                      getAppointmentsForDateRange().map((appointment, index) => (
-                        <div key={index} className="appointment-popup-item">
-                          <div
-                            className="appointment-color-dot"
-                            style={{ backgroundColor: appointment.color }}
-                          />
-                          <div className="appointment-popup-details">
-                            <div className="appointment-popup-client">{appointment.client}</div>
-                            <div className="appointment-popup-service">{appointment.service}</div>
-                            <div className="appointment-popup-meta">
-                              {appointment.employeeName} • {appointment.timeSlot}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="no-appointments-message">
-                        No {calendarPopupTab} appointments for this period
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* View Controls with Refresh */}
-          <div className="view-controls">
-            <button
-              className="refresh-btn"
-              onClick={handleRefreshToNow}
-              title="Refresh to current time"
-            >
-              <RotateCcw size={14} />
-            </button>
-            <select
-              value={currentView}
-              onChange={(e) => setCurrentView(e.target.value)}
-              className="view-selector"
-            >
-              <option value="Day">Day</option>
-              <option value="Week">Week</option>
-              <option value="Month">Month</option>
-            </select>
-          </div>
-
-          {/* Add Button */}
-          <button
-            className="add-appointment-btn"
-            onClick={handleAddAppointment}
-          >
-            <h1>Add</h1>
-            <Plus size={16} />
-          </button>
-        </div>
-      </div>
+    <div className="select-calendar-container">
+      <CalendarHeader 
+        goToToday={goToToday}
+        goToPrevious={goToPrevious}
+        goToNext={goToNext}
+        handleRefreshToNow={handleRefreshToNow}
+        handleAddAppointment={handleAddAppointment}
+        calendarDays={calendarDays}
+        employees={employees}
+        getFilteredAndSearchedEmployees={getFilteredAndSearchedEmployees}
+        getAppointmentsForDateRange={getAppointmentsForDateRange}
+      />
       {/* Main Scrollable Calendar Content */}
       <div className="scheduler-content" ref={schedulerContentRef}>
         {renderCalendarContent()}
@@ -3290,274 +1872,8 @@ const SelectCalendar = () => {
           </div>
         </div>
       )}
-      {/* Booking Status Modal */}
-      {showBookingStatusModal && selectedBookingForStatus && (
-        <div className="modern-booking-modal">
-          <div className="booking-modal-overlay booking-modal-fade-in">
-            <div className="booking-modal booking-modal-animate-in pro-theme">
-              <button className="booking-modal-close" onClick={closeBookingStatusModal}>×</button>
-              <h2>Booking Management</h2>
-
-              {bookingStatusError && (
-                <div className="booking-modal-error">
-                  <div className="error-icon">Ã¢Å¡Â Ã¯Â¸Â</div>
-                  <div className="error-content">
-                    <strong>Error</strong>
-                    <p>{bookingStatusError}</p>
-                  </div>
-                </div>
-              )}
-
-              {bookingStatusLoading && (
-                <div className="booking-modal-loading" style={{ justifyContent: 'center' }}>
-                  <Loading text="Updating status" />
-                </div>
-              )}
-
-              <div className="booking-status-details">
-                <div className="booking-status-header">
-
-                  <div className="booking-status-info">
-                    <h3>
-                      {typeof selectedBookingForStatus.client === 'string'
-                        ? selectedBookingForStatus.client
-                        : selectedBookingForStatus.client?.fullName ||
-                        `${selectedBookingForStatus.client?.firstName || ''} ${selectedBookingForStatus.client?.lastName || ''}`.trim() ||
-                        'Client'}
-                    </h3>
-                    <p>
-                      {typeof selectedBookingForStatus.service === 'string'
-                        ? selectedBookingForStatus.service
-                        : selectedBookingForStatus.service?.name || 'Service'}
-                    </p>
-                  </div>
-                  <div className={`booking-status-badge status-${selectedBookingForStatus.status?.toLowerCase() || 'booked'}`}>
-                    {(selectedBookingForStatus.status || 'Booked').charAt(0).toUpperCase() + (selectedBookingForStatus.status || 'Booked').slice(1)}
-                  </div>
-                </div>
-
-                <div className="booking-status-grid">
-                  <div className="status-detail">
-                    <div className="detail-icon">
-                      <User size={20} />
-                    </div>
-                    <div className="detail-content">
-                      <span className="detail-label">Professional</span>
-                      <span className="detail-value">
-                        {typeof selectedBookingForStatus.employeeName === 'string'
-                          ? selectedBookingForStatus.employeeName
-                          : selectedBookingForStatus.employeeName?.user?.firstName ||
-                          selectedBookingForStatus.employeeName?.fullName ||
-                          'Employee'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="status-detail">
-                    <div className="detail-icon">
-                      <Calendar size={20} />
-                    </div>
-                    <div className="detail-content">
-                      <span className="detail-label">Date</span>
-                      <span className="detail-value">
-                        {new Date(selectedBookingForStatus.date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="status-detail">
-                    <div className="detail-icon">
-                      <Clock size={20} />
-                    </div>
-                    <div className="detail-content">
-                      <span className="detail-label">Time</span>
-                      <span className="detail-value">{selectedBookingForStatus.slotTime}</span>
-                    </div>
-                  </div>
-                  <div className="status-detail">
-                    <div className="detail-icon">
-                      <Timer size={20} />
-                    </div>
-                    <div className="detail-content">
-                      <span className="detail-label">Duration</span>
-                      <span className="detail-value">{selectedBookingForStatus.duration} minutes</span>
-                    </div>
-                  </div>
-                  <div className="status-detail">
-                    <div className="detail-icon">
-                      <Hash size={20} />
-                    </div>
-                    <div className="detail-content">
-                      <span className="detail-label">Booking ID</span>
-                      <span className="detail-value">{selectedBookingForStatus.bookingId || 'N/A'}</span>
-                    </div>
-                  </div>
-                  <div className="status-detail full-width-breakdown">
-                    <div className="detail-icon">
-                      <Banknote size={20} />
-                    </div>
-                    <div className="detail-content pricing-breakdown-content">
-                      <span className="detail-label">Payment Details</span>
-                      <div className="booking-breakdown-list">
-                        {/* Display only the specific service related to this calendar block */}
-                        {(() => {
-                          const allServices = selectedBookingForStatus.services || [];
-                          let currentSvc = null;
-
-                          // Try to find the specific service entry that was clicked
-                          if (selectedBookingForStatus.serviceEntryId && allServices.length > 0) {
-                            currentSvc = allServices.find(s => String(s._id) === String(selectedBookingForStatus.serviceEntryId));
-                          }
-
-                          // Fallback to the primary service info if specific lookup fails
-                          if (!currentSvc) {
-                            currentSvc = {
-                              serviceName: selectedBookingForStatus.service,
-                              price: Number(selectedBookingForStatus.price || 0),
-                              originalPrice: Number(selectedBookingForStatus.originalPrice || selectedBookingForStatus.price || 0)
-                            };
-                          }
-
-                          const svcPrice = Number(currentSvc.price ?? currentSvc.servicePrice ?? currentSvc.finalPrice ?? currentSvc.customPrice ?? currentSvc.originalPrice ?? 0);
-                          const svcOrigPrice = Number(currentSvc.originalPrice ?? currentSvc.price ?? svcPrice);
-                          const svcDiscount = svcOrigPrice - svcPrice;
-
-                          // Calculate totals for the entire booking to show overall discount
-                          const bookingTotalOrigValue = allServices.length > 0
-                            ? allServices.reduce((sum, s) => sum + Number(s.originalPrice || s.price || 0), 0)
-                            : Number(selectedBookingForStatus.originalPrice || selectedBookingForStatus.price || 0);
-
-                          const bookingFinalTotal = Number(selectedBookingForStatus.totalAmount || selectedBookingForStatus.finalAmount || 0);
-                          const totalSavings = bookingTotalOrigValue - bookingFinalTotal;
-
-                          const globalDiscount = Number(selectedBookingForStatus.customDiscount || selectedBookingForStatus.customTotalDiscount || 0);
-
-                          return (
-                            <>
-                              <div className="breakdown-service-item">
-                                <div className="svc-info">
-                                  <span className="svc-name-small">{currentSvc.serviceName || currentSvc.service?.name || selectedBookingForStatus.service}</span>
-                                  <div className="svc-pricing-line">
-                                    {svcDiscount > 0 ? (
-                                      <>
-                                        <span className="orig-price-strike">AED {svcOrigPrice.toFixed(2)}</span>
-                                        <span className="final-price-bold">AED {svcPrice.toFixed(2)}</span>
-                                        <span className="disc-tag-small">(-AED {svcDiscount.toFixed(2)})</span>
-                                      </>
-                                    ) : (
-                                      <span className="final-price-normal">AED {svcPrice.toFixed(2)}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="breakdown-total-separator"></div>
-
-                              {globalDiscount > 0 && (
-                                <div className="breakdown-row discount-global">
-                                  <span className="final-label-small">Extra Booking Discount</span>
-                                  <span className="final-value-disc">-AED {globalDiscount.toFixed(2)}</span>
-                                </div>
-                              )}
-
-                              {totalSavings > globalDiscount && (
-                                <div className="breakdown-row discount-info-row">
-                                  <span className="final-label-small">Applied Service Discounts</span>
-                                  <span className="final-value-disc">-AED {(totalSavings - globalDiscount).toFixed(2)}</span>
-                                </div>
-                              )}
-
-                              <div className="breakdown-final-row">
-                                <div className="final-label-group">
-                                  <span className="final-label">Total Amount</span>
-                                  {totalSavings > 0 && (
-                                    <span className="total-savings-badge">AED {totalSavings.toFixed(2)} SAVED</span>
-                                  )}
-                                </div>
-                                <div className="final-value-stack">
-                                  {totalSavings > 0 && (
-                                    <span className="final-orig-strike-total">AED {bookingTotalOrigValue.toFixed(2)}</span>
-                                  )}
-                                  <span className="final-value-large">AED {bookingFinalTotal.toFixed(2)}</span>
-                                </div>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="booking-status-actions">
-                  <div className="status-actions-header">
-                    <div className="status-options" role="radiogroup" aria-label="Update status">
-                      {['confirmed', 'started', 'completed', 'no-show'].map(st => {
-                        const current = (selectedBookingForStatus.status || 'confirmed').toLowerCase();
-
-                        // UPDATED STATUS LOGIC: Handle booking-level statuses returned from backend
-                        let isActive = current === st;
-
-                        // Handle booking-level status mappings:
-                        // Backend returns booking-level status which can be: booked, confirmed, arrived, started, completed, etc.
-
-                        // Handle in-progress mapping (started maps to in-progress in backend, shows as 'started' button)
-                        if ((current === 'in-progress' || current === 'started') && st === 'started') {
-                          isActive = true;
-                        }
-
-                        // Handle legacy scheduled/booked status (fallback)
-                        if ((current === 'scheduled' || current === 'booked') && st === 'confirmed') {
-                          isActive = true;
-                        }
-
-                        const label = st === 'no-show' ? 'No-Show' : st.charAt(0).toUpperCase() + st.slice(1);
-
-                        return (
-                          <button
-                            key={st}
-                            type="button"
-                            className={`status-option ${isActive ? 'active' : ''}`}
-                            data-status={st}
-                            role="radio"
-                            aria-checked={isActive}
-                            disabled={bookingStatusLoading}
-                            onClick={() => handleBookingStatusUpdate(st)}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="booking-danger-zone">
-                    <button
-                      className="delete-booking-btn"
-                      title="Delete booking"
-                      aria-label="Delete booking"
-                      onClick={handleDeleteBooking}
-                      disabled={bookingStatusLoading}
-                    >
-                      <span className="btn-icon"><MdDelete /></span>
-                      <span className="btn-label">Delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      <BookingWizardModal 
-        removeAppointmentFromSessionLocal={removeAppointmentFromSessionLocal}
-        getTotalSessionPrice={getTotalSessionPrice}
-        handleAddToBookingSession={handleAddToBookingSession}
-        buildBookingDraftPayload={buildBookingDraftPayload}
-      />
+      <BookingStatusModal />
+      <BookingWizardModal />
 
       {/* More Appointments Dropdown */}
       <MoreAppointmentsDropdown visible={showMoreAppointments} appointments={selectedDayAppointments} dayDate={selectedDayDate} position={dropdownPosition} positionedAbove={dropdownPositionedAbove} onClose={closeMoreAppointmentsDropdown} />

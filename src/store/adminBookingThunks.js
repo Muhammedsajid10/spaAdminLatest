@@ -1,12 +1,15 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { 
-  setSelectedService, setBookingStep, setAvailableProfessionals, setSelectedProfessional, setAvailableTimeSlots,
-  setClientInfo, setSelectedClient, setIsAddingNewClient, setClientSearchResults, setClientSearchQuery,
-  setAppliedMembership, setMembershipDiscountAmount
+  setAppliedMembership, setMembershipDiscountAmount, setBookingStatus,
+  setSelectedService, setSelectedProfessional, setSelectedTimeSlot, setAvailableProfessionals, setAvailableTimeSlots,
+  setSelectedClient, setIsAddingNewClient, setClientSearchResults, setClientSearchQuery, setClientInfo,
+  setSelectedDate, setStep as setBookingStep
 } from './adminBookingSlice';
+import { addAppointmentToSession } from './bookingSessionSlice';
 import { 
-  getValidTimeSlotsForProfessional, 
-  getAvailableProfessionalsWithAccumulatedBookings 
+  getAvailableProfessionalsWithAccumulatedBookings,
+  detectProfessionalConflict,
+  formatDateLocal
 } from '../Clientsidepage/helpers/selectCalendarHelpers';
 import api from '../Service/Api';
 import { Base_url } from '../Service/Base_url';
@@ -159,6 +162,339 @@ export const loadClientBenefitsThunk = createAsyncThunk(
       }
     } catch (err) {
       console.error('Load benefits error:', err);
+    }
+  }
+);
+
+/**
+ * Handle adding the current selection to the booking session
+ */
+export const handleAddToBookingSessionThunk = createAsyncThunk(
+  'adminBooking/addToSession',
+  async (overrideSlot = null, { dispatch, getState }) => {
+    const state = getState();
+    const { selection, navigation, status: bookingStatus } = state.adminBooking;
+    const { multipleAppointments } = state.bookingSession;
+    const { byEmployee: appointments } = state.appointments;
+    const { currentDate } = state.calendar;
+
+    const { service: selectedService, professional: selectedProfessional, timeSlot: selectedTimeSlot, date: selectedBookingDate } = selection;
+    const slotToUse = overrideSlot || selectedTimeSlot;
+
+    // Validate
+    if (!selectedService || !selectedProfessional || !slotToUse) {
+      dispatch(setBookingStatus({ error: 'Please complete all booking steps: Service, Professional, and Time selection.' }));
+      return false;
+    }
+
+    const timeSlotStr = (() => {
+      if (slotToUse?.label) return slotToUse.label;
+      if (slotToUse?.startTime) {
+        const dt = new Date(slotToUse.startTime);
+        return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+      }
+      return slotToUse.time || slotToUse;
+    })();
+
+    const bookingDate = navigation.defaults?.date || selectedBookingDate || currentDate;
+
+    // Conflict detection
+    const conflictObj = detectProfessionalConflict(
+      selectedProfessional._id,
+      bookingDate,
+      timeSlotStr,
+      selectedService.duration,
+      appointments,
+      multipleAppointments
+    );
+
+    if (conflictObj) {
+      const professionalName = selectedProfessional.user?.firstName || selectedProfessional.name;
+      dispatch(setBookingStatus({ error: `Time conflict: ${professionalName} already has a booking at this time.` }));
+      return false;
+    }
+
+    const appointmentDateStr = bookingDate instanceof Date ? formatDateLocal(bookingDate) : bookingDate;
+
+    // Build appointment object
+    const appointment = {
+      id: `${selectedProfessional._id}_${appointmentDateStr}_${timeSlotStr}_${Date.now()}`,
+      service: selectedService,
+      professional: selectedProfessional,
+      timeSlot: timeSlotStr,
+      date: appointmentDateStr,
+      duration: selectedService.duration,
+      price: selectedService.price,
+      originalPrice: selectedService.price
+    };
+
+    // Add to session
+    dispatch(addAppointmentToSession(appointment));
+
+    // Clear current selections
+    dispatch(setSelectedService(null));
+    dispatch(setSelectedProfessional(null));
+    dispatch(setSelectedTimeSlot(null));
+    dispatch(setAvailableProfessionals([]));
+    dispatch(setAvailableTimeSlots([]));
+    dispatch(setBookingStatus({ error: null, success: `"${selectedService.name}" added to session!` }));
+
+    // Auto-clear success message
+    setTimeout(() => dispatch(setBookingStatus({ success: null })), 4000);
+
+    return true;
+  }
+);
+
+/**
+ * Build the booking payload for API calls
+ * This logic was extracted from Selectcalander.jsx and unified here
+ */
+const buildBookingPayload = (state, { usePreviewValues = false } = {}) => {
+  const { selection, client: clientState, isWalkIn, navigation, payment, benefits } = state.adminBooking;
+  const { multipleAppointments } = state.bookingSession;
+  
+  if (multipleAppointments.length === 0) {
+    throw new Error('No appointments in session. Please add at least one service.');
+  }
+
+  let clientData;
+  if (clientState.selected) {
+    clientData = {
+      firstName: clientState.selected.firstName,
+      lastName: clientState.selected.lastName,
+      email: clientState.selected.email,
+      phone: clientState.selected.phone
+    };
+  } else {
+    const nameString = clientState.info.name ? clientState.info.name.trim() : '';
+    if (!isWalkIn && !nameString) {
+      throw new Error('Client name is required.');
+    }
+
+    const [firstName, ...rest] = nameString.split(' ');
+    clientData = {
+      firstName: firstName || 'Walk-in',
+      lastName: rest.join(' ') || 'Customer',
+      email: clientState.info.email ? clientState.info.email.trim() : '',
+      phone: clientState.info.phone ? clientState.info.phone.trim() : ''
+    };
+  }
+
+  const services = multipleAppointments.map(apt => {
+    let appointmentDate = apt.date instanceof Date || typeof apt.date === 'string' ? new Date(apt.date) : new Date();
+    if (isNaN(appointmentDate.getTime())) appointmentDate = new Date();
+
+    const dateStr = typeof apt.date === 'string' && apt.date.match(/^\d{4}-\d{2}-\d{2}$/)
+      ? apt.date
+      : `${appointmentDate.getFullYear()}-${String(appointmentDate.getMonth() + 1).padStart(2, '0')}-${String(appointmentDate.getDate()).padStart(2, '0')}`;
+    
+    const [hours, minutes] = apt.timeSlot.split(':').map(Number);
+    const appointmentDateTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`);
+    const endTime = new Date(appointmentDateTime);
+    endTime.setUTCMinutes(endTime.getUTCMinutes() + apt.service.duration);
+
+    const editedPrice = payment.editedServicePrices[apt.id];
+    const finalPrice = editedPrice !== undefined ? editedPrice : apt.service.price;
+    
+    const serviceData = {
+      service: apt.service._id,
+      employee: apt.professional._id || apt.professional.id,
+      duration: apt.service.duration,
+      price: finalPrice,
+      originalPrice: apt.service.price,
+      startTime: appointmentDateTime.toISOString(),
+      endTime: endTime.toISOString(),
+    };
+
+    if (editedPrice !== undefined) {
+      serviceData.customPrice = editedPrice;
+      serviceData.priceDiscount = apt.service.price - editedPrice;
+    }
+
+    return serviceData;
+  });
+
+  const paymentDetails = { clientId: clientState.selected?._id };
+  if (benefits.appliedMembership) {
+    paymentDetails.adminMembership = {
+      membershipId: benefits.appliedMembership._id,
+      membershipName: benefits.appliedMembership.name,
+      sessionDeduction: true,
+      remainingSessionsBefore: benefits.appliedMembership.remainingSessions
+    };
+  }
+
+  if (benefits.appliedGiftCard) {
+    paymentDetails.giftCard = {
+      giftCardId: benefits.appliedGiftCard._id || benefits.appliedGiftCard.id,
+      code: benefits.appliedGiftCard.code || benefits.appliedGiftCard.giftCardCode || benefits.appliedGiftCard.cardNumber
+    };
+  }
+
+  const paymentMethodMapping = { upi: 'online' };
+  const authoritativePaymentDetails = (usePreviewValues && payment.preview?.normalizedPaymentDetails)
+    ? payment.preview.normalizedPaymentDetails
+    : paymentDetails;
+
+  const authoritativeFinalAmount = (usePreviewValues && payment.preview?.pricing)
+    ? Number(payment.preview.pricing.finalAmount || 0)
+    : (multipleAppointments.reduce((sum, a) => sum + Number(a.price || 0), 0) - (payment.customTotalDiscount || 0));
+
+  return {
+    services,
+    appointmentDate: services[0].startTime,
+    totalDuration: multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0),
+    totalAmount: multipleAppointments.reduce((sum, a) => sum + Number(a.price || 0), 0),
+    finalAmount: Math.max(0, authoritativeFinalAmount),
+    paymentMethod: authoritativeFinalAmount === 0 && authoritativePaymentDetails?.giftCard
+      ? 'giftcard'
+      : (paymentMethodMapping[payment.method] || payment.method || 'cash'),
+    paymentDetails: authoritativePaymentDetails,
+    client: clientData,
+    notes: clientState.info.notes || '', // Updated to match likely state location or adjust as needed
+    bookingSource: 'admin',
+    customDiscount: payment.customTotalDiscount > 0 ? payment.customTotalDiscount : undefined
+  };
+};
+
+/**
+ * Fetch booking preview from backend
+ */
+export const fetchBookingPreviewThunk = createAsyncThunk(
+  'adminBooking/fetchPreview',
+  async (_, { dispatch, getState }) => {
+    try {
+      dispatch(setBookingPreviewLoading(true));
+      dispatch(setBookingPreviewError(null));
+
+      const state = getState();
+      const payload = buildBookingPayload(state);
+      
+      const res = await api.post(`${Base_url}/bookings/admin/preview`, payload);
+      
+      if (res.data && res.data.success) {
+        dispatch(setBookingPreview(res.data.data));
+        dispatch(setMembershipDiscountAmount(Number(res.data.data?.pricing?.membershipDiscount || 0)));
+        // Could also update gift card amount here
+      } else {
+        throw new Error(res.data?.message || 'Preview failed');
+      }
+    } catch (err) {
+      console.error('Preview error:', err);
+      dispatch(setBookingPreviewError(err.message));
+      dispatch(setBookingPreview(null));
+    } finally {
+      dispatch(setBookingPreviewLoading(false));
+    }
+  }
+);
+
+/**
+ * Handle final booking creation
+ */
+export const createBookingThunk = createAsyncThunk(
+  'adminBooking/createBooking',
+  async (_, { dispatch, getState }) => {
+    try {
+      dispatch(setBookingStatus({ loading: true, error: null, success: null }));
+
+      const state = getState();
+      const payload = buildBookingPayload(state, { usePreviewValues: true });
+      
+      const res = await api.post(`${Base_url}/bookings`, payload);
+      
+      if (res.data && res.data.success) {
+        dispatch(setBookingStatus({ 
+          success: `Booking created successfully! ID: ${res.data.data?.booking?.bookingNumber || 'N/A'}`,
+          loading: false 
+        }));
+        
+        // Return result so component can perform cleanup (close modal, etc.)
+        return res.data.data;
+      } else {
+        throw new Error(res.data?.message || 'Creation failed');
+      }
+    } catch (err) {
+      console.error('Create booking error:', err);
+      dispatch(setBookingStatus({ 
+        error: `Failed to create booking: ${err.message}`, 
+        loading: false 
+      }));
+    }
+  }
+);
+/**
+ * Update the status of a specific booking or service entry
+ */
+export const updateBookingStatusThunk = createAsyncThunk(
+  'adminBooking/updateStatus',
+  async ({ bookingId, serviceEntryId, newStatus }, { dispatch }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = serviceEntryId
+        ? `${Base_url}/bookings/admin/${bookingId}/service/${serviceEntryId}/status`
+        : `${Base_url}/bookings/admin/${bookingId}`;
+
+      const res = await api.patch(endpoint, { status: newStatus }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data && res.data.success) {
+        return res.data;
+      } else {
+        throw new Error(res.data?.message || 'Status update failed');
+      }
+    } catch (err) {
+       console.error('Update status error:', err);
+       throw err;
+    }
+  }
+);
+
+/**
+ * Delete a booking
+ */
+export const deleteBookingThunk = createAsyncThunk(
+  'adminBooking/deleteBooking',
+  async (bookingId, { dispatch }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.delete(`${Base_url}/bookings/admin/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data && res.data.success) {
+        return res.data;
+      } else {
+        throw new Error(res.data?.message || 'Delete failed');
+      }
+    } catch (err) {
+      console.error('Delete booking error:', err);
+      throw err;
+    }
+  }
+);
+
+/**
+ * Fetch full booking details for management modal
+ */
+export const fetchManagementBookingDetailsThunk = createAsyncThunk(
+  'adminBooking/fetchManagementDetails',
+  async (bookingId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.get(`${Base_url}/bookings/admin/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data && res.data.success) {
+        return res.data.data.booking || res.data.data;
+      }
+      throw new Error('Failed to fetch booking details');
+    } catch (err) {
+      console.error('Fetch management details error:', err);
+      throw err;
     }
   }
 );

@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchBookingPreviewThunk, createBookingThunk } from '../../../store/thunks';
+import { fetchBookingPreviewThunk, createBookingThunk } from '../../../store/adminBookingThunks';
 import AdminMembershipChecker from '../AdminMembershipChecker';
 import { setStep } from '../../../store/adminBookingSlice';
 
-const StepPreview = ({ buildBookingDraftPayload }) => {
+const StepPreview = () => {
   const dispatch = useDispatch();
   const { payment, status, client, isWalkIn } = useSelector(state => state.adminBooking);
   const { multipleAppointments } = useSelector(state => state.bookingSession);
@@ -14,13 +14,11 @@ const StepPreview = ({ buildBookingDraftPayload }) => {
 
   useEffect(() => {
     // Auto-fetch preview when entering this step
-    const payload = buildBookingDraftPayload();
-    dispatch(fetchBookingPreviewThunk(payload));
-  }, [dispatch, buildBookingDraftPayload]);
+    dispatch(fetchBookingPreviewThunk());
+  }, [dispatch]);
 
   const handleConfirm = () => {
-    const payload = buildBookingDraftPayload(true); // Final payload
-    dispatch(createBookingThunk(payload));
+    dispatch(createBookingThunk());
   };
 
   return (

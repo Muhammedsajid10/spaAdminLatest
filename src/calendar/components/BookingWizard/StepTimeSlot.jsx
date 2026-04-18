@@ -1,9 +1,10 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setSelectedTimeSlot, setBookingStep, setSelectedProfessional, setSelectedService, setAvailableProfessionals, setAvailableTimeSlots } from '../../../store/adminBookingSlice';
+import { handleAddToBookingSessionThunk } from '../../../store/adminBookingThunks';
 import { formatUTCToLocal } from '../../../Clientsidepage/helpers/selectCalendarHelpers';
 
-const StepTimeSlot = ({ handleAddToBookingSession }) => {
+const StepTimeSlot = () => {
     const dispatch = useDispatch();
     const { available, selection, navigation } = useSelector(state => state.adminBooking);
     
@@ -25,7 +26,7 @@ const StepTimeSlot = ({ handleAddToBookingSession }) => {
                             className={`booking-modal-list-item${selectedTimeSlot && selectedTimeSlot.startTime === slot.startTime ? ' selected' : ''}`} 
                             onClick={() => {
                                 dispatch(setSelectedTimeSlot(slot));
-                                handleAddToBookingSession(slot);
+                                dispatch(handleAddToBookingSessionThunk(slot));
                                 dispatch(setBookingStep(4));
                             }}
                         >

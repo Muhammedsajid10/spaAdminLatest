@@ -1,10 +1,10 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectServiceThunk } from '../../../store/adminBookingThunks';
-import { setShowServiceCatalog } from '../../../store/bookingSessionSlice';
-import { setBookingStep } from '../../../store/adminBookingSlice';
+import { removeAppointmentFromSession } from '../../../store/bookingSessionSlice';
+import { setStep as setBookingStep } from '../../../store/adminBookingSlice';
 
-const StepService = ({ removeAppointmentFromSessionLocal, getTotalSessionPrice }) => {
+const StepService = () => {
   const dispatch = useDispatch();
   const { available, selection, navigation } = useSelector(state => state.adminBooking);
   const { multipleAppointments, showServiceCatalog } = useSelector(state => state.bookingSession);
@@ -16,6 +16,10 @@ const StepService = ({ removeAppointmentFromSessionLocal, getTotalSessionPrice }
 
   const handleServiceSelect = (service) => {
     dispatch(selectServiceThunk(service));
+  };
+
+  const getSessionSubtotal = () => {
+    return multipleAppointments.reduce((sum, a) => sum + Number(a.price || 0), 0);
   };
 
   return (
@@ -41,7 +45,7 @@ const StepService = ({ removeAppointmentFromSessionLocal, getTotalSessionPrice }
                 </div>
               </div>
               <div className="service-card-actions">
-                <button className="svc-delete-btn" title="Remove" onClick={() => removeAppointmentFromSessionLocal(apt.id)}>
+                <button className="svc-delete-btn" title="Remove" onClick={() => dispatch(removeAppointmentFromSession(apt.id))}>
                   🗑️
                 </button>
               </div>
@@ -93,7 +97,7 @@ const StepService = ({ removeAppointmentFromSessionLocal, getTotalSessionPrice }
             </div>
             <div className="footer-total-line">
               <span className="footer-total-label">Total</span>
-              <span className="footer-total-value">AED {getTotalSessionPrice()}</span>
+              <span className="footer-total-value">AED {getSessionSubtotal()}</span>
             </div>
           </div>
           <div className="footer-actions">

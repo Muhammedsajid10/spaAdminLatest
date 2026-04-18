@@ -7,12 +7,7 @@ import StepTimeSlot from './StepTimeSlot';
 import StepClient from './StepClient';
 import StepPreview from './StepPreview';
 
-const BookingWizardModal = ({ 
-  removeAppointmentFromSessionLocal, 
-  getTotalSessionPrice,
-  handleAddToBookingSession,
-  buildBookingDraftPayload
-}) => {
+const BookingWizardModal = () => {
   const dispatch = useDispatch();
   const { 
     showModal, 
@@ -29,18 +24,15 @@ const BookingWizardModal = ({
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <StepService 
-          removeAppointmentFromSessionLocal={removeAppointmentFromSessionLocal} 
-          getTotalSessionPrice={getTotalSessionPrice} 
-        />;
+        return <StepService />;
       case 2:
         return <StepProfessional />;
       case 3: 
-        return <StepTimeSlot handleAddToBookingSession={handleAddToBookingSession} />;
+        return <StepTimeSlot />;
       case 5: 
         return <StepClient />;
       case 6: 
-        return <StepPreview buildBookingDraftPayload={buildBookingDraftPayload} />;
+        return <StepPreview />;
       default:
         return <div className="step-placeholder">Managing services... (Step 4)</div>;
     }
