@@ -4,6 +4,9 @@ import Loading from '../states/Loading.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { useDatePickerState, hasShiftOnDate, getEmployeeShiftHours, getAppointmentColorByStatus, localDateKey, formatDateLocal, getDayName, WeekDayColumn, BookingTooltip, TimeHoverTooltip, MoreAppointmentsDropdown } from '../calendar';
 import { StaffColumn } from '../calendar/components/StaffColumn';
+import DayView from '../calendar/components/DayView.jsx';
+import WeekView from '../calendar/components/WeekView.jsx';
+import MonthView from '../calendar/components/MonthView.jsx';
 import ClientSummary from '../calendar/components/ClientInformation.jsx';
 import AdminMembershipChecker from '../calendar/components/AdminMembershipChecker.jsx';
 import { MdDelete } from "react-icons/md";
@@ -2719,121 +2722,7 @@ const SelectCalendar = () => {
 
   const calendarDays = getCalendarDays();
 
-  const renderMonthView = () => {
-    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const firstDayIndex = startOfMonth.getDay();
-    const emptyCellsBefore = Array.from({ length: (firstDayIndex === 0 ? 6 : firstDayIndex - 1) });
 
-    return (
-      <div className="month-view-container">
-        <div className="month-day-names">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <div key={day} className="month-day-name">{day}</div>)}
-        </div>
-        <div className="month-view-grid">
-          {emptyCellsBefore.map((_, index) => <div key={`empty-${index}`} className="month-day-cell empty"></div>)}
-          {calendarDays.map(day => {
-            const dayKey = localDateKey(day);
-            const dayAppointments = [];
-
-            // Get appointments for this day from all employees
-            displayEmployees.forEach(emp => {
-              if (mergedAppointments[emp.id]) {
-                Object.entries(mergedAppointments[emp.id]).forEach(([slotKey, appointment]) => {
-                  // Check if the appointment is for this day
-                  if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                    // Extract time from slot key (format: YYYY-MM-DD_HH:MM)
-                    const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                    dayAppointments.push({
-                      ...appointment,
-                      employeeName: emp.name,
-                      employeeAvatar: emp.avatar,
-                      employeeId: emp.id,
-                      time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD'
-                    });
-                  }
-                });
-              }
-            });
-
-            return (
-              <div
-                key={dayKey}
-                className="month-day-cell"
-                onClick={() => handleMonthDayClick(day)}
-                style={{ cursor: 'pointer' }}
-                title={`Click to add appointment on ${day.toLocaleDateString()}`}
-              >
-                <div className="month-day-header">
-                  <span className="month-day-date">{day.getDate()}</span>
-                  <span className="month-add-appointment-hint">+</span>
-                </div>
-                <div className="month-appointments">
-                  {dayAppointments.length > 0 ? (
-                    <>
-                      {dayAppointments.slice(0, 3).map((app, index) => (
-                        <div key={index}
-                          className="month-appointment-entry"
-                          style={{ backgroundColor: app.color }}
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent day click when clicking on appointment
-                            if (app.bookingId) {
-                              // Show booking status for existing appointment
-                              const foundService = availableServices.find(s => s._id === app.serviceEntryId || s.id === app.serviceEntryId || s.name === app.service);
-                              const servicePrice = foundService?.price || 0;
-                              const appointmentDetails = {
-                                ...app,
-                                employeeId: app.employeeId,
-                                employeeName: app.employeeName,
-                                slotTime: app.time,
-                                date: dayKey,
-                                slotKey: `${dayKey}_${app.time}`,
-                                serviceEntryId: app.serviceEntryId,
-                                // Include price information for display in booking modal
-                                price: servicePrice,
-                                finalAmount: servicePrice
-                              };
-                              setSelectedBookingForStatus(appointmentDetails);
-                              setShowBookingStatusModal(true);
-                            }
-                          }}
-                          onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                            client: app.client,
-                            service: app.service,
-                            time: app.time,
-                            professional: app.employeeName,
-                            status: app.status || 'Confirmed',
-                            notes: app.notes
-                          })}
-                          onMouseLeave={hideBookingTooltip}>
-                          <span className="appointment-client-name">{app.client}</span>
-                          <span className="appointment-service-name">{app.service}</span>
-                        </div>
-                      ))}
-                      {dayAppointments.length > 3 && (
-                        <div
-                          className="month-more-appointments"
-                          onClick={(event) => {
-                            event.stopPropagation(); // Prevent day click when clicking on "more"
-                            handleShowMoreAppointments(dayAppointments, day, event);
-                          }}
-                        >
-                          +{dayAppointments.length - 3} more
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="month-empty-day">
-                      <span className="add-appointment-text">Click to add appointment</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
 
   const renderCalendarContent = () => {
     if (loading) {
@@ -2862,310 +2751,74 @@ const SelectCalendar = () => {
     }
 
     if (currentView === 'Month') {
-      return renderMonthView();
+      return (
+        <MonthView
+          currentDate={currentDate}
+          calendarDays={calendarDays}
+          localDateKey={localDateKey}
+          displayEmployees={displayEmployees}
+          mergedAppointments={mergedAppointments}
+          formatTime={formatTime}
+          handleMonthDayClick={handleMonthDayClick}
+          availableServices={availableServices}
+          setSelectedBookingForStatus={setSelectedBookingForStatus}
+          setShowBookingStatusModal={setShowBookingStatusModal}
+          showBookingTooltipHandler={showBookingTooltipHandler}
+          hideBookingTooltip={hideBookingTooltip}
+          handleShowMoreAppointments={handleShowMoreAppointments}
+        />
+      );
     }
 
     return (
       <div className="calendar-grid-container">
-        {currentView === 'Day' && (
-          <div className="time-column">
-            <div className="time-header">Time</div>
-            <div className="time-slots">
-              {timeSlots.map(slot => (
-                <div key={slot} className={`time-slot-label ${slot.endsWith(':00') ? 'hour-start' : 'half-hour'}`}>
-                  <span className="time-text">{formatTime(slot)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {currentView === 'Day' ? (
+          <DayView
+            timeSlots={timeSlots}
+            formatTime={formatTime}
+            displayEmployees={displayEmployees}
+            staffHeadersRef={staffHeadersRef}
+            hasShiftOnDate={hasShiftOnDate}
+            getEmployeeShiftHours={getEmployeeShiftHours}
+            currentDate={currentDate}
+            staffGridRef={staffGridRef}
+            mergedAppointments={mergedAppointments}
+            isTimeSlotUnavailable={isTimeSlotUnavailable}
+            handleTimeSlotClick={handleTimeSlotClick}
+            showBookingTooltipHandler={showBookingTooltipHandler}
+            hideBookingTooltip={hideBookingTooltip}
+            showTimeHoverHandler={showTimeHoverHandler}
+            hideTimeHover={hideTimeHover}
+            setSelectedBookingForStatus={setSelectedBookingForStatus}
+            setShowBookingStatusModal={setShowBookingStatusModal}
+            availableServices={availableServices}
+          />
+        ) : (
+          <WeekView
+            calendarDays={calendarDays}
+            displayEmployees={displayEmployees}
+            mergedAppointments={mergedAppointments}
+            hasShiftOnDate={hasShiftOnDate}
+            formatDateLocal={formatDateLocal}
+            formatTime={formatTime}
+            availableServices={availableServices}
+            handleTimeSlotClick={handleTimeSlotClick}
+            showBookingTooltipHandler={showBookingTooltipHandler}
+            hideBookingTooltip={hideBookingTooltip}
+            setSelectedBookingForStatus={setSelectedBookingForStatus}
+            setShowBookingStatusModal={setShowBookingStatusModal}
+            employees={employees}
+            setBookingDefaults={setBookingDefaults}
+            setSelectedBookingDate={setSelectedBookingDate}
+            setIsNewAppointment={setIsNewAppointment}
+            setShowAddBookingModal={setShowAddBookingModal}
+            setShowServiceCatalog={setShowServiceCatalog}
+            handleShowMoreAppointments={handleShowMoreAppointments}
+          />
         )}
-        <div className="staff-grid-wrapper">
-          {/* Sticky Headers Row - All staff headers in one fixed row */}
-          {currentView === 'Day' && (
-            <div ref={staffHeadersRef} className="staff-headers-row">
-              {displayEmployees.map(employee => {
-                const hasShift = hasShiftOnDate(employee, currentDate);
-                const shiftHours = getEmployeeShiftHours(employee, currentDate);
-                const hasValidShifts = shiftHours.length > 0;
-
-                return (
-                  <div key={`header-${employee.id}`} className="staff-header-cell">
-                    <div className="staff-avatar" style={{
-                      backgroundColor: hasShift && hasValidShifts ? employee.avatarColor : '#9ca3af',
-                      opacity: hasShift && hasValidShifts ? 1 : 0.5
-                    }}>
-                      {employee.avatar ?
-                        <img src={employee.avatar} alt={employee.name} className="avatar-image" style={{ opacity: hasShift && hasValidShifts ? 1 : 0.5 }} /> :
-                        employee.name.charAt(0)
-                      }
-                    </div>
-                    <div className="staff-info">
-                      <div className="staff-name" style={{ color: hasShift && hasValidShifts ? 'inherit' : '#9ca3af' }}>{employee.name}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Scrollable Content - Time slots for each employee */}
-          <div
-            ref={staffGridRef}
-            className={`staff-grid cols-${Math.min(displayEmployees.length || 1, 20)}`}
-            style={{
-              '--dynamic-employee-count': displayEmployees.length || 1,
-              '--dynamic-column-width': displayEmployees.length <= 6
-                ? `${100 / (displayEmployees.length || 1)}%`
-                : 'var(--staff-column-width)'
-            }}
-          // Dynamic width allocation: 1-6 employees get equal width, 7+ get fixed width with scroll
-          >
-            {currentView === 'Day' && displayEmployees.map(employee => (
-              <StaffColumn
-                key={employee.id}
-                employee={employee}
-                timeSlots={timeSlots}
-                appointments={mergedAppointments}
-                currentDate={currentDate}
-                isTimeSlotUnavailable={isTimeSlotUnavailable}
-                handleTimeSlotClick={handleTimeSlotClick}
-                showBookingTooltipHandler={showBookingTooltipHandler}
-                hideBookingTooltip={hideBookingTooltip}
-                showTimeHoverHandler={showTimeHoverHandler}
-                hideTimeHover={hideTimeHover}
-                setSelectedBookingForStatus={setSelectedBookingForStatus}
-                setShowBookingStatusModal={setShowBookingStatusModal}
-                availableServices={availableServices}
-                hideHeader={true}
-              />
-            ))}
-            {currentView === 'Week' && (
-              <div className="week-view-container">
-                {/* Week Day Headers */}
-                <div className="week-headers-row">
-                  <div className="week-staff-header-cell">Staff</div>
-                  {calendarDays.map(day => {
-                    const isToday = day.toDateString() === new Date().toDateString();
-                    return (
-                      <div key={day.toISOString()} className={`week-day-header-cell ${isToday ? 'is-today' : ''}`}>
-                        <div className="week-day-name">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                        <div className="week-day-number">{day.getDate()}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Employee Rows with Daily Appointments */}
-                {displayEmployees.map(employee => (
-                  <div key={employee.id} className="week-employee-row">
-                    <div className="week-staff-cell">
-                      <div className="staff-avatar" style={{ backgroundColor: employee.avatarColor }}>
-                        {employee.avatar ? <img src={employee.avatar} alt={employee.name} className="avatar-image" /> : employee.name.charAt(0)}
-                      </div>
-                      <div className="staff-info">
-                        <div className="staff-name">{employee.name}</div>
-                        <div className="staff-position">{employee.position}</div>
-                      </div>
-                    </div>
-
-                    {/* Daily appointment cells for this employee */}
-                    {calendarDays.map(day => {
-                      const dayKey = formatDateLocal(day); // Use same format as session appointments
-                      const hasShift = hasShiftOnDate(employee, day);
-
-                      // Get appointments for this employee on this day
-                      const dayAppointments = [];
-                      if (mergedAppointments[employee.id]) {
-                        Object.entries(mergedAppointments[employee.id]).forEach(([slotKey, appointment]) => {
-                          if (slotKey.startsWith(dayKey) || appointment.date === dayKey) {
-                            const timeFromKey = slotKey.includes('_') ? slotKey.split('_')[1] : null;
-                            dayAppointments.push({
-                              ...appointment,
-                              time: timeFromKey ? formatTime(timeFromKey) : 'Time TBD',
-                              slotKey,
-                              timeSlot: timeFromKey,
-
-                            });
-                          }
-                        });
-                      }
-
-                      return (
-                        <div key={`${employee.id}-${dayKey}`} className={`week-day-cell ${!hasShift ? 'no-shift' : ''}`}>
-                          {!hasShift ? (
-                            <div className="week-no-shift">
-                              <span className="no-shift-text">No shift today</span>
-                            </div>
-                          ) : dayAppointments.length > 0 ? (
-                            <div className="week-appointments-container">
-                              {dayAppointments.slice(0, 3).map((app, index) => (
-                                <div
-                                  key={index}
-                                  className="week-appointment-block"
-                                  style={{ backgroundColor: app.color }}
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // Prevent event bubbling
-
-                                    if (app.timeSlot && app.bookingId) {
-                                      // Show booking status for existing appointment
-                                      const foundService = availableServices.find(s => s._id === app.serviceEntryId || s.id === app.serviceEntryId || s.name === app.service);
-                                      const servicePrice = foundService?.price || 0;
-                                      const appointmentDetails = {
-                                        ...app,
-                                        employeeId: employee.id,
-                                        employeeName: employee.name,
-                                        slotTime: app.timeSlot,
-                                        date: dayKey,
-                                        slotKey: app.slotKey,
-                                        serviceEntryId: app.serviceEntryId,
-                                        // Include price information for display in booking modal
-                                        price: servicePrice,
-                                        finalAmount: servicePrice
-                                      };
-                                      setSelectedBookingForStatus(appointmentDetails);
-                                      setShowBookingStatusModal(true);
-                                    } else if (app.timeSlot) {
-                                      handleTimeSlotClick(employee.id, app.timeSlot, day);
-                                    } else {
-                                      const staff = employees.find(emp => emp.id === employee.id);
-                                      if (staff) {
-                                        setBookingDefaults({
-                                          professional: {
-                                            _id: staff._id || staff.id,
-                                            id: staff.id,
-                                            user: {
-                                              firstName: staff.name.split(' ')[0],
-                                              lastName: staff.name.split(' ')[1] || ''
-                                            },
-                                            name: staff.name,
-                                            position: staff.position,
-                                            ...staff
-                                          },
-                                          date: day,
-                                          isDirectEmployeeSelection: true
-                                        });
-                                        setSelectedBookingDate(day);
-                                        setIsNewAppointment(true);
-                                        setShowAddBookingModal(true);
-                                        setShowServiceCatalog(true);
-                                      }
-                                    }
-                                  }}
-                                  onMouseEnter={(e) => showBookingTooltipHandler(e, {
-                                    client: app.client,
-                                    service: app.service,
-                                    time: app.time,
-                                    professional: employee.name,
-                                    status: app.status || 'Confirmed',
-                                    notes: app.notes
-                                  })}
-                                  onMouseLeave={hideBookingTooltip}
-                                >
-                                  <div className="appointment-client">{app.client}</div>
-                                  <div className="appointment-service">{app.service}</div>
-                                </div>
-                              ))}
-
-                              {/* Add appointment button for days with existing appointments */}
-                              <div
-                                className="week-add-appointment-btn"
-                                onClick={hasShift ? (e) => {
-                                  e.stopPropagation(); // Prevent event bubbling
-
-                                  // Show service selection for this employee and day
-                                  const staff = employees.find(emp => emp.id === employee.id);
-                                  if (staff) {
-                                    setBookingDefaults({
-                                      professional: {
-                                        _id: staff._id || staff.id,
-                                        id: staff.id,
-                                        user: {
-                                          firstName: staff.name.split(' ')[0],
-                                          lastName: staff.name.split(' ')[1] || ''
-                                        },
-                                        name: staff.name,
-                                        position: staff.position,
-                                        ...staff
-                                      },
-                                      date: day,
-                                      isDirectEmployeeSelection: true // Flag for skipping professional selection
-                                    });
-                                    setSelectedBookingDate(day);
-                                    setIsNewAppointment(true);
-                                    setShowAddBookingModal(true);
-                                    setShowServiceCatalog(true); // Show service selection first
-                                  }
-                                }
-                                  : undefined}
-                                style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
-                                title={hasShift ? `Add another appointment with ${employee.name}` : 'No shift scheduled'}
-                              >
-                                <span className="add-appointment-icon">+</span>
-                              </div>
-
-                              {dayAppointments.length > 3 && (
-                                <div
-                                  className="week-more-appointments"
-                                  onClick={(event) => handleShowMoreAppointments(dayAppointments, day, event)}
-                                >
-                                  +{dayAppointments.length - 3} more
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div
-                              className="week-empty-cell clickable-slot"
-                              onClick={hasShift ? (e) => {
-                                e.stopPropagation(); // Prevent event bubbling
-
-                                // Show service selection for this employee and day
-                                const staff = employees.find(emp => emp.id === employee.id);
-                                if (staff) {
-                                  setBookingDefaults({
-                                    professional: {
-                                      _id: staff._id || staff.id,
-                                      id: staff.id,
-                                      user: {
-                                        firstName: staff.name.split(' ')[0],
-                                        lastName: staff.name.split(' ')[1] || ''
-                                      },
-                                      name: staff.name,
-                                      position: staff.position,
-                                      ...staff
-                                    },
-                                    date: day,
-                                    isDirectEmployeeSelection: true // Flag for skipping professional selection
-                                  });
-                                  setSelectedBookingDate(day);
-                                  setIsNewAppointment(true);
-                                  setShowAddBookingModal(true);
-                                  setShowServiceCatalog(true); // Show service selection first
-                                }
-                              } : undefined}
-                              style={{ cursor: hasShift ? 'pointer' : 'not-allowed' }}
-                              title={hasShift ? `Book appointment with ${employee.name} on ${day.toLocaleDateString()}` : 'No shift scheduled'}
-                            >
-                              {/* <span className="book-appointment-text">
-                              {hasShift ? 'Click to Book' : 'No Shift'}
-                            </span>
-                            {hasShift && (
-                              <div className="week-time-slots-hint">
-                                <span className="plus-icon">+</span>
-                              </div>
-                            )} */}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     );
+  };
   };
 
   return (
