@@ -315,6 +315,9 @@ const SelectCalendar = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [bookingPreview, setBookingPreview] = useState(null);
+  const [bookingPreviewLoading, setBookingPreviewLoading] = useState(false);
+  const [bookingPreviewError, setBookingPreviewError] = useState(null);
 
   // Signal to force membership checker to refetch from server
   const [membershipRefreshSignal, setMembershipRefreshSignal] = useState(0);
@@ -774,7 +777,7 @@ const SelectCalendar = () => {
       );
 
       if (!actualEmployee) {
-        console.error('❌ Could not find employee in employees array!', {
+        console.error('Ã¢ÂÅ’ Could not find employee in employees array!', {
           searchingFor: professionalId,
           availableIds: employees.map(e => ({ id: e.id, _id: e._id, name: e.name }))
         });
@@ -938,7 +941,7 @@ const SelectCalendar = () => {
         fetchCalendarData();
       }, 500);
     } catch (err) {
-      console.error('❌ Status update error:', err);
+      console.error('Ã¢ÂÅ’ Status update error:', err);
       setBookingStatusError(err.message);
     } finally {
       setBookingStatusLoading(false);
@@ -1158,15 +1161,15 @@ const SelectCalendar = () => {
 
   const getUnavailabilityMessage = (professionalName, conflict) => {
     if (conflict.type === 'exact_time') {
-      return `❌ ${professionalName} is already booked for "${conflict.conflictingService}" at ${conflict.conflictingTime}. Please select a different time slot.`;
+      return `Ã¢ÂÅ’ ${professionalName} is already booked for "${conflict.conflictingService}" at ${conflict.conflictingTime}. Please select a different time slot.`;
     } else if (conflict.type === 'time_overlap') {
       const endTime = addMinutesToTime(conflict.conflictingTime, conflict.conflictingDuration);
-      return `❌ ${professionalName} is busy with "${conflict.conflictingService}" from ${conflict.conflictingTime} to ${endTime}. Please select a different time slot.`;
+      return `Ã¢ÂÅ’ ${professionalName} is busy with "${conflict.conflictingService}" from ${conflict.conflictingTime} to ${endTime}. Please select a different time slot.`;
     }
     return ` ${professionalName} is not available at this time.`;
   };
 
-  // (Removed local add/remove/total functions — replaced by hook implementations)
+  // (Removed local add/remove/total functions Ã¢â‚¬â€ replaced by hook implementations)
 
   const clearAppointmentSession = () => {
     clearSessionLocal();
@@ -1571,6 +1574,7 @@ const SelectCalendar = () => {
     }
   }, [employees, availableServices, appointments, multipleAppointments]);
 
+  // Optimized client fetching: don't fetch 10,000 clients at once
   const fetchExistingClients = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -1580,8 +1584,8 @@ const SelectCalendar = () => {
         return;
       }
 
-      // Fetch ALL clients without pagination for search functionality
-      const res = await fetch(`${Base_url}/admin/clients?limit=10000`, {
+      // Fetch only first 20 clients initially
+      const res = await fetch(`${Base_url}/admin/clients?limit=20`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1591,6 +1595,7 @@ const SelectCalendar = () => {
       if (res.ok && data.success) {
         const clients = data.data?.clients || [];
         setExistingClients(clients);
+        setClientSearchResults(clients); // Initialize search results
       } else {
         console.error('Failed to fetch clients:', data.message);
         setExistingClients(MOCK_CLIENTS_DATA);
@@ -1601,30 +1606,41 @@ const SelectCalendar = () => {
     }
   }, []);
 
-  const searchClients = useCallback((query) => {
+  // Server-side search with debounce
+  const clientSearchTimeoutRef = useRef(null);
+
+  const searchClients = useCallback(async (query) => {
     if (!query.trim()) {
       setClientSearchResults(existingClients);
       return;
     }
 
-    const filtered = existingClients.filter(client => {
-      const fullName = `${client.firstName || ''} ${client.lastName || ''}`.toLowerCase();
-      const email = (client.email || '').toLowerCase();
-      const phone = (client.phone || '').toLowerCase();
-      const searchTerm = query.toLowerCase();
-
-      return fullName.includes(searchTerm) ||
-        email.includes(searchTerm) ||
-        phone.includes(searchTerm);
-    });
-
-    setClientSearchResults(filtered);
+    try {
+      const token = localStorage.getItem('token');
+      const url = `${Base_url}/admin/clients?search=${encodeURIComponent(query)}&limit=20`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setClientSearchResults(data.data.clients || []);
+      }
+    } catch (err) {
+      console.error('Error searching clients on server:', err);
+    }
   }, [existingClients]);
 
   const handleClientSearchChange = (e) => {
     const query = e.target.value;
     setClientSearchQuery(query);
-    searchClients(query);
+    
+    if (clientSearchTimeoutRef.current) {
+      clearTimeout(clientSearchTimeoutRef.current);
+    }
+    
+    clientSearchTimeoutRef.current = setTimeout(() => {
+      searchClients(query);
+    }, 300);
   };
 
   const selectExistingClient = (client) => {
@@ -1895,7 +1911,7 @@ const SelectCalendar = () => {
       });
     });
 
-    // 🔧 FIXED: Improved status filtering with proper mapping
+    // Ã°Å¸â€Â§ FIXED: Improved status filtering with proper mapping
     const filtered = appointmentsList.filter(app => {
       const status = (app.status || 'confirmed').toLowerCase();
 
@@ -2099,9 +2115,9 @@ const SelectCalendar = () => {
   };
 
   // Membership integration handlers
-  const handleMembershipApplied = (membership, matchingService) => {
+  const handleMembershipApplied = (membership) => {
     setAppliedMembership(membership);
-    setMembershipDiscountAmount(matchingService.price || 0);
+    // Discount will be updated via preview
 
     // Show success feedback
     Swal.fire({
@@ -2216,6 +2232,239 @@ const SelectCalendar = () => {
       remainingAmount: Math.max(0, total - discountFromMembership - giftCardDiscount)
     };
   };
+
+  const bookingPaymentSummary = bookingPreview?.pricing ? {
+    subtotal: Number(bookingPreview.pricing.subtotal || 0),
+    membershipDiscount: Number(bookingPreview.pricing.membershipDiscount || 0),
+    giftCardDiscount: Number(bookingPreview.pricing.giftCardAmount || 0),
+    manualDiscount: Number(bookingPreview.pricing.manualDiscount || 0),
+    remainingAmount: Number(bookingPreview.pricing.finalAmount || 0)
+  } : {
+    subtotal: getSessionSubtotal(),
+    membershipDiscount: membershipDiscountAmount || 0,
+    giftCardDiscount: calculateTotalWithGiftCard().giftCardDiscount,
+    manualDiscount: customTotalDiscount || 0,
+    remainingAmount: calculateTotalWithGiftCard().remainingAmount
+  };
+
+  const buildBookingDraftPayload = useCallback(({ usePreviewValues = false } = {}) => {
+    if (multipleAppointments.length === 0) {
+      throw new Error('No appointments in session. Please add at least one service.');
+    }
+
+    const MAX_END_TIME_MINUTES = 23 * 60 + 30;
+    for (const apt of multipleAppointments) {
+      const [hours, minutes] = apt.timeSlot.split(':').map(Number);
+      const endTimeInMinutes = (hours * 60) + minutes + apt.service.duration;
+      if (endTimeInMinutes > MAX_END_TIME_MINUTES) {
+        const endHours = Math.floor(endTimeInMinutes / 60);
+        const endMinutes = endTimeInMinutes % 60;
+        throw new Error(
+          `Cannot confirm booking: "${apt.service.name}" scheduled at ${apt.timeSlot} would end at ${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}, which exceeds the maximum allowed time of 23:30.`
+        );
+      }
+    }
+
+    let clientData;
+    if (selectedExistingClient) {
+      clientData = {
+        firstName: selectedExistingClient.firstName,
+        lastName: selectedExistingClient.lastName,
+        email: selectedExistingClient.email,
+        phone: selectedExistingClient.phone
+      };
+    } else {
+      const nameString = clientInfo.name ? clientInfo.name.trim() : '';
+      if (!isWalkIn && !nameString) {
+        throw new Error('Client name is required.');
+      }
+
+      const [firstName, ...rest] = nameString.split(' ');
+      clientData = {
+        firstName: firstName || 'Walk-in',
+        lastName: rest.join(' ') || 'Customer',
+        email: clientInfo.email ? clientInfo.email.trim() : '',
+        phone: clientInfo.phone ? clientInfo.phone.trim() : ''
+      };
+    }
+
+    const services = multipleAppointments.map(apt => {
+      let appointmentDate = apt.date instanceof Date || typeof apt.date === 'string' ? new Date(apt.date) : new Date();
+      if (isNaN(appointmentDate.getTime())) {
+        appointmentDate = new Date();
+      }
+
+      const dateStr = typeof apt.date === 'string' && apt.date.match(/^\d{4}-\d{2}-\d{2}$/)
+        ? apt.date
+        : `${appointmentDate.getFullYear()}-${String(appointmentDate.getMonth() + 1).padStart(2, '0')}-${String(appointmentDate.getDate()).padStart(2, '0')}`;
+      const [hours, minutes] = apt.timeSlot.split(':').map(Number);
+      const appointmentDateTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`);
+      const endTime = new Date(appointmentDateTime);
+      endTime.setUTCMinutes(endTime.getUTCMinutes() + apt.service.duration);
+
+      if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {
+        throw new Error('Failed to create valid dates');
+      }
+
+      const editedPrice = editedServicePrices[apt.id];
+      const finalPrice = editedPrice !== undefined ? editedPrice : apt.service.price;
+      const serviceData = {
+        service: apt.service._id,
+        employee: apt.professional._id || apt.professional.id,
+        duration: apt.service.duration,
+        price: finalPrice,
+        originalPrice: apt.service.price,
+        startTime: appointmentDateTime.toISOString(),
+        endTime: endTime.toISOString(),
+      };
+
+      if (editedPrice !== undefined) {
+        serviceData.customPrice = editedPrice;
+        serviceData.priceDiscount = apt.service.price - editedPrice;
+      }
+
+      return serviceData;
+    });
+
+    const totalDuration = multipleAppointments.reduce((sum, apt) => sum + apt.service.duration, 0);
+    const sessionTotal = getTotalSessionPrice();
+    const originalTotalAmount = multipleAppointments.reduce((sum, a) => {
+      const price = (a && (a.price ?? a.service?.price ?? 0)) || 0;
+      return sum + Number(price || 0);
+    }, 0);
+
+    const paymentDetails = { clientId: selectedExistingClient?._id };
+    if (appliedMembership && membershipDiscountAmount > 0) {
+      paymentDetails.adminMembership = {
+        membershipId: appliedMembership._id,
+        discountAmount: membershipDiscountAmount,
+        membershipName: appliedMembership.name,
+        sessionDeduction: true,
+        remainingSessionsBefore: appliedMembership.remainingSessions
+      };
+    }
+
+    if (selectedGiftCard) {
+      const availableValue = calculateGiftCardValue(selectedGiftCard);
+      const amountAfterMembership = sessionTotal - (membershipDiscountAmount || 0);
+      const actualRedeemAmount = Math.min(availableValue, amountAfterMembership);
+      if (actualRedeemAmount > 0) {
+        paymentDetails.giftCard = {
+          giftCardId: selectedGiftCard._id || selectedGiftCard.id,
+          code: selectedGiftCard.code || selectedGiftCard.giftCardCode || selectedGiftCard.cardNumber,
+          redeemAmount: actualRedeemAmount
+        };
+      }
+    }
+
+    const paymentMethodMapping = { upi: 'online' };
+    const fallbackFinalAmount = Math.max(
+      0,
+      sessionTotal - (membershipDiscountAmount || 0) - (paymentDetails.giftCard?.redeemAmount || 0)
+    );
+
+    const authoritativePaymentDetails = usePreviewValues && bookingPreview?.normalizedPaymentDetails
+      ? bookingPreview.normalizedPaymentDetails
+      : paymentDetails;
+    const authoritativeFinalAmount = usePreviewValues && bookingPreview?.pricing
+      ? Number(bookingPreview.pricing.finalAmount || 0)
+      : fallbackFinalAmount;
+    const authoritativeManualDiscount = usePreviewValues && bookingPreview?.pricing
+      ? Number(bookingPreview.pricing.manualDiscount || 0)
+      : customTotalDiscount;
+
+    return {
+      services,
+      appointmentDate: services[0].startTime,
+      totalDuration,
+      totalAmount: originalTotalAmount,
+      finalAmount: authoritativeFinalAmount,
+      paymentMethod: authoritativeFinalAmount === 0 && authoritativePaymentDetails?.giftCard
+        ? 'giftcard'
+        : (paymentMethodMapping[paymentMethod] || paymentMethod || 'cash'),
+      paymentDetails: authoritativePaymentDetails,
+      client: clientData,
+      notes: bookingForm.notes || '',
+      giftCardCode: selectedGiftCard?.code || selectedGiftCard?.giftCardCode || selectedGiftCard?.cardNumber || '',
+      bookingSource: 'admin',
+      customDiscount: authoritativeManualDiscount > 0 ? authoritativeManualDiscount : undefined,
+      discountedTotal: authoritativeManualDiscount > 0 ? Math.max(0, sessionTotal - authoritativeManualDiscount) : undefined
+    };
+  }, [
+    appliedMembership,
+    bookingForm.notes,
+    bookingPreview,
+    clientInfo.email,
+    clientInfo.name,
+    clientInfo.phone,
+    customTotalDiscount,
+    editedServicePrices,
+    getTotalSessionPrice,
+    isWalkIn,
+    membershipDiscountAmount,
+    multipleAppointments,
+    paymentMethod,
+    selectedExistingClient,
+    selectedGiftCard
+  ]);
+
+  const fetchBookingPreview = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Authentication required.');
+    }
+
+    const response = await fetch(`${Base_url}/bookings/admin/preview`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(buildBookingDraftPayload()),
+    });
+
+    const responseData = await response.json();
+    if (!response.ok || !responseData.success) {
+      throw new Error(responseData.message || 'Unable to preview booking');
+    }
+
+    return responseData.data;
+  }, [buildBookingDraftPayload]);
+
+  useEffect(() => {
+    const canPreview = bookingStep === 6 && multipleAppointments.length > 0 && (selectedExistingClient || isWalkIn || clientInfo.name?.trim());
+    if (!canPreview) {
+      setBookingPreview(null);
+      setBookingPreviewError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setBookingPreviewLoading(true);
+    setBookingPreviewError(null);
+
+    fetchBookingPreview()
+      .then(data => {
+        if (cancelled) return;
+        setBookingPreview(data);
+        setMembershipDiscountAmount(Number(data?.pricing?.membershipDiscount || 0));
+        setGiftCardAppliedAmount(Number(data?.pricing?.giftCardAmount || 0));
+      })
+      .catch(error => {
+        if (cancelled) return;
+        setBookingPreview(null);
+        setBookingPreviewError(error.message);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBookingPreviewLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingStep, clientInfo.name, fetchBookingPreview, isWalkIn, multipleAppointments.length, selectedExistingClient]);
 
   // Gift Card Selection Handlers
   const handleGiftCardSelect = (giftCard) => {
@@ -2386,7 +2635,7 @@ const SelectCalendar = () => {
 
         // Validate inputs
         if (!dateStr || !timeStr) {
-          console.error('❌ Invalid appointment data:', { dateStr, timeStr });
+          console.error('Ã¢ÂÅ’ Invalid appointment data:', { dateStr, timeStr });
           throw new Error(`Invalid appointment: date=${dateStr}, time=${timeStr}`);
         }
 
@@ -2400,7 +2649,7 @@ const SelectCalendar = () => {
 
         // Validate that the dates were created successfully
         if (isNaN(appointmentDateTime.getTime()) || isNaN(endTime.getTime())) {
-          console.error('❌ Invalid date created');
+          console.error('Ã¢ÂÅ’ Invalid date created');
           throw new Error('Failed to create valid dates');
         }
 
@@ -2437,7 +2686,7 @@ const SelectCalendar = () => {
       }, 0); // Original total without custom discount
       const paymentCalculation = calculateTotalWithGiftCard();
       let finalAmount = paymentCalculation.remainingAmount;
-      const paymentDetails = {};
+      const paymentDetails = { clientId: selectedExistingClient?._id };
 
       // Apply admin membership discount first
       if (appliedMembership && membershipDiscountAmount > 0) {
@@ -2575,7 +2824,7 @@ const SelectCalendar = () => {
           });
 
           // Update any availableMemberships list we have cached to reflect the deduction
-          setAvailableMemberships(list => list.map(m => m._id === applciedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
+          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
 
           // Also refresh memberships list from server in background to keep authoritative state
           // bump signal to force AdminMembershipChecker to refetch
@@ -2599,6 +2848,92 @@ const SelectCalendar = () => {
     }
   };
 
+  const handleCreateBookingWithPreview = async () => {
+    setBookingLoading(true);
+    setBookingError(null);
+    setBookingSuccess(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setBookingError('Authentication required. Please log in again.');
+        setBookingLoading(false);
+        return;
+      }
+
+      if (bookingPreviewError) {
+        throw new Error(bookingPreviewError);
+      }
+
+      const bookingPayload = buildBookingDraftPayload({ usePreviewValues: true });
+      const res = await fetch(`${Base_url}/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bookingPayload),
+      });
+
+      const responseData = await res.json();
+      if (!res.ok) {
+        throw new Error(responseData.message || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Booking creation failed');
+      }
+
+      const clientName = selectedExistingClient
+        ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
+        : bookingPayload.client.firstName;
+
+      setBookingSuccess(` ${multipleAppointments.length} service(s) booked successfully for ${clientName}! Booking ID: ${responseData.data?.booking?.bookingNumber || 'N/A'}`);
+
+      setTimeout(() => {
+        clearAppointmentSession();
+        setGiftCardAppliedAmount(0);
+        setGiftCardCode('');
+        setGiftCardError('');
+        setAvailableGiftCards([]);
+        setSelectedGiftCard(null);
+        setRedeemGiftCardAmount(0);
+
+        setTimeout(() => {
+          if (selectedExistingClient?._id) {
+            loadBenefitsIfNeeded(true);
+          }
+        }, 500);
+      }, 1500);
+
+      try {
+        const adminMembershipInfo = bookingPayload.paymentDetails?.adminMembership;
+        if (appliedMembership && adminMembershipInfo && adminMembershipInfo.sessionDeduction) {
+          setAppliedMembership(prev => {
+            if (!prev) return prev;
+            const used = (prev.usedSessions || 0) + 1;
+            const remaining = (typeof prev.remainingSessions === 'number') ? Math.max(0, prev.remainingSessions - 1) : (typeof prev.numberOfSessions === 'number' ? Math.max(0, prev.numberOfSessions - used) : null);
+            return { ...prev, usedSessions: used, remainingSessions: remaining };
+          });
+
+          setAvailableMemberships(list => list.map(m => m._id === appliedMembership._id ? ({ ...m, usedSessions: (m.usedSessions || 0) + 1, remainingSessions: (typeof m.remainingSessions === 'number' ? Math.max(0, m.remainingSessions - 1) : (typeof m.numberOfSessions === 'number' ? Math.max(0, m.numberOfSessions - ((m.usedSessions || 0) + 1)) : m.remainingSessions)) }) : m));
+          setTimeout(() => setMembershipRefreshSignal(s => s + 1), 800);
+        }
+      } catch (e) {
+        console.warn('Failed to update local membership usage after booking:', e);
+      }
+
+      fetchCalendarData();
+      setTimeout(() => {
+        closeBookingModal();
+      }, 3000);
+    } catch (err) {
+      console.error('Booking creation error:', err);
+      setBookingError(`Failed to create booking: ${err.message}`);
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
   const resetBookingForm = (clearSession = true) => {
     setBookingStep(1);
     setSelectedExistingClient(null);
@@ -2609,6 +2944,8 @@ const SelectCalendar = () => {
     setPaymentMethod('cash');
     setBookingSuccess(null);
     setBookingError(null);
+    setBookingPreview(null);
+    setBookingPreviewError(null);
     setAvailableServices([]);
     setAvailableProfessionals([]);
     setAvailableTimeSlots([]);
@@ -3884,7 +4221,7 @@ const SelectCalendar = () => {
 
               {bookingStatusError && (
                 <div className="booking-modal-error">
-                  <div className="error-icon">⚠️</div>
+                  <div className="error-icon">Ã¢Å¡Â Ã¯Â¸Â</div>
                   <div className="error-content">
                     <strong>Error</strong>
                     <p>{bookingStatusError}</p>
@@ -4353,7 +4690,7 @@ const SelectCalendar = () => {
                     </div>
                   )}
                   <div className="booking-modal-actions">
-                    <button className="booking-modal-back" onClick={() => setBookingStep(1)}>← Back</button>
+                    <button className="booking-modal-back" onClick={() => setBookingStep(1)}>Ã¢â€ Â Back</button>
                     {/* <button className="booking-modal-cancel" onClick={closeBookingModal}>
                       Cancel
                     </button> */}
@@ -4449,7 +4786,7 @@ const SelectCalendar = () => {
                               onClick={() => removeAppointmentFromSessionLocal(apt.id)}
                               title="Remove this service"
                             >
-                              ✕
+                              ✖
                             </button>
                           </div>
                         ))}
@@ -4776,7 +5113,7 @@ const SelectCalendar = () => {
                       if (bookingDefaults?.professional && bookingDefaults?.time) {
                         setBookingStep(1);
                         // DON'T clear booking defaults - keep professional & time info for grid booking flow
-                        // setBookingDefaults(null); ❌ Removed - this was causing the flow to forget grid selection
+                        // setBookingDefaults(null); — Removed - this was causing the flow to forget grid selection
                         // Show service catalog so user can select services
                         setShowServiceCatalog(true);
                       } else {
@@ -5123,17 +5460,12 @@ const SelectCalendar = () => {
                           </div>
 
                           <AdminMembershipChecker
-                            selectedClient={selectedExistingClient || {
-                              firstName: clientInfo.name?.split(' ')[0] || '',
-                              lastName: clientInfo.name?.split(' ').slice(1).join(' ') || '',
-                              email: clientInfo.email,
-                              phone: clientInfo.phone
-                            }}
-                            selectedServices={multipleAppointments.map(apt => apt.service)}
-                            appliedMembership={appliedMembership}
+                            eligibleMemberships={bookingPreview?.benefits?.eligibleMemberships || []}
+                            appliedMembership={bookingPreview?.benefits?.membership || null}
                             onMembershipApplied={handleMembershipApplied}
                             onMembershipRemoved={handleMembershipRemoved}
-                            refreshSignal={membershipRefreshSignal}
+                            loading={bookingPreviewLoading}
+                            error={bookingPreviewError}
                           />
                         </div>
                       </div>
@@ -5145,29 +5477,31 @@ const SelectCalendar = () => {
                       {/* 1. Payment Breakdown */}
                       <div className="payment-breakdown-card">
                         <h4><Banknote size={18} /> Payment Breakdown</h4>
+                        {bookingPreviewLoading && <div className="breakdown-row"><span className="breakdown-label">Preview</span><span className="breakdown-value">Updating...</span></div>}
+                        {bookingPreviewError && <div className="breakdown-row discount"><span className="breakdown-label">Preview Error</span><span className="breakdown-value">{bookingPreviewError}</span></div>}
                         <div className="breakdown-row">
                           <span className="breakdown-label">Service Total</span>
-                          <span className="breakdown-value">AED {getSessionSubtotal().toFixed(2)}</span>
+                          <span className="breakdown-value">AED {bookingPaymentSummary.subtotal.toFixed(2)}</span>
                         </div>
 
-                        {appliedMembership && membershipDiscountAmount > 0 && (
+                        {bookingPaymentSummary.membershipDiscount > 0 && (
                           <div className="breakdown-row discount">
                             <span className="breakdown-label">Membership Discount</span>
-                            <span className="breakdown-value">-AED {membershipDiscountAmount.toFixed(2)}</span>
+                            <span className="breakdown-value">-AED {bookingPaymentSummary.membershipDiscount.toFixed(2)}</span>
                           </div>
                         )}
 
-                        {selectedGiftCard && giftCardAppliedAmount > 0 && (
+                        {bookingPaymentSummary.giftCardDiscount > 0 && (
                           <div className="breakdown-row discount">
                             <span className="breakdown-label">Gift Card</span>
-                            <span className="breakdown-value">-AED {giftCardAppliedAmount.toFixed(2)}</span>
+                            <span className="breakdown-value">-AED {bookingPaymentSummary.giftCardDiscount.toFixed(2)}</span>
                           </div>
                         )}
 
-                        {customTotalDiscount > 0 && (
+                        {bookingPaymentSummary.manualDiscount > 0 && (
                           <div className="breakdown-row discount">
                             <span className="breakdown-label">Manual Discount</span>
-                            <span className="breakdown-value">-AED {customTotalDiscount.toFixed(2)}</span>
+                            <span className="breakdown-value">-AED {bookingPaymentSummary.manualDiscount.toFixed(2)}</span>
                           </div>
                         )}
 
@@ -5175,7 +5509,7 @@ const SelectCalendar = () => {
 
                         <div className="breakdown-row total">
                           <span className="breakdown-label">Remaining Amount</span>
-                          <span className="breakdown-value">AED {calculateTotalWithGiftCard().remainingAmount.toFixed(2)}</span>
+                          <span className="breakdown-value">AED {bookingPaymentSummary.remainingAmount.toFixed(2)}</span>
                         </div>
                       </div>
 
@@ -5218,13 +5552,13 @@ const SelectCalendar = () => {
                     </button>
                     <button
                       className="confirm-booking-btn-large"
-                      onClick={handleCreateBooking}
-                      disabled={bookingLoading}
+                      onClick={handleCreateBookingWithPreview}
+                      disabled={bookingLoading || bookingPreviewLoading}
                     >
                       {bookingLoading ? 'Processing...' : (
                         <>
                           <Check size={18} />
-                          {`Confirm Appointment — Pay AED ${calculateTotalWithGiftCard().remainingAmount.toFixed(2)}`}
+                          {`Confirm Appointment Ã¢â‚¬â€ Pay AED ${bookingPaymentSummary.remainingAmount.toFixed(2)}`}
                         </>
                       )}
                     </button>

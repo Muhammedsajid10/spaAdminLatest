@@ -4,14 +4,23 @@ import './index.css'
 import App from './App.jsx'
 import { Provider } from 'react-redux'
 import { store } from './store'
-// import Appoint from './Clientsidepage/Appoint.jsx'
-// import CatalogSidebarLayout from './Clientsidepage/CatalogSideBarLayout.jsx'
-// import TeamSideBarLayout from './Clientsidepage/TeamSidebarLayout.jsx'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-      <App />
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
     </Provider>
   </StrictMode>,
 )

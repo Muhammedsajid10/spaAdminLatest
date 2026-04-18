@@ -82,20 +82,15 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
     const startDateParam = formatDateForAPI(startDate);
     const endDateParam = formatDateForAPI(endDate);
 
-    const [employeesResponse, bookingsResponse, servicesResponse] = await Promise.all([
+    const [employeesResponse, calendarViewResponse, servicesResponse] = await Promise.all([
       api.get(`${Base_url}/employees?weekStartDate=${startDateParam}`),
-      // ✅ FIX: Use high limit for calendar to get all appointments in date range
-      api.get(`${Base_url}/bookings/admin/all?startDate=${startDateParam}&endDate=${endDateParam}&limit=10000`),
+      api.get(`${Base_url}/bookings/calendar/view?startDate=${startDateParam}&endDate=${endDateParam}`),
       api.get(`${Base_url}/services`)
     ]);
 
-    if (bookingsResponse.data.success && employeesResponse.data.success) {
-      const allBookings = bookingsResponse.data.data.bookings || [];
+    if (calendarViewResponse.data.success && employeesResponse.data.success) {
+      const transformedAppointments = calendarViewResponse.data.data || {};
       const employees = employeesResponse.data.data.employees || [];
-
-      if (servicesResponse.data && servicesResponse.data.success) {
-        // services are not currently stored in Redux in this minimal refactor
-      }
 
       const activeEmployees = employees.filter(emp => emp.isActive !== false);
       const transformedEmployees = activeEmployees.map(emp => ({
@@ -109,162 +104,11 @@ export const fetchCalendarThunk = createAsyncThunk('calendar/fetchCalendar', asy
         workSchedule: emp.workSchedule || {}
       }));
 
-      const transformedAppointments = {};
-
-      // Create a helper function to find employee ID by name for Python-created bookings
-      const findEmployeeIdByName = (employeeName) => {
-        if (!employeeName || typeof employeeName !== 'string') return null;
-
-        const matchingEmployee = activeEmployees.find(emp => {
-          const empFullName = `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim();
-          return empFullName.toLowerCase() === employeeName.toLowerCase() ||
-            emp.user?.firstName?.toLowerCase() === employeeName.toLowerCase() ||
-            empFullName.toLowerCase().includes(employeeName.toLowerCase()) ||
-            employeeName.toLowerCase().includes(empFullName.toLowerCase());
-        });
-        return matchingEmployee?._id || null;
-      };
-
-      allBookings.forEach(booking => {
-        booking.services?.forEach(service => {
-          let employeeId = null;
-
-          // Handle different employee data formats
-          if (service.employee?._id) {
-            // Check if it's a placeholder ObjectId for legacy data
-            if (service.employee._id === '000000000000000000000000') {
-              // Legacy data with placeholder - try to match by fullName
-              employeeId = findEmployeeIdByName(service.employee.fullName || service.employee.user?.firstName);
-            } else {
-              // Real ObjectId format (API-created bookings) - employee is an object
-              employeeId = service.employee._id;
-            }
-          } else if (typeof service.employee === 'string' && /^[0-9a-fA-F]{24}$/.test(service.employee)) {
-            // Check if it's a placeholder ObjectId string
-            if (service.employee === '000000000000000000000000') {
-              // Placeholder - cannot match, skip this service
-              console.warn('⚠️ Placeholder employee ID without name data for booking:', booking._id);
-              return;
-            }
-            // ✅ FIX: Direct ObjectId string format (from createBooking API)
-            employeeId = service.employee;
-          } else if (typeof service.employee === 'string') {
-            // String format (Python-created bookings) - try to match by name
-            employeeId = findEmployeeIdByName(service.employee);
-          } else if (service.employee?.fullName) {
-            // Normalized object format - try to match by fullName
-            employeeId = findEmployeeIdByName(service.employee.fullName);
-          }
-
-          if (!employeeId) {
-            console.warn('❌ Could not find employee ID for booking:', booking._id, 'Employee data:', service.employee);
-            return;
-          }
-
-          if (!transformedAppointments[employeeId]) transformedAppointments[employeeId] = {};
-
-          const startISO = service.startTime ? String(service.startTime) : (booking.appointmentDate ? String(booking.appointmentDate) : null);
-          let endISO = null;
-          if (service.endTime) {
-            endISO = String(service.endTime);
-          } else if (startISO && service.duration) {
-            const sDt = new Date(startISO);
-            endISO = new Date(sDt.getTime() + (service.duration * 60000)).toISOString();
-          }
-
-          const startDateTime = startISO ? new Date(startISO) : new Date();
-          const localYear = startDateTime.getUTCFullYear();
-          const localMonth = String(startDateTime.getUTCMonth() + 1).padStart(2, '0');
-          const localDay = String(startDateTime.getUTCDate()).padStart(2, '0');
-          const appointmentLocalDate = `${localYear}-${localMonth}-${localDay}`;
-
-          const timeSlot = startISO ? (() => {
-            const dt = new Date(startISO);
-            const hours = String(dt.getUTCHours()).padStart(2, '0');
-            const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
-            return `${hours}:${minutes}`;
-          })() : (service.startTime || '');
-
-          const endTimeLabel = endISO ? (() => {
-            const dt = new Date(endISO);
-            const hours = String(dt.getUTCHours()).padStart(2, '0');
-            const minutes = String(dt.getUTCMinutes()).padStart(2, '0');
-            return `${hours}:${minutes}`;
-          })() : null;
-
-          const slotKey = `${appointmentLocalDate}_${timeSlot}`;
-
-          // Handle normalized client data (both string and object formats)
-          let clientDisplayName = 'Client';
-          if (booking.client) {
-            if (typeof booking.client === 'string') {
-              clientDisplayName = booking.client;
-            } else if (booking.client._id === '000000000000000000000000') {
-              // Legacy data with placeholder - use the preserved name from firstName
-              clientDisplayName = booking.client.firstName || booking.client.fullName || 'Unknown Client';
-            } else if (booking.client.fullName) {
-              clientDisplayName = booking.client.fullName;
-            } else if (booking.client.firstName || booking.client.lastName) {
-              clientDisplayName = `${booking.client.firstName || ''} ${booking.client.lastName || ''}`.trim();
-            }
-          }
-
-          // Handle normalized service data (both string and object formats)
-          let serviceName = 'Service';
-          if (service.service) {
-            if (typeof service.service === 'string') {
-              serviceName = service.service;
-            } else if (service.service._id === '000000000000000000000000') {
-              // Legacy data with placeholder - use the preserved name
-              serviceName = service.service.name || 'Unknown Service';
-            } else if (service.service.name) {
-              serviceName = service.service.name;
-            }
-          }
-
-          // Handle normalized employee data (both string and object formats)
-          let employeeName = 'Employee';
-          if (service.employee) {
-            if (typeof service.employee === 'string') {
-              employeeName = service.employee;
-            } else if (service.employee._id === '000000000000000000000000') {
-              // Legacy data with placeholder - use the preserved name from fullName
-              employeeName = service.employee.fullName || service.employee.user?.firstName || 'Unknown Employee';
-            } else if (service.employee.fullName && !/^[0-9a-fA-F]{24}$/.test(service.employee.fullName)) {
-              employeeName = service.employee.fullName;
-            } else if (service.employee.user) {
-              employeeName = `${service.employee.user.firstName || ''} ${service.employee.user.lastName || ''}`.trim();
-            } else if (service.employee._id) {
-              // If we have an ObjectId, try to find the actual employee name
-              const emp = activeEmployees.find(e => e._id === service.employee._id);
-              if (emp) {
-                employeeName = `${emp.user?.firstName || ''} ${emp.user?.lastName || ''}`.trim();
-              }
-            }
-          }
-
-          transformedAppointments[employeeId][slotKey] = {
-            client: clientDisplayName,
-            service: serviceName,
-            employee: employeeName,
-            duration: service.duration || 30,
-            color: getAppointmentColorByStatus(service.status || booking.status || 'booked'),
-            date: appointmentLocalDate,
-            bookingId: booking._id,
-            totalAmount: booking.totalAmount || booking.finalAmount || 0,
-            price: service.price || service.customPrice || 0,
-            status: service.status || booking.status || 'confirmed',
-            serviceEntryId: service._id,
-            isMainSlot: true,
-            startISO,
-            endISO,
-            startTime: timeSlot,
-            endTime: endTimeLabel,
-            displayStartTime: timeSlot,
-            displayEndTime: endTimeLabel,
-            time: timeSlot,
-            timeSlot: timeSlot
-          };
+      // Add status specific colors to appointments
+      Object.keys(transformedAppointments).forEach(empId => {
+        Object.keys(transformedAppointments[empId]).forEach(slotKey => {
+          const appt = transformedAppointments[empId][slotKey];
+          appt.color = getAppointmentColorByStatus(appt.status || 'booked');
         });
       });
 
