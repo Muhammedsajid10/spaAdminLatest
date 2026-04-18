@@ -3,14 +3,15 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setModalOpen, setStep } from '../../../store/adminBookingSlice';
 import StepService from './StepService';
 import StepProfessional from './StepProfessional';
-// import StepTimeSlot from './StepTimeSlot';
-// import StepClient from './StepClient';
-// import StepPreview from './StepPreview';
+import StepTimeSlot from './StepTimeSlot';
+import StepClient from './StepClient';
+import StepPreview from './StepPreview';
 
 const BookingWizardModal = ({ 
   removeAppointmentFromSessionLocal, 
   getTotalSessionPrice,
-  handleAddToBookingSession 
+  handleAddToBookingSession,
+  buildBookingDraftPayload
 }) => {
   const dispatch = useDispatch();
   const { 
@@ -34,11 +35,14 @@ const BookingWizardModal = ({
         />;
       case 2:
         return <StepProfessional />;
-      // case 3: return <StepTimeSlot handleAddToBookingSession={handleAddToBookingSession} />;
-      // case 5: return <StepClient />;
-      // case 6: return <StepPreview />;
+      case 3: 
+        return <StepTimeSlot handleAddToBookingSession={handleAddToBookingSession} />;
+      case 5: 
+        return <StepClient />;
+      case 6: 
+        return <StepPreview buildBookingDraftPayload={buildBookingDraftPayload} />;
       default:
-        return <div className="step-placeholder">Step {step} content coming soon...</div>;
+        return <div className="step-placeholder">Managing services... (Step 4)</div>;
     }
   };
 
