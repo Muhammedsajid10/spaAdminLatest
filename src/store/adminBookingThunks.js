@@ -5,18 +5,18 @@ import {
   setAvailableServices, setAvailableProfessionals, setAvailableTimeSlots,
   setSelectedClient, setIsAddingNewClient, setClientSearchResults, setClientSearchQuery, setClientInfo,
   setSelectedDate, setStep as setBookingStep,
-  setAvailableMemberships, setAvailableGiftCards, setBenefitsStatus
+  setAvailableMemberships, setAvailableGiftCards, setBenefitsStatus,
+  setExistingClients, setBookingPreview, setBookingPreviewLoading, setBookingPreviewError
 } from './adminBookingSlice';
 import { addAppointmentToSession } from './bookingSessionSlice';
 import { 
   getAvailableProfessionalsWithAccumulatedBookings,
   getAvailableTimeSlotsWithAccumulatedBookings,
-  detectProfessionalConflict,
-  formatDateLocal
-} from '../Clientsidepage/helpers/selectCalendarHelpers';
-import { hasShiftOnDate } from '../calendar';
-import api from '../Service/Api';
-import { Base_url } from '../Service/Base_url';
+  detectProfessionalConflict
+} from '@features/booking/helpers/selectCalendarHelpers';
+import { hasShiftOnDate, formatDateLocal } from '@features/booking';
+import api from '@api';
+import { Base_url } from '@api/config';
 
 /**
  * Handle service selection logic

@@ -19,15 +19,15 @@ import TeamFilter from './Header/TeamFilter';
 import DatePicker from '../DatePicker/DatePicker';
 
 // Import utilities
-import { generateTimeSlots, addMinutesToTime, timeToMinutes } from '../../utils/calendar/timeHelpers';
-import { formatDateLocal, localDateKey } from '../../utils/calendar';
+import { generateTimeSlots, addMinutesToTime, timeToMinutes } from '@utils/calendar/timeHelpers';
+import { formatDateLocal, localDateKey } from '@utils/calendar';
 
 // Import Redux actions and API
-import { setEmployees, setEmployeesLoading, setEmployeesError } from '../../store/employeesSlice';
-import { clearSession, removeAppointmentFromSession } from '../../store/bookingSessionSlice';
-import { ReportsAPI } from '../../Service/api/reportsApi';
-import { fetchCalendarThunk, fetchServicesThunk, fetchClientsThunk } from '../../store/thunks';
-import api from '../../Service/Api';
+import { setEmployees, setEmployeesLoading, setEmployeesError } from '@store/employeesSlice';
+import { clearSession, removeAppointmentFromSession } from '@store/bookingSessionSlice';
+import { ReportsAPI } from '@api/reportsApi';
+import { fetchCalendarThunk, fetchServicesThunk, fetchClientsThunk } from '@store/thunks';
+import api from '@api';
 
 /**
  * Main Calendar Component

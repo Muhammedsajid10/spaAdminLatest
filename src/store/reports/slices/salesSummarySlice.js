@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { ReportsAPI } from '../../../Service/api/reportsApi';
+import { ReportsAPI } from '@api/reportsApi';
 
 // Simple function to extract sales data from bookings
 export const buildSalesSummary = (bookingsData, dateRange = null) => {

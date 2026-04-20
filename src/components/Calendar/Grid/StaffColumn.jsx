@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { localDateKey, calculateAppointmentHeight, getAppointmentColorByStatus } from '../../../utils/calendar';
+import { localDateKey, calculateAppointmentHeight, getAppointmentColorByStatus } from '@utils/calendar';
 import AppointmentCard from '../Shared/AppointmentCard';
 
 const StaffColumn = ({

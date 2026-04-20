@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Calendar, Download, Filter, MoreHorizontal } from 'lucide-react';
-import MonthPicker from '../../components/ui/MonthPicker';
-import ExportDropdown from '../../components/common/ExportDropdown';
-import Dropdown from '../../components/ui/DropDown';
+import MonthPicker from '@components/ui/MonthPicker';
+import ExportDropdown from '@components/common/ExportDropdown';
+import Dropdown from '@components/ui/DropDown';
 import Button from '../ui/Button';
 import { 
   setDateRange, 
@@ -11,7 +11,7 @@ import {
   setSelectedTeamMember,
   setSelectedService,
   setGroupBy 
-} from '../../store/slices/filtersSlice';
+} from '@store/slices/filtersSlice';
 import './FilterSection.css';
 
 const FilterSection = ({ 

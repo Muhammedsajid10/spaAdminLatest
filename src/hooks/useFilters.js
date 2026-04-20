@@ -8,7 +8,7 @@ import {
   setSelectedService,
   setGroupBy,
   resetFilters,
-} from '../store/slices/filtersSlice';
+} from '@store/slices/filtersSlice';
 
 export const useFilters = () => {
   const dispatch = useDispatch();

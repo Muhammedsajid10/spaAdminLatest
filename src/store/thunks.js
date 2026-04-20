@@ -1,10 +1,10 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../Service/Api';
-import { Base_url } from '../Service/Base_url';
+import api from '@api';
+import { Base_url } from '@api/config';
 import { setEmployees } from './employeesSlice';
 import { setTimeSlots, setLoading as setCalendarLoading, setError as setCalendarError } from './calendarSlice';
 import { setAppointments } from './appointmentsSlice';
-import { getAppointmentColorByStatus } from '../calendar/uiUtils';
+import { getAppointmentColorByStatus } from '@features/booking/uiUtils';
 import { setServices, setServicesLoading, setServicesError } from './servicesSlice';
 import { setClients, setClientsLoading, setClientsError } from './clientsSlice';
 import { addAppointmentToSession } from './bookingSessionSlice';

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { ReportsAPI } from '../../../Service/api/reportsApi';
+import { ReportsAPI } from '@api/reportsApi';
 
 const toISO = (value) => {
   if (!value) return null;

@@ -5,6 +5,7 @@ const initialState = {
   step: 1,
   showModal: false,
   isWalkIn: false,
+  isNewAppointment: false,
   
   // Client
   client: {
@@ -94,6 +95,7 @@ const adminBookingSlice = createSlice({
       }
     },
     setIsWalkIn(state, action) { state.isWalkIn = action.payload; },
+    setIsNewAppointment(state, action) { state.isNewAppointment = action.payload; },
     
     // Client
     setSelectedClient(state, action) { 
@@ -211,16 +213,21 @@ const adminBookingSlice = createSlice({
 });
 
 export const {
-  setStep, setModalOpen, setIsWalkIn,
+  setStep, setModalOpen, setIsWalkIn, setIsNewAppointment,
   setSelectedClient, setClientSearchQuery, setClientSearchResults, setExistingClients, setIsAddingNewClient, setClientInfo,
   setSelectedService, setSelectedProfessional, setSelectedDate, setSelectedTimeSlot, setBookingDefaults,
   setAvailableServices, setAvailableProfessionals, setAvailableTimeSlots,
   setPaymentMethod, setCustomTotalDiscount, setMembershipDiscountAmount, setEditedServicePrice,
   setBookingPreview, setBookingPreviewLoading, setBookingPreviewError,
   setAppliedMembership, setAppliedGiftCard, setAvailableMemberships, setAvailableGiftCards,
+  setBenefitsStatus, setAppliedGiftCardAmount, setRedeemGiftCardAmount, 
+  setGiftCardCode, setGiftCardError, setGiftCardLoading,
+  setEditingTotalPrice, setTempTotalPrice,
   setBookingStatus, resetBookingState,
   setManagementStatusModal, setSelectedManagementBooking, setManagementStatus
 } = adminBookingSlice.actions;
+
+export const { setStep: setBookingStep } = adminBookingSlice.actions;
 
 export const adminBookingActions = adminBookingSlice.actions;
 export default adminBookingSlice.reducer;

@@ -1,8 +1,8 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import ReportsMain from "../pages/reports/ReportsMain";
-import GenericReportPage from "../pages/reports/GenericReportPage";
-import { reportsConfig } from "../pages/reports/reportConfigs";
+import ReportsMain from "@features/reports/ReportsMain";
+import GenericReportPage from "@features/reports/GenericReportPage";
+import { reportsConfig } from "@features/reports/reportConfigs";
 
 export default function ReportsRoutes() {
   return (

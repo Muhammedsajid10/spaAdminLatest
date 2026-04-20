@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../Service/Api';
-import { Base_url } from '../Service/Base_url';
+import api from '@api';
+import { Base_url } from '@api/config';
 
 export const fetchCalendarThunk = createAsyncThunk(
   'calendar/fetchData',
