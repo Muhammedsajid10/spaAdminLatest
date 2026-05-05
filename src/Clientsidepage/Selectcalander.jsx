@@ -2738,11 +2738,18 @@ const SelectCalendar = () => {
     return `${y}-${m}-${d}`;
   };
 
+  const fetchCalendarData = useCallback(async () => {
+    try {
+      await dispatch(fetchCalendarThunk({ currentDate, currentView })).unwrap();
+    } catch (err) {
+      console.error('Failed to refresh calendar data:', err);
+    }
+  }, [currentDate, currentView, dispatch]);
 
   // --- API CALL FUNCTION (moved to Redux thunk) ---
   useEffect(() => {
-    dispatch(fetchCalendarThunk({ currentDate, currentView }));
-  }, [currentDate, currentView, dispatch]);
+    fetchCalendarData();
+  }, [fetchCalendarData]);
 
   // Load services on component mount for price lookups
   useEffect(() => {
