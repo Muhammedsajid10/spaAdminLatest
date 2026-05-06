@@ -22,7 +22,7 @@ const TimeSheets = React.lazy(() => import('./Clientsidepage/TimeSheets'));
 const ServiceMenu = React.lazy(() => import('./Clientsidepage/ServiceMenu'));
 const Membership = React.lazy(() => import('./Clientsidepage/Membership'));
 const GiftCardPage = React.lazy(() => import('./Clientsidepage/GiftCardPage'));
-const Searchbar = React.lazy(() => import('./Clientsidepage/SearchBar'));
+const Searchbar = React.lazy(() => import('./features/search/SearchBar'));
 const Dashboard = React.lazy(() => import('./Clientsidepage/Dashboard'));
 
 

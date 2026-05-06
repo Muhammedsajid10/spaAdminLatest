@@ -1,0 +1,48 @@
+/* Typography and text utilities */
+
+:root {
+  --font-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Inter', system-ui, sans-serif;
+  --text-strong: 600;
+}
+
+body {
+  font-family: var(--font-base);
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--font-heading);
+  color: var(--color-heading);
+  line-height: 1.2;
+}
+
+h1 { font-size: clamp(2rem, 2.5vw, 3.25rem); }
+h2 { font-size: clamp(1.75rem, 2vw, 2.5rem); }
+h3 { font-size: clamp(1.5rem, 1.75vw, 2rem); }
+
+p, li, small {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+p + p,
+li + li {
+  margin-top: 1rem;
+}
+
+strong {
+  font-weight: var(--text-strong);
+}
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+.truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
