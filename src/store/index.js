@@ -39,6 +39,7 @@ import financeSummaryReducer from './reports/slices/financeSummarySlice';
 import workingHoursReducer from './reports/slices/workingHoursSlice';
 import salesSummaryReducer from './reports/slices/salesSummarySlice';
 import searchReducer from '../features/search/searchSlice';
+import homeReducer from './homeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -56,6 +57,7 @@ export const store = configureStore({
     workingHours: workingHoursReducer,
     salesSummary: salesSummaryReducer,
     search: searchReducer,
+    home: homeReducer,
     //  filters: filtersReducer,
     // ui: uiReducer,
   },
