@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import './Signuppage.css';
 import axios from 'axios';
 import { Base_url } from '../Service/Base_url';
@@ -32,9 +33,13 @@ const SignInPage = () => {
     
     try {
       const response = await api.post("/auth/signup", formData);
-      console.log('Signup successful:', response.data);
       // Handle successful signup - redirect to login or dashboard
-      alert('Account created successfully! Please check your email for verification.');
+      Swal.fire({
+        icon: 'success',
+        title: 'Account Created',
+        text: 'Account created successfully! Please check your email for verification.',
+        confirmButtonColor: '#1f2937'
+      });
     } catch (error) {
       console.error('Signup error:', error);
       setError(error.response?.data?.message || 'Signup failed. Please try again.');

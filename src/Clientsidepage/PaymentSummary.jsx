@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './PaymentSummary.css';
 import api from '../Service/Api';
+import Error500Page from '../states/ErrorPage';
+import Loading from '../states/Loading';
 
 const PaymentSummary = () => {
   const [loading, setLoading] = useState(true);
@@ -21,79 +23,26 @@ const PaymentSummary = () => {
   const fetchPaymentData = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching payment data...');
 
       // Get current date for the cash movement summary (required parameter)
       const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
       // Fetch cash movement summary with required date parameter
       const cashMovementResponse = await api.get(`/admin/cash-movement-summary?date=${today}`);
-      setCashMovementData(cashMovementResponse.data.data || {});
 
       // Fetch all payments with pagination
       const paymentsResponse = await api.get(`/payments/admin/all?page=${currentPage}&limit=${paymentsPerPage}`);
-      
-      console.log('✅ Payment data fetched successfully!', {
-        cashMovement: cashMovementResponse.data,
-        payments: paymentsResponse.data
-      });
+      setCashMovementData(paymentsResponse.data.data || {});
 
       setAllPayments(paymentsResponse.data.data?.payments || []);
       setTotalPayments(paymentsResponse.data.total || 0);
 
       setError(null);
     } catch (err) {
-      console.log('❌ Payment API failed, using mock data');
-      if (err.message === 'MOCK_DATA_MODE' || localStorage.getItem('useMockData') === 'true') {
-        console.log('🔧 Mock data mode activated for payments');
-      } else {
-        console.log('Error details:', err.response?.status, err.response?.data?.message || err.message);
-      }
-      
+      if (err.message === 'MOCK_DATA_MODE' || localStorage.getItem('useMockData') === 'true') {} else {}
+
       // Set mock payment data
-      setCashMovementData({
-        totalCashIn: 5250.00,
-        totalCashOut: 320.50,
-        netCashFlow: 4929.50,
-        totalTransactions: 42
-      });
-      
-      setAllPayments([
-        {
-          _id: '1',
-          paymentId: 'PAY001',
-          customerName: 'Sarah Johnson',
-          amount: 450.00,
-          currency: 'AED',
-          method: 'card',
-          status: 'completed',
-          createdAt: new Date().toISOString(),
-          serviceName: 'Deep Tissue Massage'
-        },
-        {
-          _id: '2',
-          paymentId: 'PAY002', 
-          customerName: 'Mike Chen',
-          amount: 280.00,
-          currency: 'AED',
-          method: 'cash',
-          status: 'completed',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          serviceName: 'Facial Treatment'
-        },
-        {
-          _id: '3',
-          paymentId: 'PAY003',
-          customerName: 'Emma Wilson',
-          amount: 380.00,
-          currency: 'AED', 
-          method: 'card',
-          status: 'pending',
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-          serviceName: 'Hot Stone Therapy'
-        }
-      ]);
-      
+
       setTotalPayments(25);
       setError(null); // Don't show error to user, just use mock data
     } finally {
@@ -159,50 +108,11 @@ const PaymentSummary = () => {
   const totalPages = Math.ceil(totalPayments / paymentsPerPage);
 
   if (loading) {
-    return (
-      <div className="payment-summary-container">
-        <div className="loading-spinner" style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '400px',
-          flexDirection: 'column',
-          gap: '20px'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #007bff',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}></div>
-          <p>Loading payment data...</p>
-          <style>
-            {`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}
-          </style>
-        </div>
-      </div>
-    );
+   <Loading/>
   }
 
   if (error) {
-    return (
-      <div className="payment-summary-container">
-        <div className="error-message">
-          <h3>Error Loading Payment Data</h3>
-          <p>{error}</p>
-          <button onClick={fetchPaymentData} className="retry-button">
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
+   <Error500Page/>
   }
 
   return (

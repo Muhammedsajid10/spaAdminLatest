@@ -1,8 +1,16 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, Filter, ArrowDown, Plus, Edit, Trash2, MoreVertical } from "lucide-react";
+import { FiSearch, FiFilter, FiChevronDown, FiPlus, FiMoreVertical, FiArrowUp, FiArrowDown, FiTrash2 } from "react-icons/fi";
 import { Button, TextField, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, Menu, /* Add Menu from MUI */ TextareaAutosize } from "@mui/material"; // Import Menu
 import api from "../Service/Api";
+import Swal from 'sweetalert2';
 import "./ServiceMenu.css";
+import Loading from "../states/Loading";
+import Error500Page from "../states/ErrorPage";
+import NoData from "../states/NoData";
+
+// Add export libs
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const ServiceMenu = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -12,7 +20,10 @@ const ServiceMenu = () => {
   const [categories, setCategories] = useState([]);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Fatal error state - shows Error500Page when component fails to render
   const [error, setError] = useState(null);
+  // Operation error state - shows inline alerts for failed operations (CRUD operations)
+  const [operationError, setOperationError] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -37,6 +48,19 @@ const ServiceMenu = () => {
     displayName: ""
   });
 
+  // --- NEW: Export dropdown state ---
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+  const openExportMenu = Boolean(exportAnchorEl);
+
+  // Add new state for enhanced deletion dialog
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    category: null,
+    hasServices: false,
+    serviceCount: 0,
+    loading: false
+  });
+
   // Fetch all services
   const fetchServices = async () => {
     try {
@@ -54,7 +78,7 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to fetch services:', err);
-      setError(err.message);
+      setError(`Failed to load services: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -63,12 +87,41 @@ const ServiceMenu = () => {
   // Fetch categories from the API for dropdown
   const fetchAvailableCategories = async () => {
     try {
-      const response = await api.get('/categories');
-      if (response.data.success) {
-        setAvailableCategories(response.data.data.categories || []);
+      // Try multiple endpoints to find categories
+      const endpoints = [
+        '/services/categories',
+        '/categories/categories',
+        '/categories'
+      ];
+
+      let categoriesLoaded = false;
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await api.get(endpoint);
+
+          if (response.data.success && response.data.data) {
+            const categories = response.data.data.categories || response.data.data || [];
+            if (Array.isArray(categories) && categories.length > 0) {
+              setAvailableCategories(categories);
+              categoriesLoaded = true;
+              break;
+            }
+          }
+        } catch (endpointErr) {
+          console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointErr.response?.status);
+          continue;
+        }
+      }
+
+      if (!categoriesLoaded) {
+        console.warn('⚠️ No categories found from any endpoint');
+        setAvailableCategories([]);
       }
     } catch (err) {
       console.error('❌ Failed to fetch available categories:', err);
+      console.error('Error details:', err.response?.data || err.message);
+      setAvailableCategories([]);
     }
   };
 
@@ -122,7 +175,7 @@ const ServiceMenu = () => {
 
     try {
       setSearchLoading(true);
-      setError(null);
+      setOperationError(null);
 
       const response = await api.get(`/services/search?q=${encodeURIComponent(query)}`);
 
@@ -133,7 +186,8 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to search services:', err);
-      setError(err.message);
+      setOperationError(err.message);
+      setTimeout(() => setOperationError(null), 4000);
     } finally {
       setSearchLoading(false);
     }
@@ -148,6 +202,7 @@ const ServiceMenu = () => {
         setShowAddModal(false);
         setFormData({ name: "", description: "", category: "", duration: "", price: "", discountPrice: "" });
         await fetchServices();
+        await fetchCategories(); // Refresh categories
         setSuccess('Service created successfully');
         setTimeout(() => setSuccess(null), 3000);
       } else {
@@ -155,12 +210,76 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to create service:', err);
-      setError(err.message);
-      setTimeout(() => setError(null), 4000);
+      
+      // Enhanced error handling for service creation
+      let userMessage = 'Failed to create service.';
+      
+      if (err.response) {
+        switch (err.response.status) {
+          case 400:
+            if (err.response.data?.message) {
+              if (err.response.data.message.includes('validation')) {
+                userMessage = 'Please fill in all required fields with valid information.';
+              } else if (err.response.data.message.includes('duplicate') || err.response.data.message.includes('already exists')) {
+                userMessage = 'A service with this name already exists. Please choose a different name.';
+              } else {
+                userMessage = err.response.data.message;
+              }
+            } else {
+              userMessage = 'Invalid service information. Please check your input and try again.';
+            }
+            break;
+            
+          case 401:
+            userMessage = 'You are not authorized to create services. Please log in and try again.';
+            break;
+            
+          case 403:
+            userMessage = 'You do not have permission to create services. Please contact an administrator.';
+            break;
+            
+          case 422:
+            if (err.response.data?.message) {
+              userMessage = err.response.data.message;
+            } else {
+              userMessage = 'The service information contains invalid data. Please review all fields.';
+            }
+            break;
+            
+          case 500:
+            userMessage = 'A server error occurred while creating the service. Please try again in a few moments.';
+            break;
+            
+          default:
+            if (err.response.data?.message) {
+              let cleanMessage = err.response.data.message
+                .replace(/error code:?\s*\d+/gi, '')
+                .replace(/status:?\s*\d+/gi, '')
+                .replace(/\[.*?\]/g, '')
+                .trim();
+              userMessage = cleanMessage || 'An unexpected error occurred while creating the service.';
+            } else {
+              userMessage = 'An unexpected error occurred while creating the service. Please try again.';
+            }
+        }
+      } else if (err.request) {
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (err.message) {
+        let cleanMessage = err.message
+          .replace(/error code:?\s*\d+/gi, '')
+          .replace(/status:?\s*\d+/gi, '')
+          .replace(/\[.*?\]/g, '')
+          .replace(/axios/gi, '')
+          .trim();
+        userMessage = cleanMessage || 'An error occurred while creating the service.';
+      }
+      
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
     }
   };
 
-  // Update service
+  // Update service with enhanced error handling
   const updateService = async (serviceId, serviceData) => {
     try {
       const response = await api.patch(`/services/${serviceId}`, serviceData);
@@ -170,6 +289,7 @@ const ServiceMenu = () => {
         setSelectedService(null);
         setFormData({ name: "", description: "", category: "", duration: "", price: "", discountPrice: "" });
         await fetchServices();
+        await fetchCategories(); // Refresh categories in case category changed
         setSuccess('Service updated successfully');
         setTimeout(() => setSuccess(null), 3000);
       } else {
@@ -177,41 +297,156 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to update service:', err);
-      setError(err.response?.data?.message || err.message);
-      setTimeout(() => setError(null), 4000);
+      
+      // Enhanced error handling with user-friendly messages
+      let userMessage = 'Failed to update service.';
+      
+      if (err.response) {
+        // Handle different HTTP status codes
+        switch (err.response.status) {
+          case 400:
+            if (err.response.data?.message) {
+              // Handle validation errors
+              if (err.response.data.message.includes('validation')) {
+                userMessage = 'Please check all required fields and ensure they contain valid information.';
+              } else if (err.response.data.message.includes('duplicate') || err.response.data.message.includes('already exists')) {
+                userMessage = 'A service with this name already exists. Please choose a different name.';
+              } else {
+                userMessage = err.response.data.message;
+              }
+            } else {
+              userMessage = 'Invalid service information. Please check your input and try again.';
+            }
+            break;
+            
+          case 401:
+            userMessage = 'You are not authorized to update this service. Please log in and try again.';
+            break;
+            
+          case 403:
+            userMessage = 'You do not have permission to update services. Please contact an administrator.';
+            break;
+            
+          case 404:
+            userMessage = 'The service you are trying to update no longer exists. It may have been deleted by another user.';
+            // Refresh the services list to reflect current state
+            await fetchServices();
+            break;
+            
+          case 409:
+            userMessage = 'This service cannot be updated due to a conflict. Another user may have modified it recently. Please refresh and try again.';
+            await fetchServices();
+            break;
+            
+          case 422:
+            if (err.response.data?.message) {
+              userMessage = err.response.data.message;
+            } else {
+              userMessage = 'The service information contains invalid data. Please review all fields.';
+            }
+            break;
+            
+          case 500:
+            userMessage = 'A server error occurred while updating the service. Please try again in a few moments.';
+            break;
+            
+          case 503:
+            userMessage = 'The service is temporarily unavailable. Please try again later.';
+            break;
+            
+          default:
+            // For any other HTTP errors
+            if (err.response.data?.message) {
+              // Remove technical details and server codes from user message
+              let cleanMessage = err.response.data.message
+                .replace(/error code:?\s*\d+/gi, '')
+                .replace(/status:?\s*\d+/gi, '')
+                .replace(/\[.*?\]/g, '')
+                .trim();
+              userMessage = cleanMessage || 'An unexpected error occurred while updating the service.';
+            } else {
+              userMessage = 'An unexpected error occurred while updating the service. Please try again.';
+            }
+        }
+      } else if (err.request) {
+        // Network error
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (err.message) {
+        // Clean up technical error messages
+        let cleanMessage = err.message
+          .replace(/error code:?\s*\d+/gi, '')
+          .replace(/status:?\s*\d+/gi, '')
+          .replace(/\[.*?\]/g, '')
+          .replace(/axios/gi, '')
+          .trim();
+        userMessage = cleanMessage || 'An error occurred while updating the service.';
+      }
+      
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
     }
   };
 
   // Create new category
   const createCategory = async (categoryData) => {
-    try {
-      const response = await api.post('/categories', categoryData);
+    const endpoints = ['/categories/categories', '/services/categories', '/categories'];
+    let lastError = null;
+    for (const ep of endpoints) {
+      try {
+        console.info('Attempting create category via', ep);
+        const response = await api.post(ep, categoryData);
 
-      if (response.data.success) {
-        setShowAddCategoryModal(false);
-        setNewCategoryData({ name: "", displayName: "" });
-        await fetchAvailableCategories();
-        await fetchCategories();
-        setSuccess('Category created successfully');
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
-        throw new Error(response.data.message || 'Failed to create category');
+        if (response && response.data && response.data.success) {
+          setShowAddCategoryModal(false);
+          setNewCategoryData({ name: "", displayName: "" });
+          await fetchAvailableCategories();
+          await fetchCategories();
+          setSuccess('Category created successfully');
+          setTimeout(() => setSuccess(null), 3000);
+          return;
+        } else if (response && response.data) {
+          // Received a response but not success
+          lastError = new Error(response.data.message || 'Failed to create category');
+          // If server returned 404-like shape inside data, continue to next
+        }
+      } catch (err) {
+        console.warn('Create category attempt failed for', ep, err?.response?.status || err.message);
+        lastError = err;
+        // If 404, try next endpoint
+        if (err?.response?.status === 404) {
+          continue;
+        } else {
+          // For other errors, break and show the error
+          break;
+        }
       }
-    } catch (err) {
-      console.error('❌ Failed to create category:', err);
-      setError(err.message);
-      setTimeout(() => setError(null), 4000);
     }
+
+    console.error('❌ Failed to create category after trying endpoints:', endpoints, lastError);
+    const userMessage = lastError?.response?.data?.message || lastError?.message || 'Failed to create category';
+    setOperationError(userMessage);
+    setTimeout(() => setOperationError(null), 4000);
   };
 
   // Delete category
   const deleteCategory = async (categoryId, categoryName) => {
-    if (!window.confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
+    const result = await Swal.fire({
+      title: 'Delete Category?',
+      text: `Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 
     try {
-      const response = await api.delete(`/categories/${categoryId}`);
+      const response = await api.delete(`/categories/categories/${categoryId}`);
 
       if (response.data.success) {
         await fetchServices();
@@ -228,44 +463,261 @@ const ServiceMenu = () => {
       }
     } catch (err) {
       console.error('❌ Failed to delete category:', err);
-      setError(err.response?.data?.message || err.message);
-      setTimeout(() => setError(null), 4000);
+      let userMessage = 'Failed to delete category.';
+      if (err.response?.data?.message) {
+        if (err.response.data.message.includes('Please reassign or delete the services first')) {
+          userMessage = `Cannot delete category "${categoryName}" because it still has services assigned. Please reassign or delete those services first.`;
+        } else {
+          userMessage = err.response.data.message;
+        }
+      } else if (err.message) {
+        userMessage = err.message;
+      }
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
     }
   };
 
   // Delete service
   const deleteService = async (serviceId) => {
-    if (!window.confirm('Are you sure you want to delete this service?')) {
-      return;
-    }
+    const confirm = await Swal.fire({
+      title: 'Delete service?',
+      text: 'Are you sure you want to delete this service? This action will deactivate it and may affect existing bookings.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (!confirm.isConfirmed) return;
 
     try {
       const response = await api.delete(`/services/${serviceId}`);
 
       if (response.data.success) {
-        await fetchServices();
-        setSuccess(response.data.message || 'Service deleted or deactivated successfully');
+        // Backend performs a soft-delete (isActive = false). Update client state to remove the service
+        const updatedAll = allServices.filter(s => s._id !== serviceId);
+        setAllServices(updatedAll);
+        setServices(prev => prev.filter(s => s._id !== serviceId));
+
+        // Recompute categories counts locally if we have the available categories list
+        if (availableCategories && availableCategories.length > 0) {
+          const categoriesWithCounts = availableCategories.map(category => {
+            const count = updatedAll.filter(service => {
+              const serviceCategoryId = service.category?._id;
+              const serviceCategoryName = service.category?.displayName || service.category?.name;
+
+              return serviceCategoryId === category._id ||
+                     serviceCategoryName === category.displayName ||
+                     serviceCategoryName === category.name;
+            }).length;
+
+            return {
+              _id: category._id,
+              name: category.displayName || category.name,
+              count: count
+            };
+          });
+
+          const total = updatedAll.length;
+          const finalCategories = [{ name: "All categories", count: total }, ...categoriesWithCounts];
+          setCategories(finalCategories);
+        } else {
+          // Fallback to fetch categories from server
+          await fetchCategories();
+        }
+
+        setSuccess(response.data.message || 'Service deleted successfully');
+        // Authoritative refresh to ensure UI matches server state
+        try {
+          await fetchServices();
+          await fetchCategories();
+          console.debug('✅ Services and categories refreshed after delete');
+        } catch (refreshErr) {
+          console.warn('⚠️ Failed to refresh services/categories after delete:', refreshErr);
+        }
+
         setTimeout(() => setSuccess(null), 3000);
       } else {
         throw new Error(response.data.message || 'Failed to delete service');
       }
     } catch (err) {
       console.error('❌ Failed to delete service:', err);
-      setError(err.response?.data?.message || err.message);
-      setTimeout(() => setError(null), 4000);
+      
+      let userMessage = 'Failed to delete service.';
+      // If the backend refuses delete because of active bookings, offer to deactivate instead
+      const backendMsg = err?.response?.data?.message || '';
+      if (err?.response?.status === 400 && backendMsg.includes('Cannot delete service with active bookings')) {
+        const deactivateConfirm = await Swal.fire({
+          title: 'Service has active bookings',
+          html: `This service has active bookings and cannot be deleted.<br/><strong>Would you like to deactivate (hide) the service instead?</strong>`,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Deactivate',
+          cancelButtonText: 'Cancel',
+          reverseButtons: true,
+        });
+
+        if (deactivateConfirm.isConfirmed) {
+          try {
+            Swal.fire({
+              title: 'Deactivating...',
+              allowOutsideClick: false,
+              didOpen: () => Swal.showLoading()
+            });
+
+            const patchRes = await api.patch(`/services/${serviceId}`, { isActive: false });
+
+            Swal.close();
+
+            if (patchRes?.data?.success) {
+              // Update local state similar to delete success
+              const updatedAll = allServices.filter(s => s._id !== serviceId);
+              setAllServices(updatedAll);
+              setServices(prev => prev.filter(s => s._id !== serviceId));
+
+              if (availableCategories && availableCategories.length > 0) {
+                const categoriesWithCounts = availableCategories.map(category => {
+                  const count = updatedAll.filter(service => {
+                    const serviceCategoryId = service.category?._id;
+                    const serviceCategoryName = service.category?.displayName || service.category?.name;
+
+                    return serviceCategoryId === category._id ||
+                           serviceCategoryName === category.displayName ||
+                           serviceCategoryName === category.name;
+                  }).length;
+
+                  return {
+                    _id: category._id,
+                    name: category.displayName || category.name,
+                    count: count
+                  };
+                });
+
+                const total = updatedAll.length;
+                const finalCategories = [{ name: "All categories", count: total }, ...categoriesWithCounts];
+                setCategories(finalCategories);
+              } else {
+                await fetchCategories();
+              }
+
+              // Authoritative refresh after deactivate to keep UI and server authoritative
+              try {
+                await fetchServices();
+                await fetchCategories();
+                console.debug('✅ Services and categories refreshed after deactivate');
+              } catch (refreshErr) {
+                console.warn('⚠️ Failed to refresh services/categories after deactivate:', refreshErr);
+              }
+
+              Swal.fire('Deactivated', patchRes.data.message || 'Service deactivated successfully', 'success');
+              return;
+            }
+          } catch (patchErr) {
+            console.error('Failed to deactivate service after delete blocked:', patchErr);
+            Swal.fire('Error', patchErr?.response?.data?.message || patchErr.message || 'Failed to deactivate service', 'error');
+            return;
+          }
+        }
+      }
+
+      if (err.response) {
+        switch (err.response.status) {
+          case 401:
+            userMessage = 'You are not authorized to delete this service. Please log in and try again.';
+            break;
+            
+          case 403:
+            userMessage = 'You do not have permission to delete services. Please contact an administrator.';
+            break;
+            
+          case 404:
+            userMessage = 'The service you are trying to delete no longer exists. It may have already been deleted.';
+            await fetchServices(); // Refresh to show current state
+            break;
+            
+          case 409:
+            userMessage = 'This service cannot be deleted because it is currently being used in bookings or appointments. Please contact support for assistance.';
+            break;
+            
+          case 500:
+            userMessage = 'A server error occurred while deleting the service. Please try again in a few moments.';
+            break;
+            
+          default:
+            if (err.response.data?.message) {
+              let cleanMessage = err.response.data.message
+                .replace(/error code:?\s*\d+/gi, '')
+                .replace(/status:?\s*\d+/gi, '')
+                .replace(/\[.*?\]/g, '')
+                .trim();
+              userMessage = cleanMessage || 'An unexpected error occurred while deleting the service.';
+            } else {
+              userMessage = 'An unexpected error occurred while deleting the service. Please try again.';
+            }
+        }
+      } else if (err.request) {
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (err.message) {
+        let cleanMessage = err.message
+          .replace(/error code:?\s*\d+/gi, '')
+          .replace(/status:?\s*\d+/gi, '')
+          .replace(/\[.*?\]/g, '')
+          .replace(/axios/gi, '')
+          .trim();
+        userMessage = cleanMessage || 'An error occurred while deleting the service.';
+      }
+      
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 4000);
     }
   };
 
   // Handle form submission (for add/edit service)
   const handleSubmit = (e) => {
-    e.preventDefault();
+    // allow calling without an event (DialogAction onClick calls it directly)
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    // Trim string inputs
+    const name = (formData.name || '').toString().trim();
+    const description = (formData.description || '').toString().trim();
+    const category = formData.category;
+
+    // Parse numeric inputs defensively
+    const durationVal = formData.duration === '' || formData.duration === null ? NaN : Number(formData.duration);
+    const priceVal = formData.price === '' || formData.price === null ? NaN : Number(formData.price);
+    const discountVal = formData.discountPrice === '' || formData.discountPrice == null ? undefined : Number(formData.discountPrice);
+
+    // Client-side validation to avoid sending null/NaN to backend
+    if (!name) {
+      setOperationError('Service name is required');
+      setTimeout(() => setOperationError(null), 4000);
+      return;
+    }
+    if (!category) {
+      setOperationError('Please select a category');
+      setTimeout(() => setOperationError(null), 4000);
+      return;
+    }
+    if (!Number.isFinite(durationVal) || durationVal <= 0) {
+      setOperationError('Please enter a valid duration (minutes)');
+      setTimeout(() => setOperationError(null), 4000);
+      return;
+    }
+    if (!Number.isFinite(priceVal) || priceVal <= 0) {
+      setOperationError('Please enter a valid price');
+      setTimeout(() => setOperationError(null), 4000);
+      return;
+    }
+
     const serviceData = {
-      name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      duration: parseInt(formData.duration),
-      price: parseFloat(formData.price),
-      ...(formData.discountPrice && { discountPrice: parseFloat(formData.discountPrice) })
+      name,
+      description,
+      category,
+      duration: Math.round(durationVal),
+      price: Number(priceVal.toFixed(2)),
+      ...(discountVal !== undefined && Number.isFinite(discountVal) ? { discountPrice: Number(discountVal.toFixed(2)) } : {})
     };
 
     if (selectedService) {
@@ -323,7 +775,7 @@ const ServiceMenu = () => {
   useEffect(() => {
     const loadData = async () => {
       await fetchServices();
-      fetchAvailableCategories();
+      await fetchAvailableCategories(); // Await to ensure categories are loaded
     };
     loadData();
   }, []);
@@ -396,304 +848,458 @@ const ServiceMenu = () => {
   };
   // --- END HANDLERS FOR ADD DROPDOWN ---
 
+  // --- EXPORT ACTIONS ---
+  const downloadCSV = () => {
+    try {
+      const dataSrc = services.length ? services : allServices;
+      const { headers, rows } = buildExportRows(dataSrc);
+      const csvLines = [
+        headers.join(","),
+        ...rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      ].join("\r\n");
+
+      const blob = new Blob([csvLines], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `services_export_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("CSV export failed", err);
+    } finally {
+      setExportAnchorEl(null);
+    }
+  };
+
+  const downloadExcel = () => {
+    try {
+      const dataSrc = services.length ? services : allServices;
+      const { headers, rows } = buildExportRows(dataSrc);
+      const tsv = [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\r\n");
+      const blob = new Blob([tsv], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `services_export_${new Date().toISOString().slice(0,10)}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Excel export failed", err);
+    } finally {
+      setExportAnchorEl(null);
+    }
+  };
+
+  const downloadPDF = () => {
+    try {
+      const dataSrc = services.length ? services : allServices;
+      const { headers, rows } = buildExportRows(dataSrc);
+      const doc = new jsPDF('l', 'pt', 'A4');
+      doc.setFontSize(14);
+      doc.text(`Services export — ${new Date().toLocaleDateString()}`, 40, 36);
+
+      autoTable(doc, {
+        head: [headers],
+        body: rows,
+        startY: 56,
+        styles: { fontSize: 10, cellPadding: 6 },
+        headStyles: { fillColor: [40, 116, 240], textColor: 255 },
+        margin: { left: 20, right: 20 },
+        didDrawPage: (data) => {
+          const page = doc.internal.getNumberOfPages();
+          doc.setFontSize(9);
+          doc.text(`Allora Spa — Page ${page}`, doc.internal.pageSize.width - 120, doc.internal.pageSize.height - 10);
+        }
+      });
+
+      doc.save(`services_export_${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed", err);
+    } finally {
+      setExportAnchorEl(null);
+    }
+  };
+
+  const handleExportClick = (e) => setExportAnchorEl(e.currentTarget);
+  const handleExportClose = () => setExportAnchorEl(null);
+
+  // --- BUILD EXPORT ROWS ---
+  const buildExportRows = (servicesList) => {
+    const headers = ["Name", "Category", "Duration", "Price (AED)", "Discount Price (AED)", "Description"];
+    const rows = servicesList.map(svc => [
+      svc.name || "",
+      (svc.category?.displayName || svc.category?.name) || (typeof svc.category === 'string' ? svc.category : ""),
+      formatDuration(svc.duration || 0),
+      (typeof svc.price === 'number') ? svc.price.toFixed(2) : (svc.price ? String(svc.price) : ""),
+      (typeof svc.discountPrice === 'number') ? svc.discountPrice.toFixed(2) : (svc.discountPrice ? String(svc.discountPrice) : ""),
+      svc.description ? svc.description.replace(/[\r\n]+/g, " ") : ""
+    ]);
+    return { headers, rows };
+  };
+
+  // Enhanced delete category function with better error handling
+  const initiateDeleteCategory = async (categoryId, categoryName) => {
+    try {
+      // First, check if category has services
+      const servicesInCategory = allServices.filter(service => {
+        const serviceCategoryId = service.category?._id;
+        const serviceCategoryName = service.category?.displayName || service.category?.name;
+        return serviceCategoryId === categoryId || serviceCategoryName === categoryName;
+      });
+
+      setDeleteDialog({
+        open: true,
+        category: { id: categoryId, name: categoryName },
+        hasServices: servicesInCategory.length > 0,
+        serviceCount: servicesInCategory.length,
+        loading: false
+      });
+    } catch (err) {
+      console.error('Error checking category services:', err);
+      setOperationError('Unable to verify category status. Please try again.');
+      setTimeout(() => setOperationError(null), 4000);
+    }
+  };
+
+  // Confirmed delete category
+  const confirmDeleteCategory = async (force = false) => {
+    const { category } = deleteDialog;
+    
+    if (!category) return;
+
+    setDeleteDialog(prev => ({ ...prev, loading: true }));
+
+    try {
+      const response = await api.delete(`/categories/categories/${category.id}${force ? '?force=true' : ''}`);
+
+      if (response.data.success) {
+        await fetchServices();
+        await fetchAvailableCategories();
+        await fetchCategories();
+        
+        setDeleteDialog({ open: false, category: null, hasServices: false, serviceCount: 0, loading: false });
+        setSuccess(response.data.message || 'Category deleted successfully');
+        setTimeout(() => setSuccess(null), 3000);
+
+        if (selectedCategory === category.name) {
+          setSelectedCategory("All categories");
+        }
+      } else {
+        throw new Error(response.data.message || 'Failed to delete category');
+      }
+    } catch (err) {
+      console.error('❌ Failed to delete category:', err);
+      
+      let userMessage = 'Failed to delete category.';
+      if (err.response?.status === 409) {
+        userMessage = `Cannot delete "${category.name}" as it contains ${deleteDialog.serviceCount} service${deleteDialog.serviceCount !== 1 ? 's' : ''}. Please reassign or delete these services first, or use force delete.`;
+      } else if (err.response?.data?.message) {
+        userMessage = err.response.data.message;
+      } else if (err.message) {
+        userMessage = err.message;
+      }
+      
+      setOperationError(userMessage);
+      setTimeout(() => setOperationError(null), 5000);
+      
+      setDeleteDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  // Close delete dialog
+  const handleDeleteDialogClose = () => {
+    if (!deleteDialog.loading) {
+      setDeleteDialog({ open: false, category: null, hasServices: false, serviceCount: 0, loading: false });
+    }
+  };
+
   if (loading) {
     return (
-      <div className="service-menu-container">
-        <div className="service-menu__loading">
-          <CircularProgress color="primary" />
-          <p>Loading service menu...</p>
-        </div>
-      </div>
+      <Loading />
     );
   }
 
+  // Show full page error only for fatal errors during component initialization
+  if (error) {
+    return <Error500Page message={error} />;
+  }
+  
   return (
     <div className="service-menu-container">
-      {/* Header */}
-      <div className="service-menu__header">
-        <div className="service-menu__header-content">
-          <div className="service-menu__title-section">
-            <h1 className="service-menu__title">Service Menu</h1>
-            <p className="service-menu__subtitle">
-              View and manage the services offered by your business.{" "}
-              <a href="#" className="service-menu__learn-more">Learn more</a>
+      <div className="service-menu-wrapper">
+        {/* Header */}
+        <div className="service-menu-header">
+          <div className="service-menu-title-group">
+            <h1>Service menu</h1>
+            <p className="service-menu-subtitle">
+              View and manage the services offered by your business. <a href="#">Learn more</a>
             </p>
           </div>
-          <div className="service-menu__header-actions">
-            {/* <Button
-              className="service-menu__btn service-menu__btn--secondary service-menu__btn--dropdown"
-              onClick={() =>null}
-              endIcon={<ArrowDown size={16} />}
+          <div className="service-menu-actions">
+            {/* Export Button */}
+            <button 
+              className="btn btn-secondary"
+              onClick={handleExportClick}
             >
-              Options
-            </Button> */}
-            {/* --- REPLACED: Add Button with Dropdown --- */}
-            <Button
-              className="service-menu__btn service-menu__btn--primary service-menu__btn--dropdown"
-              aria-controls={openAddMenu ? 'add-menu' : undefined}
-              aria-haspopup="true"
-              aria-expanded={openAddMenu ? 'true' : undefined}
-              onClick={handleAddMenuClick}
-              endIcon={<ArrowDown size={16} />}
-            >
-              Add
-            </Button>
+              Options <FiChevronDown />
+            </button>
             <Menu
-              id="add-menu"
-              anchorEl={addMenuAnchorEl}
-              open={openAddMenu}
-              onClose={handleAddMenuClose}
-              MenuListProps={{
-                'aria-labelledby': 'add-button',
+              anchorEl={exportAnchorEl}
+              open={Boolean(exportAnchorEl)}
+              onClose={handleExportClose}
+              PaperProps={{
+                style: {
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  marginTop: '8px'
+                }
               }}
-              className="service-menu__add-menu" // Custom class for styling
+            >
+              <MenuItem onClick={downloadCSV}>Export as CSV</MenuItem>
+              <MenuItem onClick={downloadExcel}>Export as Excel</MenuItem>
+              <MenuItem onClick={downloadPDF}>Export as PDF</MenuItem>
+            </Menu>
+
+            {/* Add Button */}
+            <button 
+              className="btn btn-secondary"
+              onClick={handleAddMenuClick}
+            >
+              Add <FiChevronDown />
+            </button>
+            <Menu
+              anchorEl={addMenuAnchorEl}
+              open={Boolean(addMenuAnchorEl)}
+              onClose={handleAddMenuClose}
+              PaperProps={{
+                style: {
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  marginTop: '8px'
+                }
+              }}
             >
               <MenuItem onClick={handleAddServiceFromMenu}>
-                <Plus size={16} style={{marginRight: '8px'}} /> Add Service
+                <FiPlus style={{ marginRight: '8px' }} /> Add Service
               </MenuItem>
               <MenuItem onClick={handleAddCategoryFromMenu}>
-                <Plus size={16} style={{marginRight: '8px'}} /> Add Category
+                <FiPlus style={{ marginRight: '8px' }} /> Add Category
               </MenuItem>
             </Menu>
-            {/* --- END REPLACED: Add Button with Dropdown --- */}
           </div>
         </div>
-      </div>
 
-      {/* Alerts */}
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} className="service-menu__alert service-menu__alert--error">
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} className="service-menu__alert service-menu__alert--success">
-          {success}
-        </Alert>
-      )}
+        {/* Alerts */}
+        {success && (
+          <Alert severity="success" onClose={() => setSuccess(null)} style={{ marginBottom: '24px', borderRadius: '8px' }}>
+            {success}
+          </Alert>
+        )}
+        {operationError && (
+          <Alert severity="error" onClose={() => setOperationError(null)} style={{ marginBottom: '24px', borderRadius: '8px' }}>
+            {operationError}
+          </Alert>
+        )}
 
-      {/* Search and Filters */}
-      <div className="service-menu__controls">
-        <div className="service-menu__search-section">
-          <div className="service-menu__search-wrapper">
-            <Search className="service-menu__search-icon" size={20} />
-            <input
-              type="text"
-              className="service-menu__search-input"
-              placeholder="Search service name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchLoading && <CircularProgress size={16} className="service-menu__search-loading" />}
+        {/* Controls */}
+        <div className="service-menu-controls">
+          <div className="controls-left">
+            <div className="search-wrapper">
+              <FiSearch className="search-icon" />
+              <input 
+                type="text" 
+                className="search-input" 
+                placeholder="Search service name" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+           
           </div>
         </div>
-        <div className="service-menu__filter-actions">
-          {/* <Button
-            className="service-menu__btn service-menu__btn--secondary"
-            onClick={() => null}
-            startIcon={<Filter size={16} />}
-          >
-            Filters
-          </Button> */}
-          {/* <Button
-            className="service-menu__btn service-menu__btn--secondary"
-            onClick={() =>null}
-            startIcon={<ArrowDown size={16} />}
-          >
-            Manage order
-          </Button> */}
-        </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="service-menu__content">
-        {/* Categories Sidebar */}
-        <div className="service-menu__sidebar">
-          <h3 className="service-menu__sidebar-title">Categories</h3>
-          <div className="service-menu__categories">
-            {categories.map((category) => (
-              <div
+        {/* Main Content */}
+        <div className="service-menu-content">
+          {/* Sidebar */}
+          <div className="sidebar-card">
+            <h3 className="sidebar-title">Categories</h3>
+            <div className="category-list">
+              {categories.map((category) => (
+              <div 
                 key={category.name}
-                className={`service-menu__category-wrapper ${selectedCategory === category.name
-                    ? "service-menu__category-wrapper--active"
-                    : ""
-                  }`}
+                className={`category-item ${selectedCategory === category.name ? 'active' : ''}`}
+                onClick={() => handleCategoryChange(category.name)}
               >
-                <button
-                  type="button"
-                  className={`service-menu__category ${selectedCategory === category.name
-                      ? "service-menu__category--active"
-                      : ""
-                    }`}
-                  onClick={() => handleCategoryChange(category.name)}
-                >
-                  <span className="service-menu__category-name">
-                    {category.name}
-                  </span>
-                  <span className="service-menu__category-count">
-                    {category.count}
-                  </span>
-                </button>
+                <div className="category-content">
+                  <span>{category.name}</span>
+                  <span className="category-count">{category.count}</span>
+                </div>
                 {category.name !== "All categories" && (
                   <button
-                    className="service-menu__category-delete-btn"
+                    className="category-delete-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteCategory(category._id, category.name);
+                      initiateDeleteCategory(category._id, category.name);
                     }}
                     title={`Delete ${category.name} category`}
                   >
-                    <Trash2 size={16} />
+                    <FiTrash2 size={14} />
                   </button>
                 )}
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Services List (Grouped by Category) */}
-        <div className="service-menu__services-list">
-          {Object.keys(filteredAndCategorizedServices).length > 0 ? (
-            Object.keys(filteredAndCategorizedServices).map(categoryName => (
-              <div key={categoryName} className="service-menu__category-group">
-                <div className="service-menu__category-group-header">
-                  <h2 className="service-menu__category-group-title">{categoryName}</h2>
-                  {/* <Button
-                    className="service-menu__btn service-menu__btn--secondary service-menu__btn--dropdown service-menu__category-group-actions"
-                    onClick={() => null}
-                    endIcon={<ArrowDown size={16} />}
-                  >
-                    Actions
-                  </Button> */}
-              //   </div>
-                {filteredAndCategorizedServices[categoryName].map((service) => (
-                  <div key={service._id} className="service-menu__service-card">
-                    <div className="service-menu__service-card-main-info">
-                      <h3 className="service-menu__service-card-name">{service.name}</h3>
-                      <button
-                        className="service-menu__action-icon-btn service-menu__service-card-more-options"
-                        onClick={() => handleEditService(service)} // Link to Edit for now
-                        title="More options"
-                      >
-                        <MoreVertical size={20} />
-                      </button>
-                    </div>
-                    <p className="service-menu__service-card-description">
-                      {service.description}
-                    </p>
-
-                    <div className="service-menu__service-options-list">
-                      {/* Base Service Option */}
-                      <div className="service-menu__service-option-item">
-                        <div className="service-menu__option-details">
-                          <span className="service-menu__option-name">
-                            {service.name}
-                          </span>
-                          <span className="service-menu__option-duration">
-                            {formatDuration(service.duration)}
-                          </span>
-                        </div>
-                        <span className="service-menu__option-price">
-                          {formatPrice(service.price)}
-                        </span>
-                      </div>
-
-                      {/* Simulated Discounted Service Option (as a variant) */}
-                      {service.discountPrice && service.discountPrice < service.price && (
-                        <div className="service-menu__service-option-item">
-                          <div className="service-menu__option-details">
-                            <span className="service-menu__option-name service-menu__option-name--discount">
-                              {service.name} (Discounted)
-                            </span>
-                            <span className="service-menu__option-duration">
-                              {formatDuration(service.duration)}
-                            </span>
-                          </div>
-                          <span className="service-menu__option-price service-menu__option-price--discount">
-                            {formatPrice(service.discountPrice)}
-                            <span className="service-menu__original-price">
-                              {formatPrice(service.price)}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))
-          ) : (
-            <div className="service-menu__no-results">
-              <p>No services found matching your criteria.</p>
             </div>
-          )}
+            <a 
+              className="add-category-btn"
+              onClick={(e) => { e.preventDefault(); setShowAddCategoryModal(true); }}
+            >
+              Add category
+            </a>
+          </div>
+
+          {/* Services List */}
+          <div className="services-section">
+            {Object.keys(filteredAndCategorizedServices).length > 0 ? (
+              Object.keys(filteredAndCategorizedServices).map(categoryName => (
+                <div key={categoryName} className="category-group">
+                  <div className="category-header">
+                    <h2 className="category-title">{categoryName}</h2>
+                
+                  </div>
+                  
+                  <div className="category-group-container">
+                    {filteredAndCategorizedServices[categoryName].map((service) => (
+                      <div key={service._id} className="service-card">
+                        <div className="service-info">
+                          <h3 className="service-name">{service.name}</h3>
+                          <p className="service-description">
+                            {service.description && service.description.length > 50 
+                              ? `${service.description.substring(0, 50)}...` 
+                              : service.description}
+                          </p>
+                        </div>
+                        <div className="service-meta">
+                          <span className="service-duration">{formatDuration(service.duration)}</span>
+                          <span className="service-price">{formatPrice(service.price)}</span>
+                        </div>
+                        <div className="service-actions" style={{ display: 'flex', alignItems: 'center' }}>
+                          <button
+                            className="service-actions-btn"
+                            onClick={(e) => { e.stopPropagation(); handleEditService(service); }}
+                            title="Edit service"
+                          >
+                            <FiMoreVertical size={20} />
+                          </button>
+                          <button
+                            className="service-actions-btn"
+                            onClick={(e) => { e.stopPropagation(); deleteService(service._id); }}
+                            title="Delete service"
+                          >
+                            <FiTrash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="no-results" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                <p>No services found matching your criteria.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Add Service Modal */}
+      {/* Modals - Keeping existing functional modals but ensuring they render */}
       <Dialog open={showAddModal} onClose={() => setShowAddModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Service</DialogTitle>
         <DialogContent dividers>
-          <form onSubmit={handleSubmit} className="service-menu__form">
-            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" className="service-menu__form-input" />
-            <FormControl fullWidth margin="normal" variant="outlined" className="service-menu__form-control">
+          <form onSubmit={handleSubmit}>
+            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" />
+            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" />
+            <FormControl fullWidth margin="normal" variant="outlined">
               <InputLabel>Category</InputLabel>
               <Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} label="Category" required>
                 {availableCategories.map((category) => (
-                  <MenuItem key={category._id} value={category._id}>{category.displayName}</MenuItem>
+                  <MenuItem key={category._id} value={category._id}>
+                    {category.displayName || category.name || 'Unnamed Category'}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480}} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
+            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15 }} variant="outlined" />
+            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" />
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
-          <Button onClick={() => setShowAddModal(false)} className="service-menu__btn service-menu__btn--cancel">Cancel</Button>
-          <Button onClick={handleSubmit} className="service-menu__btn service-menu__btn--primary">Add Service</Button>
+          <Button onClick={() => setShowAddModal(false)} className="btn btn-secondary">Cancel</Button>
+          <Button onClick={handleSubmit} className="btn btn-primary">Add Service</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Edit Service Modal */}
       <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Service</DialogTitle>
         <DialogContent dividers>
-          <form onSubmit={handleSubmit} className="service-menu__form">
-            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" className="service-menu__form-input" />
-            <FormControl fullWidth margin="normal" variant="outlined" className="service-menu__form-control">
+          <form onSubmit={handleSubmit}>
+            <TextField fullWidth label="Service Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required margin="normal" variant="outlined" />
+            <TextField fullWidth label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required margin="normal" multiline rows={3} variant="outlined" />
+            <FormControl fullWidth margin="normal" variant="outlined">
               <InputLabel>Category</InputLabel>
               <Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} label="Category" required>
                 {availableCategories.map((category) => (
-                  <MenuItem key={category._id} value={category._id}>{category.displayName}</MenuItem>
+                  <MenuItem key={category._id} value={category._id}>
+                    {category.displayName || category.name || 'Unnamed Category'}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15, max: 480 }} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
-            <TextField fullWidth label="Discount Price (AED) - Optional" type="number" value={formData.discountPrice} onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })} margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" className="service-menu__form-input" />
+            <TextField fullWidth label="Duration (minutes)" type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required margin="normal" inputProps={{ min: 15 }} variant="outlined" />
+            <TextField fullWidth label="Price (AED)" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required margin="normal" inputProps={{ min: 0, step: 0.01 }} variant="outlined" />
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
-          <Button onClick={() => setShowEditModal(false)} className="service-menu__btn service-menu__btn--cancel">Cancel</Button>
-          <Button onClick={handleSubmit} className="service-menu__btn service-menu__btn--primary">Update Service</Button>
+          <Button onClick={() => setShowEditModal(false)} className="btn btn-secondary">Cancel</Button>
+          <Button onClick={handleSubmit} className="btn btn-primary">Update Service</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Add Category Modal */}
       <Dialog open={showAddCategoryModal} onClose={() => setShowAddCategoryModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Category</DialogTitle>
         <DialogContent dividers>
-          <form onSubmit={handleCategorySubmit} className="service-menu__form">
-            <TextField fullWidth label="Category Name (Internal)" value={newCategoryData.name} onChange={(e) => setNewCategoryData({ ...newCategoryData, name: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" helperText="Used for internal identification (e.g., 'facial-treatments')" />
-            <TextField fullWidth label="Display Name" value={newCategoryData.displayName} onChange={(e) => setNewCategoryData({ ...newCategoryData, displayName: e.target.value })} required margin="normal" variant="outlined" className="service-menu__form-input" helperText="Name shown to users (e.g., 'Facial Treatments')" />
+          <form onSubmit={handleCategorySubmit}>
+            <TextField fullWidth label="Category Name (Internal)" value={newCategoryData.name} onChange={(e) => setNewCategoryData({ ...newCategoryData, name: e.target.value })} required margin="normal" variant="outlined" helperText="Used for internal identification" />
+            <TextField fullWidth label="Display Name" value={newCategoryData.displayName} onChange={(e) => setNewCategoryData({ ...newCategoryData, displayName: e.target.value })} required margin="normal" variant="outlined" helperText="Name shown to users" />
           </form>
         </DialogContent>
         <DialogActions className="service-menu__modal-actions">
-          <Button onClick={() => setShowAddCategoryModal(false)} className="service-menu__btn service-menu__btn--cancel">Cancel</Button>
-          <Button onClick={handleCategorySubmit} className="service-menu__btn service-menu__btn--primary">Add Category</Button>
+          <Button onClick={() => setShowAddCategoryModal(false)} className="btn btn-secondary">Cancel</Button>
+          <Button onClick={handleCategorySubmit} className="btn btn-primary">Add Category</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onClose={handleDeleteDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <p>Are you sure you want to delete the category <strong>"{deleteDialog.category?.name}"</strong>?</p>
+          {deleteDialog.hasServices && (
+            <Alert severity="warning" style={{ marginTop: '16px' }}>
+              This category contains {deleteDialog.serviceCount} services. Deleting it will remove all associated services.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteDialogClose} color="inherit">Cancel</Button>
+          <Button onClick={() => confirmDeleteCategory(true)} color="error" variant="contained">
+            {deleteDialog.hasServices ? 'Force Delete' : 'Delete'}
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

@@ -1,16 +1,19 @@
 // LoginPage.jsx
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import './Loginpage.css';
 import { Base_url } from '../Service/Base_url';
+import alloraLogo from '../assets/alloraLogo.jpg';
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
-        email: 'admin@spa.com',
-        password: 'Admin@123'
+        email: '',
+        password: ''
     });
     
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleInputChange = (e) => {
@@ -23,8 +26,8 @@ const LoginPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('🔄 Attempting real login with backend...');
-        
+        setIsLoading(true);
+
         try {
             const response = await fetch(`${Base_url}/auth/login`, {
                 method: 'POST',
@@ -32,27 +35,34 @@ const LoginPage = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    email: formData.email || 'admin@spa.com',
-                    password: formData.password || 'Admin@123'
+                    email: formData.email,
+                    password: formData.password
                 })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                console.log('✅ Login successful!');
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.data.user));
-                navigate('/');
+                navigate('/'); // Navigate to root (which is now calendar)
             } else {
-                console.log('❌ Login failed:', data.message);
-                alert(data.message || 'Login failed');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Login Failed',
+                    text: data.message || 'Login failed',
+                    confirmButtonColor: '#1f2937'
+                });
             }
         } catch (error) {
-            console.log('❌ Login error:', error);
-            console.log('🔧 Using fallback - redirecting to dashboard');
-            // Fallback: just redirect to dashboard
-            navigate('/');
+            Swal.fire({
+                icon: 'error',
+                title: 'Login Error',
+                text: 'Unable to login. Please try again.',
+                confirmButtonColor: '#1f2937'
+            });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -60,8 +70,9 @@ const LoginPage = () => {
         <div className="login-container">
             <div className="left-section">
                 <div className="brand-content">
+                    <img src={alloraLogo} alt="Allora" className="brand-logo" />
                     <h1 className="brand-title">Allora</h1>
-                    <p className="brand-subtitle">The most popular media centre</p>
+                    <p className="brand-subtitle">Premium wellness and beauty management</p>
                     <button className="read-more-btn">Read More</button>
                 </div>
             </div>
@@ -71,9 +82,7 @@ const LoginPage = () => {
                     <div className="form-header">
                         <h2 className="form-title">Hello Again!</h2>
                         <p className="form-subtitle">Welcome Back</p>
-                        <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
-                            Demo credentials pre-filled - just click Login!
-                        </p>
+                       
                     </div>
                     
                     <form className="login-form" onSubmit={handleSubmit}>
@@ -116,13 +125,20 @@ const LoginPage = () => {
                             </button>
                         </div>
                         
-                        <button type="submit" className="login-btn">
-                            Login
+                        <button type="submit" className="login-btn" disabled={isLoading} aria-busy={isLoading} aria-live="polite">
+                            {isLoading ? (
+                                <span className="btn-loading">
+                                    <span className="btn-spinner" aria-hidden="true"></span>
+                                    Logging in...
+                                </span>
+                            ) : (
+                                'Login'
+                            )}
                         </button>
                         
-                        <a href="#" className="forgot-password">
+                        {/* <a href="#" className="forgot-password">
                             Forgot Password
-                        </a>
+                        </a> */}
                     </form>
                 </div>
             </div>

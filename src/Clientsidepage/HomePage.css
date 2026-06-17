@@ -117,10 +117,12 @@ body {
 }
 
 .card-header .appointments-count {
-    display: flex;
-    justify-content: space-between;
+    display: flex
+;
+    justify-content: start;
     align-items: center;
     padding: 0.25rem 0;
+    gap: 10px;
 }
 
 .card-header .appointments-count span:first-child {
@@ -273,23 +275,26 @@ body {
 
 /* Next Appointment Section */
 .next-appointment-container {
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    padding: 20px;
-    background-color: #fff;
+    /* Removed border, border-radius, padding, background-color */
 }
 
 .next-appointment-heading {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
-    margin-bottom: 16px;
+    margin: 20px 0;
 }
 
 .next-appointment-box {
     display: flex;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    margin-bottom: 12px; /* Added margin-bottom for spacing between boxes */
 }
 
 .next-date-box {
@@ -298,8 +303,9 @@ body {
 }
 
 .next-date {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
+    color: #444;
 }
 
 .next-month {
@@ -319,8 +325,8 @@ body {
 }
 
 .next-time {
-    font-size: 14px;
     color: #666;
+    font-size: 14px;
 }
 
 .next-status {
@@ -334,7 +340,7 @@ body {
 .next-title {
     font-weight: 600;
     font-size: 16px;
-    margin: 4px 0;
+    margin: 5px 0; /* Changed from 4px 0 */
 }
 
 .next-info {
@@ -353,7 +359,7 @@ body {
     font-weight: bold;
     font-size: 16px;
     color: #222;
-    margin-top: 6px;
+    margin-top: 0; /* Changed from 6px */
 }
 
 /* Scrollbar Styles */
@@ -488,3 +494,35 @@ body {
         height: 180px;
     }
 }
+
+/* ---------- */
+
+
+.stats-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid #eee;
+  margin-top: 4px;
+}
+
+.page-btn {
+  appearance: none;
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.page-btn:hover:not(:disabled) { background: #f7f7f7; }
+.page-btn:disabled { opacity: 0.5; cursor: default; }
+
+.page-info {
+  font-size: 12px;
+  color: #666;
+}
+
+

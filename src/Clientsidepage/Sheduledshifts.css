@@ -1,71 +1,151 @@
 /* --- CORE LAYOUT --- */
 .shift-scheduler {
   padding: 1.5rem;
-  background-color: #f9fafb;
+  background-color: #ffffff;
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 /* Find and REPLACE this rule in your Sheduledshifts.css */
 
 .week-navigation {
-  display: flex;
-  justify-content: space-between; /* Pushes items to the edges */
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: white;
+  width: 100%;
+  background: #ffffff;            /* pure white background */
+  border: 1px solid #000000;     /* strong black border per request */
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-/* Add a wrapper for the arrow buttons */
-.week-navigation .nav-arrow-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.nav-btn {
+  padding: 10px 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  box-sizing: border-box;
+  margin-bottom: 1rem;
   display: flex;
+  justify-content: center;       /* center inner container across the page */
+  align-items: center;
+}
+
+/* inner wrapper constrains width and aligns controls */
+.week-navigation .week-nav-inner {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* left arrow | center date button | right controls */
+  gap: 12px;
+}
+
+/* Arrow buttons group on the left */
+.week-navigation .nav-left,
+.week-navigation .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 56px; /* keep arrows aligned when center grows */
+  justify-content: flex-start;
+}
+
+/* Center area containing the date button */
+.week-navigation .week-center {
+  display: flex;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #f3f4f6;
-  border: none;
-  color: #6b7280;
+}
+
+/* Independent nav button (arrow) */
+.week-navigation .nav-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  /* border: 1px solid #000; */
+  background: #fff;
+  color: #000;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background .12s ease, transform .08s ease;
+  box-shadow: none;
 }
 
-.nav-btn:hover {
-  background-color: #e5e7eb;
+.week-navigation .nav-btn:hover,
+.week-navigation .nav-btn:focus {
+  background: #f4f4f4;
+  transform: translateY(-2px);
+  outline: none;
 }
 
-.week-info {
-  text-align: center;
-  flex-grow: 1; /* Allows the date to take up available space */
+/* The week/date trigger — clearly a button and separate from arrows */
+.week-navigation .week-date-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;   /* black border for strong business look */
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  transition: background .12s ease, transform .08s ease;
+  min-width: 260px;
+  justify-content: center;
 }
 
-.week-date {
-  font-size: 1.1rem;
+.week-navigation .week-date-btn:hover,
+.week-navigation .week-date-btn:focus {
+  background: #f7f7f7;
+  transform: translateY(-2px);
+  outline: none;
+}
+
+/* Right side group (next arrow + Today button) */
+.week-navigation .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+  justify-content: flex-end;
+}
+
+/* Today button style distinct but coherent with black/white theme */
+.week-navigation .today-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
   font-weight: 600;
-  color: #111827;
+  cursor: pointer;
+  transition: background .12s ease, transform .08s ease;
 }
 
-.today-btn {
-    padding: 10px 16px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background-color: white;
-    color: #374151;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    white-space: nowrap; /* Prevents the button text from wrapping */
+.week-navigation .today-btn:hover,
+.week-navigation .today-btn:focus {
+  background: #f4f4f4;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* Make sure clickable areas are not overlapping and accessible */
+.week-navigation .nav-btn,
+.week-navigation .week-date-btn,
+.week-navigation .today-btn {
+  z-index: 5;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.06);
+}
+
+/* Responsive tweaks: keep center button readable and arrows usable */
+@media (max-width: 880px) {
+  .week-navigation .week-nav-inner { padding: 0 8px; gap: 8px; }
+  .week-navigation .week-date-btn { min-width: 200px; padding: 8px 12px; }
+  .week-navigation .nav-btn { width: 40px; height: 40px; }
+  .week-navigation .right-controls { min-width: 120px; }
+}
+
+@media (max-width: 520px) {
+  .week-navigation { padding: 8px; border-radius: 10px; }
+  .week-navigation .week-nav-inner { gap: 6px; }
+  .week-navigation .week-date-btn { min-width: 160px; font-size: 13px; padding: 8px 10px; }
+  .week-navigation .today-btn { padding: 6px 10px; font-size: 13px; }
 }
 /* --- HEADER --- */
 .scheduler-header {
@@ -94,138 +174,345 @@
 
 /* --- WEEK NAVIGATION --- */
 .week-navigation {
+  width: 100%;
+  background: #ffffff;            /* pure white background */
+  border: 1px solid #000000;     /* strong black border per request */
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;       /* center inner container across the page */
+  align-items: center;
+}
+
+/* inner wrapper constrains width and aligns controls */
+.week-navigation .week-nav-inner {
+  width: 100%;
+  max-width: 1200px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
+  justify-content: space-between; /* left arrow | center date button | right controls */
+  gap: 12px;
 }
-.nav-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: 50%;
-  background-color: white; border: 1px solid #d1d5db;
-  color: #6b7280; cursor: pointer; transition: all 0.2s;
-}
-.nav-btn:hover { background-color: #f3f4f6; border-color: #9ca3af; }
-.week-info { text-align: center; }
-.week-date { font-size: 1.1rem; font-weight: 600; color: #111827; }
 
+/* Arrow buttons group on the left */
+.week-navigation .nav-left,
+.week-navigation .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 56px; /* keep arrows aligned when center grows */
+  justify-content: flex-start;
+}
+
+/* Center area containing the date button */
+.week-navigation .week-center {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Independent nav button (arrow) */
+.week-navigation .nav-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  /* border: 1px solid #000; */
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  transition: background .12s ease, transform .08s ease;
+  box-shadow: none;
+  border: none;
+}
+
+.week-navigation .nav-btn:hover,
+.week-navigation .nav-btn:focus {
+  background: #f4f4f4;
+  transform: translateY(-2px);
+  outline: none;
+}
+
+/* The week/date trigger — clearly a button and separate from arrows */
+.week-navigation .week-date-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #fff;
+  color: #000;
+  /* border: 1px solid #000;   black border for strong business look */
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  transition: background .12s ease, transform .08s ease;
+  min-width: 260px;
+  justify-content: center;
+  border: none;
+}
+
+.week-navigation .week-date-btn:hover,
+.week-navigation .week-date-btn:focus {
+  background: #f7f7f7;
+  transform: translateY(-2px);
+  outline: none;
+}
+
+/* Right side group (next arrow + Today button) */
+.week-navigation .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+  justify-content: flex-end;
+}
+
+/* Today button style distinct but coherent with black/white theme */
+.week-navigation .today-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  /* border: 1px solid #000; */
+  background: #fff;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s ease, transform .08s ease;
+  border: none;
+}
+
+.week-navigation .today-btn:hover,
+.week-navigation .today-btn:focus {
+  background: #f4f4f4;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* Make sure clickable areas are not overlapping and accessible */
+.week-navigation .nav-btn,
+.week-navigation .week-date-btn,
+.week-navigation .today-btn {
+  z-index: 5;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.06);
+}
+
+/* Responsive tweaks: keep center button readable and arrows usable */
+@media (max-width: 880px) {
+  .week-navigation .week-nav-inner { padding: 0 8px; gap: 8px; }
+  .week-navigation .week-date-btn { min-width: 200px; padding: 8px 12px; }
+  .week-navigation .nav-btn { width: 40px; height: 40px; }
+  .week-navigation .right-controls { min-width: 120px; }
+}
+
+@media (max-width: 520px) {
+  .week-navigation { padding: 8px; border-radius: 10px; }
+  .week-navigation .week-nav-inner { gap: 6px; }
+  .week-navigation .week-date-btn { min-width: 160px; font-size: 13px; padding: 8px 10px; }
+  .week-navigation .today-btn { padding: 6px 10px; font-size: 13px; }
+}
 /* --- RESPONSIVE TABLE CONTAINER --- */
-.schedule-table-container {
+/* This becomes the main scrolling container */
+/* --- RESPONSIVE TABLE CONTAINER --- */
+.ss-table-container {
   width: 100%;
-  /* overflow-x: auto; This is the key: makes the container scroll horizontally */
+  overflow-x: auto;
   background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  position: relative;
 }
 
-.schedule-table {
+.ss-table {
   width: 100%;
-  border-collapse: collapse;
-  /* Set a minimum width to ensure columns don't get too squished */
-  min-width: 900px; 
+  min-width: 1200px; /* Ensure enough width for horizontal scroll */
 }
 
 /* --- TABLE HEADER --- */
-.table-header {
-    display: grid
-;
-overflow-x: scroll;
-    grid-template-columns: 250px repeat(7, 1fr);
-    border-bottom: 1px solid #000000;    background-color: #ffffff;
+.ss-table-header {
+  display: grid;
+  grid-template-columns: 260px repeat(7, minmax(140px, 1fr));
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 20; /* Higher z-index for header */
 }
-.member-column-header {
-     padding: 1rem 1.5rem;
-    font-weight: 600;
-    color: #4b5563;
-    text-align: left;
-    position: sticky;
-    left: 0;
-    background-color: #ffffff;
-    z-index: 10;
+
+.ss-member-col-header {
+  padding: 16px 24px;
+  font-weight: 600;
+  color: #4b5563;
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background-color: #f9fafb;
+  z-index: 30; /* Highest z-index for top-left corner */
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.day-header {
-  padding: 0.75rem 1rem;
+
+.ss-day-header {
+  padding: 12px 16px;
   text-align: center;
   border-left: 1px solid #e5e7eb;
-  display: flex; /* --- FIX: Use flexbox for single-line alignment --- */
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 150px;
+  background-color: #f9fafb;
 }
-.day-name { font-size: 0.8rem; font-weight: 600; color: #6b7280; }
-.day-date { font-size: 1.25rem; font-weight: 700; color: #111827; }
 
-/* --- TABLE BODY --- */
-.table-body { display: block;overflow-x: scroll; }
-.member-row {
+/* --- TABLE ROWS --- */
+.ss-member-row {
   display: grid;
-  grid-template-columns: 250px repeat(7, 1fr);
+  grid-template-columns: 260px repeat(7, minmax(140px, 1fr));
   border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.1s;
 }
-.member-row:last-child { border-bottom: none; }
 
-.member-info {
+.ss-member-row:hover {
+  background-color: #f9fafb;
+}
+
+.ss-member-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  /* --- FIX: Make the member name column sticky --- */
+  gap: 12px;
+  padding: 16px 24px;
   position: sticky;
   left: 0;
-  background-color: white; /* Crucial for hiding content that scrolls underneath */
-  z-index: 5;
+  background-color: white;
+  z-index: 10;
   border-right: 1px solid #e5e7eb;
 }
-.member-avatar {
-  width: 40px; height: 40px; border-radius: 50%; display: flex;
-  align-items: center; justify-content: center; font-weight: 600;
-  font-size: 1rem; color: #4b5563; flex-shrink: 0;
+
+/* Ensure row hover updates sticky column background too */
+.ss-member-row:hover .ss-member-info {
+  background-color: #f9fafb;
 }
-.member-name { font-size: 1rem; font-weight: 500; color: #111827; }
+
+.ss-member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.ss-member-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex: 1; /* Take remaining space */
+}
+
+.ss-member-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Push button to right */
+  gap: 8px;
+  width: 100%;
+}
+
+.ss-member-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ss-edit-member-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  border-radius: 4px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.ss-edit-member-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
 
 /* --- SHIFT CELLS --- */
-.shift-cell {
+.ss-shift-cell {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 8px;
   border-left: 1px solid #e5e7eb;
-  width: 150px;
+  min-height: 80px;
 }
-.shift-block {
+
+.ss-shift-block {
+  flex: 1;
   padding: 8px 12px;
-  background: #eef2ff;
-  color: #4338ca;
+  background: #f3f4f6; /* Light gray background */
+  color: #111827; /* Dark text */
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb; /* Subtle border */
 }
-.shift-block:hover { 
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+
+.ss-shift-block:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.shift-empty {
+
+.ss-shift-empty {
+  flex: 1;
   background: transparent;
-  color: #9ca3af;
-  border: 2px dashed #e5e7eb;
-  width: 100%;
-  height: 100%;
+  color: #d1d5db;
+  border: 1px dashed #e5e7eb;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  width: 150px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.shift-empty:hover {
+
+.ss-shift-empty:hover {
   background-color: #f9fafb;
   border-color: #d1d5db;
+  color: #9ca3af;
 }
 
 /* --- RESPONSIVE ADJUSTMENTS --- */
@@ -301,14 +588,7 @@ overflow-x: scroll;
 }
 
 /* Modal Content - Scrollable */
-.shift-editor-modal .modal-content {
-  flex: 1;
-  /* overflow-y: auto; */
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+/* .shift-editor-modal .modal-content replaced by .ss-modal-content */
 
 /* Error Message */
 .modal-error-message {
@@ -360,13 +640,15 @@ overflow-x: scroll;
     justify-content: center;
     width: 32px;
     height: 32px;
-    border: none;
+    border: solid;
     background-color: #f3f4f6;
     border-radius: 6px;
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
+
+    top: 50px;
     margin-left: auto;
 }
 @media (max-width: 480px) {
@@ -582,7 +864,7 @@ overflow-x: scroll;
 /* --- UPDATED SHIFT EDITOR MODAL STYLES --- */
 .modal-overlay {
   position: fixed;
-  top: 0;
+  top: 31px;
   left: 0;
   width: 100vw;
   height: 100vh;
@@ -593,6 +875,46 @@ overflow-x: scroll;
   z-index: 9999;
   padding: 20px;
   box-sizing: border-box;
+}
+
+.ss-schedule-modal {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 600px; /* Increased width as requested */
+  max-height: 90vh;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.ss-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Ensure scrollbar looks good */
+.ss-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ss-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ss-modal-content::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 3px;
 }
 
 .shift-editor-modal {
@@ -613,7 +935,11 @@ overflow-x: scroll;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  margin-bottom: 2rem !important;
+  margin-bottom: 0 !important; /* Removed margin bottom as content has padding */
+  padding: 20px 24px !important;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -623,13 +949,25 @@ overflow-x: scroll;
   color: #111827 !important;
 }
 
-.shift-editor-modal .close-btn {
+.shift-editor-modal .close-btn,
+.ss-schedule-modal .close-btn {
   background: none !important;
   border: none !important;
   font-size: 1.5rem !important;
   cursor: pointer !important;
   color: #6b7280 !important;
   padding: 4px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.shift-editor-modal .close-btn:hover,
+.ss-schedule-modal .close-btn:hover {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
 }
 
 /* Individual Shift Row */
@@ -1176,7 +1514,7 @@ overflow-x: scroll;
   justify-content: space-between;
   padding: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  /* background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); */
   color: white;
 }
 
@@ -1559,4 +1897,367 @@ overflow-x: scroll;
     min-height: 32px;
     font-size: 0.75rem;
   }
+}
+
+/* Calendar (black on white, light theme) */
+.calendar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1400;
+}
+.calendar-modal {
+  width: 420px;
+  background: #ffffff;
+  color: #111111;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  padding: 12px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.calendar-nav { display:flex; align-items:center; gap:8px; }
+.cal-nav-btn {
+  background: transparent;
+  border: 1px solid #e6e6e6;
+  color:#111;
+  width:32px;
+  height:32px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.calendar-month-select select {
+  border: 1px solid #e6e6e6;
+  padding:6px 8px;
+  margin-right:6px;
+  border-radius:6px;
+  background:#fff;
+  color:#111;
+}
+.calendar-actions { display:flex; gap:8px; }
+.btn { padding:6px 10px; border-radius:6px; cursor:pointer; border:1px solid #d0d0d0; background:#fff; color:#111; }
+.btn-primary { background:#111; color:#fff; border-color:#111; }
+.btn-secondary { background:#fff; color:#111; }
+
+/* body */
+.calendar-body { margin-top:8px; }
+.weekday-row { display:flex; }
+.weekday-cell {
+  width: calc(100% / 7);
+  text-align:center;
+  font-weight:600;
+  padding:6px 0;
+  color:#222;
+}
+.calendar-grid {
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:6px;
+  margin-top:6px;
+}
+.day-cell {
+  min-height:44px;
+  background:#fff;
+  border:1px solid #f0f0f0;
+  border-radius:6px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+  padding:6px;
+  cursor:pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.06s;
+}
+.day-cell:hover { background:#f7f7f7; transform: translateY(-1px); }
+.day-cell.empty { background:transparent; border:0; cursor:default; }
+.day-number { font-size:13px; color:#111; }
+
+/* selection */
+.day-cell.selected-start,
+.day-cell.selected-end {
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+}
+.day-cell.in-range {
+  background: rgba(17,17,17,0.06);
+  border: 1px solid rgba(17,17,17,0.06);
+}
+.day-cell.today {
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.04);
+  border-radius:6px;
+}
+
+/* trigger button */
+.week-date-btn {
+  background: transparent;
+  border: 1px solid #e6e6e6;
+  padding:8px 12px;
+  border-radius:8px;
+  color:#111;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+  cursor:pointer;
+}
+.week-label-small { font-size:12px; color:#555; }
+.week-date-text { font-size:14px; font-weight:600; }
+
+/* Responsive */
+@media (max-width: 520px) {
+  .calendar-modal { width: 96%; padding:10px; }
+  .day-cell { min-height:40px; padding:4px; }
+}
+
+/* Calendar popup — professional black & white theme */
+
+/* Backdrop */
+.calendar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,6,23,0.45); /* dark translucent backdrop */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Modal */
+.calendar-modal {
+  width: 720px;
+  max-width: calc(100% - 32px);
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  box-shadow: 0 30px 80px rgba(2,6,23,0.35);
+  overflow: hidden;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #0b1220;
+  transition: transform .12s ease, opacity .12s ease;
+}
+
+/* Header */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(180deg,#fff,#fbfbfb);
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cal-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #111;
+  background: #fff;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background .12s ease, transform .08s ease;
+}
+.cal-nav-btn:hover, .cal-nav-btn:focus { background: #f5f5f5; transform: translateY(-2px); outline: none; }
+
+/* Month / Year selector */
+.calendar-month-select {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 700;
+  color: #111;
+}
+.calendar-month-select select {
+  appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Header actions */
+.calendar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.calendar-actions .btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid #111;
+  background: #fff;
+  color: #111;
+}
+.calendar-actions .btn-primary {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.calendar-actions .btn-secondary {
+  background: transparent;
+  color: #111;
+  border-color: #e6e6e6;
+}
+
+/* Body layout */
+.calendar-body {
+  padding: 16px 20px 24px 20px;
+}
+
+/* Weekday row */
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.weekday-cell {
+  text-align: center;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+/* Calendar grid */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+/* Day cell base */
+.day-cell {
+  height: 52px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .08s ease, background .08s ease, box-shadow .08s ease;
+  position: relative;
+}
+.day-cell.empty {
+  background: transparent;
+  cursor: default;
+}
+.day-cell:hover:not(.empty) {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(2,6,23,0.06);
+  background: #fafafa;
+}
+
+/* Day number */
+.day-number {
+  font-weight: 700;
+  color: #0b1220;
+  font-size: 14px;
+}
+
+/* Today */
+.day-cell.today {
+  border: 1px solid #111;
+  box-shadow: inset 0 0 0 2px rgba(17,17,17,0.03);
+}
+
+/* Selected / Range styles */
+.day-cell.in-range {
+  background: rgba(17,17,17,0.06);
+  border-color: rgba(17,17,17,0.08);
+}
+.day-cell.selected-start,
+.day-cell.selected-end {
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+  box-shadow: 0 8px 24px rgba(2,6,23,0.12);
+}
+.day-cell.selected-start .day-number,
+.day-cell.selected-end .day-number { color: #fff; }
+
+/* week-range highlight (full-row) */
+.calendar-grid .week-in-range {
+  background: rgba(17,17,17,0.06);
+  border-color: rgba(17,17,17,0.08);
+  transition: background 0.08s, transform 0.08s;
+}
+.calendar-grid .week-range-start,
+.calendar-grid .week-range-end {
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+  box-shadow: 0 8px 24px rgba(2,6,23,0.12);
+}
+.calendar-grid .week-range-start .day-number,
+.calendar-grid .week-range-end .day-number { color: #fff; }
+
+/* Make week highlight cover contiguous cells nicely */
+.calendar-grid .week-in-range {
+  position: relative;
+  z-index: 1;
+}
+.calendar-grid .week-range-start::before,
+.calendar-grid .week-range-end::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 50%;
+  background: rgba(17,17,17,0.06);
+  z-index: 0;
+  border-radius: 6px;
+}
+.calendar-grid .week-range-start::before { left: 50%; }
+.calendar-grid .week-range-end::after { right: 50%; }
+/* ensure selected week stands above other UI */
+.calendar-modal { z-index: 1200; }
+.calendar-overlay { z-index: 1199; }
+/* Ensure modal overlay is visible above other UI */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  padding: 16px;
+}
+.shift-editor-modal {
+  width: 720px;
+  max-width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 4001;
 }

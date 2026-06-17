@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import dayjs from 'dayjs';
 import './MultiServiceBookingModal.css';
 
@@ -60,12 +61,22 @@ export default function MultiServiceBookingModal({
     for (const service of selectedServices) {
       const assign = serviceAssignments[service._id];
       if (!assign || !assign.professional || !assign.time) {
-        alert('Please assign a professional and time for each service.');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Assignment',
+          text: 'Please assign a professional and time for each service.',
+          confirmButtonColor: '#1f2937'
+        });
         return;
       }
     }
     if (!clientInfo.name.trim() || !clientInfo.email.trim() || !clientInfo.phone.trim()) {
-      alert('Please fill in all client info fields.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Client Info',
+        text: 'Please fill in all client info fields.',
+        confirmButtonColor: '#1f2937'
+      });
       return;
     }
     // Construct payload and call onSubmit

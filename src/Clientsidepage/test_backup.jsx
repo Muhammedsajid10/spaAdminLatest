@@ -377,9 +377,9 @@ const BookingModal = ({
     setBookingSuccess(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       let clientData;
-      
+
       if (selectedExistingClient) {
         clientData = {
           firstName: selectedExistingClient.firstName,
@@ -423,8 +423,6 @@ const BookingModal = ({
         client: clientData,
       };
 
-      console.log('Booking payload:', bookingPayload);
-      
       const res = await fetch(`${Base_url}/bookings`, {
         method: 'POST',
         headers: {
@@ -435,16 +433,14 @@ const BookingModal = ({
       });
       const data = await res.json();
 
-      console.log('Booking creation response:', data);
-
       if (!res.ok) throw new Error(data.message || 'Booking failed');
-      
+
       const clientName = selectedExistingClient 
         ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
         : clientData.firstName;
-      
+
       setBookingSuccess(`Booking created successfully for ${clientName}!`);
-      
+
       setTimeout(() => {
         onClose(); // Close the modal
         fetchBookings(selectedDate); // Refresh the calendar
@@ -817,9 +813,7 @@ const BookingModal = ({
                       ? `${selectedExistingClient.firstName} ${selectedExistingClient.lastName}`
                       : clientInfo.name
                     }
-                    {selectedExistingClient && (
-                      <span className="existing-client-indicator">✨ VIP Member</span>
-                    )}
+                   
                   </span>
                 </div>
                 <div className="summary-item">

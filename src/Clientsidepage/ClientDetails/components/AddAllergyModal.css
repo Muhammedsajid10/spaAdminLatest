@@ -1,0 +1,316 @@
+/* AddAllergyModal.css */
+.add-allergy-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  backdrop-filter: blur(2px);
+}
+
+.add-allergy-modal {
+  background: #fff;
+  width: 650px;
+  max-width: 95%;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 90vh;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.add-allergy-header {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-allergy-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+}
+
+.add-allergy-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.add-allergy-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.add-allergy-body {
+  padding: 0 24px 24px;
+  overflow-y: auto;
+  flex: 1;
+  /* Ensure dropdown can overflow if needed, or handle with enough padding/height */
+  /* For a modal, usually we want the dropdown to scroll with the body or be absolute. 
+     If absolute, we need visible overflow or portal. 
+     Simple solution: relative container, absolute dropdown, ensure body has enough space or let it scroll. */
+  overflow-y: visible; /* Allow dropdown to spill out if needed, but might clip at modal bounds */
+  /* Actually, for a long list, we want the dropdown to be scrollable internally */
+}
+
+/* Tabs */
+.allergy-tabs {
+  display: flex;
+  background: #f5f5f5;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.allergy-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.allergy-tab.active {
+  background: #fff;
+  color: #111;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 600;
+}
+
+/* Form Fields */
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative; /* For dropdown positioning */
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.form-sublabel {
+  font-size: 12px;
+  color: #666;
+  margin-top: -4px;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.form-input:focus {
+  border-color: #000;
+}
+
+.form-input::placeholder {
+  color: #999;
+}
+
+/* Custom Dropdown Styles */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.custom-select-trigger {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+
+.custom-select-trigger:hover {
+  border-color: #bbb;
+}
+
+.custom-select-trigger.open {
+  border-color: #000;
+}
+
+.custom-select-trigger .placeholder {
+  color: #999;
+}
+
+.custom-select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.custom-option {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.custom-option:hover {
+  background: #f5f5f5;
+}
+
+.custom-option.selected {
+  background: #f0f0f0;
+  font-weight: 500;
+}
+
+/* Severity Selection */
+.severity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.severity-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.severity-card:hover {
+  border-color: #ccc;
+  background: #fafafa;
+}
+
+.severity-card.selected {
+  border-color: #000;
+  background: #fff;
+  box-shadow: 0 0 0 1px #000;
+}
+
+.severity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+.severity-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Colors for severity */
+.severity-mild { color: #22c55e; background-color: rgba(34, 197, 94, 0.1); }
+.severity-moderate { color: #f97316; background-color: rgba(249, 115, 22, 0.1); }
+.severity-severe { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+.severity-fatal { color: #111; background-color: rgba(0, 0, 0, 0.1); }
+
+
+/* Note Textarea */
+.allergy-textarea {
+  width: 100%;
+  height: 100px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+}
+
+.allergy-textarea:focus {
+  border-color: #000;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* Footer */
+.add-allergy-footer {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-save-allergy {
+  padding: 8px 32px;
+  background: #000;
+  border: 1px solid #000;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save-allergy:hover {
+  background: #333;
+  border-color: #333;
+}

@@ -198,7 +198,7 @@ body.dropdown-open {
 .appointments-header {
   position: sticky;
   top: 0;
-  background-color: var(--bg-primary);
+  /* background-color: var(--bg-primary); */
   z-index: 10;
   display: flex;
   justify-content: space-between;
